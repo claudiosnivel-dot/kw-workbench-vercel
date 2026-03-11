@@ -1,0 +1,240 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+type ProjectFormValues = {
+  name: string;
+  language_code: string;
+  country_code: string;
+  seeds: string;
+  autocomplete_provider: "MOCK" | "GOOGLE_DIRECT";
+  metrics_provider: "NONE" | "MOCK" | "GOOGLE_KEYWORD_PLANNER";
+  min_volume: number;
+  exclude_brands: boolean;
+  expand_alpha: boolean;
+  expand_numeric: boolean;
+  expand_patterns: boolean;
+  auto_classification: boolean;
+  scoring_profile: string;
+};
+
+type ProjectFormProps = {
+  mode: "create" | "edit";
+  projectId?: string;
+  initialValues?: ProjectFormValues;
+};
+
+const defaultValues: ProjectFormValues = {
+  name: "",
+  language_code: "en",
+  country_code: "US",
+  seeds: "",
+  autocomplete_provider: "MOCK",
+  metrics_provider: "NONE",
+  min_volume: 0,
+  exclude_brands: true,
+  expand_alpha: true,
+  expand_numeric: true,
+  expand_patterns: true,
+  auto_classification: true,
+  scoring_profile: "balanced",
+};
+
+export function ProjectForm({ mode, projectId, initialValues }: ProjectFormProps) {
+  const router = useRouter();
+  const [values, setValues] = useState<ProjectFormValues>(initialValues ?? defaultValues);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const update = <K extends keyof ProjectFormValues>(key: K, value: ProjectFormValues[K]) => {
+    setValues((current) => ({ ...current, [key]: value }));
+  };
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setMessage(null);
+    setError(null);
+
+    const endpoint = mode === "create" ? "/api/projects" : `/api/projects/${projectId}`;
+    const method = mode === "create" ? "POST" : "PATCH";
+
+    try {
+      const response = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+
+      const payload = (await response.json()) as { data?: { id: string }; error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Impossibile salvare il progetto");
+      }
+
+      if (mode === "create" && payload.data?.id) {
+        router.push(`/projects/${payload.data.id}`);
+        router.refresh();
+        return;
+      }
+
+      setMessage("Impostazioni salvate.");
+      router.refresh();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="label" htmlFor="name">
+            Nome progetto
+          </label>
+          <input
+            id="name"
+            className="input"
+            value={values.name}
+            onChange={(event) => update("name", event.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="label" htmlFor="min_volume">
+            Volume minimo
+          </label>
+          <input
+            id="min_volume"
+            className="input"
+            type="number"
+            min={0}
+            value={values.min_volume}
+            onChange={(event) => update("min_volume", Number(event.target.value) || 0)}
+          />
+        </div>
+
+        <div>
+          <label className="label" htmlFor="language_code">
+            Codice lingua
+          </label>
+          <input
+            id="language_code"
+            className="input"
+            value={values.language_code}
+            onChange={(event) => update("language_code", event.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="label" htmlFor="country_code">
+            Codice paese
+          </label>
+          <input
+            id="country_code"
+            className="input"
+            value={values.country_code}
+            onChange={(event) => update("country_code", event.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="label" htmlFor="autocomplete_provider">
+            Provider autocomplete
+          </label>
+          <select
+            id="autocomplete_provider"
+            className="select"
+            value={values.autocomplete_provider}
+            onChange={(event) => update("autocomplete_provider", event.target.value as ProjectFormValues["autocomplete_provider"])}
+          >
+            <option value="MOCK">MockAutocompleteProvider</option>
+            <option value="GOOGLE_DIRECT">GoogleDirectAutocompleteProvider</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="metrics_provider">
+            Provider metriche
+          </label>
+          <select
+            id="metrics_provider"
+            className="select"
+            value={values.metrics_provider}
+            onChange={(event) => update("metrics_provider", event.target.value as ProjectFormValues["metrics_provider"])}
+          >
+            <option value="NONE">NoMetricsProvider</option>
+            <option value="MOCK">MockMetricsProvider</option>
+            <option value="GOOGLE_KEYWORD_PLANNER">GoogleKeywordPlannerMetricsProvider</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="scoring_profile">
+            Profilo scoring
+          </label>
+          <select
+            id="scoring_profile"
+            className="select"
+            value={values.scoring_profile}
+            onChange={(event) => update("scoring_profile", event.target.value)}
+          >
+            <option value="balanced">bilanciato</option>
+            <option value="aggressive">aggressivo</option>
+            <option value="conservative">conservativo</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="label" htmlFor="seeds">
+          Keyword seed (una per riga, supportate anche virgole e punto e virgola)
+        </label>
+        <textarea
+          id="seeds"
+          className="input min-h-40"
+          value={values.seeds}
+          onChange={(event) => update("seeds", event.target.value)}
+          placeholder="keyword uno\nkeyword due\nkeyword tre"
+        />
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={values.exclude_brands} onChange={(event) => update("exclude_brands", event.target.checked)} />
+          Escludi brand
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={values.expand_alpha} onChange={(event) => update("expand_alpha", event.target.checked)} />
+          Espandi alfabeto (a-z)
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={values.expand_numeric} onChange={(event) => update("expand_numeric", event.target.checked)} />
+          Espandi numerico (0-9)
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={values.expand_patterns} onChange={(event) => update("expand_patterns", event.target.checked)} />
+          Espandi pattern semantici
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={values.auto_classification} onChange={(event) => update("auto_classification", event.target.checked)} />
+          Classificazione automatica
+        </label>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button className="btn-primary" disabled={saving} type="submit">
+          {saving ? "Salvataggio..." : mode === "create" ? "Crea progetto" : "Salva impostazioni"}
+        </button>
+        {message && <p className="text-sm text-green-700">{message}</p>}
+        {error && <p className="text-sm text-red-700">{error}</p>}
+      </div>
+    </form>
+  );
+}

@@ -1,0 +1,195 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ResultsTable } from "@/components/results-table";
+import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function getValue(searchParams: SearchParams, key: string): string {
+  const value = searchParams[key];
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+  return value ?? "";
+}
+
+function checked(searchParams: SearchParams, key: string): boolean {
+  const value = getValue(searchParams, key);
+  return ["1", "true", "on", "yes"].includes(value.toLowerCase());
+}
+
+function buildExportLink(
+  projectId: string,
+  format: "csv" | "xlsx" | "json",
+  scope: "approved" | "selected" | "review" | "non-excluded" | "filtered",
+  searchParams: SearchParams
+): string {
+  const params = new URLSearchParams();
+  params.set("format", format);
+  params.set("scope", scope);
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (!value) continue;
+    if (Array.isArray(value)) {
+      if (value[0]) params.set(key, value[0]);
+    } else {
+      params.set(key, value);
+    }
+  }
+
+  return `/api/projects/${projectId}/export?${params.toString()}`;
+}
+
+export default async function ResultsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
+}) {
+  const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
+
+  const project = await prisma.project.findUnique({ where: { id } });
+  if (!project) {
+    notFound();
+  }
+
+  const filters = parseResultsFilters(resolvedSearchParams);
+  const where = buildResultsWhere(project.id, filters);
+
+  const [rows, filteredCount, totalCount] = await Promise.all([
+    prisma.keywordCandidate.findMany({
+      where,
+      orderBy: [{ score: "desc" }, { keyword: "asc" }],
+      take: 1000,
+      select: {
+        id: true,
+        keyword: true,
+        source: true,
+        brand_status: true,
+        review_status: true,
+        selected_for_export: true,
+        keyword_type: true,
+        search_intent: true,
+        avg_monthly_searches: true,
+        competition: true,
+        score: true,
+      },
+    }),
+    prisma.keywordCandidate.count({ where }),
+    prisma.keywordCandidate.count({ where: { project_id: project.id } }),
+  ]);
+
+  return (
+    <div className="space-y-6">
+      <section className="card space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">Risultati - {project.name}</h1>
+          <div className="flex gap-2">
+            <Link className="btn-secondary" href={`/projects/${project.id}`}>
+              Torna al progetto
+            </Link>
+            <Link className="btn-secondary" href={`/projects/${project.id}/settings`}>
+              Impostazioni
+            </Link>
+          </div>
+        </div>
+
+        <p className="text-sm text-slate-600">
+          Mostrate {filteredCount} keyword su {totalCount}.
+        </p>
+
+        <form method="get" className="grid gap-3 md:grid-cols-4">
+          <input className="input" name="searchText" placeholder="Testo ricerca" defaultValue={getValue(resolvedSearchParams, "searchText")} />
+          <input className="input" name="minVolume" type="number" placeholder="Volume minimo" defaultValue={getValue(resolvedSearchParams, "minVolume")} />
+          <input className="input" name="maxVolume" type="number" placeholder="Volume massimo" defaultValue={getValue(resolvedSearchParams, "maxVolume")} />
+
+          <select className="select" name="brandStatus" defaultValue={getValue(resolvedSearchParams, "brandStatus")}>
+            <option value="">Stato brand</option>
+            <option value="allowed">consentito</option>
+            <option value="excluded">escluso</option>
+            <option value="review">da rivedere</option>
+          </select>
+
+          <select className="select" name="reviewStatus" defaultValue={getValue(resolvedSearchParams, "reviewStatus")}>
+            <option value="">Stato revisione</option>
+            <option value="pending">in attesa</option>
+            <option value="approved">approvato</option>
+            <option value="rejected">rifiutato</option>
+          </select>
+
+          <select className="select" name="searchIntent" defaultValue={getValue(resolvedSearchParams, "searchIntent")}>
+            <option value="">Intento di ricerca</option>
+            <option value="informational">informativo</option>
+            <option value="commercial">commerciale</option>
+            <option value="transactional">transazionale</option>
+            <option value="navigational">navigazionale</option>
+            <option value="mixed">misto</option>
+          </select>
+
+          <select className="select" name="keywordType" defaultValue={getValue(resolvedSearchParams, "keywordType")}>
+            <option value="">Tipo keyword</option>
+            <option value="generic">generica</option>
+            <option value="question">domanda</option>
+            <option value="comparison">comparazione</option>
+            <option value="branded">brand</option>
+            <option value="local">locale</option>
+            <option value="tool">tool</option>
+            <option value="service">servizio</option>
+            <option value="product">prodotto</option>
+            <option value="content_topic">tema contenuto</option>
+          </select>
+
+          <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm md:col-span-2">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="selectedOnly" defaultChecked={checked(resolvedSearchParams, "selectedOnly")} /> solo selezionate
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="questionOnly" defaultChecked={checked(resolvedSearchParams, "questionOnly")} /> solo domande
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="toolIntentOnly" defaultChecked={checked(resolvedSearchParams, "toolIntentOnly")} /> solo intent tool
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="commercialOnly" defaultChecked={checked(resolvedSearchParams, "commercialOnly")} /> solo commerciali
+            </label>
+          </div>
+
+          <div className="md:col-span-2">
+            <button className="btn-primary" type="submit">
+              Applica filtri
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="card space-y-3">
+        <h2 className="text-lg font-semibold">Export</h2>
+        <div className="flex flex-wrap gap-2 text-sm">
+          <Link className="btn-secondary" href={buildExportLink(project.id, "csv", "approved", resolvedSearchParams)}>
+            CSV solo approvate
+          </Link>
+          <Link className="btn-secondary" href={buildExportLink(project.id, "xlsx", "selected", resolvedSearchParams)}>
+            XLSX solo selezionate
+          </Link>
+          <Link className="btn-secondary" href={buildExportLink(project.id, "json", "review", resolvedSearchParams)}>
+            JSON solo review
+          </Link>
+          <Link className="btn-secondary" href={buildExportLink(project.id, "csv", "non-excluded", resolvedSearchParams)}>
+            CSV tutte non escluse
+          </Link>
+          <Link className="btn-secondary" href={buildExportLink(project.id, "xlsx", "filtered", resolvedSearchParams)}>
+            XLSX vista filtrata corrente
+          </Link>
+        </div>
+      </section>
+
+      <section className="card">
+        <ResultsTable projectId={project.id} rows={rows} />
+      </section>
+    </div>
+  );
+}

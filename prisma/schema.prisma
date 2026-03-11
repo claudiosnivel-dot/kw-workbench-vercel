@@ -1,0 +1,215 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AutocompleteProvider {
+  MOCK
+  GOOGLE_DIRECT
+}
+
+enum MetricsProvider {
+  NONE
+  MOCK
+  GOOGLE_KEYWORD_PLANNER
+}
+
+enum BrandStatus {
+  allowed
+  excluded
+  review
+}
+
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+}
+
+enum SearchIntent {
+  informational
+  commercial
+  transactional
+  navigational
+  mixed
+}
+
+enum KeywordType {
+  generic
+  question
+  comparison
+  branded
+  local
+  tool
+  service
+  product
+  content_topic
+}
+
+enum MetricsStatus {
+  missing
+  mock
+  fetched
+  imported
+  failed
+}
+
+enum JobType {
+  extraction
+}
+
+enum JobStatus {
+  pending
+  running
+  completed
+  failed
+}
+
+model Project {
+  id                    String               @id @default(cuid())
+  name                  String
+  language_code         String               @default("en")
+  country_code          String               @default("US")
+  autocomplete_provider AutocompleteProvider @default(MOCK)
+  metrics_provider      MetricsProvider      @default(NONE)
+  min_volume            Int                  @default(0)
+  exclude_brands        Boolean              @default(true)
+  expand_alpha          Boolean              @default(true)
+  expand_numeric        Boolean              @default(true)
+  expand_patterns       Boolean              @default(true)
+  auto_classification   Boolean              @default(true)
+  scoring_profile       String               @default("balanced")
+  created_at            DateTime             @default(now())
+  updated_at            DateTime             @updatedAt
+  seeds                 Seed[]
+  keyword_candidates    KeywordCandidate[]
+  jobs                  Job[]
+  brand_blacklist       BrandBlacklist[]
+  expansion_patterns    ExpansionPattern[]
+
+  @@map("projects")
+}
+
+model Seed {
+  id         String   @id @default(cuid())
+  project_id String
+  keyword    String
+  created_at DateTime @default(now())
+  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@map("seeds")
+}
+
+model KeywordCandidate {
+  id                           String          @id @default(cuid())
+  project_id                   String
+  keyword                      String
+  normalized_keyword           String
+  canonical_keyword            String
+  source                       String
+  source_query                 String
+  brand_status                 BrandStatus     @default(allowed)
+  brand_reason                 String?
+  review_status                ReviewStatus    @default(pending)
+  selected_for_export          Boolean         @default(false)
+  keyword_type                 KeywordType     @default(generic)
+  search_intent                SearchIntent    @default(mixed)
+  is_question                  Boolean         @default(false)
+  is_local_intent              Boolean         @default(false)
+  is_tool_intent               Boolean         @default(false)
+  is_commercial_intent         Boolean         @default(false)
+  metrics_status               MetricsStatus   @default(missing)
+  metrics_provider             MetricsProvider @default(NONE)
+  avg_monthly_searches         Int?
+  competition                  Float?
+  low_top_of_page_bid_micros   BigInt?
+  high_top_of_page_bid_micros  BigInt?
+  score                        Float?
+  metrics_updated_at           DateTime?
+  created_at                   DateTime        @default(now())
+  updated_at                   DateTime        @updatedAt
+  project                      Project         @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, canonical_keyword])
+  @@index([project_id, review_status])
+  @@index([project_id, brand_status])
+  @@index([project_id, search_intent])
+  @@index([project_id, keyword_type])
+  @@map("keyword_candidates")
+}
+
+model Job {
+  id            String    @id @default(cuid())
+  project_id    String
+  type          JobType   @default(extraction)
+  status        JobStatus @default(pending)
+  payload       Json?
+  result        Json?
+  error_message String?
+  started_at    DateTime?
+  completed_at  DateTime?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  project       Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id, status])
+  @@index([status, created_at])
+  @@map("jobs")
+}
+
+model BrandBlacklist {
+  id         String   @id @default(cuid())
+  project_id String?
+  brand      String
+  reason     String?
+  created_at DateTime @default(now())
+  project    Project? @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, brand])
+  @@index([brand])
+  @@map("brand_blacklist")
+}
+
+model ExpansionPattern {
+  id         String   @id @default(cuid())
+  project_id String?
+  pattern    String
+  enabled    Boolean  @default(true)
+  created_at DateTime @default(now())
+  project    Project? @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, pattern])
+  @@map("expansion_patterns")
+}
+
+model GoogleAdsCredential {
+  id                      String   @id @default(cuid())
+  singleton_key           String   @unique @default("default")
+  connected_email         String?
+  customer_id             String?
+  login_customer_id       String?
+  refresh_token_encrypted String
+  scope                   String?
+  token_type              String?
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  @@map("google_ads_credentials")
+}
+
+model AppSetting {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value_encrypted String
+  is_secret       Boolean  @default(false)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@map("app_settings")
+}
