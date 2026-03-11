@@ -1,4 +1,5 @@
 import { AutocompleteProvider, MetricsProvider } from "@prisma/client";
+import { normalizeCountryCode, normalizeLanguageCode } from "@/lib/constants/locale-options";
 import { splitLines } from "@/lib/utils";
 
 export type ProjectSettingsInput = {
@@ -30,8 +31,8 @@ export function parseProjectPayload(payload: Record<string, unknown>): ProjectSe
 
   return {
     name: String(payload.name ?? "Progetto senza nome").trim() || "Progetto senza nome",
-    language_code: String(payload.language_code ?? "en").trim() || "en",
-    country_code: String(payload.country_code ?? "US").trim() || "US",
+    language_code: normalizeLanguageCode(payload.language_code, "en"),
+    country_code: normalizeCountryCode(payload.country_code, "US"),
     autocomplete_provider: parseAutocompleteProvider(payload.autocomplete_provider),
     metrics_provider: parseMetricsProvider(payload.metrics_provider),
     min_volume: Number(payload.min_volume ?? 0) || 0,

@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  COUNTRY_CODES,
+  LANGUAGE_OPTIONS,
+  isSupportedCountryCode,
+  isSupportedLanguageCode,
+} from "@/lib/constants/locale-options";
 
 type ProjectFormValues = {
   name: string;
@@ -48,6 +54,31 @@ export function ProjectForm({ mode, projectId, initialValues }: ProjectFormProps
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const regionNames = useMemo(() => {
+    try {
+      return new Intl.DisplayNames(["it"], { type: "region" });
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const countryOptions = useMemo(
+    () =>
+      COUNTRY_CODES.map((code) => {
+        const name = regionNames?.of(code) ?? code;
+        return {
+          code,
+          label: `${name} (${code})`,
+        };
+      }),
+    [regionNames]
+  );
+
+  const languageValue = values.language_code.trim().toLowerCase() || "en";
+  const countryValue = values.country_code.trim().toUpperCase() || "US";
+  const hasCustomLanguage = !isSupportedLanguageCode(languageValue);
+  const hasCustomCountry = !isSupportedCountryCode(countryValue);
+
   const update = <K extends keyof ProjectFormValues>(key: K, value: ProjectFormValues[K]) => {
     setValues((current) => ({ ...current, [key]: value }));
   };
@@ -65,7 +96,11 @@ export function ProjectForm({ mode, projectId, initialValues }: ProjectFormProps
       const response = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          language_code: languageValue,
+          country_code: countryValue,
+        }),
       });
 
       const payload = (await response.json()) as { data?: { id: string }; error?: string };
@@ -120,28 +155,42 @@ export function ProjectForm({ mode, projectId, initialValues }: ProjectFormProps
 
         <div>
           <label className="label" htmlFor="language_code">
-            Codice lingua
+            Lingua
           </label>
-          <input
+          <select
             id="language_code"
-            className="input"
-            value={values.language_code}
+            className="select"
+            value={languageValue}
             onChange={(event) => update("language_code", event.target.value)}
             required
-          />
+          >
+            {hasCustomLanguage && <option value={languageValue}>Codice attuale non standard ({languageValue})</option>}
+            {LANGUAGE_OPTIONS.map((option) => (
+              <option key={option.code} value={option.code}>
+                {option.label} ({option.code})
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
           <label className="label" htmlFor="country_code">
-            Codice paese
+            Paese
           </label>
-          <input
+          <select
             id="country_code"
-            className="input"
-            value={values.country_code}
+            className="select"
+            value={countryValue}
             onChange={(event) => update("country_code", event.target.value)}
             required
-          />
+          >
+            {hasCustomCountry && <option value={countryValue}>Codice attuale non standard ({countryValue})</option>}
+            {countryOptions.map((option) => (
+              <option key={option.code} value={option.code}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
