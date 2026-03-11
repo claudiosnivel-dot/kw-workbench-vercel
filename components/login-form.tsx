@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
   const safeNextPath = useMemo(() => {
@@ -28,9 +29,9 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         body: JSON.stringify({ username, password }),
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readJsonSafe<ApiErrorPayload>(response);
       if (!response.ok) {
-        throw new Error(payload.error ?? "Accesso non riuscito");
+        throw new Error(buildApiErrorMessage(response, payload, "Accesso non riuscito"));
       }
 
       window.location.assign(safeNextPath);

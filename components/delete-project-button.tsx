@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 type DeleteProjectButtonProps = {
   projectId: string;
@@ -27,9 +28,10 @@ export function DeleteProjectButton({ projectId, projectName }: DeleteProjectBut
 
     try {
       const response = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readJsonSafe<ApiErrorPayload>(response);
+
       if (!response.ok) {
-        throw new Error(payload.error ?? "Eliminazione non riuscita");
+        throw new Error(buildApiErrorMessage(response, payload, "Eliminazione non riuscita"));
       }
 
       router.push("/");

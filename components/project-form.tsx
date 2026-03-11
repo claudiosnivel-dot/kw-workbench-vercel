@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 import {
   COUNTRY_CODES,
   LANGUAGE_OPTIONS,
@@ -23,6 +24,10 @@ type ProjectFormValues = {
   expand_patterns: boolean;
   auto_classification: boolean;
   scoring_profile: string;
+};
+
+type ProjectFormResponse = ApiErrorPayload & {
+  data?: { id: string };
 };
 
 type ProjectFormProps = {
@@ -103,12 +108,13 @@ export function ProjectForm({ mode, projectId, initialValues }: ProjectFormProps
         }),
       });
 
-      const payload = (await response.json()) as { data?: { id: string }; error?: string };
+      const payload = await readJsonSafe<ProjectFormResponse>(response);
+
       if (!response.ok) {
-        throw new Error(payload.error ?? "Impossibile salvare il progetto");
+        throw new Error(buildApiErrorMessage(response, payload, "Impossibile salvare il progetto"));
       }
 
-      if (mode === "create" && payload.data?.id) {
+      if (mode === "create" && payload?.data?.id) {
         router.push(`/projects/${payload.data.id}`);
         router.refresh();
         return;

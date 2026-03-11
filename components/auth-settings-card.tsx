@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 type AuthSnapshot = {
   username: string;
   source: "env" | "db";
   hasPasswordOverride: boolean;
+};
+
+type AuthSettingsResponse = ApiErrorPayload & {
+  data?: AuthSnapshot;
 };
 
 export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
@@ -34,9 +39,9 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
         }),
       });
 
-      const payload = (await response.json()) as { error?: string; data?: AuthSnapshot };
+      const payload = await readJsonSafe<AuthSettingsResponse>(response);
       if (!response.ok) {
-        throw new Error(payload.error ?? "Impossibile salvare le impostazioni di accesso");
+        throw new Error(buildApiErrorMessage(response, payload, "Impossibile salvare le impostazioni di accesso"));
       }
 
       setCurrentPassword("");

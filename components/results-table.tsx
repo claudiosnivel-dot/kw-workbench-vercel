@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 type CandidateRow = {
   id: string;
@@ -63,9 +64,9 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
         body: JSON.stringify({ action, ids: selectedIds }),
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readJsonSafe<ApiErrorPayload>(response);
       if (!response.ok) {
-        throw new Error(payload.error ?? "Azione massiva non riuscita");
+        throw new Error(buildApiErrorMessage(response, payload, "Azione massiva non riuscita"));
       }
 
       setSelectedIds([]);

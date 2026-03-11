@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 type GoogleAdsSnapshot = {
   connected: boolean;
@@ -67,9 +68,9 @@ export function GoogleAdsIntegrationCard({
         }),
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readJsonSafe<ApiErrorPayload>(response);
       if (!response.ok) {
-        throw new Error(payload.error ?? "Impossibile salvare la configurazione API Google Ads");
+        throw new Error(buildApiErrorMessage(response, payload, "Impossibile salvare la configurazione API Google Ads"));
       }
 
       setDeveloperToken("");
@@ -92,9 +93,9 @@ export function GoogleAdsIntegrationCard({
         body: JSON.stringify({ customerId, loginCustomerId }),
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readJsonSafe<ApiErrorPayload>(response);
       if (!response.ok) {
-        throw new Error(payload.error ?? "Impossibile aggiornare le impostazioni account");
+        throw new Error(buildApiErrorMessage(response, payload, "Impossibile aggiornare le impostazioni account"));
       }
 
       router.refresh();
@@ -115,8 +116,9 @@ export function GoogleAdsIntegrationCard({
 
     try {
       const response = await fetch("/api/integrations/google-ads/disconnect", { method: "POST" });
+      const payload = await readJsonSafe<ApiErrorPayload>(response);
       if (!response.ok) {
-        throw new Error("Impossibile disconnettere Google Ads");
+        throw new Error(buildApiErrorMessage(response, payload, "Impossibile disconnettere Google Ads"));
       }
       router.refresh();
     } catch (disconnectError) {
