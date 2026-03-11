@@ -15,7 +15,7 @@ export default async function LoginPage({
     <div className="mx-auto max-w-md">
       <div className="card space-y-4">
         <h1 className="text-2xl font-semibold">Accesso</h1>
-        <p className="text-sm text-slate-600">Autenticati per accedere al tuo workspace kw-workbench.</p>
+        <p className="text-sm text-slate-600">Autenticati per accedere al tuo workspace Seo God Mode.</p>
         <LoginForm nextPath={nextPath && nextPath.startsWith("/") ? nextPath : "/"} />
       </div>
     </div>

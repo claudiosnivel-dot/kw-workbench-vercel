@@ -4,7 +4,7 @@ import { LogoutButton } from "@/components/logout-button";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "kw-workbench",
+  title: "Seo God Mode",
   description: "Workbench web per keyword research",
 };
 
@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="border-b border-slate-200 bg-white">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
               <Link href="/" className="text-lg font-semibold tracking-tight">
-                kw-workbench
+                Seo God Mode
               </Link>
               <nav className="flex items-center gap-3 text-sm">
                 <Link className="btn-secondary" href="/">

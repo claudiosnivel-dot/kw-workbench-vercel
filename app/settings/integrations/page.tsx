@@ -15,7 +15,7 @@ export default async function IntegrationsPage() {
       <section className="card">
         <h1 className="text-2xl font-semibold">Integrazioni</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Gestisci i provider esterni usati da kw-workbench. La connessione Google Ads e opzionale.
+          Gestisci i provider esterni usati da Seo God Mode. La connessione Google Ads e opzionale.
         </p>
       </section>
 

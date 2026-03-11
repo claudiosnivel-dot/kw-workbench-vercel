@@ -116,7 +116,7 @@ export class GoogleDirectAutocompleteProvider implements AutocompleteProviderCli
       const response = await fetch(url.toString(), {
         signal: controller.signal,
         headers: {
-          "User-Agent": "kw-workbench/1.0",
+          "User-Agent": "seo-god-mode/1.0",
         },
         cache: "no-store",
       });

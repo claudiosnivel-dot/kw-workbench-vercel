@@ -164,7 +164,7 @@ export async function generateExport(params: {
 
   const payload = serialize(rows);
   const date = new Date().toISOString().slice(0, 10);
-  const filenameBase = `kw-workbench-${params.projectId}-${params.scope}-${date}`;
+  const filenameBase = `seo-god-mode-${params.projectId}-${params.scope}-${date}`;
 
   if (params.format === "json") {
     return {

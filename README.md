@@ -1,6 +1,6 @@
-# kw-workbench
+# Seo God Mode
 
-`kw-workbench` e una web app Next.js + Prisma deployabile su Vercel. La logica applicativa e invariata.
+`Seo God Mode` e una web app Next.js + Prisma deployabile su Vercel. La logica applicativa e invariata.
 
 ## Stack
 
