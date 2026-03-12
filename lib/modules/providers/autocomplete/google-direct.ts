@@ -1,4 +1,13 @@
-import { AutocompleteProviderClient, AutocompleteSuggestion, SuggestionRequest } from "@/lib/modules/providers/autocomplete/types";
+import {
+  AutocompleteProviderClient,
+  AutocompleteSuggestion,
+  SuggestionRequest,
+} from "@/lib/modules/providers/autocomplete/types";
+import {
+  decodeResponseText,
+  normalizeDisplayText,
+  parseJsonWithXssiGuard,
+} from "@/lib/text/encoding";
 
 const cache = new Map<string, { expiresAt: number; data: AutocompleteSuggestion[] }>();
 let rateLimiter = Promise.resolve();
@@ -28,6 +37,14 @@ function extractKeywords(payload: unknown): string[] {
   }
 
   return [];
+}
+
+function parseAutocompletePayload(rawText: string): unknown {
+  try {
+    return parseJsonWithXssiGuard(rawText);
+  } catch {
+    throw new Error("Autocomplete payload non valido");
+  }
 }
 
 async function withRateLimit<T>(fn: () => Promise<T>): Promise<T> {
@@ -125,13 +142,14 @@ export class GoogleDirectAutocompleteProvider implements AutocompleteProviderCli
         throw new Error(`Autocomplete HTTP ${response.status}`);
       }
 
-      const payload = (await response.json()) as unknown;
+      const rawText = decodeResponseText(await response.arrayBuffer(), response.headers.get("content-type"));
+      const payload = parseAutocompletePayload(rawText);
       const rawKeywords = extractKeywords(payload);
 
       // Fragile-by-design parsing: sanitize aggressively and do not assume stable schema.
       const unique = new Set<string>();
       for (const value of rawKeywords) {
-        const cleaned = String(value).trim();
+        const cleaned = normalizeDisplayText(String(value));
         if (!cleaned) {
           continue;
         }

@@ -1,26 +1,27 @@
+import { normalizeDisplayText } from "@/lib/text/encoding";
+
 export function normalizeKeyword(input: string): string {
-  return input
-    .trim()
+  return normalizeDisplayText(input)
     .toLowerCase()
-    .replace(/[\u2019']/g, "")
-    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/[\u2019\u2018']/g, "")
+    .replace(/[^\p{L}\p{N}\p{M}\s-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 export function canonicalizeKeyword(input: string): string {
-  return normalizeKeyword(
-    input
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\b(the|a|an)\b/g, "")
-  );
+  const sanitized = normalizeDisplayText(input)
+    .normalize("NFKD")
+    .replace(/[\p{M}]/gu, "")
+    .replace(/\b(the|a|an)\b/g, "");
+
+  return normalizeKeyword(sanitized);
 }
 
 export function keywordCleanlinessScore(keyword: string): number {
   const length = keyword.length;
   const hasRepeatingSymbols = /(.)\1{3,}/.test(keyword);
-  const symbolNoise = (keyword.match(/[^a-zA-Z0-9\s]/g) || []).length;
+  const symbolNoise = (keyword.match(/[^\p{L}\p{N}\p{M}\s]/gu) || []).length;
 
   let score = 1;
   if (length < 4 || length > 80) score -= 0.25;

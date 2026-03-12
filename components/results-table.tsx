@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { normalizeDisplayText } from "@/lib/text/encoding";
 
 type CandidateRow = {
   id: string;
@@ -117,12 +118,14 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
           <tbody>
             {rows.map((row) => {
               const checked = selectedIds.includes(row.id);
+              const displayKeyword = normalizeDisplayText(row.keyword);
+
               return (
                 <tr key={row.id} className="border-t border-slate-200">
                   <td className="px-3 py-2">
-                    <input type="checkbox" checked={checked} onChange={() => toggle(row.id)} aria-label={`Seleziona ${row.keyword}`} />
+                    <input type="checkbox" checked={checked} onChange={() => toggle(row.id)} aria-label={`Seleziona ${displayKeyword}`} />
                   </td>
-                  <td className="px-3 py-2 font-medium">{row.keyword}</td>
+                  <td className="px-3 py-2 font-medium">{displayKeyword}</td>
                   <td className="px-3 py-2 text-xs">{row.source}</td>
                   <td className="px-3 py-2">{row.search_intent}</td>
                   <td className="px-3 py-2">{row.keyword_type}</td>
