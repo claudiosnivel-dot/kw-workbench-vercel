@@ -1,9 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function LogoutButton() {
+type LogoutButtonProps = {
+  className?: string;
+};
+
+export function LogoutButton({ className }: LogoutButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -15,7 +19,12 @@ export function LogoutButton() {
   };
 
   return (
-    <button className="btn-secondary" type="button" onClick={logout} disabled={loading}>
+    <button
+      className={`${className ?? ""} btn-secondary`}
+      type="button"
+      onClick={logout}
+      disabled={loading}
+    >
       {loading ? "Uscita in corso..." : "Esci"}
     </button>
   );

@@ -228,7 +228,7 @@ export function GoogleAdsIntegrationCard({
           </div>
         </div>
 
-        <button className="btn-primary" disabled={loadingApi} onClick={saveApiConfig} type="button">
+        <button className="btn-primary w-full sm:w-auto" disabled={loadingApi} onClick={saveApiConfig} type="button">
           {loadingApi ? "Salvataggio configurazione API..." : "Salva configurazione API"}
         </button>
       </div>
@@ -246,7 +246,7 @@ export function GoogleAdsIntegrationCard({
         </p>
 
         {!initial.connected ? (
-          <a className="btn-primary" href="/api/integrations/google-ads/connect">
+          <a className="btn-primary w-full text-center sm:w-auto" href="/api/integrations/google-ads/connect">
             Collega Google Ads
           </a>
         ) : (
@@ -278,12 +278,12 @@ export function GoogleAdsIntegrationCard({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button className="btn-primary" disabled={loadingAccount} onClick={saveAccountSettings} type="button">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <button className="btn-primary w-full sm:w-auto" disabled={loadingAccount} onClick={saveAccountSettings} type="button">
                 {loadingAccount ? "Salvataggio..." : "Salva impostazioni account"}
               </button>
               <button
-                className="btn inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
+                className="btn inline-flex w-full items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 sm:w-auto"
                 disabled={loadingAccount}
                 onClick={disconnect}
                 type="button"

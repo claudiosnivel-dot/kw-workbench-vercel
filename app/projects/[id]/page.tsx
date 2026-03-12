@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { prisma } from "@/lib/prisma";
@@ -33,7 +33,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-6">
       <section className="card space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">{project.name}</h1>
             <p className="text-sm text-slate-600">
@@ -55,18 +55,18 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Link className="btn-secondary" href={`/projects/${project.id}/results`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/results`}>
             Vedi risultati
           </Link>
-          <Link className="btn-secondary" href={`/projects/${project.id}/settings`}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/settings`}>
             Impostazioni progetto
           </Link>
         </div>
 
         <div>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Keyword seed</h2>
-          <div className="rounded-xl bg-slate-50 p-3 text-sm">
+          <div className="rounded-xl bg-slate-50 p-3 text-sm break-words">
             {project.seeds.map((seed) => seed.keyword).join(", ") || "Nessuna seed configurata"}
           </div>
         </div>
@@ -74,8 +74,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
       <section className="card">
         <h2 className="mb-3 text-lg font-semibold">Stato job</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+        <div className="-mx-2 overflow-x-auto px-2 sm:mx-0 sm:px-0">
+          <table className="min-w-[760px] text-left text-sm sm:min-w-full">
             <thead className="text-xs uppercase text-slate-500">
               <tr>
                 <th className="px-3 py-2">Stato</th>
@@ -92,7 +92,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                   <td className="px-3 py-3">{formatDate(job.created_at)}</td>
                   <td className="px-3 py-3">{formatDate(job.started_at)}</td>
                   <td className="px-3 py-3">{formatDate(job.completed_at)}</td>
-                  <td className="px-3 py-3 text-xs">{job.result ? JSON.stringify(job.result) : job.error_message || "-"}</td>
+                  <td className="px-3 py-3 text-xs break-words max-w-[20rem]">{job.result ? JSON.stringify(job.result) : job.error_message || "-"}</td>
                 </tr>
               ))}
             </tbody>

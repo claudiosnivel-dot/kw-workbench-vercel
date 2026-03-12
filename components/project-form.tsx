@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -283,8 +283,8 @@ export function ProjectForm({ mode, projectId, initialValues }: ProjectFormProps
         </label>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button className="btn-primary" disabled={saving} type="submit">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
+        <button className="btn-primary w-full sm:w-auto" disabled={saving} type="submit">
           {saving ? "Salvataggio..." : mode === "create" ? "Crea progetto" : "Salva impostazioni"}
         </button>
         {message && <p className="text-sm text-green-700">{message}</p>}

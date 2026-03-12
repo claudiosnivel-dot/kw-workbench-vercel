@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ResultsTable } from "@/components/results-table";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
@@ -86,13 +86,13 @@ export default async function ResultsPage({
   return (
     <div className="space-y-6">
       <section className="card space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-semibold">Risultati - {project.name}</h1>
-          <div className="flex gap-2">
-            <Link className="btn-secondary" href={`/projects/${project.id}`}>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+            <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}`}>
               Torna al progetto
             </Link>
-            <Link className="btn-secondary" href={`/projects/${project.id}/settings`}>
+            <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/settings`}>
               Impostazioni
             </Link>
           </div>
@@ -143,7 +143,7 @@ export default async function ResultsPage({
             <option value="content_topic">tema contenuto</option>
           </select>
 
-          <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm md:col-span-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm md:col-span-2">
             <label className="flex items-center gap-2">
               <input type="checkbox" name="selectedOnly" defaultChecked={checked(resolvedSearchParams, "selectedOnly")} /> solo selezionate
             </label>
@@ -159,7 +159,7 @@ export default async function ResultsPage({
           </div>
 
           <div className="md:col-span-2">
-            <button className="btn-primary" type="submit">
+            <button className="btn-primary w-full sm:w-auto" type="submit">
               Applica filtri
             </button>
           </div>
@@ -168,20 +168,20 @@ export default async function ResultsPage({
 
       <section className="card space-y-3">
         <h2 className="text-lg font-semibold">Export</h2>
-        <div className="flex flex-wrap gap-2 text-sm">
-          <Link className="btn-secondary" href={buildExportLink(project.id, "csv", "approved", resolvedSearchParams)}>
+        <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap">
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "csv", "approved", resolvedSearchParams)}>
             CSV solo approvate
           </Link>
-          <Link className="btn-secondary" href={buildExportLink(project.id, "xlsx", "selected", resolvedSearchParams)}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "xlsx", "selected", resolvedSearchParams)}>
             XLSX solo selezionate
           </Link>
-          <Link className="btn-secondary" href={buildExportLink(project.id, "json", "review", resolvedSearchParams)}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "json", "review", resolvedSearchParams)}>
             JSON solo review
           </Link>
-          <Link className="btn-secondary" href={buildExportLink(project.id, "csv", "non-excluded", resolvedSearchParams)}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "csv", "non-excluded", resolvedSearchParams)}>
             CSV tutte non escluse
           </Link>
-          <Link className="btn-secondary" href={buildExportLink(project.id, "xlsx", "filtered", resolvedSearchParams)}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "xlsx", "filtered", resolvedSearchParams)}>
             XLSX vista filtrata corrente
           </Link>
         </div>

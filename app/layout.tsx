@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
 import "./globals.css";
@@ -14,25 +14,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div className="min-h-screen">
           <header className="border-b border-slate-200 bg-white">
-            <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-              <Link href="/" className="text-lg font-semibold tracking-tight">
-                Seo God Mode
-              </Link>
-              <nav className="flex items-center gap-3 text-sm">
-                <Link className="btn-secondary" href="/">
-                  Panoramica
+            <div className="mx-auto max-w-7xl px-3 py-3 sm:px-6 lg:px-8">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <Link href="/" className="text-base font-semibold tracking-tight sm:text-lg">
+                  Seo God Mode
                 </Link>
-                <Link className="btn-secondary" href="/settings/integrations">
-                  Integrazioni
-                </Link>
-                <Link className="btn-primary" href="/projects/new">
-                  Nuovo progetto
-                </Link>
-                <LogoutButton />
-              </nav>
+
+                <nav className="grid grid-cols-2 gap-2 text-sm sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+                  <Link className="btn-secondary w-full text-center sm:w-auto" href="/">
+                    Panoramica
+                  </Link>
+                  <Link className="btn-secondary w-full text-center sm:w-auto" href="/settings/integrations">
+                    Integrazioni
+                  </Link>
+                  <Link className="btn-primary w-full text-center sm:w-auto" href="/projects/new">
+                    Nuovo progetto
+                  </Link>
+                  <LogoutButton className="w-full text-center sm:w-auto" />
+                </nav>
+              </div>
             </div>
           </header>
-          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+          <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:px-8">{children}</main>
         </div>
       </body>
     </html>

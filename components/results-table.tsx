@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -81,24 +81,24 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <select className="select max-w-xs" value={action} onChange={(event) => setAction(event.target.value as typeof action)}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <select className="select w-full sm:max-w-xs" value={action} onChange={(event) => setAction(event.target.value as typeof action)}>
           {ACTIONS.map((item) => (
             <option key={item.value} value={item.value}>
               {item.label}
             </option>
           ))}
         </select>
-        <button className="btn-primary" type="button" onClick={runBulkAction} disabled={loading || selectedIds.length === 0}>
+        <button className="btn-primary w-full sm:w-auto" type="button" onClick={runBulkAction} disabled={loading || selectedIds.length === 0}>
           {loading ? "Applicazione..." : `Applica a ${selectedIds.length} selezionate`}
         </button>
-        <p className="text-xs text-slate-500">Azioni massive disponibili: approva/rifiuta/review/seleziona/deseleziona.</p>
+        <p className="text-xs text-slate-500 sm:ml-auto">Azioni massive: approva, rifiuta, review, seleziona, deseleziona.</p>
       </div>
 
       {error && <p className="text-sm text-red-700">{error}</p>}
 
-      <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
-        <table className="min-w-full bg-white text-left text-sm">
+      <div className="-mx-2 overflow-x-auto rounded-xl ring-1 ring-slate-200 sm:mx-0">
+        <table className="min-w-[980px] bg-white text-left text-sm">
           <thead className="text-xs uppercase text-slate-500">
             <tr>
               <th className="px-3 py-2">
@@ -106,12 +106,12 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
               </th>
               <th className="px-3 py-2">Keyword</th>
               <th className="px-3 py-2">Sorgente</th>
-              <th className="px-3 py-2">Intento</th>
-              <th className="px-3 py-2">Tipo</th>
-              <th className="px-3 py-2">Brand</th>
-              <th className="px-3 py-2">Review</th>
+              <th className="hidden px-3 py-2 md:table-cell">Intento</th>
+              <th className="hidden px-3 py-2 md:table-cell">Tipo</th>
+              <th className="hidden px-3 py-2 md:table-cell">Brand</th>
+              <th className="hidden px-3 py-2 md:table-cell">Review</th>
               <th className="px-3 py-2">Volume</th>
-              <th className="px-3 py-2">Competizione</th>
+              <th className="hidden px-3 py-2 md:table-cell">Competizione</th>
               <th className="px-3 py-2">Score</th>
             </tr>
           </thead>
@@ -125,14 +125,14 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
                   <td className="px-3 py-2">
                     <input type="checkbox" checked={checked} onChange={() => toggle(row.id)} aria-label={`Seleziona ${displayKeyword}`} />
                   </td>
-                  <td className="px-3 py-2 font-medium">{displayKeyword}</td>
+                  <td className="px-3 py-2 font-medium max-w-[20rem] break-words">{displayKeyword}</td>
                   <td className="px-3 py-2 text-xs">{row.source}</td>
-                  <td className="px-3 py-2">{row.search_intent}</td>
-                  <td className="px-3 py-2">{row.keyword_type}</td>
-                  <td className="px-3 py-2">{row.brand_status}</td>
-                  <td className="px-3 py-2">{row.review_status}</td>
+                  <td className="hidden px-3 py-2 md:table-cell">{row.search_intent}</td>
+                  <td className="hidden px-3 py-2 md:table-cell">{row.keyword_type}</td>
+                  <td className="hidden px-3 py-2 md:table-cell">{row.brand_status}</td>
+                  <td className="hidden px-3 py-2 md:table-cell">{row.review_status}</td>
                   <td className="px-3 py-2">{row.avg_monthly_searches ?? "-"}</td>
-                  <td className="px-3 py-2">{row.competition ?? "-"}</td>
+                  <td className="hidden px-3 py-2 md:table-cell">{row.competition ?? "-"}</td>
                   <td className="px-3 py-2">{row.score ? row.score.toFixed(1) : "-"}</td>
                 </tr>
               );

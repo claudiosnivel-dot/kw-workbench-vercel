@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { AuthSettingsCard } from "@/components/auth-settings-card";
 import { prisma } from "@/lib/prisma";
 import { getAuthConfigSnapshot } from "@/lib/auth/credentials";
@@ -67,14 +67,14 @@ export default async function DashboardPage() {
       />
 
       <section className="card">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold">Progetti</h2>
-          <Link href="/projects/new" className="btn-primary">
+          <Link href="/projects/new" className="btn-primary w-full text-center sm:w-auto">
             Crea progetto
           </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+        <div className="-mx-2 overflow-x-auto px-2 sm:mx-0 sm:px-0">
+          <table className="min-w-[720px] text-left text-sm sm:min-w-full">
             <thead className="text-xs uppercase text-slate-500">
               <tr>
                 <th className="px-3 py-2">Nome</th>
@@ -94,7 +94,7 @@ export default async function DashboardPage() {
                   <td className="px-3 py-3">{project._count.keyword_candidates}</td>
                   <td className="px-3 py-3">{formatDate(project.updated_at)}</td>
                   <td className="px-3 py-3">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Link className="btn-secondary" href={`/projects/${project.id}`}>
                         Apri
                       </Link>
@@ -113,8 +113,8 @@ export default async function DashboardPage() {
 
       <section className="card">
         <h2 className="mb-4 text-lg font-semibold">Ultimi job</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+        <div className="-mx-2 overflow-x-auto px-2 sm:mx-0 sm:px-0">
+          <table className="min-w-[560px] text-left text-sm sm:min-w-full">
             <thead className="text-xs uppercase text-slate-500">
               <tr>
                 <th className="px-3 py-2">Progetto</th>

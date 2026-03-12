@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
@@ -128,7 +128,7 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
         </div>
       </div>
 
-      <button className="btn-primary" type="button" onClick={save} disabled={saving}>
+      <button className="btn-primary w-full sm:w-auto" type="button" onClick={save} disabled={saving}>
         {saving ? "Salvataggio sicurezza..." : "Salva impostazioni sicurezza"}
       </button>
 

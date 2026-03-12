@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -36,8 +36,8 @@ export function RunExtractionButton({ projectId }: RunExtractionButtonProps) {
   };
 
   return (
-    <div className="space-y-2">
-      <button type="button" className="btn-primary" onClick={run} disabled={running}>
+    <div className="w-full space-y-2 sm:w-auto">
+      <button type="button" className="btn-primary w-full sm:w-auto" onClick={run} disabled={running}>
         {running ? "Estrazione in corso..." : "Avvia estrazione"}
       </button>
       {error && <p className="text-sm text-red-700">{error}</p>}
