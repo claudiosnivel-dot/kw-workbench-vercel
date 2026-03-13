@@ -1,41 +1,43 @@
-﻿import type { Metadata } from "next";
-import Link from "next/link";
-import { LogoutButton } from "@/components/logout-button";
+import type { Metadata } from "next";
+import { Manrope, Sora } from "next/font/google";
+import { TopNav } from "@/components/top-nav";
+import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import "./globals.css";
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  variable: "--font-sora",
+  display: "swap",
+});
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Seo God Mode",
-  description: "Workbench web per keyword research",
+  description: "Workspace web per keyword research",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const branding = await getBrandingSnapshot();
+
   return (
     <html lang="it">
-      <body>
-        <div className="min-h-screen">
-          <header className="border-b border-slate-200 bg-white">
-            <div className="mx-auto max-w-7xl px-3 py-3 sm:px-6 lg:px-8">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <Link href="/" className="text-base font-semibold tracking-tight sm:text-lg">
-                  Seo God Mode
-                </Link>
+      <body className={`${manrope.variable} ${sora.variable}`}>
+        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
+          <div className="app-glow app-glow-left" />
+          <div className="app-glow app-glow-right" />
+          <div className="app-grid" />
+        </div>
 
-                <nav className="grid grid-cols-2 gap-2 text-sm sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
-                  <Link className="btn-secondary w-full text-center sm:w-auto" href="/">
-                    Panoramica
-                  </Link>
-                  <Link className="btn-secondary w-full text-center sm:w-auto" href="/settings/integrations">
-                    Integrazioni
-                  </Link>
-                  <Link className="btn-primary w-full text-center sm:w-auto" href="/projects/new">
-                    Nuovo progetto
-                  </Link>
-                  <LogoutButton className="w-full text-center sm:w-auto" />
-                </nav>
-              </div>
-            </div>
-          </header>
-          <main className="mx-auto max-w-7xl px-3 py-6 sm:px-6 lg:px-8">{children}</main>
+        <div className="min-h-screen">
+          <TopNav brandName={branding.appName} brandLogoUrl={branding.logoUrl} />
+          <main className="mx-auto w-full max-w-[1180px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">{children}</main>
         </div>
       </body>
     </html>

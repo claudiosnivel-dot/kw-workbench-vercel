@@ -56,19 +56,39 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-3">
-        <article className="card">
-          <p className="text-sm text-slate-500">Progetti</p>
-          <p className="mt-1 text-2xl font-semibold">{totalProjects}</p>
-        </article>
-        <article className="card">
-          <p className="text-sm text-slate-500">Parole chiave candidate</p>
-          <p className="mt-1 text-2xl font-semibold">{totalKeywords}</p>
-        </article>
-        <article className="card">
-          <p className="text-sm text-slate-500">Job recenti</p>
-          <p className="mt-1 text-2xl font-semibold">{recentJobs.length}</p>
-        </article>
+      <section className="card overflow-hidden">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Seo Workspace</p>
+            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">Keyword research avanzata, pulita e pronta per il deploy</h1>
+            <p className="text-sm text-slate-600 sm:text-base">
+              Gestisci pipeline, filtri e scoring da un unico pannello. Ogni account mantiene il proprio workspace separato.
+            </p>
+            <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
+              <Link href="/projects/new" className="btn-primary w-full text-center sm:w-auto">
+                Crea progetto
+              </Link>
+              <Link href="/settings/integrations" className="btn-secondary w-full text-center sm:w-auto">
+                Branding e integrazioni
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid w-full gap-3 sm:grid-cols-3 lg:max-w-xl">
+            <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Progetti</p>
+              <p className="mt-1 text-2xl font-semibold">{totalProjects}</p>
+            </article>
+            <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Keyword</p>
+              <p className="mt-1 text-2xl font-semibold">{totalKeywords}</p>
+            </article>
+            <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Job recenti</p>
+              <p className="mt-1 text-2xl font-semibold">{recentJobs.length}</p>
+            </article>
+          </div>
+        </div>
       </section>
 
       <AuthSettingsCard
@@ -81,12 +101,12 @@ export default async function DashboardPage() {
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold">Progetti</h2>
           <Link href="/projects/new" className="btn-primary w-full text-center sm:w-auto">
-            Crea progetto
+            Nuovo progetto
           </Link>
         </div>
         <div className="-mx-2 overflow-x-auto px-2 sm:mx-0 sm:px-0">
           <table className="min-w-[720px] text-left text-sm sm:min-w-full">
-            <thead className="text-xs uppercase text-slate-500">
+            <thead>
               <tr>
                 <th className="px-3 py-2">Nome</th>
                 <th className="px-3 py-2">Locale</th>
@@ -98,9 +118,11 @@ export default async function DashboardPage() {
             </thead>
             <tbody>
               {projects.map((project) => (
-                <tr key={project.id} className="border-t border-slate-200">
+                <tr key={project.id} className="border-t border-slate-200/70">
                   <td className="px-3 py-3 font-medium">{project.name}</td>
-                  <td className="px-3 py-3">{project.language_code}-{project.country_code}</td>
+                  <td className="px-3 py-3">
+                    {project.language_code}-{project.country_code}
+                  </td>
                   <td className="px-3 py-3">{project._count.seeds}</td>
                   <td className="px-3 py-3">{project._count.keyword_candidates}</td>
                   <td className="px-3 py-3">{formatDate(project.updated_at)}</td>
@@ -126,7 +148,7 @@ export default async function DashboardPage() {
         <h2 className="mb-4 text-lg font-semibold">Ultimi job</h2>
         <div className="-mx-2 overflow-x-auto px-2 sm:mx-0 sm:px-0">
           <table className="min-w-[560px] text-left text-sm sm:min-w-full">
-            <thead className="text-xs uppercase text-slate-500">
+            <thead>
               <tr>
                 <th className="px-3 py-2">Progetto</th>
                 <th className="px-3 py-2">Stato</th>
@@ -136,9 +158,9 @@ export default async function DashboardPage() {
             </thead>
             <tbody>
               {recentJobs.map((job) => (
-                <tr key={job.id} className="border-t border-slate-200">
+                <tr key={job.id} className="border-t border-slate-200/70">
                   <td className="px-3 py-3">
-                    <Link className="font-medium underline" href={`/projects/${job.project.id}`}>
+                    <Link className="font-medium text-emerald-700 underline-offset-2 hover:underline" href={`/projects/${job.project.id}`}>
                       {job.project.name}
                     </Link>
                   </td>
