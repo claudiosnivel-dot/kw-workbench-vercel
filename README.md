@@ -25,7 +25,8 @@ Copy-Item .env.example .env
 
 Valori minimi:
 
-- `DATABASE_URL` (default example gia punta a `localhost`)
+- `DATABASE_URL` (runtime app)
+- `DIRECT_URL` (usato da `prisma migrate deploy` e `prisma db seed`)
 - `APP_SESSION_SECRET`
 - `APP_ENCRYPTION_KEY`
 
@@ -49,7 +50,10 @@ Apri [http://localhost:3000](http://localhost:3000)
 
 1. Push su repo Git
 2. Import progetto in Vercel
-3. Imposta env (soprattutto `DATABASE_URL` con DB esterno SSL)
+3. Imposta env:
+   - `DATABASE_URL`: Supabase transaction pooler (porta `6543`) con `sslmode=require&pgbouncer=true&connection_limit=1`
+   - `DIRECT_URL`: Supabase session/direct (porta `5432`) con `sslmode=require`
+   - altre variabili app (`APP_*`, `GOOGLE_*`, ecc.)
 4. Deploy
 
 Build command configurato:
@@ -58,6 +62,7 @@ Build command configurato:
 
 ## Note runtime
 
+- Prisma applica tuning automatico per URL Supabase pooler (`connection_limit=1`; su porta 6543 imposta anche `pgbouncer=true` se assente).
 - Cookie auth/OAuth: `APP_COOKIE_SECURE=auto`
 - Route lunghe serverless:
   - `POST /api/projects/:id/run` -> `maxDuration = 300`
