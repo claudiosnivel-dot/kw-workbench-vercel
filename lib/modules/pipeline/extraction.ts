@@ -99,7 +99,6 @@ export async function runExtractionPipeline(projectId: string): Promise<Extracti
       ? await metricsProvider.enrichKeywords(metricKeys, {
           languageCode: project.language_code,
           countryCode: project.country_code,
-          userId: project.owner_user_id ?? undefined,
         })
       : buildMissingMetrics([], project.metrics_provider as MetricsProvider, "missing");
 
@@ -200,4 +199,5 @@ export async function runExtractionPipeline(projectId: string): Promise<Extracti
     storedCandidates: preparedRows.length,
   };
 }
+
 

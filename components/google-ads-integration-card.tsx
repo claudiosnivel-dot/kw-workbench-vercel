@@ -107,7 +107,7 @@ export function GoogleAdsIntegrationCard({
   };
 
   const disconnect = async () => {
-    if (!window.confirm("Disconnettere l'integrazione Google Ads?")) {
+    if (!window.confirm("Disconnettere la configurazione Google Ads globale?")) {
       return;
     }
 
@@ -133,7 +133,7 @@ export function GoogleAdsIntegrationCard({
       <div>
         <h2 className="text-lg font-semibold">Google Keyword Planner</h2>
         <p className="text-sm text-slate-600">
-          Configura qui credenziali OAuth/API, poi collega il tuo account per usare metriche reali di Keyword Planner.
+          Configura qui le credenziali OAuth/API globali. Tutti i progetti dell'app useranno questa integrazione condivisa.
         </p>
       </div>
 
@@ -143,7 +143,7 @@ export function GoogleAdsIntegrationCard({
       )}
 
       <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Configurazione API Google Ads</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Configurazione API Google Ads (globale)</h3>
 
         <div className="grid gap-3 md:grid-cols-2">
           <div>
@@ -234,9 +234,9 @@ export function GoogleAdsIntegrationCard({
       </div>
 
       <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Connessione account Google Ads</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Connessione account Google Ads (globale)</h3>
         <p>
-          <span className="font-medium">Stato:</span> {initial.connected ? "Connesso" : "Non connesso"}
+          <span className="font-medium">Stato globale:</span> {initial.connected ? "Connesso" : "Non connesso"}
         </p>
         <p>
           <span className="font-medium">Email:</span> {initial.connectedEmail ?? "-"}
@@ -299,3 +299,5 @@ export function GoogleAdsIntegrationCard({
     </section>
   );
 }
+
+

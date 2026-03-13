@@ -13,7 +13,6 @@ export type KeywordMetric = {
 export type MetricsContext = {
   languageCode: string;
   countryCode: string;
-  userId?: string;
 };
 
 export interface MetricsProviderClient {

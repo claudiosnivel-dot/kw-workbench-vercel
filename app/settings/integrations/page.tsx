@@ -1,18 +1,13 @@
+import Link from "next/link";
 import { BrandingSettingsCard } from "@/components/branding-settings-card";
-import { GoogleAdsIntegrationCard } from "@/components/google-ads-integration-card";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
-import { getGoogleAdsCredentialSnapshot } from "@/lib/integrations/google-ads";
-import { getGoogleAdsApiConfigSnapshot } from "@/lib/integrations/google-ads-config";
 
 export const dynamic = "force-dynamic";
 
 export default async function IntegrationsPage() {
-  const user = await requireAuthenticatedUserFromCookies();
-
-  const [snapshot, apiConfig, branding] = await Promise.all([
-    getGoogleAdsCredentialSnapshot(user.id),
-    getGoogleAdsApiConfigSnapshot(),
+  const [user, branding] = await Promise.all([
+    requireAuthenticatedUserFromCookies(),
     getBrandingSnapshot(),
   ]);
 
@@ -21,8 +16,18 @@ export default async function IntegrationsPage() {
       <section className="card">
         <h1 className="text-2xl font-semibold">Impostazioni</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Personalizza branding e integrazioni esterne. La connessione Google Ads e opzionale.
+          Personalizza il branding dell&apos;app. Google Keyword Planner e gestito centralmente dalla dashboard admin.
         </p>
+
+        {user.isRootAdmin ? (
+          <p className="mt-3 text-sm text-slate-500">
+            Sei root admin: puoi configurare Keyword Planner dalla sezione <Link className="font-medium text-emerald-300 underline decoration-dotted underline-offset-4 hover:text-emerald-200" href="/admin">Admin</Link>.
+          </p>
+        ) : (
+          <p className="mt-3 text-sm text-slate-500">
+            L&apos;integrazione Keyword Planner e amministrata solo dal root admin.
+          </p>
+        )}
       </section>
 
       <BrandingSettingsCard
@@ -31,26 +36,7 @@ export default async function IntegrationsPage() {
           logoUrl: branding.logoUrl,
         }}
       />
-
-      <GoogleAdsIntegrationCard
-        initial={{
-          connected: snapshot.connected,
-          connectedEmail: snapshot.connectedEmail,
-          customerId: snapshot.customerId,
-          loginCustomerId: snapshot.loginCustomerId,
-          scope: snapshot.scope,
-          tokenType: snapshot.tokenType,
-          updatedAt: snapshot.updatedAt?.toISOString(),
-        }}
-        apiConfig={{
-          clientId: apiConfig.clientId,
-          redirectUri: apiConfig.redirectUri,
-          apiVersion: apiConfig.apiVersion,
-          batchSize: apiConfig.batchSize,
-          hasDeveloperToken: apiConfig.hasDeveloperToken,
-          hasClientSecret: apiConfig.hasClientSecret,
-        }}
-      />
     </div>
   );
 }
+

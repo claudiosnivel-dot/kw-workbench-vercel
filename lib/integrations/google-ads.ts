@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { decryptSecret, encryptSecret } from "@/lib/security/encryption";
 
-const LEGACY_SINGLETON_KEY = "default";
+const GLOBAL_SINGLETON_KEY = "default";
 
 export type GoogleAdsCredentialSnapshot = {
   connected: boolean;
@@ -13,21 +13,22 @@ export type GoogleAdsCredentialSnapshot = {
   updatedAt?: Date;
 };
 
-export async function getGoogleAdsCredentialRecord(userId?: string) {
-  if (userId) {
-    return prisma.googleAdsCredential.findUnique({ where: { user_id: userId } });
+export async function getGoogleAdsCredentialRecord() {
+  const globalRecord = await prisma.googleAdsCredential.findUnique({
+    where: { singleton_key: GLOBAL_SINGLETON_KEY },
+  });
+
+  if (globalRecord) {
+    return globalRecord;
   }
 
   return prisma.googleAdsCredential.findFirst({
-    where: {
-      OR: [{ singleton_key: LEGACY_SINGLETON_KEY }, { user_id: null }],
-    },
     orderBy: { updated_at: "desc" },
   });
 }
 
-export async function getGoogleAdsCredentialSnapshot(userId: string): Promise<GoogleAdsCredentialSnapshot> {
-  const record = await getGoogleAdsCredentialRecord(userId);
+export async function getGoogleAdsCredentialSnapshot(): Promise<GoogleAdsCredentialSnapshot> {
+  const record = await getGoogleAdsCredentialRecord();
   if (!record) {
     return { connected: false };
   }
@@ -44,7 +45,6 @@ export async function getGoogleAdsCredentialSnapshot(userId: string): Promise<Go
 }
 
 export async function upsertGoogleAdsCredential(params: {
-  userId: string;
   refreshToken: string;
   connectedEmail?: string;
   scope?: string;
@@ -55,7 +55,7 @@ export async function upsertGoogleAdsCredential(params: {
   const encrypted = encryptSecret(params.refreshToken);
 
   return prisma.googleAdsCredential.upsert({
-    where: { user_id: params.userId },
+    where: { singleton_key: GLOBAL_SINGLETON_KEY },
     update: {
       refresh_token_encrypted: encrypted,
       connected_email: params.connectedEmail,
@@ -63,11 +63,9 @@ export async function upsertGoogleAdsCredential(params: {
       token_type: params.tokenType,
       customer_id: params.customerId,
       login_customer_id: params.loginCustomerId,
-      singleton_key: null,
     },
     create: {
-      user_id: params.userId,
-      singleton_key: null,
+      singleton_key: GLOBAL_SINGLETON_KEY,
       refresh_token_encrypted: encrypted,
       connected_email: params.connectedEmail,
       scope: params.scope,
@@ -79,30 +77,30 @@ export async function upsertGoogleAdsCredential(params: {
 }
 
 export async function updateGoogleAdsCustomerSettings(params: {
-  userId: string;
   customerId?: string;
   loginCustomerId?: string;
 }) {
-  const existing = await getGoogleAdsCredentialRecord(params.userId);
+  const existing = await getGoogleAdsCredentialRecord();
   if (!existing) {
     return null;
   }
 
   return prisma.googleAdsCredential.update({
-    where: { user_id: params.userId },
+    where: { id: existing.id },
     data: {
+      singleton_key: GLOBAL_SINGLETON_KEY,
       customer_id: params.customerId || null,
       login_customer_id: params.loginCustomerId || null,
     },
   });
 }
 
-export async function clearGoogleAdsCredential(userId: string) {
-  await prisma.googleAdsCredential.deleteMany({ where: { user_id: userId } });
+export async function clearGoogleAdsCredential() {
+  await prisma.googleAdsCredential.deleteMany();
 }
 
-export async function getDecryptedGoogleAdsRefreshToken(userId?: string): Promise<string | null> {
-  const record = await getGoogleAdsCredentialRecord(userId);
+export async function getDecryptedGoogleAdsRefreshToken(): Promise<string | null> {
+  const record = await getGoogleAdsCredentialRecord();
   if (!record) {
     return null;
   }

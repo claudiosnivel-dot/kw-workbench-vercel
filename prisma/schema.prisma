@@ -92,7 +92,6 @@ model User {
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   projects              Project[]
-  google_ads_credential GoogleAdsCredential?
 
   @@index([role])
   @@index([status])
@@ -222,8 +221,7 @@ model ExpansionPattern {
 
 model GoogleAdsCredential {
   id                      String   @id @default(cuid())
-  user_id                 String?  @unique
-  singleton_key           String?
+  singleton_key           String   @unique @default("default")
   connected_email         String?
   customer_id             String?
   login_customer_id       String?
@@ -232,9 +230,7 @@ model GoogleAdsCredential {
   token_type              String?
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
-  user                    User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@index([singleton_key])
   @@map("google_ads_credentials")
 }
 
@@ -248,3 +244,4 @@ model AppSetting {
 
   @@map("app_settings")
 }
+

@@ -123,7 +123,7 @@ export class GoogleKeywordPlannerMetricsProvider implements MetricsProviderClien
       return this.mergeImportedMetrics(keywords, imported);
     }
 
-    const config = await this.resolveRuntimeConfig(context.userId);
+    const config = await this.resolveRuntimeConfig();
     if (!config) {
       return buildMissingMetrics(keywords, this.id, "missing");
     }
@@ -163,9 +163,9 @@ export class GoogleKeywordPlannerMetricsProvider implements MetricsProviderClien
     }
   }
 
-  private async resolveRuntimeConfig(userId?: string): Promise<GoogleAdsRuntimeConfig | null> {
-    const record = await getGoogleAdsCredentialRecord(userId);
-    const refreshToken = (await getDecryptedGoogleAdsRefreshToken(userId)) || process.env.GOOGLE_ADS_REFRESH_TOKEN;
+  private async resolveRuntimeConfig(): Promise<GoogleAdsRuntimeConfig | null> {
+    const record = await getGoogleAdsCredentialRecord();
+    const refreshToken = (await getDecryptedGoogleAdsRefreshToken()) || process.env.GOOGLE_ADS_REFRESH_TOKEN;
     const apiConfig = await getGoogleAdsApiConfig();
 
     const developerToken = apiConfig.developerToken;
@@ -389,4 +389,5 @@ export class GoogleKeywordPlannerMetricsProvider implements MetricsProviderClien
     return map;
   }
 }
+
 

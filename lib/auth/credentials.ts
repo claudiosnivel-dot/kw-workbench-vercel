@@ -80,16 +80,10 @@ async function getLegacyAuthValues() {
 }
 
 async function assignOrphanDataToUser(userId: string) {
-  await prisma.$transaction([
-    prisma.project.updateMany({
-      where: { owner_user_id: null },
-      data: { owner_user_id: userId },
-    }),
-    prisma.googleAdsCredential.updateMany({
-      where: { user_id: null },
-      data: { user_id: userId },
-    }),
-  ]);
+  await prisma.project.updateMany({
+    where: { owner_user_id: null },
+    data: { owner_user_id: userId },
+  });
 }
 
 async function ensureRootAdminExists() {
