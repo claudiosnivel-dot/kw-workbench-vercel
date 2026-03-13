@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import {
   getGoogleAdsApiConfigSnapshot,
   updateGoogleAdsApiConfig,
 } from "@/lib/integrations/google-ads-config";
 
-export async function GET() {
+export async function GET(request: Request) {
+  await requireAuthenticatedUserFromRequest(request);
   const snapshot = await getGoogleAdsApiConfigSnapshot();
   return NextResponse.json({ data: snapshot });
 }
 
 export async function PATCH(request: Request) {
+  await requireAuthenticatedUserFromRequest(request);
+
   const payload = (await request.json()) as {
     developerToken?: string;
     clientId?: string;

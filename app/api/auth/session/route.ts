@@ -1,18 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthEnabled, SESSION_COOKIE_NAME } from "@/lib/auth/config";
-import { verifySessionToken } from "@/lib/auth/session";
+import { isAuthEnabled } from "@/lib/auth/config";
+import { getOptionalAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 
 export async function GET(request: NextRequest) {
+  const user = await getOptionalAuthenticatedUserFromRequest(request);
+
   if (!isAuthEnabled()) {
-    return NextResponse.json({ authenticated: true, authEnabled: false, username: "local" });
+    if (!user) {
+      return NextResponse.json({ authenticated: false, authEnabled: false }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      authenticated: true,
+      authEnabled: false,
+      userId: user.id,
+      username: user.username,
+    });
   }
 
-  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const session = await verifySessionToken(token);
-
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ authenticated: false, authEnabled: true }, { status: 401 });
   }
 
-  return NextResponse.json({ authenticated: true, authEnabled: true, username: session.username });
+  return NextResponse.json({
+    authenticated: true,
+    authEnabled: true,
+    userId: user.id,
+    username: user.username,
+  });
 }

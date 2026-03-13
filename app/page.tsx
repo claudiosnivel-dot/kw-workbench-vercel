@@ -1,7 +1,7 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { AuthSettingsCard } from "@/components/auth-settings-card";
+import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
-import { getAuthConfigSnapshot } from "@/lib/auth/credentials";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +14,11 @@ function formatDate(value: Date | null | undefined): string {
 }
 
 export default async function DashboardPage() {
-  const [projects, recentJobs, totalProjects, totalKeywords, authConfig] = await Promise.all([
+  const user = await requireAuthenticatedUserFromCookies();
+
+  const [projects, recentJobs, totalProjects, totalKeywords] = await Promise.all([
     prisma.project.findMany({
+      where: { owner_user_id: user.id },
       orderBy: { updated_at: "desc" },
       include: {
         _count: {
@@ -28,6 +31,11 @@ export default async function DashboardPage() {
       take: 20,
     }),
     prisma.job.findMany({
+      where: {
+        project: {
+          owner_user_id: user.id,
+        },
+      },
       orderBy: { created_at: "desc" },
       include: {
         project: {
@@ -36,9 +44,14 @@ export default async function DashboardPage() {
       },
       take: 15,
     }),
-    prisma.project.count(),
-    prisma.keywordCandidate.count(),
-    getAuthConfigSnapshot(),
+    prisma.project.count({ where: { owner_user_id: user.id } }),
+    prisma.keywordCandidate.count({
+      where: {
+        project: {
+          owner_user_id: user.id,
+        },
+      },
+    }),
   ]);
 
   return (
@@ -60,9 +73,7 @@ export default async function DashboardPage() {
 
       <AuthSettingsCard
         initial={{
-          username: authConfig.username,
-          source: authConfig.source,
-          hasPasswordOverride: authConfig.hasPasswordOverride,
+          username: user.username,
         }}
       />
 

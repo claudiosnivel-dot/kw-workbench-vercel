@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
-export function LoginForm({ nextPath }: { nextPath: string }) {
+export function RegisterForm({ nextPath }: { nextPath: string }) {
   const safeNextPath = useMemo(() => {
     if (nextPath && nextPath.startsWith("/")) {
       return nextPath;
@@ -14,6 +14,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,16 +24,16 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     setError(null);
 
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, confirmPassword }),
       });
 
       const payload = await readJsonSafe<ApiErrorPayload>(response);
       if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Accesso non riuscito"));
+        throw new Error(buildApiErrorMessage(response, payload, "Registrazione non riuscita"));
       }
 
       window.location.assign(safeNextPath);
@@ -69,19 +70,34 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          autoComplete="current-password"
+          autoComplete="new-password"
+          required
+        />
+      </div>
+
+      <div>
+        <label className="label" htmlFor="confirmPassword">
+          Conferma password
+        </label>
+        <input
+          id="confirmPassword"
+          className="input"
+          type="password"
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          autoComplete="new-password"
           required
         />
       </div>
 
       <button className="btn-primary w-full" disabled={loading} type="submit">
-        {loading ? "Accesso in corso..." : "Accedi"}
+        {loading ? "Registrazione in corso..." : "Crea account"}
       </button>
 
       <p className="text-sm text-slate-600">
-        Non hai un account?{" "}
-        <Link href="/register" className="font-medium underline">
-          Registrati
+        Hai gia un account?{" "}
+        <Link href="/login" className="font-medium underline">
+          Accedi
         </Link>
       </p>
 

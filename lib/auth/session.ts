@@ -5,16 +5,18 @@ import {
 } from "@/lib/auth/config";
 import { decodeJson, encodeJson, signPayload, verifyPayload } from "@/lib/auth/crypto";
 
-type SessionPayload = {
+export type SessionPayload = {
+  userId: string;
   username: string;
   exp: number;
 };
 
 export { SESSION_COOKIE_NAME };
 
-export async function createSessionToken(username: string): Promise<string> {
+export async function createSessionToken(userId: string, username: string): Promise<string> {
   const nowSeconds = Math.floor(Date.now() / 1000);
   const payload: SessionPayload = {
+    userId,
     username,
     exp: nowSeconds + getSessionMaxAgeSeconds(),
   };
@@ -42,7 +44,12 @@ export async function verifySessionToken(token: string | undefined | null): Prom
   try {
     const payload = decodeJson<SessionPayload>(payloadPart);
     const nowSeconds = Math.floor(Date.now() / 1000);
+
     if (!payload.exp || payload.exp <= nowSeconds) {
+      return null;
+    }
+
+    if (!payload.userId || !payload.username) {
       return null;
     }
 

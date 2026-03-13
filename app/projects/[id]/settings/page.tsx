@@ -1,15 +1,20 @@
 import { notFound } from "next/navigation";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { ProjectForm } from "@/components/project-form";
+import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProjectSettingsPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await requireAuthenticatedUserFromCookies();
   const { id } = await params;
 
-  const project = await prisma.project.findUnique({
-    where: { id },
+  const project = await prisma.project.findFirst({
+    where: {
+      id,
+      owner_user_id: user.id,
+    },
     include: {
       seeds: { orderBy: { created_at: "asc" } },
     },

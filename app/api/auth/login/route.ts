@@ -21,12 +21,12 @@ export async function POST(request: Request) {
   const username = String(payload.username ?? "").trim();
   const password = String(payload.password ?? "");
 
-  const valid = await verifyLoginCredentials(username, password);
-  if (!valid) {
+  const user = await verifyLoginCredentials(username, password);
+  if (!user) {
     return NextResponse.json({ error: "Credenziali non valide" }, { status: 401 });
   }
 
-  const token = await createSessionToken(username);
+  const token = await createSessionToken(user.id, user.username);
   const response = NextResponse.json({ success: true });
   response.cookies.set({
     name: SESSION_COOKIE_NAME,

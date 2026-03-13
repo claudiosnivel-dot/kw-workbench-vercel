@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -7,8 +8,17 @@ type RouteContext = {
 };
 
 export async function GET(request: NextRequest, context: RouteContext) {
+  const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await context.params;
-  const project = await prisma.project.findUnique({ where: { id } });
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id,
+      owner_user_id: user.id,
+    },
+    select: { id: true },
+  });
+
   if (!project) {
     return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
   }
@@ -77,7 +87,21 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await context.params;
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id,
+      owner_user_id: user.id,
+    },
+    select: { id: true },
+  });
+
+  if (!project) {
+    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+  }
+
   const payload = (await request.json()) as {
     action?: string;
     ids?: string[];

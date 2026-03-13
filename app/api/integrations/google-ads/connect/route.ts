@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { shouldUseSecureCookies } from "@/lib/auth/config";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { getGoogleAdsApiConfig } from "@/lib/integrations/google-ads-config";
 
 const OAUTH_STATE_COOKIE = "kwb_google_ads_oauth_state";
 const GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
+  await requireAuthenticatedUserFromRequest(request);
+
   const config = await getGoogleAdsApiConfig();
   const clientId = config.clientId;
   const redirectUri = config.redirectUri;

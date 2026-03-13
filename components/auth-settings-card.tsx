@@ -1,12 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 type AuthSnapshot = {
   username: string;
-  source: "env" | "db";
-  hasPasswordOverride: boolean;
 };
 
 type AuthSettingsResponse = ApiErrorPayload & {
@@ -44,10 +42,14 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
         throw new Error(buildApiErrorMessage(response, payload, "Impossibile salvare le impostazioni di accesso"));
       }
 
+      if (payload?.data?.username) {
+        setUsername(payload.data.username);
+      }
+
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setSuccess("Impostazioni di sicurezza aggiornate.");
+      setSuccess("Credenziali aggiornate.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Errore imprevisto");
     } finally {
@@ -58,16 +60,13 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
   return (
     <section className="card space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Sicurezza</h2>
-        <p className="text-sm text-slate-600">Aggiorna le credenziali di accesso dalla dashboard senza modificare i file `.env`.</p>
+        <h2 className="text-lg font-semibold">Account</h2>
+        <p className="text-sm text-slate-600">Aggiorna username e password del tuo account personale.</p>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
         <p>
-          <span className="font-medium">Origine credenziali:</span> {initial.source === "db" ? "Configurazione dashboard" : "Fallback ENV"}
-        </p>
-        <p>
-          <span className="font-medium">Username attivo:</span> {initial.username}
+          <span className="font-medium">Username attivo:</span> {username}
         </p>
       </div>
 
@@ -81,7 +80,7 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
             className="input"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            placeholder="admin"
+            placeholder="username"
           />
         </div>
 
@@ -129,7 +128,7 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
       </div>
 
       <button className="btn-primary w-full sm:w-auto" type="button" onClick={save} disabled={saving}>
-        {saving ? "Salvataggio sicurezza..." : "Salva impostazioni sicurezza"}
+        {saving ? "Salvataggio account..." : "Salva impostazioni account"}
       </button>
 
       {error && <p className="text-sm text-red-700">{error}</p>}

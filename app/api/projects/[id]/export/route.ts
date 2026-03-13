@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { ExportFormat, ExportScope, generateExport } from "@/lib/modules/export";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -14,6 +16,7 @@ type RouteContext = {
 
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
+    const user = await requireAuthenticatedUserFromRequest(request);
     const { id } = await context.params;
     const format = (request.nextUrl.searchParams.get("format") ?? "csv") as ExportFormat;
     const scope = (request.nextUrl.searchParams.get("scope") ?? "non-excluded") as ExportScope;
@@ -24,6 +27,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     if (!VALID_SCOPES.has(scope)) {
       return NextResponse.json({ error: "Scope non valido" }, { status: 400 });
+    }
+
+    const project = await prisma.project.findFirst({
+      where: {
+        id,
+        owner_user_id: user.id,
+      },
+      select: { id: true },
+    });
+
+    if (!project) {
+      return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
     }
 
     const filters = parseResultsFilters(request.nextUrl.searchParams);

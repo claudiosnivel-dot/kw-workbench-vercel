@@ -1,12 +1,15 @@
 import { GoogleAdsIntegrationCard } from "@/components/google-ads-integration-card";
+import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { getGoogleAdsCredentialSnapshot } from "@/lib/integrations/google-ads";
 import { getGoogleAdsApiConfigSnapshot } from "@/lib/integrations/google-ads-config";
 
 export const dynamic = "force-dynamic";
 
 export default async function IntegrationsPage() {
+  const user = await requireAuthenticatedUserFromCookies();
+
   const [snapshot, apiConfig] = await Promise.all([
-    getGoogleAdsCredentialSnapshot(),
+    getGoogleAdsCredentialSnapshot(user.id),
     getGoogleAdsApiConfigSnapshot(),
   ]);
 

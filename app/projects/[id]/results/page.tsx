@@ -1,6 +1,7 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ResultsTable } from "@/components/results-table";
+import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -50,9 +51,16 @@ export default async function ResultsPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<SearchParams>;
 }) {
+  const user = await requireAuthenticatedUserFromCookies();
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
-  const project = await prisma.project.findUnique({ where: { id } });
+  const project = await prisma.project.findFirst({
+    where: {
+      id,
+      owner_user_id: user.id,
+    },
+  });
+
   if (!project) {
     notFound();
   }

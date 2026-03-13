@@ -26,10 +26,14 @@ Copy-Item .env.example .env
 Valori minimi:
 
 - `DATABASE_URL` (default example gia punta a `localhost`)
-- `APP_AUTH_USERNAME`
-- `APP_AUTH_PASSWORD`
 - `APP_SESSION_SECRET`
 - `APP_ENCRYPTION_KEY`
+
+Note autenticazione multi-account:
+
+- `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD` servono solo a bootstrap del primo account se il DB utenti e vuoto.
+- Poi puoi creare nuovi account da `/register`.
+- Ogni account vede solo i propri dati (progetti, risultati, job, integrazioni utente).
 
 ### 3) Avvio
 

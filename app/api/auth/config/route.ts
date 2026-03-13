@@ -2,15 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getAuthConfigSnapshot,
   updateAuthCredentials,
-  verifyLoginCredentials,
+  verifyUserPassword,
 } from "@/lib/auth/credentials";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import {
+  getSessionMaxAgeSeconds,
+  SESSION_COOKIE_NAME,
+  shouldUseSecureCookies,
+} from "@/lib/auth/config";
+import { createSessionToken } from "@/lib/auth/session";
 
-export async function GET() {
-  const snapshot = await getAuthConfigSnapshot();
+export async function GET(request: NextRequest) {
+  const user = await requireAuthenticatedUserFromRequest(request);
+  const snapshot = await getAuthConfigSnapshot(user.id);
   return NextResponse.json({ data: snapshot });
 }
 
 export async function PATCH(request: NextRequest) {
+  const user = await requireAuthenticatedUserFromRequest(request);
+
   const payload = (await request.json()) as {
     currentPassword?: string;
     username?: string;
@@ -23,8 +33,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "La password attuale e obbligatoria" }, { status: 400 });
   }
 
-  const currentSnapshot = await getAuthConfigSnapshot();
-  const currentValid = await verifyLoginCredentials(currentSnapshot.username, currentPassword);
+  const currentValid = await verifyUserPassword(user.id, currentPassword);
   if (!currentValid) {
     return NextResponse.json({ error: "La password attuale non e valida" }, { status: 401 });
   }
@@ -37,20 +46,31 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Nessuna modifica da salvare" }, { status: 400 });
   }
 
-  if (newPassword) {
-    if (newPassword.length < 4) {
-      return NextResponse.json({ error: "La nuova password deve avere almeno 4 caratteri" }, { status: 400 });
-    }
-
-    if (newPassword !== confirmPassword) {
-      return NextResponse.json({ error: "Nuova password e conferma non coincidono" }, { status: 400 });
-    }
+  if (newPassword && newPassword !== confirmPassword) {
+    return NextResponse.json({ error: "Nuova password e conferma non coincidono" }, { status: 400 });
   }
 
-  const snapshot = await updateAuthCredentials({
-    username: username || undefined,
-    password: newPassword || undefined,
-  });
+  try {
+    const snapshot = await updateAuthCredentials({
+      userId: user.id,
+      username: username || undefined,
+      password: newPassword || undefined,
+    });
 
-  return NextResponse.json({ data: snapshot });
+    const token = await createSessionToken(user.id, snapshot.username);
+    const response = NextResponse.json({ data: snapshot });
+    response.cookies.set({
+      name: SESSION_COOKIE_NAME,
+      value: token,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: shouldUseSecureCookies(),
+      maxAge: getSessionMaxAgeSeconds(),
+      path: "/",
+    });
+
+    return response;
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Errore durante il salvataggio" }, { status: 400 });
+  }
 }

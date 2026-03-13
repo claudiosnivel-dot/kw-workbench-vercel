@@ -70,8 +70,21 @@ enum JobStatus {
   failed
 }
 
+model User {
+  id                    String                @id @default(cuid())
+  username              String                @unique
+  password_hash         String
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  projects              Project[]
+  google_ads_credential GoogleAdsCredential?
+
+  @@map("users")
+}
+
 model Project {
   id                    String               @id @default(cuid())
+  owner_user_id         String?
   name                  String
   language_code         String               @default("en")
   country_code          String               @default("US")
@@ -86,12 +99,14 @@ model Project {
   scoring_profile       String               @default("balanced")
   created_at            DateTime             @default(now())
   updated_at            DateTime             @updatedAt
+  owner                 User?                @relation(fields: [owner_user_id], references: [id], onDelete: Cascade)
   seeds                 Seed[]
   keyword_candidates    KeywordCandidate[]
   jobs                  Job[]
   brand_blacklist       BrandBlacklist[]
   expansion_patterns    ExpansionPattern[]
 
+  @@index([owner_user_id])
   @@map("projects")
 }
 
@@ -190,7 +205,8 @@ model ExpansionPattern {
 
 model GoogleAdsCredential {
   id                      String   @id @default(cuid())
-  singleton_key           String   @unique @default("default")
+  user_id                 String?  @unique
+  singleton_key           String?
   connected_email         String?
   customer_id             String?
   login_customer_id       String?
@@ -199,7 +215,9 @@ model GoogleAdsCredential {
   token_type              String?
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
+  user                    User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([singleton_key])
   @@map("google_ads_credentials")
 }
 

@@ -1,6 +1,7 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RunExtractionButton } from "@/components/run-extraction-button";
+import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +12,14 @@ function formatDate(value: Date | null | undefined): string {
 }
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await requireAuthenticatedUserFromCookies();
   const { id } = await params;
 
-  const project = await prisma.project.findUnique({
-    where: { id },
+  const project = await prisma.project.findFirst({
+    where: {
+      id,
+      owner_user_id: user.id,
+    },
     include: {
       seeds: { orderBy: { created_at: "asc" } },
       jobs: { orderBy: { created_at: "desc" }, take: 20 },

@@ -1,10 +1,14 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { parseProjectPayload } from "@/lib/modules/project-settings";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const user = await requireAuthenticatedUserFromRequest(request);
+
   const projects = await prisma.project.findMany({
+    where: { owner_user_id: user.id },
     orderBy: { created_at: "desc" },
     include: {
       _count: {
@@ -25,12 +29,15 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const user = await requireAuthenticatedUserFromRequest(request);
+
   const payload = (await request.json()) as Record<string, unknown>;
   const input = parseProjectPayload(payload);
 
   const project = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const created = await tx.project.create({
       data: {
+        owner_user_id: user.id,
         name: input.name,
         language_code: input.language_code,
         country_code: input.country_code,

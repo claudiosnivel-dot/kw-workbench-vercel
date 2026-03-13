@@ -4,7 +4,9 @@ import { verifySessionToken } from "@/lib/auth/session";
 
 const PUBLIC_PATHS = new Set([
   "/login",
+  "/register",
   "/api/auth/login",
+  "/api/auth/register",
   "/api/auth/logout",
   "/api/auth/session",
 ]);

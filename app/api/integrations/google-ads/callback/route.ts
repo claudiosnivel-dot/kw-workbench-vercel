@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { shouldUseSecureCookies } from "@/lib/auth/config";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import {
   getDecryptedGoogleAdsRefreshToken,
   getGoogleAdsCredentialRecord,
@@ -32,6 +33,8 @@ async function fetchProfileEmail(accessToken: string): Promise<string | undefine
 }
 
 export async function GET(request: NextRequest) {
+  const user = await requireAuthenticatedUserFromRequest(request);
+
   const url = request.nextUrl;
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
@@ -92,8 +95,8 @@ export async function GET(request: NextRequest) {
       throw new Error(tokenPayload.error_description || tokenPayload.error || "Scambio token non riuscito");
     }
 
-    const existing = await getGoogleAdsCredentialRecord();
-    const fallbackRefreshToken = await getDecryptedGoogleAdsRefreshToken();
+    const existing = await getGoogleAdsCredentialRecord(user.id);
+    const fallbackRefreshToken = await getDecryptedGoogleAdsRefreshToken(user.id);
     const refreshToken = tokenPayload.refresh_token || fallbackRefreshToken;
 
     if (!refreshToken) {
@@ -103,6 +106,7 @@ export async function GET(request: NextRequest) {
     const email = tokenPayload.access_token ? await fetchProfileEmail(tokenPayload.access_token) : undefined;
 
     await upsertGoogleAdsCredential({
+      userId: user.id,
       refreshToken,
       connectedEmail: email || existing?.connected_email || undefined,
       scope: tokenPayload.scope || existing?.scope || undefined,

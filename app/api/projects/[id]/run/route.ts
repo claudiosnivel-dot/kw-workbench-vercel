@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
 
@@ -9,10 +10,18 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
+  const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await context.params;
 
-  const project = await prisma.project.findUnique({ where: { id } });
+  const project = await prisma.project.findFirst({
+    where: {
+      id,
+      owner_user_id: user.id,
+    },
+    select: { id: true },
+  });
+
   if (!project) {
     return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
   }

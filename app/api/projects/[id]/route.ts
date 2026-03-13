@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { parseProjectPayload } from "@/lib/modules/project-settings";
 import { prisma } from "@/lib/prisma";
 
@@ -7,12 +8,16 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
+    const user = await requireAuthenticatedUserFromRequest(request);
     const { id } = await context.params;
 
-    const project = await prisma.project.findUnique({
-      where: { id },
+    const project = await prisma.project.findFirst({
+      where: {
+        id,
+        owner_user_id: user.id,
+      },
       include: {
         seeds: { orderBy: { created_at: "asc" } },
         jobs: { orderBy: { created_at: "desc" }, take: 25 },
@@ -37,11 +42,19 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
+    const user = await requireAuthenticatedUserFromRequest(request);
     const { id } = await context.params;
     const payload = (await request.json()) as Record<string, unknown>;
     const input = parseProjectPayload(payload);
 
-    const project = await prisma.project.findUnique({ where: { id } });
+    const project = await prisma.project.findFirst({
+      where: {
+        id,
+        owner_user_id: user.id,
+      },
+      select: { id: true },
+    });
+
     if (!project) {
       return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
     }
@@ -86,10 +99,19 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const user = await requireAuthenticatedUserFromRequest(request);
     const { id } = await context.params;
-    const project = await prisma.project.findUnique({ where: { id } });
+
+    const project = await prisma.project.findFirst({
+      where: {
+        id,
+        owner_user_id: user.id,
+      },
+      select: { id: true },
+    });
+
     if (!project) {
       return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
     }
