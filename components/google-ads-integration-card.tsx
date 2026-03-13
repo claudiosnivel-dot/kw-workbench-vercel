@@ -283,7 +283,7 @@ export function GoogleAdsIntegrationCard({
                 {loadingAccount ? "Salvataggio..." : "Salva impostazioni account"}
               </button>
               <button
-                className="btn inline-flex w-full items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 sm:w-auto"
+                className="btn btn-danger w-full sm:w-auto"
                 disabled={loadingAccount}
                 onClick={disconnect}
                 type="button"

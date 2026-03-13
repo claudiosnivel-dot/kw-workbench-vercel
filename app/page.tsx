@@ -13,6 +13,13 @@ function formatDate(value: Date | null | undefined): string {
   }).format(value);
 }
 
+function jobStatusTone(value: string): string {
+  if (value === "completed") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  if (value === "failed") return "border-rose-200 bg-rose-50 text-rose-800";
+  if (value === "running") return "border-amber-200 bg-amber-50 text-amber-800";
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
 export default async function DashboardPage() {
   const user = await requireAuthenticatedUserFromCookies();
 
@@ -104,8 +111,9 @@ export default async function DashboardPage() {
             Nuovo progetto
           </Link>
         </div>
-        <div className="-mx-2 overflow-x-auto px-2 sm:mx-0 sm:px-0">
-          <table className="min-w-[720px] text-left text-sm sm:min-w-full">
+
+        <div className="table-shell">
+          <table className="table-enterprise min-w-[720px] text-left text-sm sm:min-w-full">
             <thead>
               <tr>
                 <th className="px-3 py-2">Nome</th>
@@ -118,10 +126,12 @@ export default async function DashboardPage() {
             </thead>
             <tbody>
               {projects.map((project) => (
-                <tr key={project.id} className="border-t border-slate-200/70">
+                <tr key={project.id}>
                   <td className="px-3 py-3 font-medium">{project.name}</td>
                   <td className="px-3 py-3">
-                    {project.language_code}-{project.country_code}
+                    <span className="status-chip">
+                      {project.language_code}-{project.country_code}
+                    </span>
                   </td>
                   <td className="px-3 py-3">{project._count.seeds}</td>
                   <td className="px-3 py-3">{project._count.keyword_candidates}</td>
@@ -146,8 +156,9 @@ export default async function DashboardPage() {
 
       <section className="card">
         <h2 className="mb-4 text-lg font-semibold">Ultimi job</h2>
-        <div className="-mx-2 overflow-x-auto px-2 sm:mx-0 sm:px-0">
-          <table className="min-w-[560px] text-left text-sm sm:min-w-full">
+
+        <div className="table-shell">
+          <table className="table-enterprise min-w-[560px] text-left text-sm sm:min-w-full">
             <thead>
               <tr>
                 <th className="px-3 py-2">Progetto</th>
@@ -158,13 +169,15 @@ export default async function DashboardPage() {
             </thead>
             <tbody>
               {recentJobs.map((job) => (
-                <tr key={job.id} className="border-t border-slate-200/70">
+                <tr key={job.id}>
                   <td className="px-3 py-3">
                     <Link className="font-medium text-emerald-700 underline-offset-2 hover:underline" href={`/projects/${job.project.id}`}>
                       {job.project.name}
                     </Link>
                   </td>
-                  <td className="px-3 py-3 uppercase">{job.status}</td>
+                  <td className="px-3 py-3 uppercase">
+                    <span className={`status-chip ${jobStatusTone(job.status)}`}>{job.status}</span>
+                  </td>
                   <td className="px-3 py-3">{formatDate(job.started_at)}</td>
                   <td className="px-3 py-3">{formatDate(job.completed_at)}</td>
                 </tr>

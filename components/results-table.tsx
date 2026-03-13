@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,26 @@ const ACTIONS = [
   { value: "select", label: "Seleziona per export" },
   { value: "unselect", label: "Deseleziona per export" },
 ] as const;
+
+function chipTone(type: "default" | "success" | "warning" | "danger"): string {
+  if (type === "success") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  if (type === "warning") return "border-amber-200 bg-amber-50 text-amber-800";
+  if (type === "danger") return "border-rose-200 bg-rose-50 text-rose-800";
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function reviewTone(value: string): string {
+  if (value === "approved") return chipTone("success");
+  if (value === "rejected") return chipTone("danger");
+  if (value === "pending") return chipTone("warning");
+  return chipTone("default");
+}
+
+function brandTone(value: string): string {
+  if (value === "excluded") return chipTone("danger");
+  if (value === "review") return chipTone("warning");
+  return chipTone("success");
+}
 
 export function ResultsTable({ projectId, rows }: ResultsTableProps) {
   const router = useRouter();
@@ -97,9 +117,9 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
 
       {error && <p className="text-sm text-red-700">{error}</p>}
 
-      <div className="-mx-2 overflow-x-auto rounded-xl ring-1 ring-slate-200 sm:mx-0">
-        <table className="min-w-[980px] bg-white text-left text-sm">
-          <thead className="text-xs uppercase text-slate-500">
+      <div className="table-shell">
+        <table className="table-enterprise min-w-[980px] text-left text-sm">
+          <thead>
             <tr>
               <th className="px-3 py-2">
                 <input type="checkbox" checked={isAllSelected} onChange={toggleAll} aria-label="Seleziona tutto" />
@@ -121,19 +141,27 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
               const displayKeyword = normalizeDisplayText(row.keyword);
 
               return (
-                <tr key={row.id} className="border-t border-slate-200">
-                  <td className="px-3 py-2">
+                <tr key={row.id}>
+                  <td className="px-3 py-3">
                     <input type="checkbox" checked={checked} onChange={() => toggle(row.id)} aria-label={`Seleziona ${displayKeyword}`} />
                   </td>
-                  <td className="px-3 py-2 font-medium max-w-[20rem] break-words">{displayKeyword}</td>
-                  <td className="px-3 py-2 text-xs">{row.source}</td>
-                  <td className="hidden px-3 py-2 md:table-cell">{row.search_intent}</td>
-                  <td className="hidden px-3 py-2 md:table-cell">{row.keyword_type}</td>
-                  <td className="hidden px-3 py-2 md:table-cell">{row.brand_status}</td>
-                  <td className="hidden px-3 py-2 md:table-cell">{row.review_status}</td>
-                  <td className="px-3 py-2">{row.avg_monthly_searches ?? "-"}</td>
-                  <td className="hidden px-3 py-2 md:table-cell">{row.competition ?? "-"}</td>
-                  <td className="px-3 py-2">{row.score ? row.score.toFixed(1) : "-"}</td>
+                  <td className="max-w-[20rem] break-words px-3 py-3 font-medium">{displayKeyword}</td>
+                  <td className="px-3 py-3 text-xs">{row.source}</td>
+                  <td className="hidden px-3 py-3 md:table-cell">
+                    <span className="status-chip">{row.search_intent}</span>
+                  </td>
+                  <td className="hidden px-3 py-3 md:table-cell">
+                    <span className="status-chip">{row.keyword_type}</span>
+                  </td>
+                  <td className="hidden px-3 py-3 md:table-cell">
+                    <span className={`status-chip ${brandTone(row.brand_status)}`}>{row.brand_status}</span>
+                  </td>
+                  <td className="hidden px-3 py-3 md:table-cell">
+                    <span className={`status-chip ${reviewTone(row.review_status)}`}>{row.review_status}</span>
+                  </td>
+                  <td className="px-3 py-3">{row.avg_monthly_searches ?? "-"}</td>
+                  <td className="hidden px-3 py-3 md:table-cell">{row.competition ?? "-"}</td>
+                  <td className="px-3 py-3 font-medium">{row.score ? row.score.toFixed(1) : "-"}</td>
                 </tr>
               );
             })}

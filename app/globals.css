@@ -137,14 +137,14 @@ a {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  border-radius: 999px;
-  padding: 0.58rem 1rem;
+  border-radius: 14px;
+  padding: 0.6rem 1rem;
   font-size: 0.88rem;
   font-weight: 600;
   line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
-  transition: transform 0.18s ease, box-shadow 0.22s ease, background-color 0.2s ease, color 0.2s ease;
+  transition: transform 0.16s ease, box-shadow 0.22s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
 .btn:disabled {
@@ -156,25 +156,37 @@ a {
 .btn-primary {
   border: 1px solid transparent;
   color: #fff;
-  background: linear-gradient(138deg, var(--brand-600), var(--brand-500));
-  box-shadow: 0 10px 24px rgba(15, 157, 102, 0.26);
+  background: linear-gradient(140deg, #0b7a5a, var(--brand-600));
+  box-shadow: 0 10px 24px rgba(11, 122, 90, 0.28);
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgba(15, 157, 102, 0.32);
+  box-shadow: 0 14px 30px rgba(11, 122, 90, 0.34);
 }
 
 .btn-secondary {
   border: 1px solid var(--surface-border);
   color: #0f172a;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 1px 1px rgba(15, 23, 42, 0.02);
 }
 
 .btn-secondary:hover:not(:disabled) {
   transform: translateY(-1px);
   background: #fff;
+}
+
+.btn-danger {
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  background: #fff1f2;
+  box-shadow: 0 1px 1px rgba(239, 68, 68, 0.06);
+}
+
+.btn-danger:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #ffe4e6;
 }
 
 .card {
@@ -194,23 +206,56 @@ a {
   }
 }
 
-table {
-  border-collapse: collapse;
+.table-shell {
+  overflow-x: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: rgba(255, 255, 255, 0.86);
 }
 
-thead th {
+.table-enterprise {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-enterprise thead th {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(248, 250, 252, 0.92);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   font-weight: 600;
   color: #64748b;
 }
 
-tbody tr {
-  transition: background-color 0.16s ease;
+.table-enterprise tbody td {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  vertical-align: top;
 }
 
-tbody tr:hover {
-  background-color: rgba(15, 157, 102, 0.05);
+.table-enterprise tbody tr:nth-child(even) {
+  background: rgba(248, 250, 252, 0.55);
+}
+
+.table-enterprise tbody tr:hover {
+  background: rgba(15, 157, 102, 0.07);
+}
+
+.table-enterprise tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(248, 250, 252, 0.9);
+  padding: 0.2rem 0.52rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #334155;
 }
 
 input[type="checkbox"] {

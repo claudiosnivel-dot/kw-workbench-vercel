@@ -11,6 +11,13 @@ function formatDate(value: Date | null | undefined): string {
   return new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(value);
 }
 
+function jobStatusTone(value: string): string {
+  if (value === "completed") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  if (value === "failed") return "border-rose-200 bg-rose-50 text-rose-800";
+  if (value === "running") return "border-amber-200 bg-amber-50 text-amber-800";
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireAuthenticatedUserFromCookies();
   const { id } = await params;
@@ -41,8 +48,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">{project.name}</h1>
-            <p className="text-sm text-slate-600">
-              Locale: {project.language_code}-{project.country_code}
+            <p className="mt-1 text-sm text-slate-600">
+              Locale: <span className="status-chip">{project.language_code}-{project.country_code}</span>
             </p>
           </div>
           <RunExtractionButton projectId={project.id} />
@@ -71,7 +78,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
         <div>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Keyword seed</h2>
-          <div className="rounded-xl bg-slate-50 p-3 text-sm break-words">
+          <div className="rounded-xl bg-slate-50 p-3 text-sm break-words ring-1 ring-[var(--surface-border)]">
             {project.seeds.map((seed) => seed.keyword).join(", ") || "Nessuna seed configurata"}
           </div>
         </div>
@@ -79,9 +86,10 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
       <section className="card">
         <h2 className="mb-3 text-lg font-semibold">Stato job</h2>
-        <div className="-mx-2 overflow-x-auto px-2 sm:mx-0 sm:px-0">
-          <table className="min-w-[760px] text-left text-sm sm:min-w-full">
-            <thead className="text-xs uppercase text-slate-500">
+
+        <div className="table-shell">
+          <table className="table-enterprise min-w-[760px] text-left text-sm sm:min-w-full">
+            <thead>
               <tr>
                 <th className="px-3 py-2">Stato</th>
                 <th className="px-3 py-2">Creato</th>
@@ -92,12 +100,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             </thead>
             <tbody>
               {project.jobs.map((job) => (
-                <tr key={job.id} className="border-t border-slate-200">
-                  <td className="px-3 py-3 uppercase">{job.status}</td>
+                <tr key={job.id}>
+                  <td className="px-3 py-3 uppercase">
+                    <span className={`status-chip ${jobStatusTone(job.status)}`}>{job.status}</span>
+                  </td>
                   <td className="px-3 py-3">{formatDate(job.created_at)}</td>
                   <td className="px-3 py-3">{formatDate(job.started_at)}</td>
                   <td className="px-3 py-3">{formatDate(job.completed_at)}</td>
-                  <td className="px-3 py-3 text-xs break-words max-w-[20rem]">{job.result ? JSON.stringify(job.result) : job.error_message || "-"}</td>
+                  <td className="max-w-[20rem] break-words px-3 py-3 text-xs">{job.result ? JSON.stringify(job.result) : job.error_message || "-"}</td>
                 </tr>
               ))}
             </tbody>
