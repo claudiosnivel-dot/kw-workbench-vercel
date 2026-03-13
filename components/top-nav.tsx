@@ -78,7 +78,7 @@ export function TopNav({ brandName, brandLogoUrl }: { brandName: string; brandLo
                     </Link>
                   );
                 })}
-                <LogoutButton className="rounded-full" />
+                <LogoutButton className="px-4 py-2" />
               </nav>
             </>
           )}
@@ -103,7 +103,7 @@ export function TopNav({ brandName, brandLogoUrl }: { brandName: string; brandLo
                 </Link>
               );
             })}
-            <LogoutButton className="w-full justify-center rounded-xl" />
+            <LogoutButton className="w-full justify-center rounded-xl px-4 py-2" />
           </nav>
         )}
       </div>

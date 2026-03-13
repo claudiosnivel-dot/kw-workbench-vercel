@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +20,7 @@ export function LogoutButton({ className }: LogoutButtonProps) {
 
   return (
     <button
-      className={`${className ?? ""} btn-secondary`}
+      className={["btn", "btn-secondary", className].filter(Boolean).join(" ")}
       type="button"
       onClick={logout}
       disabled={loading}
