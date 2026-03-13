@@ -31,26 +31,26 @@ export function TopNav({ brandName, brandLogoUrl }: { brandName: string; brandLo
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/60 bg-[rgba(244,251,247,0.78)] backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-[rgba(3,10,24,0.78)] backdrop-blur-xl">
       <div className="mx-auto w-full max-w-[1180px] px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4">
           <Link href="/" className="group inline-flex min-w-0 items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[var(--surface-border)] transition group-hover:scale-[1.02]">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-900/90 shadow-sm ring-1 ring-white/15 transition group-hover:scale-[1.02]">
               {brandLogoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={brandLogoUrl} alt={`${normalizedBrandName} logo`} className="h-full w-full object-contain" />
               ) : (
-                <span className="font-heading text-base font-semibold text-[var(--brand-700)]">{normalizedBrandName.slice(0, 1).toUpperCase()}</span>
+                <span className="font-heading text-base font-semibold text-emerald-300">{normalizedBrandName.slice(0, 1).toUpperCase()}</span>
               )}
             </span>
-            <span className="font-heading truncate text-lg font-semibold tracking-tight text-slate-900">{normalizedBrandName}</span>
+            <span className="font-heading truncate text-lg font-semibold tracking-tight text-slate-100">{normalizedBrandName}</span>
           </Link>
 
           {!authView && (
             <>
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--surface-border)] bg-white text-slate-700 md:hidden"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-slate-900/80 text-slate-200 md:hidden"
                 onClick={() => setMenuOpen((current) => !current)}
                 aria-expanded={menuOpen}
                 aria-controls="mobile-nav"
@@ -68,10 +68,10 @@ export function TopNav({ brandName, brandLogoUrl }: { brandName: string; brandLo
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition ${
+                      className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition ${
                         active
-                          ? "bg-white text-slate-900 shadow-sm ring-1 ring-[var(--surface-border)]"
-                          : "text-slate-600 hover:bg-white/80 hover:text-slate-900"
+                          ? "bg-slate-800/90 text-slate-100 shadow-sm ring-1 ring-white/15"
+                          : "text-slate-300 hover:bg-slate-800/70 hover:text-slate-100"
                       }`}
                     >
                       {item.label}
@@ -95,8 +95,8 @@ export function TopNav({ brandName, brandLogoUrl }: { brandName: string; brandLo
                   onClick={() => setMenuOpen(false)}
                   className={`inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition ${
                     active
-                      ? "bg-white text-slate-900 shadow-sm ring-1 ring-[var(--surface-border)]"
-                      : "bg-white/70 text-slate-700 ring-1 ring-[var(--surface-border)] hover:bg-white"
+                      ? "bg-slate-800/90 text-slate-100 shadow-sm ring-1 ring-white/15"
+                      : "bg-slate-900/70 text-slate-300 ring-1 ring-white/10 hover:bg-slate-800/90"
                   }`}
                 >
                   {item.label}

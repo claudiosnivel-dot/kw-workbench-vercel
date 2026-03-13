@@ -14,10 +14,10 @@ function formatDate(value: Date | null | undefined): string {
 }
 
 function jobStatusTone(value: string): string {
-  if (value === "completed") return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  if (value === "failed") return "border-rose-200 bg-rose-50 text-rose-800";
-  if (value === "running") return "border-amber-200 bg-amber-50 text-amber-800";
-  return "border-slate-200 bg-slate-50 text-slate-700";
+  if (value === "completed") return "border-emerald-400/40 bg-emerald-500/15 text-emerald-200";
+  if (value === "failed") return "border-rose-400/40 bg-rose-500/15 text-rose-200";
+  if (value === "running") return "border-amber-400/40 bg-amber-500/15 text-amber-200";
+  return "border-slate-500/40 bg-slate-700/25 text-slate-200";
 }
 
 export default async function DashboardPage() {
