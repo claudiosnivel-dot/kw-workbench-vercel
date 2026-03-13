@@ -1,7 +1,9 @@
-﻿import { NextResponse } from "next/server";
+import { UserRole } from "@prisma/client";
+import { NextResponse } from "next/server";
 import {
   getSessionMaxAgeSeconds,
   isAuthEnabled,
+  isPublicSignupEnabled,
   SESSION_COOKIE_NAME,
   shouldUseSecureCookies,
 } from "@/lib/auth/config";
@@ -11,6 +13,10 @@ import { createSessionToken } from "@/lib/auth/session";
 export async function POST(request: Request) {
   if (!isAuthEnabled()) {
     return NextResponse.json({ error: "Registrazione non disponibile con autenticazione disabilitata" }, { status: 400 });
+  }
+
+  if (!isPublicSignupEnabled()) {
+    return NextResponse.json({ error: "Registrazione pubblica disabilitata" }, { status: 403 });
   }
 
   const payload = (await request.json()) as {
@@ -32,8 +38,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const user = await registerUser({ username, password });
-    const token = await createSessionToken(user.id, user.username);
+    const user = await registerUser({ username, password, role: UserRole.SUBSCRIBER });
+    const token = await createSessionToken({
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+      status: user.status,
+      isRootAdmin: user.isRootAdmin,
+    });
 
     const response = NextResponse.json({ success: true });
     response.cookies.set({

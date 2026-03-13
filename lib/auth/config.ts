@@ -13,6 +13,11 @@ export function getAuthPassword(): string {
   return process.env.APP_AUTH_PASSWORD ?? "changeme";
 }
 
+export function isPublicSignupEnabled(): boolean {
+  const raw = (process.env.APP_PUBLIC_SIGNUP_ENABLED ?? "true").toLowerCase();
+  return ["1", "true", "yes", "on"].includes(raw);
+}
+
 export function getSessionSecret(): string {
   return process.env.APP_SESSION_SECRET ?? "change-this-session-secret";
 }

@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
       authEnabled: false,
       userId: user.id,
       username: user.username,
+      role: user.role,
+      status: user.status,
+      isRootAdmin: user.isRootAdmin,
     });
   }
 
@@ -27,5 +30,8 @@ export async function GET(request: NextRequest) {
     authEnabled: true,
     userId: user.id,
     username: user.username,
+    role: user.role,
+    status: user.status,
+    isRootAdmin: user.isRootAdmin,
   });
 }

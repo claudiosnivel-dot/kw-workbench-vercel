@@ -21,12 +21,23 @@ export async function POST(request: Request) {
   const username = String(payload.username ?? "").trim();
   const password = String(payload.password ?? "");
 
-  const user = await verifyLoginCredentials(username, password);
-  if (!user) {
+  const result = await verifyLoginCredentials(username, password);
+  if (!result.user) {
+    if (result.reason === "SUSPENDED") {
+      return NextResponse.json({ error: "Account sospeso. Contatta l'amministratore." }, { status: 403 });
+    }
+
     return NextResponse.json({ error: "Credenziali non valide" }, { status: 401 });
   }
 
-  const token = await createSessionToken(user.id, user.username);
+  const token = await createSessionToken({
+    userId: result.user.id,
+    username: result.user.username,
+    role: result.user.role,
+    status: result.user.status,
+    isRootAdmin: result.user.isRootAdmin,
+  });
+
   const response = NextResponse.json({ success: true });
   response.cookies.set({
     name: SESSION_COOKIE_NAME,

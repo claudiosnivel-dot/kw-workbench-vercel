@@ -70,15 +70,31 @@ enum JobStatus {
   failed
 }
 
+enum UserRole {
+  ADMIN
+  SUBSCRIBER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
 model User {
   id                    String                @id @default(cuid())
   username              String                @unique
   password_hash         String
+  role                  UserRole              @default(SUBSCRIBER)
+  status                UserStatus            @default(ACTIVE)
+  is_root_admin         Boolean               @default(false)
+  last_login_at         DateTime?
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   projects              Project[]
   google_ads_credential GoogleAdsCredential?
 
+  @@index([role])
+  @@index([status])
   @@map("users")
 }
 

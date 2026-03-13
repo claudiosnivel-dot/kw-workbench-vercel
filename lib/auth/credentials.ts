@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, UserRole, UserStatus } from "@prisma/client";
 import { getAuthPassword, getAuthUsername } from "@/lib/auth/config";
 import { getManySettingValues } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
@@ -10,14 +10,43 @@ const LEGACY_KEYS = {
 } as const;
 
 const USERNAME_PATTERN = /^[a-z0-9._-]+$/;
+const ROOT_ADMIN_USERNAME = "admin";
+
+const AUTH_USER_SELECT = {
+  id: true,
+  username: true,
+  role: true,
+  status: true,
+  is_root_admin: true,
+} satisfies Prisma.UserSelect;
+
+type AuthUserRow = {
+  id: string;
+  username: string;
+  role: UserRole;
+  status: UserStatus;
+  is_root_admin: boolean;
+};
 
 export type AuthUser = {
   id: string;
   username: string;
+  role: UserRole;
+  status: UserStatus;
+  isRootAdmin: boolean;
 };
 
 export type AuthConfigSnapshot = {
   username: string;
+  role: UserRole;
+  status: UserStatus;
+  isRootAdmin: boolean;
+};
+
+export type LoginFailureReason = "INVALID_CREDENTIALS" | "SUSPENDED";
+export type VerifyLoginResult = {
+  user: AuthUser | null;
+  reason?: LoginFailureReason;
 };
 
 function isUniqueViolation(error: unknown): boolean {
@@ -26,6 +55,16 @@ function isUniqueViolation(error: unknown): boolean {
 
 function normalizeUsername(input: string): string {
   return input.trim().toLowerCase();
+}
+
+function mapAuthUser(row: AuthUserRow): AuthUser {
+  return {
+    id: row.id,
+    username: row.username,
+    role: row.role,
+    status: row.status,
+    isRootAdmin: row.is_root_admin,
+  };
 }
 
 async function getLegacyAuthValues() {
@@ -53,6 +92,38 @@ async function assignOrphanDataToUser(userId: string) {
   ]);
 }
 
+async function ensureRootAdminExists() {
+  const existingRoot = await prisma.user.findFirst({ where: { is_root_admin: true }, select: { id: true } });
+  if (existingRoot) {
+    return;
+  }
+
+  const byUsername = await prisma.user.findUnique({
+    where: { username: ROOT_ADMIN_USERNAME },
+    select: { id: true },
+  });
+
+  const fallback =
+    byUsername ??
+    (await prisma.user.findFirst({
+      orderBy: { created_at: "asc" },
+      select: { id: true },
+    }));
+
+  if (!fallback) {
+    return;
+  }
+
+  await prisma.user.update({
+    where: { id: fallback.id },
+    data: {
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+      is_root_admin: true,
+    },
+  });
+}
+
 export function validateUsername(input: string): string {
   const username = normalizeUsername(input);
 
@@ -78,13 +149,23 @@ export function validatePassword(input: string): string {
 }
 
 export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
-  const firstUser = await prisma.user.findFirst({ orderBy: { created_at: "asc" } });
+  const firstUser = await prisma.user.findFirst({
+    orderBy: { created_at: "asc" },
+    select: AUTH_USER_SELECT,
+  });
+
   if (firstUser) {
-    return { id: firstUser.id, username: firstUser.username };
+    await ensureRootAdminExists();
+    const resolved = await prisma.user.findUnique({ where: { id: firstUser.id }, select: AUTH_USER_SELECT });
+    if (!resolved) {
+      throw new Error("Utente non trovato");
+    }
+
+    return mapAuthUser(resolved as AuthUserRow);
   }
 
   const legacy = await getLegacyAuthValues();
-  const fallbackUsername = normalizeUsername(getAuthUsername()) || "admin";
+  const fallbackUsername = normalizeUsername(getAuthUsername()) || ROOT_ADMIN_USERNAME;
   const username = legacy?.username || fallbackUsername;
   const passwordHash = legacy?.passwordHash || hashPassword(getAuthPassword());
 
@@ -93,15 +174,22 @@ export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
       data: {
         username,
         password_hash: passwordHash,
+        role: UserRole.SUBSCRIBER,
+        status: UserStatus.ACTIVE,
+        is_root_admin: false,
       },
-      select: {
-        id: true,
-        username: true,
-      },
+      select: AUTH_USER_SELECT,
     });
 
     await assignOrphanDataToUser(created.id);
-    return created;
+    await ensureRootAdminExists();
+
+    const resolved = await prisma.user.findUnique({ where: { id: created.id }, select: AUTH_USER_SELECT });
+    if (!resolved) {
+      throw new Error("Utente non trovato");
+    }
+
+    return mapAuthUser(resolved as AuthUserRow);
   } catch (error) {
     if (!isUniqueViolation(error)) {
       throw error;
@@ -109,27 +197,30 @@ export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
 
     const existing = await prisma.user.findUnique({
       where: { username },
-      select: { id: true, username: true },
+      select: AUTH_USER_SELECT,
     });
 
     if (!existing) {
       throw error;
     }
 
-    return existing;
+    await ensureRootAdminExists();
+    const resolved = await prisma.user.findUnique({ where: { id: existing.id }, select: AUTH_USER_SELECT });
+    if (!resolved) {
+      throw new Error("Utente non trovato");
+    }
+
+    return mapAuthUser(resolved as AuthUserRow);
   }
 }
 
 export async function findAuthUserById(userId: string): Promise<AuthUser | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      id: true,
-      username: true,
-    },
+    select: AUTH_USER_SELECT,
   });
 
-  return user;
+  return user ? mapAuthUser(user as AuthUserRow) : null;
 }
 
 export async function getAuthConfigSnapshot(userId: string): Promise<AuthConfigSnapshot> {
@@ -140,15 +231,18 @@ export async function getAuthConfigSnapshot(userId: string): Promise<AuthConfigS
 
   return {
     username: user.username,
+    role: user.role,
+    status: user.status,
+    isRootAdmin: user.isRootAdmin,
   };
 }
 
-export async function verifyLoginCredentials(username: string, password: string): Promise<AuthUser | null> {
+export async function verifyLoginCredentials(username: string, password: string): Promise<VerifyLoginResult> {
   await ensureLegacyDefaultUser();
 
   const normalized = normalizeUsername(username);
   if (!normalized || !password) {
-    return null;
+    return { user: null, reason: "INVALID_CREDENTIALS" };
   }
 
   const user = await prisma.user.findUnique({
@@ -156,41 +250,59 @@ export async function verifyLoginCredentials(username: string, password: string)
     select: {
       id: true,
       username: true,
+      role: true,
+      status: true,
+      is_root_admin: true,
       password_hash: true,
     },
   });
 
   if (!user) {
-    return null;
+    return { user: null, reason: "INVALID_CREDENTIALS" };
   }
 
   if (!verifyPassword(password, user.password_hash)) {
-    return null;
+    return { user: null, reason: "INVALID_CREDENTIALS" };
   }
 
+  if (user.status === UserStatus.SUSPENDED) {
+    return { user: null, reason: "SUSPENDED" };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { last_login_at: new Date() },
+  });
+
   return {
-    id: user.id,
-    username: user.username,
+    user: mapAuthUser(user as AuthUserRow),
   };
 }
 
-export async function registerUser(input: { username: string; password: string }): Promise<AuthUser> {
+export async function registerUser(input: {
+  username: string;
+  password: string;
+  role?: UserRole;
+}): Promise<AuthUser> {
   await ensureLegacyDefaultUser();
 
   const username = validateUsername(input.username);
   const password = validatePassword(input.password);
+  const role = input.role ?? UserRole.SUBSCRIBER;
 
   try {
-    return await prisma.user.create({
+    const created = await prisma.user.create({
       data: {
         username,
         password_hash: hashPassword(password),
+        role,
+        status: UserStatus.ACTIVE,
+        is_root_admin: false,
       },
-      select: {
-        id: true,
-        username: true,
-      },
+      select: AUTH_USER_SELECT,
     });
+
+    return mapAuthUser(created as AuthUserRow);
   } catch (error) {
     if (isUniqueViolation(error)) {
       throw new Error("Username gia in uso");
@@ -217,7 +329,7 @@ export async function updateAuthCredentials(input: {
   userId: string;
   username?: string;
   password?: string;
-}): Promise<AuthConfigSnapshot> {
+}): Promise<AuthUser> {
   const data: { username?: string; password_hash?: string } = {};
 
   if (typeof input.username === "string" && input.username.trim()) {
@@ -236,10 +348,10 @@ export async function updateAuthCredentials(input: {
     const updated = await prisma.user.update({
       where: { id: input.userId },
       data,
-      select: { username: true },
+      select: AUTH_USER_SELECT,
     });
 
-    return { username: updated.username };
+    return mapAuthUser(updated as AuthUserRow);
   } catch (error) {
     if (isUniqueViolation(error)) {
       throw new Error("Username gia in uso");
@@ -247,4 +359,47 @@ export async function updateAuthCredentials(input: {
 
     throw error;
   }
+}
+
+export async function updateUserAdminFields(input: {
+  targetUserId: string;
+  role?: UserRole;
+  status?: UserStatus;
+  password?: string;
+  isRootAdmin?: boolean;
+}): Promise<AuthUser> {
+  const data: {
+    role?: UserRole;
+    status?: UserStatus;
+    password_hash?: string;
+    is_root_admin?: boolean;
+  } = {};
+
+  if (input.role) {
+    data.role = input.role;
+  }
+
+  if (input.status) {
+    data.status = input.status;
+  }
+
+  if (typeof input.password === "string" && input.password.length > 0) {
+    data.password_hash = hashPassword(validatePassword(input.password));
+  }
+
+  if (typeof input.isRootAdmin === "boolean") {
+    data.is_root_admin = input.isRootAdmin;
+  }
+
+  if (!data.role && !data.status && !data.password_hash && data.is_root_admin === undefined) {
+    throw new Error("Nessuna modifica da salvare");
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: input.targetUserId },
+    data,
+    select: AUTH_USER_SELECT,
+  });
+
+  return mapAuthUser(updated as AuthUserRow);
 }

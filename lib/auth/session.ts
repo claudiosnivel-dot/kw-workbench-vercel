@@ -1,3 +1,4 @@
+import { UserRole, UserStatus } from "@prisma/client";
 import {
   getSessionMaxAgeSeconds,
   getSessionSecret,
@@ -8,16 +9,28 @@ import { decodeJson, encodeJson, signPayload, verifyPayload } from "@/lib/auth/c
 export type SessionPayload = {
   userId: string;
   username: string;
+  role?: UserRole;
+  status?: UserStatus;
+  isRootAdmin?: boolean;
   exp: number;
 };
 
 export { SESSION_COOKIE_NAME };
 
-export async function createSessionToken(userId: string, username: string): Promise<string> {
+export async function createSessionToken(input: {
+  userId: string;
+  username: string;
+  role: UserRole;
+  status: UserStatus;
+  isRootAdmin: boolean;
+}): Promise<string> {
   const nowSeconds = Math.floor(Date.now() / 1000);
   const payload: SessionPayload = {
-    userId,
-    username,
+    userId: input.userId,
+    username: input.username,
+    role: input.role,
+    status: input.status,
+    isRootAdmin: input.isRootAdmin,
     exp: nowSeconds + getSessionMaxAgeSeconds(),
   };
 

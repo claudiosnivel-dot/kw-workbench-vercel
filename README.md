@@ -66,3 +66,13 @@ Build command configurato:
 ## Compatibilita Electron
 
 La web app resta pronta per wrapping Electron: puoi puntare al dominio deployato o all'istanza locale.
+
+## Ruoli e dashboard admin
+
+- Ruoli supportati: `ADMIN` e `SUBSCRIBER`
+- L'utente `admin` e root admin (se assente, fallback al primo utente per anti-lockout)
+- Solo il root admin puo creare/promuovere altri admin
+- La registrazione classica crea sempre utenti `SUBSCRIBER`
+- `APP_PUBLIC_SIGNUP_ENABLED=true|false` per aprire/chiudere signup pubblico
+- Dashboard admin su `/admin` per gestione utenti (monitoraggio, ruolo, sospensione, reset password, hard delete)
+- Privacy: la dashboard admin non espone i progetti personali degli utenti

@@ -5,17 +5,33 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { LogoutButton } from "@/components/logout-button";
 
-const NAV_LINKS = [
-  { href: "/", label: "Panoramica" },
-  { href: "/settings/integrations", label: "Impostazioni" },
-  { href: "/projects/new", label: "Nuovo progetto" },
-] as const;
-
 function isAuthRoute(pathname: string): boolean {
   return pathname.startsWith("/login") || pathname.startsWith("/register");
 }
 
-export function TopNav({ brandName, brandLogoUrl }: { brandName: string; brandLogoUrl?: string }) {
+function buildNavLinks(showAdminLink: boolean) {
+  const links = [
+    { href: "/", label: "Panoramica" },
+    { href: "/settings/integrations", label: "Impostazioni" },
+    { href: "/projects/new", label: "Nuovo progetto" },
+  ];
+
+  if (showAdminLink) {
+    links.push({ href: "/admin", label: "Admin" });
+  }
+
+  return links;
+}
+
+export function TopNav({
+  brandName,
+  brandLogoUrl,
+  showAdminLink = false,
+}: {
+  brandName: string;
+  brandLogoUrl?: string;
+  showAdminLink?: boolean;
+}) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -24,6 +40,7 @@ export function TopNav({ brandName, brandLogoUrl }: { brandName: string; brandLo
     return clean || "Seo God Mode";
   }, [brandName]);
 
+  const navLinks = useMemo(() => buildNavLinks(showAdminLink), [showAdminLink]);
   const authView = isAuthRoute(pathname);
 
   useEffect(() => {
@@ -62,7 +79,7 @@ export function TopNav({ brandName, brandLogoUrl }: { brandName: string; brandLo
               </button>
 
               <nav className="hidden items-center gap-2 md:flex">
-                {NAV_LINKS.map((item) => {
+                {navLinks.map((item) => {
                   const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
                   return (
                     <Link
@@ -86,7 +103,7 @@ export function TopNav({ brandName, brandLogoUrl }: { brandName: string; brandLo
 
         {!authView && menuOpen && (
           <nav id="mobile-nav" className="mt-3 grid gap-2 md:hidden">
-            {NAV_LINKS.map((item) => {
+            {navLinks.map((item) => {
               const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
               return (
                 <Link

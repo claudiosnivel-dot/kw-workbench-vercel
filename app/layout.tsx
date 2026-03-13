@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
 import { TopNav } from "@/components/top-nav";
+import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import "./globals.css";
 
@@ -24,7 +25,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const branding = await getBrandingSnapshot();
+  const [branding, currentUser] = await Promise.all([
+    getBrandingSnapshot(),
+    getOptionalAuthenticatedUserFromCookies(),
+  ]);
 
   return (
     <html lang="it">
@@ -36,7 +40,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </div>
 
         <div className="min-h-screen">
-          <TopNav brandName={branding.appName} brandLogoUrl={branding.logoUrl} />
+          <TopNav
+            brandName={branding.appName}
+            brandLogoUrl={branding.logoUrl}
+            showAdminLink={currentUser?.role === "ADMIN"}
+          />
           <main className="mx-auto w-full max-w-[1180px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">{children}</main>
         </div>
       </body>

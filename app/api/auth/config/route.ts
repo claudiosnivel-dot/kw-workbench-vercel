@@ -51,14 +51,26 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const snapshot = await updateAuthCredentials({
+    const updatedUser = await updateAuthCredentials({
       userId: user.id,
       username: username || undefined,
       password: newPassword || undefined,
     });
 
-    const token = await createSessionToken(user.id, snapshot.username);
-    const response = NextResponse.json({ data: snapshot });
+    const token = await createSessionToken({
+      userId: updatedUser.id,
+      username: updatedUser.username,
+      role: updatedUser.role,
+      status: updatedUser.status,
+      isRootAdmin: updatedUser.isRootAdmin,
+    });
+
+    const response = NextResponse.json({
+      data: {
+        username: updatedUser.username,
+      },
+    });
+
     response.cookies.set({
       name: SESSION_COOKIE_NAME,
       value: token,
