@@ -161,6 +161,7 @@ export function ProjectForm({
             onChange={(event) => update("name", event.target.value)}
             required
           />
+          <p className="mt-1 text-xs text-slate-500">Nome interno del progetto, utile per ritrovarlo velocemente in panoramica.</p>
         </div>
 
         <div>
@@ -175,6 +176,7 @@ export function ProjectForm({
             value={values.min_volume}
             onChange={(event) => update("min_volume", Number(event.target.value) || 0)}
           />
+          <p className="mt-1 text-xs text-slate-500">Scarta keyword con volume inferiore a questo valore (0 = nessun filtro).</p>
         </div>
 
         <div>
@@ -195,6 +197,7 @@ export function ProjectForm({
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-slate-500">Definisce la lingua usata per suggerimenti autocomplete e classificazione keyword.</p>
         </div>
 
         <div>
@@ -215,6 +218,7 @@ export function ProjectForm({
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-slate-500">Imposta il mercato geografico di riferimento per query e metriche.</p>
         </div>
 
         {canEditAutocompleteProvider ? (
@@ -233,6 +237,7 @@ export function ProjectForm({
               <option value="GOOGLE_DIRECT">GoogleDirectAutocompleteProvider</option>
               <option value="MOCK">MockAutocompleteProvider</option>
             </select>
+            <p className="mt-1 text-xs text-slate-500">Sorgente usata per generare nuove keyword durante l'espansione.</p>
           </div>
         ) : (
           <div>
@@ -242,6 +247,7 @@ export function ProjectForm({
             <div id="autocomplete_provider_locked" className="input flex items-center bg-[var(--surface-muted)] text-slate-300">
               GoogleDirectAutocompleteProvider (predefinito)
             </div>
+            <p className="mt-1 text-xs text-slate-500">Sorgente usata per generare nuove keyword durante l'espansione.</p>
             <p className="mt-1 text-xs text-slate-500">Modificabile solo dal root admin.</p>
           </div>
         )}
@@ -260,6 +266,7 @@ export function ProjectForm({
             <option value="MOCK">MockMetricsProvider</option>
             <option value="GOOGLE_KEYWORD_PLANNER">GoogleKeywordPlannerMetricsProvider</option>
           </select>
+          <p className="mt-1 text-xs text-slate-500">Origine delle metriche keyword: volume, competizione e costo stimato.</p>
         </div>
 
         <div>
@@ -276,6 +283,7 @@ export function ProjectForm({
             <option value="aggressive">aggressivo</option>
             <option value="conservative">conservativo</option>
           </select>
+          <p className="mt-1 text-xs text-slate-500">Regola i pesi usati nel punteggio finale delle keyword.</p>
         </div>
       </div>
 
@@ -290,29 +298,49 @@ export function ProjectForm({
           onChange={(event) => update("seeds", event.target.value)}
           placeholder="keyword uno\nkeyword due\nkeyword tre"
         />
+        <p className="mt-1 text-xs text-slate-500">Keyword di partenza da cui l'app genera varianti e nuove opportunita.</p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={values.exclude_brands} onChange={(event) => update("exclude_brands", event.target.checked)} />
-          Escludi brand
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={values.expand_alpha} onChange={(event) => update("expand_alpha", event.target.checked)} />
-          Espandi alfabeto (a-z)
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={values.expand_numeric} onChange={(event) => update("expand_numeric", event.target.checked)} />
-          Espandi numerico (0-9)
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={values.expand_patterns} onChange={(event) => update("expand_patterns", event.target.checked)} />
-          Espandi pattern semantici
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={values.auto_classification} onChange={(event) => update("auto_classification", event.target.checked)} />
-          Classificazione automatica
-        </label>
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={values.exclude_brands} onChange={(event) => update("exclude_brands", event.target.checked)} />
+            Escludi brand
+          </label>
+          <p className="mt-1 text-xs text-slate-500">Riduce o marca i termini brandizzati secondo la blacklist configurata.</p>
+        </div>
+
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={values.expand_alpha} onChange={(event) => update("expand_alpha", event.target.checked)} />
+            Espandi alfabeto (a-z)
+          </label>
+          <p className="mt-1 text-xs text-slate-500">Aggiunge varianti con lettere (es. keyword a, keyword b, ...).</p>
+        </div>
+
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={values.expand_numeric} onChange={(event) => update("expand_numeric", event.target.checked)} />
+            Espandi numerico (0-9)
+          </label>
+          <p className="mt-1 text-xs text-slate-500">Aggiunge varianti con numeri (es. keyword 1, keyword 2, ...).</p>
+        </div>
+
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={values.expand_patterns} onChange={(event) => update("expand_patterns", event.target.checked)} />
+            Espandi pattern semantici
+          </label>
+          <p className="mt-1 text-xs text-slate-500">Usa pattern avanzati per ampliare la copertura delle query correlate.</p>
+        </div>
+
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3 md:col-span-2">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={values.auto_classification} onChange={(event) => update("auto_classification", event.target.checked)} />
+            Classificazione automatica
+          </label>
+          <p className="mt-1 text-xs text-slate-500">Assegna in automatico intento di ricerca e tipo keyword durante l'analisi.</p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
