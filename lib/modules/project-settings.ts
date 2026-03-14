@@ -47,7 +47,7 @@ export function parseProjectPayload(payload: Record<string, unknown>): ProjectSe
 }
 
 function parseAutocompleteProvider(raw: unknown): AutocompleteProvider {
-  return raw === "GOOGLE_DIRECT" ? "GOOGLE_DIRECT" : "MOCK";
+  return raw === "MOCK" ? "MOCK" : "GOOGLE_DIRECT";
 }
 
 function parseMetricsProvider(raw: unknown): MetricsProvider {

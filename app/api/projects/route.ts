@@ -33,6 +33,7 @@ export async function POST(request: Request) {
 
   const payload = (await request.json()) as Record<string, unknown>;
   const input = parseProjectPayload(payload);
+  const autocompleteProvider = user.isRootAdmin ? input.autocomplete_provider : "GOOGLE_DIRECT";
 
   const project = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const created = await tx.project.create({
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
         name: input.name,
         language_code: input.language_code,
         country_code: input.country_code,
-        autocomplete_provider: input.autocomplete_provider,
+        autocomplete_provider: autocompleteProvider,
         metrics_provider: input.metrics_provider,
         min_volume: input.min_volume,
         exclude_brands: input.exclude_brands,

@@ -1,6 +1,11 @@
 import { ProjectForm } from "@/components/project-form";
+import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 
-export default function NewProjectPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewProjectPage() {
+  const user = await requireAuthenticatedUserFromCookies();
+
   return (
     <div className="space-y-6">
       <section className="card">
@@ -11,7 +16,7 @@ export default function NewProjectPage() {
       </section>
 
       <section className="card">
-        <ProjectForm mode="create" />
+        <ProjectForm mode="create" canEditAutocompleteProvider={user.isRootAdmin} />
       </section>
     </div>
   );

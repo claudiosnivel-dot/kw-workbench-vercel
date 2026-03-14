@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -34,6 +34,7 @@ type ProjectFormProps = {
   mode: "create" | "edit";
   projectId?: string;
   initialValues?: ProjectFormValues;
+  canEditAutocompleteProvider?: boolean;
 };
 
 const defaultValues: ProjectFormValues = {
@@ -41,7 +42,7 @@ const defaultValues: ProjectFormValues = {
   language_code: "en",
   country_code: "US",
   seeds: "",
-  autocomplete_provider: "MOCK",
+  autocomplete_provider: "GOOGLE_DIRECT",
   metrics_provider: "NONE",
   min_volume: 0,
   exclude_brands: true,
@@ -52,9 +53,25 @@ const defaultValues: ProjectFormValues = {
   scoring_profile: "balanced",
 };
 
-export function ProjectForm({ mode, projectId, initialValues }: ProjectFormProps) {
+export function ProjectForm({
+  mode,
+  projectId,
+  initialValues,
+  canEditAutocompleteProvider = false,
+}: ProjectFormProps) {
   const router = useRouter();
-  const [values, setValues] = useState<ProjectFormValues>(initialValues ?? defaultValues);
+  const [values, setValues] = useState<ProjectFormValues>(() => {
+    const base = initialValues ?? defaultValues;
+    if (canEditAutocompleteProvider) {
+      return base;
+    }
+
+    return {
+      ...base,
+      autocomplete_provider: "GOOGLE_DIRECT",
+    };
+  });
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +120,7 @@ export function ProjectForm({ mode, projectId, initialValues }: ProjectFormProps
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...values,
+          autocomplete_provider: canEditAutocompleteProvider ? values.autocomplete_provider : "GOOGLE_DIRECT",
           language_code: languageValue,
           country_code: countryValue,
         }),
@@ -199,20 +217,34 @@ export function ProjectForm({ mode, projectId, initialValues }: ProjectFormProps
           </select>
         </div>
 
-        <div>
-          <label className="label" htmlFor="autocomplete_provider">
-            Provider autocomplete
-          </label>
-          <select
-            id="autocomplete_provider"
-            className="select"
-            value={values.autocomplete_provider}
-            onChange={(event) => update("autocomplete_provider", event.target.value as ProjectFormValues["autocomplete_provider"])}
-          >
-            <option value="MOCK">MockAutocompleteProvider</option>
-            <option value="GOOGLE_DIRECT">GoogleDirectAutocompleteProvider</option>
-          </select>
-        </div>
+        {canEditAutocompleteProvider ? (
+          <div>
+            <label className="label" htmlFor="autocomplete_provider">
+              Provider autocomplete
+            </label>
+            <select
+              id="autocomplete_provider"
+              className="select"
+              value={values.autocomplete_provider}
+              onChange={(event) =>
+                update("autocomplete_provider", event.target.value as ProjectFormValues["autocomplete_provider"])
+              }
+            >
+              <option value="GOOGLE_DIRECT">GoogleDirectAutocompleteProvider</option>
+              <option value="MOCK">MockAutocompleteProvider</option>
+            </select>
+          </div>
+        ) : (
+          <div>
+            <label className="label" htmlFor="autocomplete_provider_locked">
+              Provider autocomplete
+            </label>
+            <div id="autocomplete_provider_locked" className="input flex items-center bg-[var(--surface-muted)] text-slate-300">
+              GoogleDirectAutocompleteProvider (predefinito)
+            </div>
+            <p className="mt-1 text-xs text-slate-500">Modificabile solo dal root admin.</p>
+          </div>
+        )}
 
         <div>
           <label className="label" htmlFor="metrics_provider">

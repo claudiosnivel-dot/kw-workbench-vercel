@@ -31,6 +31,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
         <ProjectForm
           mode="edit"
           projectId={project.id}
+          canEditAutocompleteProvider={user.isRootAdmin}
           initialValues={{
             name: project.name,
             language_code: project.language_code,
