@@ -40,6 +40,7 @@ export function TopNav({
     return clean || "Seo God Mode";
   }, [brandName]);
 
+  const hasCustomLogo = Boolean(brandLogoUrl && brandLogoUrl.trim().length > 0);
   const navLinks = useMemo(() => buildNavLinks(showAdminLink), [showAdminLink]);
   const authView = isAuthRoute(pathname);
 
@@ -51,18 +52,20 @@ export function TopNav({
     <header className="top-nav-shell sticky top-0 z-40">
       <div className="mx-auto w-full max-w-[1180px] px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4">
-          <Link href="/" className="group inline-flex min-w-0 items-center gap-3">
-            <span className="top-nav-logo flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl transition group-hover:scale-[1.02]">
-              {brandLogoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={brandLogoUrl} alt={`${normalizedBrandName} logo`} className="h-full w-full object-contain" />
-              ) : (
-                <span className="top-nav-logo-fallback font-heading text-base font-semibold">
-                  {normalizedBrandName.slice(0, 1).toUpperCase()}
+          <Link href="/" aria-label={normalizedBrandName} className="group inline-flex min-w-0 items-center gap-3">
+            {hasCustomLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={brandLogoUrl} alt={normalizedBrandName} className="top-nav-logo-image" />
+            ) : (
+              <>
+                <span className="top-nav-logo flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl transition group-hover:scale-[1.02]">
+                  <span className="top-nav-logo-fallback font-heading text-base font-semibold">
+                    {normalizedBrandName.slice(0, 1).toUpperCase()}
+                  </span>
                 </span>
-              )}
-            </span>
-            <span className="top-nav-brand-name font-heading truncate text-lg font-semibold tracking-tight">{normalizedBrandName}</span>
+                <span className="top-nav-brand-name font-heading truncate text-lg font-semibold tracking-tight">{normalizedBrandName}</span>
+              </>
+            )}
           </Link>
 
           {!authView && (

@@ -272,6 +272,15 @@ a {
   border: 1px solid var(--nav-logo-ring);
 }
 
+
+.top-nav-logo-image {
+  display: block;
+  height: 44px;
+  width: auto;
+  max-width: min(240px, 46vw);
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(2, 6, 23, 0.24));
+}
 .top-nav-logo-fallback {
   color: var(--brand-600);
 }
