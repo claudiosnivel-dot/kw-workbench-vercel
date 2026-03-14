@@ -221,7 +221,7 @@ export function ProjectForm({
           <p className="mt-1 text-xs text-slate-500">Imposta il mercato geografico di riferimento per query e metriche.</p>
         </div>
 
-        {canEditAutocompleteProvider ? (
+        {canEditAutocompleteProvider && (
           <div>
             <label className="label" htmlFor="autocomplete_provider">
               Provider autocomplete
@@ -238,17 +238,6 @@ export function ProjectForm({
               <option value="MOCK">MockAutocompleteProvider</option>
             </select>
             <p className="mt-1 text-xs text-slate-500">Sorgente usata per generare nuove keyword durante l'espansione.</p>
-          </div>
-        ) : (
-          <div>
-            <label className="label" htmlFor="autocomplete_provider_locked">
-              Provider autocomplete
-            </label>
-            <div id="autocomplete_provider_locked" className="input flex items-center bg-[var(--surface-muted)] text-slate-300">
-              GoogleDirectAutocompleteProvider (predefinito)
-            </div>
-            <p className="mt-1 text-xs text-slate-500">Sorgente usata per generare nuove keyword durante l'espansione.</p>
-            <p className="mt-1 text-xs text-slate-500">Modificabile solo dal root admin.</p>
           </div>
         )}
 
