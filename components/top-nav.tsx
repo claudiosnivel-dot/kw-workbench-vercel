@@ -27,6 +27,14 @@ function normalizeLogoUrl(value: string | null | undefined): string {
   return String(value ?? "").trim();
 }
 
+function normalizeThemeMode(value: string | null | undefined): "DARK" | "LIGHT" | null {
+  if (value === "DARK" || value === "LIGHT") {
+    return value;
+  }
+
+  return null;
+}
+
 function resolveLogoUrl(input: {
   themeMode: "DARK" | "LIGHT";
   dark?: string;
@@ -61,6 +69,7 @@ export function TopNav({
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeThemeMode, setActiveThemeMode] = useState<"DARK" | "LIGHT">(themeMode);
 
   const normalizedBrandName = useMemo(() => {
     const clean = brandName.trim();
@@ -70,12 +79,12 @@ export function TopNav({
   const resolvedLogoUrl = useMemo(
     () =>
       resolveLogoUrl({
-        themeMode,
+        themeMode: activeThemeMode,
         dark: brandLogoUrlDark,
         light: brandLogoUrlLight,
         legacy: brandLogoUrlLegacy,
       }),
-    [themeMode, brandLogoUrlDark, brandLogoUrlLight, brandLogoUrlLegacy]
+    [activeThemeMode, brandLogoUrlDark, brandLogoUrlLight, brandLogoUrlLegacy]
   );
 
   const hasCustomLogo = resolvedLogoUrl.length > 0;
@@ -85,6 +94,39 @@ export function TopNav({
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    setActiveThemeMode(themeMode);
+  }, [themeMode]);
+
+  useEffect(() => {
+    const readThemeFromDom = () => normalizeThemeMode(document.documentElement.getAttribute("data-theme"));
+
+    const syncTheme = () => {
+      const next = readThemeFromDom();
+      if (next) {
+        setActiveThemeMode((current) => (current === next ? current : next));
+      }
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
+          syncTheme();
+          break;
+        }
+      }
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <header className="top-nav-shell sticky top-0 z-40">
