@@ -75,9 +75,11 @@ export default async function DashboardPage() {
               <Link href="/projects/new" className="btn-primary w-full text-center sm:w-auto">
                 Crea progetto
               </Link>
-              <Link href="/settings/integrations" className="btn-secondary w-full text-center sm:w-auto">
-                Branding e integrazioni
-              </Link>
+              {user.role === "ADMIN" && (
+                <Link href="/admin" className="btn-secondary w-full text-center sm:w-auto">
+                  Dashboard admin
+                </Link>
+              )}
             </div>
           </div>
 

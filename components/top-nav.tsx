@@ -12,7 +12,6 @@ function isAuthRoute(pathname: string): boolean {
 function buildNavLinks(showAdminLink: boolean) {
   const links = [
     { href: "/", label: "Panoramica" },
-    { href: "/settings/integrations", label: "Impostazioni" },
     { href: "/projects/new", label: "Nuovo progetto" },
   ];
 

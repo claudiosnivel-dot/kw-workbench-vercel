@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { AdminUsersDashboard } from "@/components/admin-users-dashboard";
+import { BrandingSettingsCard } from "@/components/branding-settings-card";
 import { GoogleAdsIntegrationCard } from "@/components/google-ads-integration-card";
 import { isAdminUser, requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import { getGoogleAdsCredentialSnapshot } from "@/lib/integrations/google-ads";
 import { getGoogleAdsApiConfigSnapshot } from "@/lib/integrations/google-ads-config";
 
@@ -14,18 +16,28 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const keywordPlannerData = user.isRootAdmin
-    ? await Promise.all([getGoogleAdsCredentialSnapshot(), getGoogleAdsApiConfigSnapshot()])
-    : null;
+  const [branding, keywordPlannerData] = await Promise.all([
+    getBrandingSnapshot(),
+    user.isRootAdmin
+      ? Promise.all([getGoogleAdsCredentialSnapshot(), getGoogleAdsApiConfigSnapshot()])
+      : Promise.resolve(null),
+  ]);
 
   return (
     <div className="space-y-6">
       <section className="card">
         <h1 className="text-2xl font-semibold">Dashboard Admin</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Monitora e amministra gli utenti della piattaforma. I dati progetto degli utenti restano sempre privati.
+          Qui trovi amministrazione utenti e impostazioni piattaforma. I dati progetto degli utenti restano sempre privati.
         </p>
       </section>
+
+      <BrandingSettingsCard
+        initial={{
+          appName: branding.appName,
+          logoUrl: branding.logoUrl,
+        }}
+      />
 
       {user.isRootAdmin && keywordPlannerData && (
         <GoogleAdsIntegrationCard
@@ -47,6 +59,15 @@ export default async function AdminPage() {
             hasClientSecret: keywordPlannerData[1].hasClientSecret,
           }}
         />
+      )}
+
+      {!user.isRootAdmin && (
+        <section className="card">
+          <h2 className="text-lg font-semibold">Google Keyword Planner</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Configurazione riservata al root admin.
+          </p>
+        </section>
       )}
 
       <AdminUsersDashboard
