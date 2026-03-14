@@ -51,7 +51,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <div className="min-h-screen">
           <TopNav
             brandName={branding.appName}
-            brandLogoUrl={branding.logoUrl}
+            brandLogoUrlDark={branding.logoUrlDark}
+            brandLogoUrlLight={branding.logoUrlLight}
+            brandLogoUrlLegacy={branding.logoUrl}
+            themeMode={themeMode}
             showAdminLink={currentUser?.role === "ADMIN"}
           />
           <main className="mx-auto w-full max-w-[1180px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">{children}</main>

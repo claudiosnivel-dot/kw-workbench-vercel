@@ -23,13 +23,40 @@ function buildNavLinks(showAdminLink: boolean) {
   return links;
 }
 
+function normalizeLogoUrl(value: string | null | undefined): string {
+  return String(value ?? "").trim();
+}
+
+function resolveLogoUrl(input: {
+  themeMode: "DARK" | "LIGHT";
+  dark?: string;
+  light?: string;
+  legacy?: string;
+}): string {
+  const dark = normalizeLogoUrl(input.dark);
+  const light = normalizeLogoUrl(input.light);
+  const legacy = normalizeLogoUrl(input.legacy);
+
+  if (input.themeMode === "LIGHT") {
+    return light || dark || legacy;
+  }
+
+  return dark || light || legacy;
+}
+
 export function TopNav({
   brandName,
-  brandLogoUrl,
+  brandLogoUrlDark,
+  brandLogoUrlLight,
+  brandLogoUrlLegacy,
+  themeMode,
   showAdminLink = false,
 }: {
   brandName: string;
-  brandLogoUrl?: string;
+  brandLogoUrlDark?: string;
+  brandLogoUrlLight?: string;
+  brandLogoUrlLegacy?: string;
+  themeMode: "DARK" | "LIGHT";
   showAdminLink?: boolean;
 }) {
   const pathname = usePathname();
@@ -40,7 +67,18 @@ export function TopNav({
     return clean || "Seo God Mode";
   }, [brandName]);
 
-  const hasCustomLogo = Boolean(brandLogoUrl && brandLogoUrl.trim().length > 0);
+  const resolvedLogoUrl = useMemo(
+    () =>
+      resolveLogoUrl({
+        themeMode,
+        dark: brandLogoUrlDark,
+        light: brandLogoUrlLight,
+        legacy: brandLogoUrlLegacy,
+      }),
+    [themeMode, brandLogoUrlDark, brandLogoUrlLight, brandLogoUrlLegacy]
+  );
+
+  const hasCustomLogo = resolvedLogoUrl.length > 0;
   const navLinks = useMemo(() => buildNavLinks(showAdminLink), [showAdminLink]);
   const authView = isAuthRoute(pathname);
 
@@ -55,7 +93,7 @@ export function TopNav({
           <Link href="/" aria-label={normalizedBrandName} className="group inline-flex min-w-0 items-center gap-3">
             {hasCustomLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={brandLogoUrl} alt={normalizedBrandName} className="top-nav-logo-image" />
+              <img src={resolvedLogoUrl} alt={normalizedBrandName} className="top-nav-logo-image" />
             ) : (
               <>
                 <span className="top-nav-logo flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl transition group-hover:scale-[1.02]">

@@ -36,6 +36,8 @@ export default async function AdminPage() {
         initial={{
           appName: branding.appName,
           logoUrl: branding.logoUrl,
+          logoUrlDark: branding.logoUrlDark,
+          logoUrlLight: branding.logoUrlLight,
         }}
       />
 

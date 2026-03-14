@@ -35,11 +35,15 @@ export async function PATCH(request: Request) {
     const payload = (await request.json()) as {
       appName?: string;
       logoUrl?: string | null;
+      logoUrlDark?: string | null;
+      logoUrlLight?: string | null;
     };
 
     const snapshot = await updateBrandingSettings({
       appName: payload.appName,
       logoUrl: payload.logoUrl,
+      logoUrlDark: payload.logoUrlDark,
+      logoUrlLight: payload.logoUrlLight,
     });
 
     return NextResponse.json({ data: snapshot });

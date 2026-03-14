@@ -3,6 +3,8 @@ import { deleteSettingValue, getManySettingValues, upsertSettingValue } from "@/
 const KEYS = {
   appName: "APP_BRAND_NAME",
   logoUrl: "APP_BRAND_LOGO_URL",
+  logoUrlDark: "APP_BRAND_LOGO_URL_DARK",
+  logoUrlLight: "APP_BRAND_LOGO_URL_LIGHT",
 } as const;
 
 const FALLBACK_APP_NAME = "Seo God Mode";
@@ -10,6 +12,8 @@ const FALLBACK_APP_NAME = "Seo God Mode";
 export type BrandingSnapshot = {
   appName: string;
   logoUrl: string;
+  logoUrlDark: string;
+  logoUrlLight: string;
 };
 
 function clean(value: string | null | undefined): string | undefined {
@@ -59,18 +63,43 @@ export async function getBrandingSnapshot(): Promise<BrandingSnapshot> {
     return {
       appName: normalizeAppName(values[KEYS.appName] ?? process.env.APP_BRAND_NAME),
       logoUrl: normalizeLogoUrl(values[KEYS.logoUrl] ?? process.env.APP_BRAND_LOGO_URL) ?? "",
+      logoUrlDark: normalizeLogoUrl(values[KEYS.logoUrlDark] ?? process.env.APP_BRAND_LOGO_URL_DARK) ?? "",
+      logoUrlLight: normalizeLogoUrl(values[KEYS.logoUrlLight] ?? process.env.APP_BRAND_LOGO_URL_LIGHT) ?? "",
     };
   } catch {
     return {
       appName: normalizeAppName(process.env.APP_BRAND_NAME),
       logoUrl: normalizeLogoUrl(process.env.APP_BRAND_LOGO_URL) ?? "",
+      logoUrlDark: normalizeLogoUrl(process.env.APP_BRAND_LOGO_URL_DARK) ?? "",
+      logoUrlLight: normalizeLogoUrl(process.env.APP_BRAND_LOGO_URL_LIGHT) ?? "",
     };
   }
+}
+
+function buildLogoWrite(key: string, value: string | null | undefined): Promise<unknown> {
+  const rawLogoValue = clean(value ?? "");
+
+  if (!rawLogoValue) {
+    return deleteSettingValue(key);
+  }
+
+  const normalizedLogoUrl = normalizeLogoUrl(rawLogoValue);
+  if (!normalizedLogoUrl) {
+    throw new Error("Logo non valido. Inserisci un URL http/https, un percorso locale (/logo.svg) o un data URL immagine.");
+  }
+
+  return upsertSettingValue({
+    key,
+    value: normalizedLogoUrl,
+    isSecret: false,
+  });
 }
 
 export async function updateBrandingSettings(input: {
   appName?: string;
   logoUrl?: string | null;
+  logoUrlDark?: string | null;
+  logoUrlLight?: string | null;
 }): Promise<BrandingSnapshot> {
   const writes: Promise<unknown>[] = [];
 
@@ -91,24 +120,15 @@ export async function updateBrandingSettings(input: {
   }
 
   if (input.logoUrl !== undefined) {
-    const rawLogoValue = clean(input.logoUrl ?? "");
+    writes.push(buildLogoWrite(KEYS.logoUrl, input.logoUrl));
+  }
 
-    if (!rawLogoValue) {
-      writes.push(deleteSettingValue(KEYS.logoUrl));
-    } else {
-      const normalizedLogoUrl = normalizeLogoUrl(rawLogoValue);
-      if (!normalizedLogoUrl) {
-        throw new Error("Logo non valido. Inserisci un URL http/https, un percorso locale (/logo.svg) o un data URL immagine.");
-      }
+  if (input.logoUrlDark !== undefined) {
+    writes.push(buildLogoWrite(KEYS.logoUrlDark, input.logoUrlDark));
+  }
 
-      writes.push(
-        upsertSettingValue({
-          key: KEYS.logoUrl,
-          value: normalizedLogoUrl,
-          isSecret: false,
-        })
-      );
-    }
+  if (input.logoUrlLight !== undefined) {
+    writes.push(buildLogoWrite(KEYS.logoUrlLight, input.logoUrlLight));
   }
 
   if (writes.length > 0) {
