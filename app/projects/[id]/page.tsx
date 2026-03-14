@@ -6,9 +6,58 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+type ExtractionSummary = {
+  queries: number;
+  rawSuggestions: number;
+  dedupedCandidates: number;
+  storedCandidates: number;
+};
+
 function formatDate(value: Date | null | undefined): string {
   if (!value) return "-";
   return new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(value);
+}
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat("it-IT").format(value);
+}
+
+function toNonNegativeInteger(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.trunc(value));
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return Math.max(0, Math.trunc(numeric));
+    }
+  }
+
+  return null;
+}
+
+function parseExtractionSummary(result: unknown): ExtractionSummary | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    return null;
+  }
+
+  const source = result as Record<string, unknown>;
+  const queries = toNonNegativeInteger(source.queries);
+  const rawSuggestions = toNonNegativeInteger(source.rawSuggestions);
+  const dedupedCandidates = toNonNegativeInteger(source.dedupedCandidates);
+  const storedCandidates = toNonNegativeInteger(source.storedCandidates);
+
+  if (queries === null || rawSuggestions === null || dedupedCandidates === null || storedCandidates === null) {
+    return null;
+  }
+
+  return {
+    queries,
+    rawSuggestions,
+    dedupedCandidates,
+    storedCandidates,
+  };
 }
 
 function jobStatusTone(value: string): string {
@@ -16,6 +65,59 @@ function jobStatusTone(value: string): string {
   if (value === "failed") return "border-rose-400/40 bg-rose-500/15 text-rose-200";
   if (value === "running") return "border-amber-400/40 bg-amber-500/15 text-amber-200";
   return "border-slate-500/40 bg-slate-700/25 text-slate-200";
+}
+
+function renderJobOutcome(job: {
+  status: string;
+  result: unknown;
+  errorMessage: string | null;
+}) {
+  if (job.status === "failed") {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-red-700">Errore job</p>
+        <p className="text-xs text-slate-600 break-words">{job.errorMessage || "Nessun dettaglio disponibile"}</p>
+      </div>
+    );
+  }
+
+  const summary = parseExtractionSummary(job.result);
+  if (summary) {
+    const duplicatesRemoved = Math.max(0, summary.rawSuggestions - summary.dedupedCandidates);
+
+    const rows = [
+      { label: "Query elaborate", value: summary.queries },
+      { label: "Suggerimenti trovati", value: summary.rawSuggestions },
+      { label: "Duplicati rimossi", value: duplicatesRemoved },
+      { label: "Keyword salvate", value: summary.storedCandidates },
+    ];
+
+    return (
+      <dl className="grid gap-2 sm:grid-cols-2">
+        {rows.map((row) => (
+          <div key={row.label} className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2">
+            <dt className="text-[11px] uppercase tracking-wide text-slate-500">{row.label}</dt>
+            <dd className="mt-1 text-sm font-semibold text-slate-900">{formatNumber(row.value)}</dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
+
+  if (job.result) {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Dettaglio tecnico</p>
+        <p className="text-xs text-slate-600 break-words">{JSON.stringify(job.result)}</p>
+      </div>
+    );
+  }
+
+  if (job.errorMessage) {
+    return <p className="text-xs text-slate-600 break-words">{job.errorMessage}</p>;
+  }
+
+  return <span className="text-xs text-slate-500">-</span>;
 }
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -107,7 +209,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                   <td className="px-3 py-3">{formatDate(job.created_at)}</td>
                   <td className="px-3 py-3">{formatDate(job.started_at)}</td>
                   <td className="px-3 py-3">{formatDate(job.completed_at)}</td>
-                  <td className="max-w-[20rem] break-words px-3 py-3 text-xs">{job.result ? JSON.stringify(job.result) : job.error_message || "-"}</td>
+                  <td className="max-w-[28rem] px-3 py-3 align-top">{renderJobOutcome({ status: job.status, result: job.result, errorMessage: job.error_message })}</td>
                 </tr>
               ))}
             </tbody>
