@@ -7,9 +7,20 @@ import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/clien
 type DeleteProjectButtonProps = {
   projectId: string;
   projectName: string;
+  buttonLabel?: string;
+  buttonClassName?: string;
+  redirectTo?: string | null;
+  showInlineError?: boolean;
 };
 
-export function DeleteProjectButton({ projectId, projectName }: DeleteProjectButtonProps) {
+export function DeleteProjectButton({
+  projectId,
+  projectName,
+  buttonLabel = "Elimina progetto",
+  buttonClassName = "btn btn-danger w-full sm:w-auto",
+  redirectTo = "/",
+  showInlineError = true,
+}: DeleteProjectButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,26 +45,33 @@ export function DeleteProjectButton({ projectId, projectName }: DeleteProjectBut
         throw new Error(buildApiErrorMessage(response, payload, "Eliminazione non riuscita"));
       }
 
-      router.push("/");
+      if (redirectTo) {
+        router.push(redirectTo);
+      }
+
       router.refresh();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Errore imprevisto");
+      const message = deleteError instanceof Error ? deleteError.message : "Errore imprevisto";
+      setError(message);
       setLoading(false);
+
+      if (!showInlineError) {
+        window.alert(message);
+      }
     }
   };
 
   return (
-    <div className="space-y-2">
+    <div className={showInlineError ? "space-y-2" : ""}>
       <button
         type="button"
-        className="btn btn-danger w-full sm:w-auto"
+        className={buttonClassName}
         onClick={remove}
         disabled={loading}
       >
-        {loading ? "Eliminazione..." : "Elimina progetto"}
+        {loading ? "Eliminazione..." : buttonLabel}
       </button>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {showInlineError && error && <p className="text-sm text-red-700">{error}</p>}
     </div>
   );
 }
-

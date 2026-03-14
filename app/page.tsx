@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AuthSettingsCard } from "@/components/auth-settings-card";
+import { DeleteProjectButton } from "@/components/delete-project-button";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -66,10 +66,10 @@ export default async function DashboardPage() {
       <section className="card overflow-hidden">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Seo Workspace</p>
-            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">Keyword research avanzata, pulita e pronta per il deploy</h1>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Panoramica</p>
+            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">Controlla i tuoi progetti SEO e avvia nuove estrazioni</h1>
             <p className="text-sm text-slate-600 sm:text-base">
-              Gestisci pipeline, filtri e scoring da un unico pannello. Ogni account mantiene il proprio workspace separato.
+              Accedi rapidamente a risultati, job recenti e impostazioni progetto da un unico pannello operativo.
             </p>
             <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
               <Link href="/projects/new" className="btn-primary w-full text-center sm:w-auto">
@@ -99,12 +99,6 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
-
-      <AuthSettingsCard
-        initial={{
-          username: user.username,
-        }}
-      />
 
       <section className="card">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -146,6 +140,14 @@ export default async function DashboardPage() {
                       <Link className="btn-secondary" href={`/projects/${project.id}/results`}>
                         Risultati
                       </Link>
+                      <DeleteProjectButton
+                        projectId={project.id}
+                        projectName={project.name}
+                        buttonLabel="Elimina"
+                        buttonClassName="btn-danger"
+                        redirectTo={null}
+                        showInlineError={false}
+                      />
                     </div>
                   </td>
                 </tr>

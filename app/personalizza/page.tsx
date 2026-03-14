@@ -1,3 +1,4 @@
+import { AuthSettingsCard } from "@/components/auth-settings-card";
 import { PersonalizationSettingsCard } from "@/components/personalization-settings-card";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 
@@ -11,7 +12,7 @@ export default async function PersonalizzaPage() {
       <section className="card">
         <h1 className="text-2xl font-semibold">Personalizza</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Gestisci preferenze visive del tuo account. Le impostazioni restano salvate anche dopo logout/login.
+          Gestisci preferenze visive e credenziali del tuo account da un unico punto.
         </p>
       </section>
 
@@ -20,6 +21,12 @@ export default async function PersonalizzaPage() {
           themeMode: user.themeMode,
           fontScaleMode: user.fontScaleMode,
           colorVisionMode: user.colorVisionMode,
+        }}
+      />
+
+      <AuthSettingsCard
+        initial={{
+          username: user.username,
         }}
       />
     </div>
