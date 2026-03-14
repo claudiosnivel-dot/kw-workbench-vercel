@@ -30,8 +30,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     getOptionalAuthenticatedUserFromCookies(),
   ]);
 
+  const themeMode = currentUser?.themeMode ?? "DARK";
+  const fontScaleMode = currentUser?.fontScaleMode ?? "NORMAL";
+  const colorVisionMode = currentUser?.colorVisionMode ?? "NONE";
+
   return (
-    <html lang="it">
+    <html
+      lang="it"
+      data-theme={themeMode}
+      data-font-scale={fontScaleMode}
+      data-color-vision={colorVisionMode}
+    >
       <body className={`${manrope.variable} ${sora.variable}`}>
         <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
           <div className="app-glow app-glow-left" />

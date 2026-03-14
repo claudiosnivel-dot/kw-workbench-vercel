@@ -1,4 +1,4 @@
-import { Prisma, UserRole, UserStatus } from "@prisma/client";
+import { ColorVisionMode, FontScaleMode, Prisma, ThemeMode, UserRole, UserStatus } from "@prisma/client";
 import { getAuthPassword, getAuthUsername } from "@/lib/auth/config";
 import { getManySettingValues } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
@@ -18,6 +18,9 @@ const AUTH_USER_SELECT = {
   role: true,
   status: true,
   is_root_admin: true,
+  theme_mode: true,
+  font_scale_mode: true,
+  color_vision_mode: true,
 } satisfies Prisma.UserSelect;
 
 type AuthUserRow = {
@@ -26,6 +29,9 @@ type AuthUserRow = {
   role: UserRole;
   status: UserStatus;
   is_root_admin: boolean;
+  theme_mode: ThemeMode;
+  font_scale_mode: FontScaleMode;
+  color_vision_mode: ColorVisionMode;
 };
 
 export type AuthUser = {
@@ -34,6 +40,9 @@ export type AuthUser = {
   role: UserRole;
   status: UserStatus;
   isRootAdmin: boolean;
+  themeMode: ThemeMode;
+  fontScaleMode: FontScaleMode;
+  colorVisionMode: ColorVisionMode;
 };
 
 export type AuthConfigSnapshot = {
@@ -64,6 +73,9 @@ function mapAuthUser(row: AuthUserRow): AuthUser {
     role: row.role,
     status: row.status,
     isRootAdmin: row.is_root_admin,
+    themeMode: row.theme_mode,
+    fontScaleMode: row.font_scale_mode,
+    colorVisionMode: row.color_vision_mode,
   };
 }
 
@@ -171,6 +183,9 @@ export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
         role: UserRole.SUBSCRIBER,
         status: UserStatus.ACTIVE,
         is_root_admin: false,
+        theme_mode: ThemeMode.DARK,
+        font_scale_mode: FontScaleMode.NORMAL,
+        color_vision_mode: ColorVisionMode.NONE,
       },
       select: AUTH_USER_SELECT,
     });
@@ -247,6 +262,9 @@ export async function verifyLoginCredentials(username: string, password: string)
       role: true,
       status: true,
       is_root_admin: true,
+      theme_mode: true,
+      font_scale_mode: true,
+      color_vision_mode: true,
       password_hash: true,
     },
   });
@@ -292,6 +310,9 @@ export async function registerUser(input: {
         role,
         status: UserStatus.ACTIVE,
         is_root_admin: false,
+        theme_mode: ThemeMode.DARK,
+        font_scale_mode: FontScaleMode.NORMAL,
+        color_vision_mode: ColorVisionMode.NONE,
       },
       select: AUTH_USER_SELECT,
     });

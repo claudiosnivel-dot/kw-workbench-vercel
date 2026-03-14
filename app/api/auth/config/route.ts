@@ -63,6 +63,9 @@ export async function PATCH(request: NextRequest) {
       role: updatedUser.role,
       status: updatedUser.status,
       isRootAdmin: updatedUser.isRootAdmin,
+      themeMode: updatedUser.themeMode,
+      fontScaleMode: updatedUser.fontScaleMode,
+      colorVisionMode: updatedUser.colorVisionMode,
     });
 
     const response = NextResponse.json({

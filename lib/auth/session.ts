@@ -1,4 +1,4 @@
-import { UserRole, UserStatus } from "@prisma/client";
+import { ColorVisionMode, FontScaleMode, ThemeMode, UserRole, UserStatus } from "@prisma/client";
 import {
   getSessionMaxAgeSeconds,
   getSessionSecret,
@@ -12,6 +12,9 @@ export type SessionPayload = {
   role?: UserRole;
   status?: UserStatus;
   isRootAdmin?: boolean;
+  themeMode?: ThemeMode;
+  fontScaleMode?: FontScaleMode;
+  colorVisionMode?: ColorVisionMode;
   exp: number;
 };
 
@@ -23,6 +26,9 @@ export async function createSessionToken(input: {
   role: UserRole;
   status: UserStatus;
   isRootAdmin: boolean;
+  themeMode: ThemeMode;
+  fontScaleMode: FontScaleMode;
+  colorVisionMode: ColorVisionMode;
 }): Promise<string> {
   const nowSeconds = Math.floor(Date.now() / 1000);
   const payload: SessionPayload = {
@@ -31,6 +37,9 @@ export async function createSessionToken(input: {
     role: input.role,
     status: input.status,
     isRootAdmin: input.isRootAdmin,
+    themeMode: input.themeMode,
+    fontScaleMode: input.fontScaleMode,
+    colorVisionMode: input.colorVisionMode,
     exp: nowSeconds + getSessionMaxAgeSeconds(),
   };
 

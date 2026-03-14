@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
       role: user.role,
       status: user.status,
       isRootAdmin: user.isRootAdmin,
+      themeMode: user.themeMode,
+      fontScaleMode: user.fontScaleMode,
+      colorVisionMode: user.colorVisionMode,
     });
   }
 
@@ -33,5 +36,8 @@ export async function GET(request: NextRequest) {
     role: user.role,
     status: user.status,
     isRootAdmin: user.isRootAdmin,
+    themeMode: user.themeMode,
+    fontScaleMode: user.fontScaleMode,
+    colorVisionMode: user.colorVisionMode,
   });
 }

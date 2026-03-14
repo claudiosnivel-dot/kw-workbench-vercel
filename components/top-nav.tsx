@@ -12,6 +12,7 @@ function isAuthRoute(pathname: string): boolean {
 function buildNavLinks(showAdminLink: boolean) {
   const links = [
     { href: "/", label: "Panoramica" },
+    { href: "/personalizza", label: "Personalizza" },
     { href: "/projects/new", label: "Nuovo progetto" },
   ];
 
@@ -47,26 +48,28 @@ export function TopNav({
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[rgba(3,10,24,0.78)] backdrop-blur-xl">
+    <header className="top-nav-shell sticky top-0 z-40">
       <div className="mx-auto w-full max-w-[1180px] px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4">
           <Link href="/" className="group inline-flex min-w-0 items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-900/90 shadow-sm ring-1 ring-white/15 transition group-hover:scale-[1.02]">
+            <span className="top-nav-logo flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl transition group-hover:scale-[1.02]">
               {brandLogoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={brandLogoUrl} alt={`${normalizedBrandName} logo`} className="h-full w-full object-contain" />
               ) : (
-                <span className="font-heading text-base font-semibold text-emerald-300">{normalizedBrandName.slice(0, 1).toUpperCase()}</span>
+                <span className="top-nav-logo-fallback font-heading text-base font-semibold">
+                  {normalizedBrandName.slice(0, 1).toUpperCase()}
+                </span>
               )}
             </span>
-            <span className="font-heading truncate text-lg font-semibold tracking-tight text-slate-100">{normalizedBrandName}</span>
+            <span className="top-nav-brand-name font-heading truncate text-lg font-semibold tracking-tight">{normalizedBrandName}</span>
           </Link>
 
           {!authView && (
             <>
               <button
                 type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-slate-900/80 text-slate-200 md:hidden"
+                className="top-nav-menu-toggle inline-flex h-10 w-10 items-center justify-center rounded-xl md:hidden"
                 onClick={() => setMenuOpen((current) => !current)}
                 aria-expanded={menuOpen}
                 aria-controls="mobile-nav"
@@ -84,10 +87,8 @@ export function TopNav({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition ${
-                        active
-                          ? "bg-slate-800/90 text-slate-100 shadow-sm ring-1 ring-white/15"
-                          : "text-slate-300 hover:bg-slate-800/70 hover:text-slate-100"
+                      className={`top-nav-link inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition ${
+                        active ? "is-active" : ""
                       }`}
                     >
                       {item.label}
@@ -109,10 +110,8 @@ export function TopNav({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
-                  className={`inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition ${
-                    active
-                      ? "bg-slate-800/90 text-slate-100 shadow-sm ring-1 ring-white/15"
-                      : "bg-slate-900/70 text-slate-300 ring-1 ring-white/10 hover:bg-slate-800/90"
+                  className={`top-nav-link top-nav-link-mobile inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition ${
+                    active ? "is-active" : ""
                   }`}
                 >
                   {item.label}

@@ -36,6 +36,9 @@ export async function POST(request: Request) {
     role: result.user.role,
     status: result.user.status,
     isRootAdmin: result.user.isRootAdmin,
+    themeMode: result.user.themeMode,
+    fontScaleMode: result.user.fontScaleMode,
+    colorVisionMode: result.user.colorVisionMode,
   });
 
   const response = NextResponse.json({ success: true });
