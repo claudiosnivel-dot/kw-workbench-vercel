@@ -86,7 +86,7 @@ export function ProjectForm({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitIntent, setSubmitIntent] = useState<"save" | "save-and-run">("save");
-  const [showAdvancedCreate, setShowAdvancedCreate] = useState(false);
+  const [stepTwoCompleted, setStepTwoCompleted] = useState(mode !== "create");
 
   const regionNames = useMemo(() => {
     try {
@@ -118,11 +118,21 @@ export function ProjectForm({
     .filter(Boolean).length;
 
   const update = <K extends keyof ProjectFormValues>(key: K, value: ProjectFormValues[K]) => {
+    if (mode === "create" && (key === "language_code" || key === "country_code")) {
+      setStepTwoCompleted(false);
+    }
+
     setValues((current) => ({ ...current, [key]: value }));
   };
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (mode === "create" && !stepTwoCompleted) {
+      setError("Completa lo Step 2 (lingua e paese) prima di creare il progetto.");
+      return;
+    }
+
     setSaving(true);
     setMessage(null);
     setError(null);
@@ -206,6 +216,7 @@ export function ProjectForm({
   };
 
   const showCreateFlow = mode === "create";
+  const canSubmitCreate = mode !== "create" || stepTwoCompleted;
 
   return (
     <form onSubmit={submit} className="space-y-6">
@@ -263,30 +274,33 @@ export function ProjectForm({
 
       {showCreateFlow ? (
         <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-base font-semibold">Step 2: Avanzate (opzionale)</h2>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => setShowAdvancedCreate((current) => !current)}
-            >
-              {showAdvancedCreate ? "Nascondi avanzate" : "Mostra avanzate"}
-            </button>
-          </div>
+          <h2 className="text-base font-semibold">Step 2 (obbligatorio): Configura lingua e paese di estrazione</h2>
+          <p className="text-xs text-slate-500">
+            Questo step è richiesto: la qualità dell'autocomplete dipende da lingua e paese impostati.
+          </p>
 
-          {showAdvancedCreate && (
-            <AdvancedProjectFields
-              values={values}
-              update={update}
-              languageValue={languageValue}
-              countryValue={countryValue}
-              hasCustomLanguage={hasCustomLanguage}
-              hasCustomCountry={hasCustomCountry}
-              languageOptions={LANGUAGE_OPTIONS}
-              countryOptions={countryOptions}
-              canEditAutocompleteProvider={canEditAutocompleteProvider}
-            />
-          )}
+          <AdvancedProjectFields
+            values={values}
+            update={update}
+            languageValue={languageValue}
+            countryValue={countryValue}
+            hasCustomLanguage={hasCustomLanguage}
+            hasCustomCountry={hasCustomCountry}
+            languageOptions={LANGUAGE_OPTIONS}
+            countryOptions={countryOptions}
+            canEditAutocompleteProvider={canEditAutocompleteProvider}
+          />
+
+          <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-background)] p-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={stepTwoCompleted}
+                onChange={(event) => setStepTwoCompleted(event.target.checked)}
+              />
+              Ho verificato lingua e paese per questo progetto.
+            </label>
+          </div>
         </section>
       ) : (
         <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
@@ -308,7 +322,7 @@ export function ProjectForm({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
         <button
           className="btn-primary w-full sm:w-auto"
-          disabled={saving}
+          disabled={saving || !canSubmitCreate}
           type="submit"
           onClick={() => setSubmitIntent("save")}
         >
@@ -318,10 +332,10 @@ export function ProjectForm({
         {mode === "create" && (
           <button
             className="btn-secondary w-full sm:w-auto"
-            disabled={saving || seedCount === 0}
+            disabled={saving || seedCount === 0 || !canSubmitCreate}
             type="submit"
             onClick={() => setSubmitIntent("save-and-run")}
-            title={seedCount === 0 ? "Inserisci almeno una seed per avviare subito" : ""}
+            title={!canSubmitCreate ? "Completa prima lo Step 2 obbligatorio" : seedCount === 0 ? "Inserisci almeno una seed per avviare subito" : ""}
           >
             {saving && submitIntent === "save-and-run" ? "Avvio..." : "Crea e avvia prima estrazione"}
           </button>
@@ -513,4 +527,9 @@ function AdvancedProjectFields({
     </>
   );
 }
+
+
+
+
+
 
