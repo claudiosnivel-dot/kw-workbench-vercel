@@ -1,12 +1,25 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteSubprojectButton } from "@/components/delete-subproject-button";
 import { RunExtractionButton } from "@/components/run-extraction-button";
+import { SectionOrderButtons } from "@/components/section-order-buttons";
+import { SetDefaultSectionButton } from "@/components/set-default-section-button";
 import { SubprojectForm } from "@/components/subproject-form";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function getValue(searchParams: SearchParams, key: string): string {
+  const value = searchParams[key];
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
 
 function formatDate(value: Date | null | undefined): string {
   if (!value) return "-";
@@ -20,9 +33,15 @@ function jobStatusTone(value: string): string {
   return "border-slate-500/40 bg-slate-700/25 text-slate-200";
 }
 
-export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProjectDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
+}) {
   const user = await requireAuthenticatedUserFromCookies();
-  const { id } = await params;
+  const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
   const project = await prisma.project.findFirst({
     where: {
@@ -61,138 +80,204 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  const hasSingleSubproject = project.subprojects.length === 1;
+  const selectedSectionId = getValue(resolvedSearchParams, "sectionId").trim();
+  const fallbackSectionId = project.default_subproject_id ?? project.subprojects[0]?.id ?? "";
+  const activeSection =
+    project.subprojects.find((item) => item.id === selectedSectionId) ??
+    project.subprojects.find((item) => item.id === fallbackSectionId) ??
+    project.subprojects[0] ??
+    null;
+
+  const activeLatestJob = activeSection?.jobs[0] ?? null;
 
   return (
     <div className="space-y-6">
       <section className="card space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
-          <div>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-2">
             <h1 className="text-2xl font-semibold">{project.name}</h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Progetto padre con {project._count.subprojects} sottoprogetti
-            </p>
+            <p className="text-sm text-slate-600">Workspace operativo per gestire estrazione, revisione e risultati per sezione.</p>
           </div>
 
-          {hasSingleSubproject ? (
-            <RunExtractionButton projectId={project.id} label="Avvia estrazione rapida" runningLabel="Estrazione in corso..." />
-          ) : (
-            <p className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-              Estrazione rapida disattivata: scegli il sottoprogetto da eseguire nella tabella qui sotto.
+          <div className="grid gap-3 text-sm sm:grid-cols-2">
+            <p>
+              <span className="font-medium">Sezioni:</span> {project._count.subprojects}
             </p>
-          )}
+            <p>
+              <span className="font-medium">Keyword totali:</span> {project._count.keyword_candidates}
+            </p>
+            <p>
+              <span className="font-medium">Seed totali:</span> {project._count.seeds}
+            </p>
+            <p>
+              <span className="font-medium">Job totali:</span> {project._count.jobs}
+            </p>
+          </div>
         </div>
 
-        <div className="grid gap-3 text-sm md:grid-cols-4">
-          <p>
-            <span className="font-medium">Sottoprogetti:</span> {project._count.subprojects}
+        {activeSection ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <RunExtractionButton projectId={project.id} subprojectId={activeSection.id} label="Avvia estrazione" runningLabel="Estrazione in corso..." />
+            <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/results?subprojectId=${activeSection.id}`}>
+              Apri risultati sezione
+            </Link>
+            <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/results?view=all`}>
+              Risultati tutto il progetto
+            </Link>
+            <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/settings`}>
+              Impostazioni progetto
+            </Link>
+          </div>
+        ) : (
+          <p className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            Nessuna sezione disponibile. Crea la prima sezione per iniziare.
           </p>
-          <p>
-            <span className="font-medium">Seed totali:</span> {project._count.seeds}
-          </p>
-          <p>
-            <span className="font-medium">Keyword totali:</span> {project._count.keyword_candidates}
-          </p>
-          <p>
-            <span className="font-medium">Job totali:</span> {project._count.jobs}
-          </p>
-        </div>
-
-        <div className="grid gap-3 text-sm md:grid-cols-3">
-          <p>
-            <span className="font-medium">Locale default:</span> {project.language_code}-{project.country_code}
-          </p>
-          <p>
-            <span className="font-medium">Autocomplete default:</span> {project.autocomplete_provider}
-          </p>
-          <p>
-            <span className="font-medium">Metriche default:</span> {project.metrics_provider}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/results`}>
-            Vedi risultati aggregati
-          </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/settings`}>
-            Impostazioni progetto padre
-          </Link>
-        </div>
+        )}
       </section>
 
       <section className="card space-y-4">
-        <h2 className="text-lg font-semibold">Aggiungi sottoprogetto</h2>
-        <SubprojectForm
-          mode="create"
-          projectId={project.id}
-          canEditAutocompleteProvider={user.isRootAdmin}
-          showAdvanced={false}
-        />
+        <h2 className="text-lg font-semibold">Seleziona sezione attiva</h2>
+
+        {project.subprojects.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {project.subprojects.map((section) => {
+              const isActive = activeSection?.id === section.id;
+              const isDefault = project.default_subproject_id === section.id;
+              return (
+                <Link
+                  key={section.id}
+                  href={`/projects/${project.id}?sectionId=${section.id}`}
+                  className={isActive ? "btn-primary" : "btn-secondary"}
+                >
+                  {section.name} ({section._count.keyword_candidates}){isDefault ? " • predefinita" : ""}
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">Nessuna sezione al momento.</p>
+        )}
+
+        {activeSection && (
+          <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="text-base font-semibold">Sezione attiva: {activeSection.name}</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Seed: {activeSection._count.seeds} • Keyword: {activeSection._count.keyword_candidates} • Job: {activeSection._count.jobs}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">Ultimo aggiornamento: {formatDate(activeSection.updated_at)}</p>
+              </div>
+
+              <SetDefaultSectionButton
+                projectId={project.id}
+                subprojectId={activeSection.id}
+                isDefault={project.default_subproject_id === activeSection.id}
+              />
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/subprojects/${activeSection.id}`}>
+                Apri impostazioni sezione
+              </Link>
+              <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/results?subprojectId=${activeSection.id}`}>
+                Apri risultati sezione
+              </Link>
+              {activeLatestJob ? (
+                <span className={`status-chip ${jobStatusTone(activeLatestJob.status)}`}>Ultimo job: {activeLatestJob.status}</span>
+              ) : (
+                <span className="status-chip">Nessun job avviato</span>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
-      <section className="card">
-        <h2 className="mb-3 text-lg font-semibold">Sottoprogetti</h2>
+      <details className="card" open={project.subprojects.length <= 1}>
+        <summary className="cursor-pointer text-lg font-semibold">Gestisci sezioni</summary>
+        <div className="mt-4 space-y-6">
+          <section className="space-y-3">
+            <h3 className="text-base font-semibold">Aggiungi nuova sezione</h3>
+            <SubprojectForm mode="create" projectId={project.id} canEditAutocompleteProvider={user.isRootAdmin} showAdvanced={false} />
+          </section>
 
-        <div className="table-shell">
-          <table className="table-enterprise min-w-[980px] text-left text-sm sm:min-w-full">
-            <thead>
-              <tr>
-                <th className="px-3 py-2">Nome</th>
-                <th className="px-3 py-2">Seed</th>
-                <th className="px-3 py-2">Keyword</th>
-                <th className="px-3 py-2">Ultimo job</th>
-                <th className="px-3 py-2">Aggiornato</th>
-                <th className="px-3 py-2">Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {project.subprojects.map((subproject) => {
-                const latestJob = subproject.jobs[0] ?? null;
-
-                return (
-                  <tr key={subproject.id}>
-                    <td className="px-3 py-3 font-medium">{subproject.name}</td>
-                    <td className="px-3 py-3">{subproject._count.seeds}</td>
-                    <td className="px-3 py-3">{subproject._count.keyword_candidates}</td>
-                    <td className="px-3 py-3">
-                      {latestJob ? (
-                        <span className={`status-chip ${jobStatusTone(latestJob.status)}`}>{latestJob.status}</span>
-                      ) : (
-                        <span className="text-slate-500">-</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-3">{formatDate(subproject.updated_at)}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Link className="btn-secondary" href={`/projects/${project.id}/subprojects/${subproject.id}`}>
-                          Apri
-                        </Link>
-                        <Link className="btn-secondary" href={`/projects/${project.id}/results?subprojectId=${subproject.id}`}>
-                          Risultati
-                        </Link>
-                        <RunExtractionButton
-                          runPath={`/api/projects/${project.id}/subprojects/${subproject.id}/run`}
-                          label="Esegui"
-                          runningLabel="Esecuzione..."
-                        />
-                        <DeleteSubprojectButton
-                          projectId={project.id}
-                          subprojectId={subproject.id}
-                          subprojectName={subproject.name}
-                          buttonClassName="btn-danger"
-                          buttonLabel="Elimina"
-                          showInlineError={false}
-                        />
-                      </div>
-                    </td>
+          <section>
+            <h3 className="mb-3 text-base font-semibold">Elenco sezioni</h3>
+            <div className="table-shell">
+              <table className="table-enterprise min-w-[980px] text-left text-sm sm:min-w-full">
+                <thead>
+                  <tr>
+                    <th className="px-3 py-2">Ordine</th>
+                    <th className="px-3 py-2">Nome</th>
+                    <th className="px-3 py-2">Seed</th>
+                    <th className="px-3 py-2">Keyword</th>
+                    <th className="px-3 py-2">Ultimo job</th>
+                    <th className="px-3 py-2">Azioni</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {project.subprojects.length === 0 && <p className="px-3 py-6 text-sm text-slate-500">Nessun sottoprogetto al momento.</p>}
+                </thead>
+                <tbody>
+                  {project.subprojects.map((section, index) => {
+                    const latestJob = section.jobs[0] ?? null;
+
+                    return (
+                      <tr key={section.id}>
+                        <td className="px-3 py-3">
+                          <SectionOrderButtons
+                            projectId={project.id}
+                            subprojectId={section.id}
+                            disableUp={index === 0}
+                            disableDown={index === project.subprojects.length - 1}
+                          />
+                        </td>
+                        <td className="px-3 py-3 font-medium">
+                          {section.name}
+                          {project.default_subproject_id === section.id && (
+                            <span className="ml-2 status-chip">Predefinita</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">{section._count.seeds}</td>
+                        <td className="px-3 py-3">{section._count.keyword_candidates}</td>
+                        <td className="px-3 py-3">
+                          {latestJob ? (
+                            <span className={`status-chip ${jobStatusTone(latestJob.status)}`}>{latestJob.status}</span>
+                          ) : (
+                            <span className="text-slate-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            <Link className="btn-secondary" href={`/projects/${project.id}/subprojects/${section.id}`}>
+                              Rinomina / impostazioni
+                            </Link>
+                            <Link className="btn-secondary" href={`/projects/${project.id}/results?subprojectId=${section.id}`}>
+                              Risultati
+                            </Link>
+                            <RunExtractionButton
+                              runPath={`/api/projects/${project.id}/subprojects/${section.id}/run`}
+                              label="Esegui"
+                              runningLabel="Esecuzione..."
+                            />
+                            <DeleteSubprojectButton
+                              projectId={project.id}
+                              subprojectId={section.id}
+                              subprojectName={section.name}
+                              buttonClassName="btn-danger"
+                              buttonLabel="Elimina"
+                              showInlineError={false}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {project.subprojects.length === 0 && <p className="px-3 py-6 text-sm text-slate-500">Nessuna sezione al momento.</p>}
+            </div>
+          </section>
         </div>
-      </section>
+      </details>
     </div>
   );
 }
+

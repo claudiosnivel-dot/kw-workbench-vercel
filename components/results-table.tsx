@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -137,7 +137,7 @@ export function ResultsTable({
               <th className="px-3 py-2">
                 <input type="checkbox" checked={isAllSelected} onChange={toggleAll} aria-label="Seleziona tutto" />
               </th>
-              {showSubprojectColumn && <th className="px-3 py-2">Sottoprogetto</th>}
+              {showSubprojectColumn && <th className="px-3 py-2">Sezione</th>}
               <th className="px-3 py-2">Keyword</th>
               <th className="px-3 py-2">Sorgente</th>
               <th className="hidden px-3 py-2 md:table-cell">Intento</th>
@@ -197,3 +197,5 @@ export function ResultsTable({
     </div>
   );
 }
+
+

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { ProjectForm } from "@/components/project-form";
@@ -34,9 +34,9 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
   return (
     <div className="space-y-6">
       <section className="card space-y-4">
-        <h1 className="text-2xl font-semibold">Impostazioni progetto padre</h1>
+        <h1 className="text-2xl font-semibold">Impostazioni progetto</h1>
         <p className="text-sm text-slate-600">
-          Qui imposti i default del contenitore. Ogni sottoprogetto puo ereditare questi valori o usare override dedicati.
+          Qui imposti i default del contenitore. Ogni sezione puo ereditare questi valori o usare override dedicati.
         </p>
         <ProjectForm
           mode="edit"
@@ -64,7 +64,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
       </section>
 
       <section className="card space-y-3">
-        <h2 className="text-lg font-semibold">Sottoprogetti collegati</h2>
+        <h2 className="text-lg font-semibold">Sezioni collegate</h2>
         <div className="flex flex-wrap gap-2">
           {project.subprojects.map((subproject) => (
             <Link key={subproject.id} className="btn-secondary" href={`/projects/${project.id}/subprojects/${subproject.id}`}>
@@ -77,10 +77,12 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
       <section className="card">
         <h2 className="mb-3 text-lg font-semibold text-red-700">Zona pericolosa</h2>
         <p className="mb-4 text-sm text-slate-600">
-          Eliminando questo progetto verranno rimossi progetto padre, sottoprogetti, seed, keyword candidate e job collegati.
+          Eliminando questo progetto verranno rimosse sezioni, seed, keyword candidate e job collegati.
         </p>
         <DeleteProjectButton projectId={project.id} projectName={project.name} />
       </section>
     </div>
   );
 }
+
+

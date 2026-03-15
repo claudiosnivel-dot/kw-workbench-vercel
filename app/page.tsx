@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
@@ -79,10 +79,10 @@ export default async function DashboardPage() {
           <div className="max-w-2xl space-y-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Panoramica</p>
             <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-              Controlla i tuoi progetti SEO e organizza il lavoro per sottoprogetti
+              Controlla i tuoi progetti SEO e organizza il lavoro per sezioni
             </h1>
             <p className="text-sm text-slate-600 sm:text-base">
-              Ogni progetto puo contenere uno o piu sottoprogetti: usa un solo blocco o dividi il lavoro in sezioni logiche.
+              Ogni progetto puo contenere una o piu sezioni: puoi lavorare in blocco unico oppure separare per categoria, cluster o funnel.
             </p>
             <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
               <Link href="/projects/new" className="btn-primary w-full text-center sm:w-auto">
@@ -102,7 +102,7 @@ export default async function DashboardPage() {
               <p className="mt-1 text-2xl font-semibold">{totalProjects}</p>
             </article>
             <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Sottoprogetti</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Sezioni</p>
               <p className="mt-1 text-2xl font-semibold">{totalSubprojects}</p>
             </article>
             <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
@@ -126,7 +126,7 @@ export default async function DashboardPage() {
             <thead>
               <tr>
                 <th className="px-3 py-2">Nome</th>
-                <th className="px-3 py-2">Sottoprogetti</th>
+                <th className="px-3 py-2">Sezioni</th>
                 <th className="px-3 py-2">Seed</th>
                 <th className="px-3 py-2">Keyword</th>
                 <th className="px-3 py-2">Aggiornato</th>
@@ -175,7 +175,7 @@ export default async function DashboardPage() {
             <thead>
               <tr>
                 <th className="px-3 py-2">Progetto</th>
-                <th className="px-3 py-2">Sottoprogetto</th>
+                <th className="px-3 py-2">Sezione</th>
                 <th className="px-3 py-2">Stato</th>
                 <th className="px-3 py-2">Avviato</th>
                 <th className="px-3 py-2">Completato</th>
@@ -212,3 +212,5 @@ export default async function DashboardPage() {
     </div>
   );
 }
+
+

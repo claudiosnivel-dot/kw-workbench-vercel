@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+﻿import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { parseSubprojectPayload } from "@/lib/modules/project-settings";
@@ -34,13 +34,13 @@ export async function GET(request: Request, context: RouteContext) {
     });
 
     if (!subproject) {
-      return NextResponse.json({ error: "Sottoprogetto non trovato" }, { status: 404 });
+      return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
     }
 
     return NextResponse.json({ data: subproject });
   } catch (error) {
     console.error("GET /api/projects/[id]/subprojects/[subprojectId] failed", error);
-    return NextResponse.json({ error: "Errore interno durante il caricamento del sottoprogetto" }, { status: 500 });
+    return NextResponse.json({ error: "Errore interno durante il caricamento della sezione" }, { status: 500 });
   }
 }
 
@@ -61,7 +61,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Sottoprogetto non trovato" }, { status: 404 });
+      return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
     }
 
     const payload = (await request.json()) as Record<string, unknown>;
@@ -110,7 +110,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ data: updated });
   } catch (error) {
     console.error("PATCH /api/projects/[id]/subprojects/[subprojectId] failed", error);
-    return NextResponse.json({ error: "Errore interno durante il salvataggio del sottoprogetto" }, { status: 500 });
+    return NextResponse.json({ error: "Errore interno durante il salvataggio della sezione" }, { status: 500 });
   }
 }
 
@@ -131,18 +131,23 @@ export async function DELETE(request: Request, context: RouteContext) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Sottoprogetto non trovato" }, { status: 404 });
+      return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
     }
 
     const subprojectCount = await prisma.subproject.count({ where: { project_id: id } });
     if (subprojectCount <= 1) {
       return NextResponse.json(
-        { error: "Non puoi eliminare l'ultimo sottoprogetto. Ogni progetto deve avere almeno un sottoprogetto." },
+        { error: "Non puoi eliminare l'ultima sezione. Ogni progetto deve avere almeno una sezione." },
         { status: 400 }
       );
     }
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const project = await tx.project.findUnique({
+        where: { id },
+        select: { default_subproject_id: true },
+      });
+
       await tx.subproject.delete({ where: { id: subprojectId } });
 
       const remaining = await tx.subproject.findMany({
@@ -157,11 +162,19 @@ export async function DELETE(request: Request, context: RouteContext) {
           data: { position: index },
         });
       }
+
+      if (project?.default_subproject_id === subprojectId) {
+        await tx.project.update({
+          where: { id },
+          data: { default_subproject_id: remaining[0]?.id ?? null },
+        });
+      }
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("DELETE /api/projects/[id]/subprojects/[subprojectId] failed", error);
-    return NextResponse.json({ error: "Errore interno durante l'eliminazione del sottoprogetto" }, { status: 500 });
+    return NextResponse.json({ error: "Errore interno durante l'eliminazione della sezione" }, { status: 500 });
   }
 }
+

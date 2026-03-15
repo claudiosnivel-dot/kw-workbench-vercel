@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+﻿import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { parseSubprojectPayload } from "@/lib/modules/project-settings";
@@ -46,7 +46,7 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({ data: subprojects });
   } catch (error) {
     console.error("GET /api/projects/[id]/subprojects failed", error);
-    return NextResponse.json({ error: "Errore interno durante il caricamento dei sottoprogetti" }, { status: 500 });
+    return NextResponse.json({ error: "Errore interno durante il caricamento delle sezioni" }, { status: 500 });
   }
 }
 
@@ -60,7 +60,7 @@ export async function POST(request: Request, context: RouteContext) {
         id,
         owner_user_id: user.id,
       },
-      select: { id: true },
+      select: { id: true, default_subproject_id: true },
     });
 
     if (!project) {
@@ -93,6 +93,13 @@ export async function POST(request: Request, context: RouteContext) {
         },
       });
 
+      if (!project.default_subproject_id) {
+        await tx.project.update({
+          where: { id },
+          data: { default_subproject_id: created.id },
+        });
+      }
+
       if (parsed.seeds.length > 0) {
         await tx.seed.createMany({
           data: parsed.seeds.map((keyword) => ({
@@ -109,6 +116,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ data: subproject }, { status: 201 });
   } catch (error) {
     console.error("POST /api/projects/[id]/subprojects failed", error);
-    return NextResponse.json({ error: "Errore interno durante la creazione del sottoprogetto" }, { status: 500 });
+    return NextResponse.json({ error: "Errore interno durante la creazione della sezione" }, { status: 500 });
   }
 }
+

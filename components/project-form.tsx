@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,7 @@ type ProjectCreateResponse = ApiErrorPayload & {
   data?: {
     project?: { id: string };
     id?: string;
+    initial_subproject_id?: string;
   };
 };
 
@@ -84,6 +85,8 @@ export function ProjectForm({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [submitIntent, setSubmitIntent] = useState<"save" | "save-and-run">("save");
+  const [showAdvancedCreate, setShowAdvancedCreate] = useState(false);
 
   const regionNames = useMemo(() => {
     try {
@@ -109,6 +112,10 @@ export function ProjectForm({
   const countryValue = values.country_code.trim().toUpperCase() || "US";
   const hasCustomLanguage = !isSupportedLanguageCode(languageValue);
   const hasCustomCountry = !isSupportedCountryCode(countryValue);
+  const seedCount = values.seeds
+    .split(/[\n,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean).length;
 
   const update = <K extends keyof ProjectFormValues>(key: K, value: ProjectFormValues[K]) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -158,7 +165,31 @@ export function ProjectForm({
 
       if (mode === "create") {
         const createdProjectId = payload?.data?.project?.id ?? payload?.data?.id;
+        const initialSubprojectId = payload?.data?.initial_subproject_id;
+
         if (createdProjectId) {
+          if (submitIntent === "save-and-run" && initialSubprojectId && seedCount > 0) {
+            try {
+              const runResponse = await fetch(`/api/projects/${createdProjectId}/run`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ subprojectId: initialSubprojectId }),
+              });
+
+              if (!runResponse.ok) {
+                const runPayload = await readJsonSafe<ApiErrorPayload>(runResponse);
+                const runErrorMessage = buildApiErrorMessage(
+                  runResponse,
+                  runPayload,
+                  "Progetto creato, ma avvio estrazione automatico non riuscito"
+                );
+                window.alert(runErrorMessage);
+              }
+            } catch {
+              window.alert("Progetto creato, ma avvio estrazione automatico non riuscito.");
+            }
+          }
+
           router.push(`/projects/${createdProjectId}`);
           router.refresh();
           return;
@@ -174,38 +205,161 @@ export function ProjectForm({
     }
   };
 
+  const showCreateFlow = mode === "create";
+
   return (
     <form onSubmit={submit} className="space-y-6">
+      <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
+        <h2 className="text-base font-semibold">{showCreateFlow ? "Step 1: Base progetto" : "Impostazioni principali"}</h2>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="name">
+              Nome progetto
+            </label>
+            <input
+              id="name"
+              className="input"
+              value={values.name}
+              onChange={(event) => update("name", event.target.value)}
+              required
+            />
+            <p className="mt-1 text-xs text-slate-500">Nome del contenitore principale (es. dominio, brand o cliente).</p>
+          </div>
+
+          {showInitialSubprojectName && mode === "create" && (
+            <div>
+              <label className="label" htmlFor="initial_subproject_name">
+                Prima sezione
+              </label>
+              <input
+                id="initial_subproject_name"
+                className="input"
+                value={values.initial_subproject_name}
+                onChange={(event) => update("initial_subproject_name", event.target.value)}
+                required
+              />
+              <p className="mt-1 text-xs text-slate-500">Nome della prima sezione operativa (consigliato: Generale).</p>
+            </div>
+          )}
+        </div>
+
+        {showSeeds && mode === "create" && (
+          <div>
+            <label className="label" htmlFor="seeds">
+              Seed iniziali della prima sezione
+            </label>
+            <textarea
+              id="seeds"
+              className="input min-h-40"
+              value={values.seeds}
+              onChange={(event) => update("seeds", event.target.value)}
+              placeholder="keyword uno\nkeyword due\nkeyword tre"
+            />
+            <p className="mt-1 text-xs text-slate-500">Una keyword per riga (supportate anche virgole e punto e virgola). Seed rilevate: {seedCount}.</p>
+          </div>
+        )}
+      </section>
+
+      {showCreateFlow ? (
+        <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold">Step 2: Avanzate (opzionale)</h2>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowAdvancedCreate((current) => !current)}
+            >
+              {showAdvancedCreate ? "Nascondi avanzate" : "Mostra avanzate"}
+            </button>
+          </div>
+
+          {showAdvancedCreate && (
+            <AdvancedProjectFields
+              values={values}
+              update={update}
+              languageValue={languageValue}
+              countryValue={countryValue}
+              hasCustomLanguage={hasCustomLanguage}
+              hasCustomCountry={hasCustomCountry}
+              languageOptions={LANGUAGE_OPTIONS}
+              countryOptions={countryOptions}
+              canEditAutocompleteProvider={canEditAutocompleteProvider}
+            />
+          )}
+        </section>
+      ) : (
+        <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
+          <h2 className="text-base font-semibold">Impostazioni avanzate</h2>
+          <AdvancedProjectFields
+            values={values}
+            update={update}
+            languageValue={languageValue}
+            countryValue={countryValue}
+            hasCustomLanguage={hasCustomLanguage}
+            hasCustomCountry={hasCustomCountry}
+            languageOptions={LANGUAGE_OPTIONS}
+            countryOptions={countryOptions}
+            canEditAutocompleteProvider={canEditAutocompleteProvider}
+          />
+        </section>
+      )}
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
+        <button
+          className="btn-primary w-full sm:w-auto"
+          disabled={saving}
+          type="submit"
+          onClick={() => setSubmitIntent("save")}
+        >
+          {saving ? "Salvataggio..." : mode === "create" ? "Crea e apri progetto" : "Salva impostazioni"}
+        </button>
+
+        {mode === "create" && (
+          <button
+            className="btn-secondary w-full sm:w-auto"
+            disabled={saving || seedCount === 0}
+            type="submit"
+            onClick={() => setSubmitIntent("save-and-run")}
+            title={seedCount === 0 ? "Inserisci almeno una seed per avviare subito" : ""}
+          >
+            {saving && submitIntent === "save-and-run" ? "Avvio..." : "Crea e avvia prima estrazione"}
+          </button>
+        )}
+
+        {message && <p className="text-sm text-green-700">{message}</p>}
+        {error && <p className="text-sm text-red-700">{error}</p>}
+      </div>
+    </form>
+  );
+}
+
+type AdvancedProjectFieldsProps = {
+  values: ProjectFormValues;
+  update: <K extends keyof ProjectFormValues>(key: K, value: ProjectFormValues[K]) => void;
+  languageValue: string;
+  countryValue: string;
+  hasCustomLanguage: boolean;
+  hasCustomCountry: boolean;
+  languageOptions: ReadonlyArray<{ code: string; label: string }>;
+  countryOptions: ReadonlyArray<{ code: string; label: string }>;
+  canEditAutocompleteProvider: boolean;
+};
+
+function AdvancedProjectFields({
+  values,
+  update,
+  languageValue,
+  countryValue,
+  hasCustomLanguage,
+  hasCustomCountry,
+  languageOptions,
+  countryOptions,
+  canEditAutocompleteProvider,
+}: AdvancedProjectFieldsProps) {
+  return (
+    <>
       <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="label" htmlFor="name">
-            Nome progetto
-          </label>
-          <input
-            id="name"
-            className="input"
-            value={values.name}
-            onChange={(event) => update("name", event.target.value)}
-            required
-          />
-          <p className="mt-1 text-xs text-slate-500">Nome del contenitore principale (es. dominio o cliente).</p>
-        </div>
-
-        <div>
-          <label className="label" htmlFor="min_volume">
-            Volume minimo
-          </label>
-          <input
-            id="min_volume"
-            className="input"
-            type="number"
-            min={0}
-            value={values.min_volume}
-            onChange={(event) => update("min_volume", Number(event.target.value) || 0)}
-          />
-          <p className="mt-1 text-xs text-slate-500">Scarta keyword con volume inferiore a questo valore (0 = nessun filtro).</p>
-        </div>
-
         <div>
           <label className="label" htmlFor="language_code">
             Lingua predefinita
@@ -218,7 +372,7 @@ export function ProjectForm({
             required
           >
             {hasCustomLanguage && <option value={languageValue}>Codice attuale non standard ({languageValue})</option>}
-            {LANGUAGE_OPTIONS.map((option) => (
+            {languageOptions.map((option) => (
               <option key={option.code} value={option.code}>
                 {option.label} ({option.code})
               </option>
@@ -246,24 +400,6 @@ export function ProjectForm({
           </select>
         </div>
 
-        {showInitialSubprojectName && mode === "create" && (
-          <div>
-            <label className="label" htmlFor="initial_subproject_name">
-              Primo sottoprogetto
-            </label>
-            <input
-              id="initial_subproject_name"
-              className="input"
-              value={values.initial_subproject_name}
-              onChange={(event) => update("initial_subproject_name", event.target.value)}
-              required
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              Nome del primo sottoprogetto creato insieme al progetto (default consigliato: Generale).
-            </p>
-          </div>
-        )}
-
         {canEditAutocompleteProvider && (
           <div>
             <label className="label" htmlFor="autocomplete_provider">
@@ -273,12 +409,10 @@ export function ProjectForm({
               id="autocomplete_provider"
               className="select"
               value={values.autocomplete_provider}
-              onChange={(event) =>
-                update("autocomplete_provider", event.target.value as ProjectFormValues["autocomplete_provider"])
-              }
+              onChange={(event) => update("autocomplete_provider", event.target.value as ProjectFormValues["autocomplete_provider"])}
             >
-              <option value="GOOGLE_DIRECT">GoogleDirectAutocompleteProvider</option>
-              <option value="MOCK">MockAutocompleteProvider</option>
+              <option value="GOOGLE_DIRECT">Google (predefinito)</option>
+              <option value="MOCK">Mock</option>
             </select>
           </div>
         )}
@@ -293,10 +427,25 @@ export function ProjectForm({
             value={values.metrics_provider}
             onChange={(event) => update("metrics_provider", event.target.value as ProjectFormValues["metrics_provider"])}
           >
-            <option value="NONE">NoMetricsProvider</option>
-            <option value="MOCK">MockMetricsProvider</option>
-            <option value="GOOGLE_KEYWORD_PLANNER">GoogleKeywordPlannerMetricsProvider</option>
+            <option value="NONE">Nessuna metrica</option>
+            <option value="MOCK">Mock</option>
+            <option value="GOOGLE_KEYWORD_PLANNER">Google Keyword Planner</option>
           </select>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="min_volume">
+            Volume minimo
+          </label>
+          <input
+            id="min_volume"
+            className="input"
+            type="number"
+            min={0}
+            value={values.min_volume}
+            onChange={(event) => update("min_volume", Number(event.target.value) || 0)}
+          />
+          <p className="mt-1 text-xs text-slate-500">Filtra le keyword con volume inferiore a questo valore (0 = nessun filtro).</p>
         </div>
 
         <div>
@@ -316,56 +465,40 @@ export function ProjectForm({
         </div>
       </div>
 
-      {showSeeds && mode === "create" && (
-        <div>
-          <label className="label" htmlFor="seeds">
-            Seed iniziali del primo sottoprogetto
-          </label>
-          <textarea
-            id="seeds"
-            className="input min-h-40"
-            value={values.seeds}
-            onChange={(event) => update("seeds", event.target.value)}
-            placeholder="keyword uno\nkeyword due\nkeyword tre"
-          />
-          <p className="mt-1 text-xs text-slate-500">Le seed saranno assegnate al primo sottoprogetto creato.</p>
-        </div>
-      )}
-
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3">
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-background)] p-3">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" checked={values.exclude_brands} onChange={(event) => update("exclude_brands", event.target.checked)} />
             Escludi brand
           </label>
-          <p className="mt-1 text-xs text-slate-500">Riduce o marca i termini brandizzati secondo la blacklist configurata.</p>
+          <p className="mt-1 text-xs text-slate-500">Riduce o marca i termini brandizzati secondo blacklist.</p>
         </div>
 
-        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3">
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-background)] p-3">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" checked={values.expand_alpha} onChange={(event) => update("expand_alpha", event.target.checked)} />
-            Espandi alfabeto (a-z)
+            Espansione alfabeto (a-z)
           </label>
-          <p className="mt-1 text-xs text-slate-500">Aggiunge varianti con lettere (es. keyword a, keyword b, ...).</p>
+          <p className="mt-1 text-xs text-slate-500">Aggiunge varianti con lettere (es. keyword a, keyword b).</p>
         </div>
 
-        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3">
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-background)] p-3">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" checked={values.expand_numeric} onChange={(event) => update("expand_numeric", event.target.checked)} />
-            Espandi numerico (0-9)
+            Espansione numerica (0-9)
           </label>
-          <p className="mt-1 text-xs text-slate-500">Aggiunge varianti con numeri (es. keyword 1, keyword 2, ...).</p>
+          <p className="mt-1 text-xs text-slate-500">Aggiunge varianti con numeri (es. keyword 1, keyword 2).</p>
         </div>
 
-        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3">
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-background)] p-3">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" checked={values.expand_patterns} onChange={(event) => update("expand_patterns", event.target.checked)} />
-            Espandi pattern semantici
+            Espansione pattern semantici
           </label>
-          <p className="mt-1 text-xs text-slate-500">Usa pattern avanzati per ampliare la copertura delle query correlate.</p>
+          <p className="mt-1 text-xs text-slate-500">Amplia la copertura delle query correlate.</p>
         </div>
 
-        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3 md:col-span-2">
+        <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-background)] p-3 md:col-span-2">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input
               type="checkbox"
@@ -374,17 +507,10 @@ export function ProjectForm({
             />
             Classificazione automatica
           </label>
-          <p className="mt-1 text-xs text-slate-500">Assegna in automatico intento di ricerca e tipo keyword durante l'analisi.</p>
+          <p className="mt-1 text-xs text-slate-500">Assegna intento e tipo keyword durante l'analisi.</p>
         </div>
       </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
-        <button className="btn-primary w-full sm:w-auto" disabled={saving} type="submit">
-          {saving ? "Salvataggio..." : mode === "create" ? "Crea progetto" : "Salva impostazioni"}
-        </button>
-        {message && <p className="text-sm text-green-700">{message}</p>}
-        {error && <p className="text-sm text-red-700">{error}</p>}
-      </div>
-    </form>
+    </>
   );
 }
+

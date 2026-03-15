@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ResultsTable } from "@/components/results-table";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
@@ -22,24 +22,35 @@ function checked(searchParams: SearchParams, key: string): boolean {
   return ["1", "true", "on", "yes"].includes(value.toLowerCase());
 }
 
+function toQueryParams(searchParams: SearchParams): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (!value) continue;
+    if (Array.isArray(value)) {
+      if (value[0]) params.set(key, value[0]);
+      continue;
+    }
+
+    params.set(key, value);
+  }
+
+  return params;
+}
+
+function buildPath(projectId: string, base: URLSearchParams): string {
+  const query = base.toString();
+  return query ? `/projects/${projectId}/results?${query}` : `/projects/${projectId}/results`;
+}
+
 function buildExportLink(
   projectId: string,
   format: "csv" | "xlsx" | "json",
   scope: "approved" | "selected" | "review" | "non-excluded" | "filtered",
   searchParams: SearchParams
 ): string {
-  const params = new URLSearchParams();
+  const params = toQueryParams(searchParams);
   params.set("format", format);
   params.set("scope", scope);
-
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (!value) continue;
-    if (Array.isArray(value)) {
-      if (value[0]) params.set(key, value[0]);
-    } else {
-      params.set(key, value);
-    }
-  }
 
   return `/api/projects/${projectId}/export?${params.toString()}`;
 }
@@ -74,12 +85,19 @@ export default async function ResultsPage({
     notFound();
   }
 
-  const selectedSubprojectId = getValue(resolvedSearchParams, "subprojectId").trim();
-  const selectedSubproject = selectedSubprojectId
-    ? project.subprojects.find((item) => item.id === selectedSubprojectId) ?? null
-    : null;
+  const defaultSection =
+    project.subprojects.find((item) => item.id === project.default_subproject_id) ?? project.subprojects[0] ?? null;
 
-  if (selectedSubprojectId && !selectedSubproject) {
+  const viewMode = getValue(resolvedSearchParams, "view").trim().toLowerCase() === "all" ? "all" : "section";
+  const requestedSubprojectId = getValue(resolvedSearchParams, "subprojectId").trim();
+  const inferredSubprojectId = requestedSubprojectId || defaultSection?.id || "";
+
+  const selectedSubproject =
+    viewMode === "all"
+      ? null
+      : project.subprojects.find((item) => item.id === inferredSubprojectId) ?? (project.subprojects[0] ?? null);
+
+  if (requestedSubprojectId && !project.subprojects.some((item) => item.id === requestedSubprojectId)) {
     notFound();
   }
 
@@ -118,13 +136,25 @@ export default async function ResultsPage({
     }),
   ]);
 
+  const activeViewParams = toQueryParams(resolvedSearchParams);
+  activeViewParams.set("view", "section");
+  if (selectedSubproject?.id) {
+    activeViewParams.set("subprojectId", selectedSubproject.id);
+  } else if (defaultSection?.id) {
+    activeViewParams.set("subprojectId", defaultSection.id);
+  }
+
+  const allViewParams = toQueryParams(resolvedSearchParams);
+  allViewParams.set("view", "all");
+  allViewParams.delete("subprojectId");
+
   return (
     <div className="space-y-6">
       <section className="card space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-semibold">
             Risultati - {project.name}
-            {selectedSubproject ? ` / ${selectedSubproject.name}` : ""}
+            {selectedSubproject ? ` / ${selectedSubproject.name}` : " / Tutte le sezioni"}
           </h1>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
             <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}`}>
@@ -136,20 +166,33 @@ export default async function ResultsPage({
           </div>
         </div>
 
+        <div className="flex flex-wrap gap-2">
+          <Link className={viewMode === "section" ? "btn-primary" : "btn-secondary"} href={buildPath(project.id, activeViewParams)}>
+            Sezione attiva
+          </Link>
+          <Link className={viewMode === "all" ? "btn-primary" : "btn-secondary"} href={buildPath(project.id, allViewParams)}>
+            Tutto il progetto
+          </Link>
+        </div>
+
         <p className="text-sm text-slate-600">
-          Mostrate {filteredCount} keyword su {scopeTotalCount} nel perimetro corrente.
+          Mostrate {filteredCount} keyword su {scopeTotalCount}
+          {selectedSubproject ? ` nella sezione ${selectedSubproject.name}.` : " nel progetto."}
           {!selectedSubproject && ` Totale progetto: ${projectTotalCount}.`}
         </p>
 
         <form method="get" className="grid gap-3 md:grid-cols-4">
-          <select className="select" name="subprojectId" defaultValue={selectedSubproject?.id ?? ""}>
-            <option value="">Tutti i sottoprogetti</option>
-            {project.subprojects.map((subproject) => (
-              <option key={subproject.id} value={subproject.id}>
-                {subproject.name}
-              </option>
-            ))}
-          </select>
+          <input type="hidden" name="view" value={viewMode} />
+
+          {viewMode === "section" && (
+            <select className="select" name="subprojectId" defaultValue={selectedSubproject?.id ?? ""}>
+              {project.subprojects.map((subproject) => (
+                <option key={subproject.id} value={subproject.id}>
+                  {subproject.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           <input className="input" name="searchText" placeholder="Testo ricerca" defaultValue={getValue(resolvedSearchParams, "searchText")} />
           <input className="input" name="minVolume" type="number" placeholder="Volume minimo" defaultValue={getValue(resolvedSearchParams, "minVolume")} />
@@ -260,3 +303,4 @@ export default async function ResultsPage({
     </div>
   );
 }
+

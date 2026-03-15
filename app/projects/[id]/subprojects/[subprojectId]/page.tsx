@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteSubprojectButton } from "@/components/delete-subproject-button";
 import { RunExtractionButton } from "@/components/run-extraction-button";
@@ -51,8 +51,8 @@ export default async function SubprojectSettingsPage({
       <section className="card space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Sottoprogetto: {subproject.name}</h1>
-            <p className="mt-1 text-sm text-slate-600">Progetto padre: {subproject.project.name}</p>
+            <h1 className="text-2xl font-semibold">Sezione: {subproject.name}</h1>
+            <p className="mt-1 text-sm text-slate-600">Progetto: {subproject.project.name}</p>
           </div>
           <RunExtractionButton
             runPath={`/api/projects/${subproject.project_id}/subprojects/${subproject.id}/run`}
@@ -66,16 +66,16 @@ export default async function SubprojectSettingsPage({
             Torna al progetto
           </Link>
           <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${subproject.project_id}/results?subprojectId=${subproject.id}`}>
-            Vedi risultati sottoprogetto
+            Vedi risultati sezione
           </Link>
           <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${subproject.project_id}/results`}>
-            Vedi risultati aggregati
+            Vedi risultati tutto progetto
           </Link>
         </div>
 
         <div className="grid gap-3 text-sm md:grid-cols-3">
           <p>
-            <span className="font-medium">Keyword:</span> {subproject._count.keyword_candidates}
+            <span className="font-medium">Keyword sezione:</span> {subproject._count.keyword_candidates}
           </p>
           <p>
             <span className="font-medium">Job:</span> {subproject._count.jobs}
@@ -87,7 +87,7 @@ export default async function SubprojectSettingsPage({
       </section>
 
       <section className="card space-y-4">
-        <h2 className="text-lg font-semibold">Impostazioni sottoprogetto</h2>
+        <h2 className="text-lg font-semibold">Impostazioni sezione</h2>
         <SubprojectForm
           mode="edit"
           projectId={subproject.project_id}
@@ -130,7 +130,7 @@ export default async function SubprojectSettingsPage({
       <section className="card">
         <h2 className="mb-3 text-lg font-semibold text-red-700">Zona pericolosa</h2>
         <p className="mb-4 text-sm text-slate-600">
-          Eliminando questo sottoprogetto verranno rimossi seed, keyword e job collegati. Il progetto padre restera attivo.
+          Eliminando questa sezione verranno rimossi seed, keyword e job collegati. Il progetto restera attivo.
         </p>
         <DeleteSubprojectButton
           projectId={subproject.project_id}
@@ -143,3 +143,7 @@ export default async function SubprojectSettingsPage({
     </div>
   );
 }
+
+
+
+

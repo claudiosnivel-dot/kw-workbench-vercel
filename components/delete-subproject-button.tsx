@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -28,9 +28,7 @@ export function DeleteSubprojectButton({
   const [error, setError] = useState<string | null>(null);
 
   const remove = async () => {
-    const confirmed = window.confirm(
-      `Eliminare il sottoprogetto "${subprojectName}"? Verranno rimossi seed, keyword e job collegati.`
-    );
+    const confirmed = window.confirm(`Eliminare la sezione "${subprojectName}"? Verranno rimossi seed, keyword e job collegati.`);
 
     if (!confirmed) {
       return;
@@ -46,7 +44,7 @@ export function DeleteSubprojectButton({
       const payload = await readJsonSafe<ApiErrorPayload>(response);
 
       if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Eliminazione sottoprogetto non riuscita"));
+        throw new Error(buildApiErrorMessage(response, payload, "Eliminazione sezione non riuscita"));
       }
 
       if (redirectTo) {
@@ -74,3 +72,4 @@ export function DeleteSubprojectButton({
     </div>
   );
 }
+

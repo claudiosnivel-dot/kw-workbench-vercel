@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { ExportFormat, ExportScope, generateExport } from "@/lib/modules/export";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       });
 
       if (!subproject) {
-        return NextResponse.json({ error: "Sottoprogetto non trovato" }, { status: 404 });
+        return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
       }
     }
 
@@ -83,3 +83,5 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Errore interno durante la generazione dell'export" }, { status: 500 });
   }
 }
+
+

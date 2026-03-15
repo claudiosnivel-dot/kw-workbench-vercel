@@ -1,4 +1,4 @@
-import { ProjectForm } from "@/components/project-form";
+﻿import { ProjectForm } from "@/components/project-form";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export default async function NewProjectPage() {
       <section className="card">
         <h1 className="text-2xl font-semibold">Nuovo progetto</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Crea il progetto padre e il primo sottoprogetto operativo. In seguito potrai aggiungere altri sottoprogetti.
+          Crea il progetto in modo guidato: prima imposti le basi (nome, prima sezione, seed), poi eventuali opzioni avanzate.
         </p>
       </section>
 
@@ -21,3 +21,4 @@ export default async function NewProjectPage() {
     </div>
   );
 }
+

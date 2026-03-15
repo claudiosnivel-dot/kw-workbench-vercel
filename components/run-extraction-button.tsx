@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,6 +7,7 @@ import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/clien
 type RunExtractionButtonProps = {
   projectId?: string;
   runPath?: string;
+  subprojectId?: string | null;
   label?: string;
   runningLabel?: string;
 };
@@ -14,6 +15,7 @@ type RunExtractionButtonProps = {
 export function RunExtractionButton({
   projectId,
   runPath,
+  subprojectId = null,
   label = "Avvia estrazione",
   runningLabel = "Estrazione in corso...",
 }: RunExtractionButtonProps) {
@@ -33,10 +35,16 @@ export function RunExtractionButton({
     setError(null);
 
     try {
-      const response = await fetch(endpoint, {
+      const requestInit: RequestInit = {
         method: "POST",
-      });
+      };
 
+      if (!runPath && subprojectId) {
+        requestInit.headers = { "Content-Type": "application/json" };
+        requestInit.body = JSON.stringify({ subprojectId });
+      }
+
+      const response = await fetch(endpoint, requestInit);
       const payload = await readJsonSafe<ApiErrorPayload>(response);
       if (!response.ok) {
         throw new Error(buildApiErrorMessage(response, payload, "Estrazione non riuscita"));
@@ -59,3 +67,4 @@ export function RunExtractionButton({
     </div>
   );
 }
+

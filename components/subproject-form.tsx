@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -175,7 +175,7 @@ export function SubprojectForm({
 
       const json = await readJsonSafe<SubprojectFormResponse>(response);
       if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, json, "Impossibile salvare il sottoprogetto"));
+        throw new Error(buildApiErrorMessage(response, json, "Impossibile salvare la sezione"));
       }
 
       if (mode === "create" && redirectTo && json?.data?.id) {
@@ -184,7 +184,7 @@ export function SubprojectForm({
         return;
       }
 
-      setMessage("Sottoprogetto salvato.");
+      setMessage("Sezione salvata.");
       router.refresh();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
@@ -198,7 +198,7 @@ export function SubprojectForm({
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="label" htmlFor="subproject-name">
-            Nome sottoprogetto
+            Nome sezione
           </label>
           <input
             id="subproject-name"
@@ -221,7 +221,7 @@ export function SubprojectForm({
             onChange={(event) => update("description", event.target.value)}
             placeholder="Nota interna"
           />
-          <p className="mt-1 text-xs text-slate-500">Aiuta a distinguere i sottoprogetti quando diventano numerosi.</p>
+          <p className="mt-1 text-xs text-slate-500">Aiuta a distinguere le sezioni quando diventano numerosi.</p>
         </div>
       </div>
 
@@ -236,7 +236,7 @@ export function SubprojectForm({
           onChange={(event) => update("seeds", event.target.value)}
           placeholder="keyword uno\nkeyword due\nkeyword tre"
         />
-        <p className="mt-1 text-xs text-slate-500">Seed specifiche del sottoprogetto. L'estrazione agira solo su queste keyword iniziali.</p>
+        <p className="mt-1 text-xs text-slate-500">Seed specifiche della sezione. L'estrazione agira solo su queste keyword iniziali.</p>
       </div>
 
       {showAdvanced && (
@@ -459,7 +459,7 @@ export function SubprojectForm({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
         <button className="btn-primary w-full sm:w-auto" disabled={saving} type="submit">
-          {saving ? "Salvataggio..." : (submitLabel ?? (mode === "create" ? "Crea sottoprogetto" : "Salva sottoprogetto"))}
+          {saving ? "Salvataggio..." : (submitLabel ?? (mode === "create" ? "Crea sezione" : "Salva sezione"))}
         </button>
         {message && <p className="text-sm text-green-700">{message}</p>}
         {error && <p className="text-sm text-red-700">{error}</p>}
@@ -467,3 +467,6 @@ export function SubprojectForm({
     </form>
   );
 }
+
+
+

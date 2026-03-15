@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
@@ -10,9 +10,24 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+type RunPayload = {
+  subprojectId?: string;
+};
+
+async function readRunPayload(request: Request): Promise<RunPayload> {
+  try {
+    const payload = (await request.json()) as RunPayload;
+    return payload ?? {};
+  } catch {
+    return {};
+  }
+}
+
 export async function POST(request: Request, context: RouteContext) {
   const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await context.params;
+  const payload = await readRunPayload(request);
+  const requestedSubprojectId = String(payload.subprojectId ?? "").trim();
 
   const project = await prisma.project.findFirst({
     where: {
@@ -32,22 +47,20 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   if (project.subprojects.length === 0) {
-    return NextResponse.json({ error: "Nessun sottoprogetto disponibile. Crea prima un sottoprogetto." }, { status: 400 });
+    return NextResponse.json({ error: "Nessuna sezione disponibile. Crea prima una sezione." }, { status: 400 });
   }
 
-  if (project.subprojects.length > 1) {
-    return NextResponse.json(
-      {
-        error:
-          "Questo progetto ha piu sottoprogetti. Avvia l'estrazione dal sottoprogetto specifico nella dashboard progetto.",
-      },
-      { status: 409 }
-    );
+  const targetSubproject = requestedSubprojectId
+    ? project.subprojects.find((item) => item.id === requestedSubprojectId) ?? null
+    : project.subprojects.find((item) => item.id === project.default_subproject_id) ?? project.subprojects[0];
+
+  if (!targetSubproject) {
+    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
   }
 
-  const target = project.subprojects[0];
-  const job = await enqueueExtractionJob(project.id, target.id);
+  const job = await enqueueExtractionJob(project.id, targetSubproject.id);
   const completed = await runJobById(job.id);
 
-  return NextResponse.json({ data: completed });
+  return NextResponse.json({ data: completed, meta: { subprojectId: targetSubproject.id } });
 }
+

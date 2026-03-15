@@ -1,4 +1,4 @@
-generator client {
+﻿generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
@@ -121,6 +121,7 @@ model User {
 model Project {
   id                    String               @id @default(cuid())
   owner_user_id         String?
+  default_subproject_id String?
   name                  String
   language_code         String               @default("en")
   country_code          String               @default("US")
@@ -136,7 +137,8 @@ model Project {
   created_at            DateTime             @default(now())
   updated_at            DateTime             @updatedAt
   owner                 User?                @relation(fields: [owner_user_id], references: [id], onDelete: Cascade)
-  subprojects           Subproject[]
+  subprojects           Subproject[]         @relation("ProjectSubprojects")
+  default_subproject    Subproject?          @relation("ProjectDefaultSubproject", fields: [default_subproject_id], references: [id], onDelete: SetNull)
   seeds                 Seed[]
   keyword_candidates    KeywordCandidate[]
   jobs                  Job[]
@@ -144,6 +146,7 @@ model Project {
   expansion_patterns    ExpansionPattern[]
 
   @@index([owner_user_id])
+  @@index([default_subproject_id])
   @@map("projects")
 }
 
@@ -166,7 +169,8 @@ model Subproject {
   scoring_profile_override       String?
   created_at                     DateTime             @default(now())
   updated_at                     DateTime             @updatedAt
-  project                        Project              @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project                        Project              @relation("ProjectSubprojects", fields: [project_id], references: [id], onDelete: Cascade)
+  default_for_projects           Project[]            @relation("ProjectDefaultSubproject")
   seeds                          Seed[]
   keyword_candidates             KeywordCandidate[]
   jobs                           Job[]
@@ -306,3 +310,6 @@ model AppSetting {
 
   @@map("app_settings")
 }
+
+
+

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
@@ -29,7 +29,7 @@ export async function POST(request: Request, context: RouteContext) {
   });
 
   if (!subproject) {
-    return NextResponse.json({ error: "Sottoprogetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
   }
 
   const job = await enqueueExtractionJob(subproject.project_id, subproject.id);
@@ -37,3 +37,5 @@ export async function POST(request: Request, context: RouteContext) {
 
   return NextResponse.json({ data: completed });
 }
+
+

@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+﻿import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { parseProjectPayload } from "@/lib/modules/project-settings";
@@ -63,6 +63,11 @@ export async function POST(request: Request) {
       },
     });
 
+    await tx.project.update({
+      where: { id: created.id },
+      data: { default_subproject_id: initialSubproject.id },
+    });
+
     if (input.seeds.length > 0) {
       await tx.seed.createMany({
         data: input.seeds.map((keyword) => ({
@@ -81,3 +86,4 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ data: result }, { status: 201 });
 }
+
