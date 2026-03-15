@@ -3,14 +3,13 @@ ALTER TABLE "projects" ADD COLUMN "default_subproject_id" TEXT;
 
 -- Backfill default section using first subproject by position/created_at
 UPDATE "projects" AS p
-SET "default_subproject_id" = s."id"
-FROM LATERAL (
-  SELECT "id"
-  FROM "subprojects"
-  WHERE "project_id" = p."id"
-  ORDER BY "position" ASC, "created_at" ASC
+SET "default_subproject_id" = (
+  SELECT s."id"
+  FROM "subprojects" AS s
+  WHERE s."project_id" = p."id"
+  ORDER BY s."position" ASC, s."created_at" ASC
   LIMIT 1
-) AS s
+)
 WHERE p."default_subproject_id" IS NULL;
 
 -- CreateIndex
