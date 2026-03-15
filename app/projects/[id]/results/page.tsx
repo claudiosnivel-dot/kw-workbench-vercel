@@ -59,22 +59,41 @@ export default async function ResultsPage({
       id,
       owner_user_id: user.id,
     },
+    include: {
+      subprojects: {
+        orderBy: [{ position: "asc" }, { created_at: "asc" }],
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
   });
 
   if (!project) {
     notFound();
   }
 
-  const filters = parseResultsFilters(resolvedSearchParams);
-  const where = buildResultsWhere(project.id, filters);
+  const selectedSubprojectId = getValue(resolvedSearchParams, "subprojectId").trim();
+  const selectedSubproject = selectedSubprojectId
+    ? project.subprojects.find((item) => item.id === selectedSubprojectId) ?? null
+    : null;
 
-  const [rows, filteredCount, totalCount] = await Promise.all([
+  if (selectedSubprojectId && !selectedSubproject) {
+    notFound();
+  }
+
+  const filters = parseResultsFilters(resolvedSearchParams);
+  const where = buildResultsWhere(project.id, filters, selectedSubproject?.id ?? null);
+
+  const [rows, filteredCount, projectTotalCount, scopeTotalCount] = await Promise.all([
     prisma.keywordCandidate.findMany({
       where,
       orderBy: [{ score: "desc" }, { keyword: "asc" }],
       take: 1000,
       select: {
         id: true,
+        subproject_id: true,
         keyword: true,
         source: true,
         brand_status: true,
@@ -85,32 +104,53 @@ export default async function ResultsPage({
         avg_monthly_searches: true,
         competition: true,
         score: true,
+        subproject: {
+          select: {
+            name: true,
+          },
+        },
       },
     }),
     prisma.keywordCandidate.count({ where }),
     prisma.keywordCandidate.count({ where: { project_id: project.id } }),
+    prisma.keywordCandidate.count({
+      where: selectedSubproject ? { project_id: project.id, subproject_id: selectedSubproject.id } : { project_id: project.id },
+    }),
   ]);
 
   return (
     <div className="space-y-6">
       <section className="card space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-semibold">Risultati - {project.name}</h1>
+          <h1 className="text-2xl font-semibold">
+            Risultati - {project.name}
+            {selectedSubproject ? ` / ${selectedSubproject.name}` : ""}
+          </h1>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
             <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}`}>
               Torna al progetto
             </Link>
             <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/settings`}>
-              Impostazioni
+              Impostazioni progetto
             </Link>
           </div>
         </div>
 
         <p className="text-sm text-slate-600">
-          Mostrate {filteredCount} keyword su {totalCount}.
+          Mostrate {filteredCount} keyword su {scopeTotalCount} nel perimetro corrente.
+          {!selectedSubproject && ` Totale progetto: ${projectTotalCount}.`}
         </p>
 
         <form method="get" className="grid gap-3 md:grid-cols-4">
+          <select className="select" name="subprojectId" defaultValue={selectedSubproject?.id ?? ""}>
+            <option value="">Tutti i sottoprogetti</option>
+            {project.subprojects.map((subproject) => (
+              <option key={subproject.id} value={subproject.id}>
+                {subproject.name}
+              </option>
+            ))}
+          </select>
+
           <input className="input" name="searchText" placeholder="Testo ricerca" defaultValue={getValue(resolvedSearchParams, "searchText")} />
           <input className="input" name="minVolume" type="number" placeholder="Volume minimo" defaultValue={getValue(resolvedSearchParams, "minVolume")} />
           <input className="input" name="maxVolume" type="number" placeholder="Volume massimo" defaultValue={getValue(resolvedSearchParams, "maxVolume")} />
@@ -196,7 +236,26 @@ export default async function ResultsPage({
       </section>
 
       <section className="card">
-        <ResultsTable projectId={project.id} rows={rows} />
+        <ResultsTable
+          projectId={project.id}
+          activeSubprojectId={selectedSubproject?.id ?? null}
+          showSubprojectColumn={!selectedSubproject}
+          rows={rows.map((row) => ({
+            id: row.id,
+            subproject_id: row.subproject_id,
+            subproject_name: row.subproject.name,
+            keyword: row.keyword,
+            source: row.source,
+            brand_status: row.brand_status,
+            review_status: row.review_status,
+            selected_for_export: row.selected_for_export,
+            keyword_type: row.keyword_type,
+            search_intent: row.search_intent,
+            avg_monthly_searches: row.avg_monthly_searches,
+            competition: row.competition,
+            score: row.score,
+          }))}
+        />
       </section>
     </div>
   );

@@ -1,7 +1,6 @@
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { parseProjectPayload } from "@/lib/modules/project-settings";
+import { parseProjectDefaultsPayload } from "@/lib/modules/project-settings";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -19,11 +18,28 @@ export async function GET(request: Request, context: RouteContext) {
         owner_user_id: user.id,
       },
       include: {
-        seeds: { orderBy: { created_at: "asc" } },
-        jobs: { orderBy: { created_at: "desc" }, take: 25 },
+        subprojects: {
+          orderBy: [{ position: "asc" }, { created_at: "asc" }],
+          include: {
+            _count: {
+              select: {
+                seeds: true,
+                keyword_candidates: true,
+                jobs: true,
+              },
+            },
+            jobs: {
+              orderBy: { created_at: "desc" },
+              take: 1,
+            },
+          },
+        },
         _count: {
           select: {
+            subprojects: true,
             keyword_candidates: true,
+            seeds: true,
+            jobs: true,
           },
         },
       },
@@ -45,7 +61,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     const user = await requireAuthenticatedUserFromRequest(request);
     const { id } = await context.params;
     const payload = (await request.json()) as Record<string, unknown>;
-    const input = parseProjectPayload(payload);
+    const input = parseProjectDefaultsPayload(payload);
     const autocompleteProvider = user.isRootAdmin ? input.autocomplete_provider : "GOOGLE_DIRECT";
 
     const project = await prisma.project.findFirst({
@@ -60,37 +76,22 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
     }
 
-    const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const result = await tx.project.update({
-        where: { id },
-        data: {
-          name: input.name,
-          language_code: input.language_code,
-          country_code: input.country_code,
-          autocomplete_provider: autocompleteProvider,
-          metrics_provider: input.metrics_provider,
-          min_volume: input.min_volume,
-          exclude_brands: input.exclude_brands,
-          expand_alpha: input.expand_alpha,
-          expand_numeric: input.expand_numeric,
-          expand_patterns: input.expand_patterns,
-          auto_classification: input.auto_classification,
-          scoring_profile: input.scoring_profile,
-        },
-      });
-
-      await tx.seed.deleteMany({ where: { project_id: id } });
-
-      if (input.seeds.length > 0) {
-        await tx.seed.createMany({
-          data: input.seeds.map((keyword) => ({
-            project_id: id,
-            keyword,
-          })),
-        });
-      }
-
-      return result;
+    const updated = await prisma.project.update({
+      where: { id },
+      data: {
+        name: input.name,
+        language_code: input.language_code,
+        country_code: input.country_code,
+        autocomplete_provider: autocompleteProvider,
+        metrics_provider: input.metrics_provider,
+        min_volume: input.min_volume,
+        exclude_brands: input.exclude_brands,
+        expand_alpha: input.expand_alpha,
+        expand_numeric: input.expand_numeric,
+        expand_patterns: input.expand_patterns,
+        auto_classification: input.auto_classification,
+        scoring_profile: input.scoring_profile,
+      },
     });
 
     return NextResponse.json({ data: updated });

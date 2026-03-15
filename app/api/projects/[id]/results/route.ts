@@ -7,9 +7,28 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+async function ensureOwnedSubproject(params: {
+  projectId: string;
+  subprojectId: string;
+  userId: string;
+}) {
+  return prisma.subproject.findFirst({
+    where: {
+      id: params.subprojectId,
+      project_id: params.projectId,
+      project: {
+        owner_user_id: params.userId,
+      },
+    },
+    select: { id: true },
+  });
+}
+
 export async function GET(request: NextRequest, context: RouteContext) {
   const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await context.params;
+  const rawSubprojectId = request.nextUrl.searchParams.get("subprojectId");
+  const subprojectId = rawSubprojectId ? rawSubprojectId.trim() : "";
 
   const project = await prisma.project.findFirst({
     where: {
@@ -23,8 +42,20 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
   }
 
+  if (subprojectId) {
+    const subproject = await ensureOwnedSubproject({
+      projectId: id,
+      subprojectId,
+      userId: user.id,
+    });
+
+    if (!subproject) {
+      return NextResponse.json({ error: "Sottoprogetto non trovato" }, { status: 404 });
+    }
+  }
+
   const filters = parseResultsFilters(request.nextUrl.searchParams);
-  const where = buildResultsWhere(id, filters);
+  const where = buildResultsWhere(id, filters, subprojectId || null);
   const page = Math.max(1, Number(request.nextUrl.searchParams.get("page") ?? 1));
   const pageSize = Math.min(500, Math.max(20, Number(request.nextUrl.searchParams.get("pageSize") ?? 100)));
 
@@ -38,6 +69,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       select: {
         id: true,
         project_id: true,
+        subproject_id: true,
         keyword: true,
         normalized_keyword: true,
         canonical_keyword: true,
@@ -63,12 +95,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
         metrics_updated_at: true,
         created_at: true,
         updated_at: true,
+        subproject: {
+          select: {
+            name: true,
+          },
+        },
       },
     }),
   ]);
 
   const serialized = rows.map((row) => ({
     ...row,
+    subproject_name: row.subproject.name,
     low_top_of_page_bid_micros:
       row.low_top_of_page_bid_micros != null ? row.low_top_of_page_bid_micros.toString() : null,
     high_top_of_page_bid_micros:
@@ -105,6 +143,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const payload = (await request.json()) as {
     action?: string;
     ids?: string[];
+    subprojectId?: string;
   };
 
   const ids = Array.isArray(payload.ids) ? payload.ids.filter(Boolean) : [];
@@ -112,10 +151,31 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Azione o ID mancanti" }, { status: 400 });
   }
 
-  const where = {
+  const scopedSubprojectId = payload.subprojectId?.trim() || null;
+  if (scopedSubprojectId) {
+    const subproject = await ensureOwnedSubproject({
+      projectId: id,
+      subprojectId: scopedSubprojectId,
+      userId: user.id,
+    });
+
+    if (!subproject) {
+      return NextResponse.json({ error: "Sottoprogetto non trovato" }, { status: 404 });
+    }
+  }
+
+  const where: {
+    project_id: string;
+    subproject_id?: string;
+    id: { in: string[] };
+  } = {
     project_id: id,
     id: { in: ids },
   };
+
+  if (scopedSubprojectId) {
+    where.subproject_id = scopedSubprojectId;
+  }
 
   if (payload.action === "approve") {
     await prisma.keywordCandidate.updateMany({ where, data: { review_status: "approved" } });

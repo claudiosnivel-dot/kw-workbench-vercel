@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -99,19 +99,19 @@ enum ColorVisionMode {
 }
 
 model User {
-  id                    String                @id @default(cuid())
-  username              String                @unique
-  password_hash         String
-  role                  UserRole              @default(SUBSCRIBER)
-  status                UserStatus            @default(ACTIVE)
-  is_root_admin         Boolean               @default(false)
-  last_login_at         DateTime?
-  theme_mode            ThemeMode             @default(DARK)
-  font_scale_mode       FontScaleMode         @default(NORMAL)
-  color_vision_mode     ColorVisionMode       @default(NONE)
-  created_at            DateTime              @default(now())
-  updated_at            DateTime              @updatedAt
-  projects              Project[]
+  id                String            @id @default(cuid())
+  username          String            @unique
+  password_hash     String
+  role              UserRole          @default(SUBSCRIBER)
+  status            UserStatus        @default(ACTIVE)
+  is_root_admin     Boolean           @default(false)
+  last_login_at     DateTime?
+  theme_mode        ThemeMode         @default(DARK)
+  font_scale_mode   FontScaleMode     @default(NORMAL)
+  color_vision_mode ColorVisionMode   @default(NONE)
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+  projects          Project[]
 
   @@index([role])
   @@index([status])
@@ -136,6 +136,7 @@ model Project {
   created_at            DateTime             @default(now())
   updated_at            DateTime             @updatedAt
   owner                 User?                @relation(fields: [owner_user_id], references: [id], onDelete: Cascade)
+  subprojects           Subproject[]
   seeds                 Seed[]
   keyword_candidates    KeywordCandidate[]
   jobs                  Job[]
@@ -146,70 +147,111 @@ model Project {
   @@map("projects")
 }
 
+model Subproject {
+  id                             String               @id @default(cuid())
+  project_id                     String
+  name                           String
+  description                    String?
+  position                       Int                  @default(0)
+  language_code_override         String?
+  country_code_override          String?
+  autocomplete_provider_override AutocompleteProvider?
+  metrics_provider_override      MetricsProvider?
+  min_volume_override            Int?
+  exclude_brands_override        Boolean?
+  expand_alpha_override          Boolean?
+  expand_numeric_override        Boolean?
+  expand_patterns_override       Boolean?
+  auto_classification_override   Boolean?
+  scoring_profile_override       String?
+  created_at                     DateTime             @default(now())
+  updated_at                     DateTime             @updatedAt
+  project                        Project              @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  seeds                          Seed[]
+  keyword_candidates             KeywordCandidate[]
+  jobs                           Job[]
+
+  @@unique([project_id, name])
+  @@index([project_id, position])
+  @@map("subprojects")
+}
+
 model Seed {
-  id         String   @id @default(cuid())
-  project_id String
-  keyword    String
-  created_at DateTime @default(now())
-  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  id            String     @id @default(cuid())
+  project_id    String
+  subproject_id String
+  keyword       String
+  created_at    DateTime   @default(now())
+  project       Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  subproject    Subproject @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
 
   @@index([project_id])
+  @@index([subproject_id])
   @@map("seeds")
 }
 
 model KeywordCandidate {
-  id                           String          @id @default(cuid())
-  project_id                   String
-  keyword                      String
-  normalized_keyword           String
-  canonical_keyword            String
-  source                       String
-  source_query                 String
-  brand_status                 BrandStatus     @default(allowed)
-  brand_reason                 String?
-  review_status                ReviewStatus    @default(pending)
-  selected_for_export          Boolean         @default(false)
-  keyword_type                 KeywordType     @default(generic)
-  search_intent                SearchIntent    @default(mixed)
-  is_question                  Boolean         @default(false)
-  is_local_intent              Boolean         @default(false)
-  is_tool_intent               Boolean         @default(false)
-  is_commercial_intent         Boolean         @default(false)
-  metrics_status               MetricsStatus   @default(missing)
-  metrics_provider             MetricsProvider @default(NONE)
-  avg_monthly_searches         Int?
-  competition                  Float?
-  low_top_of_page_bid_micros   BigInt?
-  high_top_of_page_bid_micros  BigInt?
-  score                        Float?
-  metrics_updated_at           DateTime?
-  created_at                   DateTime        @default(now())
-  updated_at                   DateTime        @updatedAt
-  project                      Project         @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  id                          String          @id @default(cuid())
+  project_id                  String
+  subproject_id               String
+  keyword                     String
+  normalized_keyword          String
+  canonical_keyword           String
+  source                      String
+  source_query                String
+  brand_status                BrandStatus     @default(allowed)
+  brand_reason                String?
+  review_status               ReviewStatus    @default(pending)
+  selected_for_export         Boolean         @default(false)
+  keyword_type                KeywordType     @default(generic)
+  search_intent               SearchIntent    @default(mixed)
+  is_question                 Boolean         @default(false)
+  is_local_intent             Boolean         @default(false)
+  is_tool_intent              Boolean         @default(false)
+  is_commercial_intent        Boolean         @default(false)
+  metrics_status              MetricsStatus   @default(missing)
+  metrics_provider            MetricsProvider @default(NONE)
+  avg_monthly_searches        Int?
+  competition                 Float?
+  low_top_of_page_bid_micros  BigInt?
+  high_top_of_page_bid_micros BigInt?
+  score                       Float?
+  metrics_updated_at          DateTime?
+  created_at                  DateTime        @default(now())
+  updated_at                  DateTime        @updatedAt
+  project                     Project         @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  subproject                  Subproject      @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
 
-  @@unique([project_id, canonical_keyword])
+  @@unique([subproject_id, canonical_keyword])
   @@index([project_id, review_status])
   @@index([project_id, brand_status])
   @@index([project_id, search_intent])
   @@index([project_id, keyword_type])
+  @@index([subproject_id, review_status])
+  @@index([subproject_id, brand_status])
+  @@index([subproject_id, search_intent])
+  @@index([subproject_id, keyword_type])
   @@map("keyword_candidates")
 }
 
 model Job {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   project_id    String
-  type          JobType   @default(extraction)
-  status        JobStatus @default(pending)
+  subproject_id String
+  type          JobType    @default(extraction)
+  status        JobStatus  @default(pending)
   payload       Json?
   result        Json?
   error_message String?
   started_at    DateTime?
   completed_at  DateTime?
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @updatedAt
-  project       Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  project       Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  subproject    Subproject @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
 
   @@index([project_id, status])
+  @@index([subproject_id, status])
   @@index([status, created_at])
   @@map("jobs")
 }
@@ -264,4 +306,3 @@ model AppSetting {
 
   @@map("app_settings")
 }
-

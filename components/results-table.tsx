@@ -7,6 +7,8 @@ import { normalizeDisplayText } from "@/lib/text/encoding";
 
 type CandidateRow = {
   id: string;
+  subproject_id: string;
+  subproject_name: string;
   keyword: string;
   source: string;
   brand_status: string;
@@ -22,6 +24,8 @@ type CandidateRow = {
 type ResultsTableProps = {
   projectId: string;
   rows: CandidateRow[];
+  activeSubprojectId?: string | null;
+  showSubprojectColumn?: boolean;
 };
 
 const ACTIONS = [
@@ -52,7 +56,12 @@ function brandTone(value: string): string {
   return chipTone("success");
 }
 
-export function ResultsTable({ projectId, rows }: ResultsTableProps) {
+export function ResultsTable({
+  projectId,
+  rows,
+  activeSubprojectId = null,
+  showSubprojectColumn = false,
+}: ResultsTableProps) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [action, setAction] = useState<(typeof ACTIONS)[number]["value"]>("approve");
@@ -82,7 +91,11 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
       const response = await fetch(`/api/projects/${projectId}/results`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, ids: selectedIds }),
+        body: JSON.stringify({
+          action,
+          ids: selectedIds,
+          subprojectId: activeSubprojectId,
+        }),
       });
 
       const payload = await readJsonSafe<ApiErrorPayload>(response);
@@ -118,12 +131,13 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
       {error && <p className="text-sm text-red-700">{error}</p>}
 
       <div className="table-shell">
-        <table className="table-enterprise min-w-[980px] text-left text-sm">
+        <table className="table-enterprise min-w-[1080px] text-left text-sm">
           <thead>
             <tr>
               <th className="px-3 py-2">
                 <input type="checkbox" checked={isAllSelected} onChange={toggleAll} aria-label="Seleziona tutto" />
               </th>
+              {showSubprojectColumn && <th className="px-3 py-2">Sottoprogetto</th>}
               <th className="px-3 py-2">Keyword</th>
               <th className="px-3 py-2">Sorgente</th>
               <th className="hidden px-3 py-2 md:table-cell">Intento</th>
@@ -145,6 +159,11 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
                   <td className="px-3 py-3">
                     <input type="checkbox" checked={checked} onChange={() => toggle(row.id)} aria-label={`Seleziona ${displayKeyword}`} />
                   </td>
+                  {showSubprojectColumn && (
+                    <td className="px-3 py-3">
+                      <span className="status-chip">{row.subproject_name}</span>
+                    </td>
+                  )}
                   <td className="max-w-[20rem] break-words px-3 py-3 font-medium">{displayKeyword}</td>
                   <td className="px-3 py-3 text-xs">{row.source}</td>
                   <td className="hidden px-3 py-3 md:table-cell">
@@ -167,7 +186,7 @@ export function ResultsTable({ projectId, rows }: ResultsTableProps) {
             })}
             {rows.length === 0 && (
               <tr>
-                <td className="px-3 py-6 text-sm text-slate-500" colSpan={10}>
+                <td className="px-3 py-6 text-sm text-slate-500" colSpan={showSubprojectColumn ? 11 : 10}>
                   Nessuna keyword candidata per questi filtri.
                 </td>
               </tr>

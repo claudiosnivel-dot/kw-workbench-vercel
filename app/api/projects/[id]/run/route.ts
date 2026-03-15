@@ -19,14 +19,34 @@ export async function POST(request: Request, context: RouteContext) {
       id,
       owner_user_id: user.id,
     },
-    select: { id: true },
+    include: {
+      subprojects: {
+        orderBy: [{ position: "asc" }, { created_at: "asc" }],
+        select: { id: true, name: true },
+      },
+    },
   });
 
   if (!project) {
     return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
   }
 
-  const job = await enqueueExtractionJob(project.id);
+  if (project.subprojects.length === 0) {
+    return NextResponse.json({ error: "Nessun sottoprogetto disponibile. Crea prima un sottoprogetto." }, { status: 400 });
+  }
+
+  if (project.subprojects.length > 1) {
+    return NextResponse.json(
+      {
+        error:
+          "Questo progetto ha piu sottoprogetti. Avvia l'estrazione dal sottoprogetto specifico nella dashboard progetto.",
+      },
+      { status: 409 }
+    );
+  }
+
+  const target = project.subprojects[0];
+  const job = await enqueueExtractionJob(project.id, target.id);
   const completed = await runJobById(job.id);
 
   return NextResponse.json({ data: completed });

@@ -23,13 +23,14 @@ function jobStatusTone(value: string): string {
 export default async function DashboardPage() {
   const user = await requireAuthenticatedUserFromCookies();
 
-  const [projects, recentJobs, totalProjects, totalKeywords] = await Promise.all([
+  const [projects, recentJobs, totalProjects, totalKeywords, totalSubprojects] = await Promise.all([
     prisma.project.findMany({
       where: { owner_user_id: user.id },
       orderBy: { updated_at: "desc" },
       include: {
         _count: {
           select: {
+            subprojects: true,
             keyword_candidates: true,
             seeds: true,
           },
@@ -48,11 +49,21 @@ export default async function DashboardPage() {
         project: {
           select: { id: true, name: true },
         },
+        subproject: {
+          select: { id: true, name: true },
+        },
       },
       take: 15,
     }),
     prisma.project.count({ where: { owner_user_id: user.id } }),
     prisma.keywordCandidate.count({
+      where: {
+        project: {
+          owner_user_id: user.id,
+        },
+      },
+    }),
+    prisma.subproject.count({
       where: {
         project: {
           owner_user_id: user.id,
@@ -67,9 +78,11 @@ export default async function DashboardPage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Panoramica</p>
-            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">Controlla i tuoi progetti SEO e avvia nuove estrazioni</h1>
+            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+              Controlla i tuoi progetti SEO e organizza il lavoro per sottoprogetti
+            </h1>
             <p className="text-sm text-slate-600 sm:text-base">
-              Accedi rapidamente a risultati, job recenti e impostazioni progetto da un unico pannello operativo.
+              Ogni progetto puo contenere uno o piu sottoprogetti: usa un solo blocco o dividi il lavoro in sezioni logiche.
             </p>
             <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
               <Link href="/projects/new" className="btn-primary w-full text-center sm:w-auto">
@@ -89,12 +102,12 @@ export default async function DashboardPage() {
               <p className="mt-1 text-2xl font-semibold">{totalProjects}</p>
             </article>
             <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Keyword</p>
-              <p className="mt-1 text-2xl font-semibold">{totalKeywords}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Sottoprogetti</p>
+              <p className="mt-1 text-2xl font-semibold">{totalSubprojects}</p>
             </article>
             <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Job recenti</p>
-              <p className="mt-1 text-2xl font-semibold">{recentJobs.length}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Keyword</p>
+              <p className="mt-1 text-2xl font-semibold">{totalKeywords}</p>
             </article>
           </div>
         </div>
@@ -109,11 +122,11 @@ export default async function DashboardPage() {
         </div>
 
         <div className="table-shell">
-          <table className="table-enterprise min-w-[720px] text-left text-sm sm:min-w-full">
+          <table className="table-enterprise min-w-[820px] text-left text-sm sm:min-w-full">
             <thead>
               <tr>
                 <th className="px-3 py-2">Nome</th>
-                <th className="px-3 py-2">Locale</th>
+                <th className="px-3 py-2">Sottoprogetti</th>
                 <th className="px-3 py-2">Seed</th>
                 <th className="px-3 py-2">Keyword</th>
                 <th className="px-3 py-2">Aggiornato</th>
@@ -124,11 +137,7 @@ export default async function DashboardPage() {
               {projects.map((project) => (
                 <tr key={project.id}>
                   <td className="px-3 py-3 font-medium">{project.name}</td>
-                  <td className="px-3 py-3">
-                    <span className="status-chip">
-                      {project.language_code}-{project.country_code}
-                    </span>
-                  </td>
+                  <td className="px-3 py-3">{project._count.subprojects}</td>
                   <td className="px-3 py-3">{project._count.seeds}</td>
                   <td className="px-3 py-3">{project._count.keyword_candidates}</td>
                   <td className="px-3 py-3">{formatDate(project.updated_at)}</td>
@@ -162,10 +171,11 @@ export default async function DashboardPage() {
         <h2 className="mb-4 text-lg font-semibold">Ultimi job</h2>
 
         <div className="table-shell">
-          <table className="table-enterprise min-w-[560px] text-left text-sm sm:min-w-full">
+          <table className="table-enterprise min-w-[680px] text-left text-sm sm:min-w-full">
             <thead>
               <tr>
                 <th className="px-3 py-2">Progetto</th>
+                <th className="px-3 py-2">Sottoprogetto</th>
                 <th className="px-3 py-2">Stato</th>
                 <th className="px-3 py-2">Avviato</th>
                 <th className="px-3 py-2">Completato</th>
@@ -177,6 +187,14 @@ export default async function DashboardPage() {
                   <td className="px-3 py-3">
                     <Link className="font-medium text-emerald-700 underline-offset-2 hover:underline" href={`/projects/${job.project.id}`}>
                       {job.project.name}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-3">
+                    <Link
+                      className="text-sm text-slate-500 underline-offset-2 hover:text-slate-100 hover:underline"
+                      href={`/projects/${job.project.id}/subprojects/${job.subproject.id}`}
+                    >
+                      {job.subproject.name}
                     </Link>
                   </td>
                   <td className="px-3 py-3 uppercase">

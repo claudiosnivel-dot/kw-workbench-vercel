@@ -14,6 +14,7 @@ type ProjectFormValues = {
   name: string;
   language_code: string;
   country_code: string;
+  initial_subproject_name: string;
   seeds: string;
   autocomplete_provider: "MOCK" | "GOOGLE_DIRECT";
   metrics_provider: "NONE" | "MOCK" | "GOOGLE_KEYWORD_PLANNER";
@@ -26,8 +27,11 @@ type ProjectFormValues = {
   scoring_profile: string;
 };
 
-type ProjectFormResponse = ApiErrorPayload & {
-  data?: { id: string };
+type ProjectCreateResponse = ApiErrorPayload & {
+  data?: {
+    project?: { id: string };
+    id?: string;
+  };
 };
 
 type ProjectFormProps = {
@@ -35,12 +39,15 @@ type ProjectFormProps = {
   projectId?: string;
   initialValues?: ProjectFormValues;
   canEditAutocompleteProvider?: boolean;
+  showSeeds?: boolean;
+  showInitialSubprojectName?: boolean;
 };
 
 const defaultValues: ProjectFormValues = {
   name: "",
   language_code: "en",
   country_code: "US",
+  initial_subproject_name: "Generale",
   seeds: "",
   autocomplete_provider: "GOOGLE_DIRECT",
   metrics_provider: "NONE",
@@ -58,6 +65,8 @@ export function ProjectForm({
   projectId,
   initialValues,
   canEditAutocompleteProvider = false,
+  showSeeds = true,
+  showInitialSubprojectName = true,
 }: ProjectFormProps) {
   const router = useRouter();
   const [values, setValues] = useState<ProjectFormValues>(() => {
@@ -114,28 +123,46 @@ export function ProjectForm({
     const endpoint = mode === "create" ? "/api/projects" : `/api/projects/${projectId}`;
     const method = mode === "create" ? "POST" : "PATCH";
 
+    const body: Record<string, unknown> = {
+      name: values.name,
+      language_code: languageValue,
+      country_code: countryValue,
+      autocomplete_provider: canEditAutocompleteProvider ? values.autocomplete_provider : "GOOGLE_DIRECT",
+      metrics_provider: values.metrics_provider,
+      min_volume: values.min_volume,
+      exclude_brands: values.exclude_brands,
+      expand_alpha: values.expand_alpha,
+      expand_numeric: values.expand_numeric,
+      expand_patterns: values.expand_patterns,
+      auto_classification: values.auto_classification,
+      scoring_profile: values.scoring_profile,
+    };
+
+    if (mode === "create") {
+      body.initial_subproject_name = values.initial_subproject_name;
+      body.seeds = showSeeds ? values.seeds : "";
+    }
+
     try {
       const response = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...values,
-          autocomplete_provider: canEditAutocompleteProvider ? values.autocomplete_provider : "GOOGLE_DIRECT",
-          language_code: languageValue,
-          country_code: countryValue,
-        }),
+        body: JSON.stringify(body),
       });
 
-      const payload = await readJsonSafe<ProjectFormResponse>(response);
+      const payload = await readJsonSafe<ProjectCreateResponse>(response);
 
       if (!response.ok) {
         throw new Error(buildApiErrorMessage(response, payload, "Impossibile salvare il progetto"));
       }
 
-      if (mode === "create" && payload?.data?.id) {
-        router.push(`/projects/${payload.data.id}`);
-        router.refresh();
-        return;
+      if (mode === "create") {
+        const createdProjectId = payload?.data?.project?.id ?? payload?.data?.id;
+        if (createdProjectId) {
+          router.push(`/projects/${createdProjectId}`);
+          router.refresh();
+          return;
+        }
       }
 
       setMessage("Impostazioni salvate.");
@@ -161,7 +188,7 @@ export function ProjectForm({
             onChange={(event) => update("name", event.target.value)}
             required
           />
-          <p className="mt-1 text-xs text-slate-500">Nome interno del progetto, utile per ritrovarlo velocemente in panoramica.</p>
+          <p className="mt-1 text-xs text-slate-500">Nome del contenitore principale (es. dominio o cliente).</p>
         </div>
 
         <div>
@@ -181,7 +208,7 @@ export function ProjectForm({
 
         <div>
           <label className="label" htmlFor="language_code">
-            Lingua
+            Lingua predefinita
           </label>
           <select
             id="language_code"
@@ -197,12 +224,11 @@ export function ProjectForm({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-slate-500">Definisce la lingua usata per suggerimenti autocomplete e classificazione keyword.</p>
         </div>
 
         <div>
           <label className="label" htmlFor="country_code">
-            Paese
+            Paese predefinito
           </label>
           <select
             id="country_code"
@@ -218,8 +244,25 @@ export function ProjectForm({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-slate-500">Imposta il mercato geografico di riferimento per query e metriche.</p>
         </div>
+
+        {showInitialSubprojectName && mode === "create" && (
+          <div>
+            <label className="label" htmlFor="initial_subproject_name">
+              Primo sottoprogetto
+            </label>
+            <input
+              id="initial_subproject_name"
+              className="input"
+              value={values.initial_subproject_name}
+              onChange={(event) => update("initial_subproject_name", event.target.value)}
+              required
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Nome del primo sottoprogetto creato insieme al progetto (default consigliato: Generale).
+            </p>
+          </div>
+        )}
 
         {canEditAutocompleteProvider && (
           <div>
@@ -237,7 +280,6 @@ export function ProjectForm({
               <option value="GOOGLE_DIRECT">GoogleDirectAutocompleteProvider</option>
               <option value="MOCK">MockAutocompleteProvider</option>
             </select>
-            <p className="mt-1 text-xs text-slate-500">Sorgente usata per generare nuove keyword durante l'espansione.</p>
           </div>
         )}
 
@@ -255,7 +297,6 @@ export function ProjectForm({
             <option value="MOCK">MockMetricsProvider</option>
             <option value="GOOGLE_KEYWORD_PLANNER">GoogleKeywordPlannerMetricsProvider</option>
           </select>
-          <p className="mt-1 text-xs text-slate-500">Origine delle metriche keyword: volume, competizione e costo stimato.</p>
         </div>
 
         <div>
@@ -272,23 +313,24 @@ export function ProjectForm({
             <option value="aggressive">aggressivo</option>
             <option value="conservative">conservativo</option>
           </select>
-          <p className="mt-1 text-xs text-slate-500">Regola i pesi usati nel punteggio finale delle keyword.</p>
         </div>
       </div>
 
-      <div>
-        <label className="label" htmlFor="seeds">
-          Keyword seed (una per riga, supportate anche virgole e punto e virgola)
-        </label>
-        <textarea
-          id="seeds"
-          className="input min-h-40"
-          value={values.seeds}
-          onChange={(event) => update("seeds", event.target.value)}
-          placeholder="keyword uno\nkeyword due\nkeyword tre"
-        />
-        <p className="mt-1 text-xs text-slate-500">Keyword di partenza da cui l'app genera varianti e nuove opportunita.</p>
-      </div>
+      {showSeeds && mode === "create" && (
+        <div>
+          <label className="label" htmlFor="seeds">
+            Seed iniziali del primo sottoprogetto
+          </label>
+          <textarea
+            id="seeds"
+            className="input min-h-40"
+            value={values.seeds}
+            onChange={(event) => update("seeds", event.target.value)}
+            placeholder="keyword uno\nkeyword due\nkeyword tre"
+          />
+          <p className="mt-1 text-xs text-slate-500">Le seed saranno assegnate al primo sottoprogetto creato.</p>
+        </div>
+      )}
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3">
@@ -325,7 +367,11 @@ export function ProjectForm({
 
         <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-3 md:col-span-2">
           <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" checked={values.auto_classification} onChange={(event) => update("auto_classification", event.target.checked)} />
+            <input
+              type="checkbox"
+              checked={values.auto_classification}
+              onChange={(event) => update("auto_classification", event.target.checked)}
+            />
             Classificazione automatica
           </label>
           <p className="mt-1 text-xs text-slate-500">Assegna in automatico intento di ricerca e tipo keyword durante l'analisi.</p>

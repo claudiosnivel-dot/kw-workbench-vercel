@@ -28,9 +28,11 @@ type ExportSourceRow = {
   low_top_of_page_bid_micros: bigint | null;
   high_top_of_page_bid_micros: bigint | null;
   score: number | null;
+  subproject_name: string;
 };
 
 type ExportRow = {
+  subproject_name: string;
   keyword: string;
   normalized_keyword: string;
   canonical_keyword: string;
@@ -56,6 +58,7 @@ type ExportRow = {
 
 function serialize(rows: ExportSourceRow[]): ExportRow[] {
   return rows.map((row) => ({
+    subproject_name: row.subproject_name,
     keyword: row.keyword,
     normalized_keyword: row.normalized_keyword,
     canonical_keyword: row.canonical_keyword,
@@ -100,12 +103,21 @@ function rowsToCsv(rows: ExportRow[]): string {
   return lines.join("\n");
 }
 
-function buildScopeWhere(projectId: string, scope: ExportScope, filters: ResultsFilters): Prisma.KeywordCandidateWhereInput {
+function buildScopeWhere(
+  projectId: string,
+  scope: ExportScope,
+  filters: ResultsFilters,
+  subprojectId?: string | null
+): Prisma.KeywordCandidateWhereInput {
   if (scope === "filtered") {
-    return buildResultsWhere(projectId, filters);
+    return buildResultsWhere(projectId, filters, subprojectId);
   }
 
   const andFilters: Prisma.KeywordCandidateWhereInput[] = [{ project_id: projectId }];
+
+  if (subprojectId) {
+    andFilters.push({ subproject_id: subprojectId });
+  }
 
   if (scope === "approved") {
     andFilters.push({ review_status: "approved" });
@@ -128,13 +140,14 @@ function buildScopeWhere(projectId: string, scope: ExportScope, filters: Results
 
 export async function generateExport(params: {
   projectId: string;
+  subprojectId?: string | null;
   format: ExportFormat;
   scope: ExportScope;
   filters: ResultsFilters;
 }) {
-  const where = buildScopeWhere(params.projectId, params.scope, params.filters);
+  const where = buildScopeWhere(params.projectId, params.scope, params.filters, params.subprojectId);
 
-  const rows: ExportSourceRow[] = await prisma.keywordCandidate.findMany({
+  const rows = await prisma.keywordCandidate.findMany({
     where,
     orderBy: [{ score: "desc" }, { keyword: "asc" }],
     select: {
@@ -159,12 +172,24 @@ export async function generateExport(params: {
       low_top_of_page_bid_micros: true,
       high_top_of_page_bid_micros: true,
       score: true,
+      subproject: {
+        select: {
+          name: true,
+        },
+      },
     },
   });
 
-  const payload = serialize(rows);
+  const payload = serialize(
+    rows.map((row) => ({
+      ...row,
+      subproject_name: row.subproject.name,
+    }))
+  );
+
   const date = new Date().toISOString().slice(0, 10);
-  const filenameBase = `seo-god-mode-${params.projectId}-${params.scope}-${date}`;
+  const filenameScope = params.subprojectId ? `subproject-${params.subprojectId}` : "project";
+  const filenameBase = `seo-god-mode-${params.projectId}-${filenameScope}-${params.scope}-${date}`;
 
   if (params.format === "json") {
     return {

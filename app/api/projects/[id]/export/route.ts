@@ -20,6 +20,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const format = (request.nextUrl.searchParams.get("format") ?? "csv") as ExportFormat;
     const scope = (request.nextUrl.searchParams.get("scope") ?? "non-excluded") as ExportScope;
+    const rawSubprojectId = request.nextUrl.searchParams.get("subprojectId");
+    const subprojectId = rawSubprojectId ? rawSubprojectId.trim() : "";
 
     if (!VALID_FORMATS.has(format)) {
       return NextResponse.json({ error: "Formato non valido" }, { status: 400 });
@@ -41,10 +43,28 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
     }
 
+    if (subprojectId) {
+      const subproject = await prisma.subproject.findFirst({
+        where: {
+          id: subprojectId,
+          project_id: id,
+          project: {
+            owner_user_id: user.id,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!subproject) {
+        return NextResponse.json({ error: "Sottoprogetto non trovato" }, { status: 404 });
+      }
+    }
+
     const filters = parseResultsFilters(request.nextUrl.searchParams);
 
     const output = await generateExport({
       projectId: id,
+      subprojectId: subprojectId || null,
       format,
       scope,
       filters,

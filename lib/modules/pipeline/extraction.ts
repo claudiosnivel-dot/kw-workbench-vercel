@@ -6,6 +6,7 @@ import { buildExpansionQueries } from "@/lib/modules/expansion-engine";
 import { createAutocompleteProvider } from "@/lib/modules/providers/autocomplete/factory";
 import { createMetricsProvider } from "@/lib/modules/providers/metrics/factory";
 import { buildMissingMetrics } from "@/lib/modules/providers/metrics/types";
+import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
 import { scoreKeyword } from "@/lib/modules/scoring";
 import { parseSeedsFromRows } from "@/lib/modules/seed-parser";
 import { prisma } from "@/lib/prisma";
@@ -25,42 +26,50 @@ function chunk<T>(items: T[], size: number): T[][] {
   return output;
 }
 
-export async function runExtractionPipeline(projectId: string): Promise<ExtractionSummary> {
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    include: { seeds: true },
+export async function runExtractionPipeline(subprojectId: string): Promise<ExtractionSummary> {
+  const subproject = await prisma.subproject.findUnique({
+    where: { id: subprojectId },
+    include: {
+      seeds: true,
+      project: true,
+    },
   });
 
-  if (!project) {
-    throw new Error(`Progetto ${projectId} non trovato`);
+  if (!subproject) {
+    throw new Error(`Sottoprogetto ${subprojectId} non trovato`);
   }
 
-  const seeds = parseSeedsFromRows(project.seeds);
+  const effective = resolveEffectiveProjectSettings({
+    project: subproject.project,
+    subproject,
+  });
+
+  const seeds = parseSeedsFromRows(subproject.seeds);
   if (seeds.length === 0) {
-    await prisma.keywordCandidate.deleteMany({ where: { project_id: project.id } });
+    await prisma.keywordCandidate.deleteMany({ where: { project_id: subproject.project_id, subproject_id: subproject.id } });
     return { queries: 0, rawSuggestions: 0, dedupedCandidates: 0, storedCandidates: 0 };
   }
 
   const patternRows = await prisma.expansionPattern.findMany({
     where: {
       enabled: true,
-      OR: [{ project_id: null }, { project_id: project.id }],
+      OR: [{ project_id: null }, { project_id: subproject.project_id }],
     },
     orderBy: [{ project_id: "desc" }, { pattern: "asc" }],
   });
 
   const queries = buildExpansionQueries({
     seeds,
-    expandAlpha: project.expand_alpha,
-    expandNumeric: project.expand_numeric,
-    expandPatterns: project.expand_patterns,
+    expandAlpha: effective.expand_alpha,
+    expandNumeric: effective.expand_numeric,
+    expandPatterns: effective.expand_patterns,
     patterns: patternRows.map((row) => row.pattern),
   });
 
   const queryLimit = Math.max(50, Number(process.env.MAX_EXPANSION_QUERIES ?? 250));
   const selectedQueries = queries.slice(0, queryLimit);
 
-  const autocomplete = createAutocompleteProvider(project.autocomplete_provider);
+  const autocomplete = createAutocompleteProvider(effective.autocomplete_provider);
   const rawSuggestions: RawKeywordCandidate[] = seeds.map((seed) => ({
     keyword: seed,
     source: "seed",
@@ -70,8 +79,8 @@ export async function runExtractionPipeline(projectId: string): Promise<Extracti
   for (const query of selectedQueries) {
     const suggestions = await autocomplete.suggest({
       query,
-      languageCode: project.language_code,
-      countryCode: project.country_code,
+      languageCode: effective.language_code,
+      countryCode: effective.country_code,
     });
 
     for (const row of suggestions) {
@@ -87,20 +96,20 @@ export async function runExtractionPipeline(projectId: string): Promise<Extracti
 
   const blacklistRows = await prisma.brandBlacklist.findMany({
     where: {
-      OR: [{ project_id: null }, { project_id: project.id }],
+      OR: [{ project_id: null }, { project_id: subproject.project_id }],
     },
   });
   const blacklist = blacklistRows.map((row) => row.brand.toLowerCase());
 
-  const metricsProvider = createMetricsProvider(project.metrics_provider);
+  const metricsProvider = createMetricsProvider(effective.metrics_provider);
   const metricKeys = deduped.map((item) => item.canonicalKeyword);
   const metrics =
     metricKeys.length > 0
       ? await metricsProvider.enrichKeywords(metricKeys, {
-          languageCode: project.language_code,
-          countryCode: project.country_code,
+          languageCode: effective.language_code,
+          countryCode: effective.country_code,
         })
-      : buildMissingMetrics([], project.metrics_provider as MetricsProvider, "missing");
+      : buildMissingMetrics([], effective.metrics_provider as MetricsProvider, "missing");
 
   const now = new Date();
   const preparedRows: Prisma.KeywordCandidateCreateManyInput[] = [];
@@ -109,10 +118,10 @@ export async function runExtractionPipeline(projectId: string): Promise<Extracti
     const brand = evaluateBrandStatus({
       keyword: candidate.keyword,
       blacklist,
-      excludeBrands: project.exclude_brands,
+      excludeBrands: effective.exclude_brands,
     });
 
-    const classification = project.auto_classification
+    const classification = effective.auto_classification
       ? classifyKeyword(candidate.keyword)
       : {
           keyword_type: "generic" as const,
@@ -130,14 +139,14 @@ export async function runExtractionPipeline(projectId: string): Promise<Extracti
     const metric = metrics.get(candidate.canonicalKeyword) ?? {
       keyword: candidate.canonicalKeyword,
       metrics_status: "missing" as const,
-      metrics_provider: project.metrics_provider,
+      metrics_provider: effective.metrics_provider,
     };
 
     if (
-      typeof project.min_volume === "number" &&
-      project.min_volume > 0 &&
+      typeof effective.min_volume === "number" &&
+      effective.min_volume > 0 &&
       typeof metric.avg_monthly_searches === "number" &&
-      metric.avg_monthly_searches < project.min_volume
+      metric.avg_monthly_searches < effective.min_volume
     ) {
       continue;
     }
@@ -151,11 +160,12 @@ export async function runExtractionPipeline(projectId: string): Promise<Extracti
       competition: metric.competition,
       low_top_of_page_bid_micros: metric.low_top_of_page_bid_micros,
       high_top_of_page_bid_micros: metric.high_top_of_page_bid_micros,
-      scoring_profile: project.scoring_profile,
+      scoring_profile: effective.scoring_profile,
     });
 
     preparedRows.push({
-      project_id: project.id,
+      project_id: subproject.project_id,
+      subproject_id: subproject.id,
       keyword: candidate.keyword,
       normalized_keyword: candidate.normalizedKeyword,
       canonical_keyword: candidate.canonicalKeyword,
@@ -183,7 +193,7 @@ export async function runExtractionPipeline(projectId: string): Promise<Extracti
   }
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    await tx.keywordCandidate.deleteMany({ where: { project_id: project.id } });
+    await tx.keywordCandidate.deleteMany({ where: { project_id: subproject.project_id, subproject_id: subproject.id } });
 
     for (const part of chunk(preparedRows, 500)) {
       if (part.length > 0) {
@@ -199,5 +209,3 @@ export async function runExtractionPipeline(projectId: string): Promise<Extracti
     storedCandidates: preparedRows.length,
   };
 }
-
-

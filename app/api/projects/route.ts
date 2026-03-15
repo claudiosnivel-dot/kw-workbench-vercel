@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     include: {
       _count: {
         select: {
+          subprojects: true,
           seeds: true,
           keyword_candidates: true,
           jobs: true,
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   const input = parseProjectPayload(payload);
   const autocompleteProvider = user.isRootAdmin ? input.autocomplete_provider : "GOOGLE_DIRECT";
 
-  const project = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const created = await tx.project.create({
       data: {
         owner_user_id: user.id,
@@ -54,17 +55,29 @@ export async function POST(request: Request) {
       },
     });
 
+    const initialSubproject = await tx.subproject.create({
+      data: {
+        project_id: created.id,
+        name: input.initial_subproject_name,
+        position: 0,
+      },
+    });
+
     if (input.seeds.length > 0) {
       await tx.seed.createMany({
         data: input.seeds.map((keyword) => ({
           project_id: created.id,
+          subproject_id: initialSubproject.id,
           keyword,
         })),
       });
     }
 
-    return created;
+    return {
+      project: created,
+      initial_subproject_id: initialSubproject.id,
+    };
   });
 
-  return NextResponse.json({ data: project }, { status: 201 });
+  return NextResponse.json({ data: result }, { status: 201 });
 }

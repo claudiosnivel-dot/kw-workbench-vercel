@@ -89,8 +89,16 @@ export function parseResultsFilters(source: URLSearchParams | Record<string, str
   };
 }
 
-export function buildResultsWhere(projectId: string, filters: ResultsFilters): Prisma.KeywordCandidateWhereInput {
+export function buildResultsWhere(
+  projectId: string,
+  filters: ResultsFilters,
+  subprojectId?: string | null
+): Prisma.KeywordCandidateWhereInput {
   const andFilters: Prisma.KeywordCandidateWhereInput[] = [{ project_id: projectId }];
+
+  if (subprojectId) {
+    andFilters.push({ subproject_id: subprojectId });
+  }
 
   if (filters.searchText) {
     andFilters.push({

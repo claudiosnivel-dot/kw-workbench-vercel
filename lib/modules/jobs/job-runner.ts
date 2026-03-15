@@ -2,13 +2,14 @@ import { JobStatus } from "@prisma/client";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";
 
-export async function enqueueExtractionJob(projectId: string) {
+export async function enqueueExtractionJob(projectId: string, subprojectId: string) {
   return prisma.job.create({
     data: {
       project_id: projectId,
+      subproject_id: subprojectId,
       type: "extraction",
       status: "pending",
-      payload: { projectId },
+      payload: { projectId, subprojectId },
     },
   });
 }
@@ -33,7 +34,7 @@ export async function runJobById(jobId: string) {
   }
 
   try {
-    const summary = await runExtractionPipeline(job.project_id);
+    const summary = await runExtractionPipeline(job.subproject_id);
     return prisma.job.update({
       where: { id: job.id },
       data: {

@@ -11,12 +11,12 @@ export default async function NewProjectPage() {
       <section className="card">
         <h1 className="text-2xl font-semibold">Nuovo progetto</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Configura locale, seed, provider e regole di espansione. Potrai modificare tutto anche in seguito.
+          Crea il progetto padre e il primo sottoprogetto operativo. In seguito potrai aggiungere altri sottoprogetti.
         </p>
       </section>
 
       <section className="card">
-        <ProjectForm mode="create" canEditAutocompleteProvider={user.isRootAdmin} />
+        <ProjectForm mode="create" canEditAutocompleteProvider={user.isRootAdmin} showSeeds={true} showInitialSubprojectName={true} />
       </section>
     </div>
   );
