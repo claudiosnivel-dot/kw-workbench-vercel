@@ -1,4 +1,4 @@
-﻿const FALLBACK_CHARSETS = ["utf-8", "windows-1252", "iso-8859-1"] as const;
+const FALLBACK_CHARSETS = ["utf-8", "windows-1252", "iso-8859-1"] as const;
 const MOJIBAKE_PATTERN = /(?:\u00C3.|\u00C2.|\u00E2.|\u00F0|\u00D0|\uFFFD)/;
 const XSSI_PREFIX = /^\)\]\}'\s*/;
 

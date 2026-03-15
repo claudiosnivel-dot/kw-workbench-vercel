@@ -1,4 +1,4 @@
-﻿-- AlterTable
+-- AlterTable
 ALTER TABLE "projects" ADD COLUMN "default_subproject_id" TEXT;
 
 -- Backfill default section using first subproject by position/created_at

@@ -1,4 +1,4 @@
-﻿import { ProjectForm } from "@/components/project-form";
+import { ProjectForm } from "@/components/project-form";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 
 export const dynamic = "force-dynamic";

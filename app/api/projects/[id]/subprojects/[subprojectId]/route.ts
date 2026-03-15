@@ -1,4 +1,4 @@
-﻿import { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { parseSubprojectPayload } from "@/lib/modules/project-settings";

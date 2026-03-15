@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ResultsTable } from "@/components/results-table";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";

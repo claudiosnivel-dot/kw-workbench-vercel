@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteSubprojectButton } from "@/components/delete-subproject-button";
 import { RunExtractionButton } from "@/components/run-extraction-button";

@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";

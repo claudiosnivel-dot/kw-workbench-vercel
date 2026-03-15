@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";

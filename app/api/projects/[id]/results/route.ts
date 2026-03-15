@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";

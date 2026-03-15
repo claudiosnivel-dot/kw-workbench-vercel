@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { ProjectForm } from "@/components/project-form";
