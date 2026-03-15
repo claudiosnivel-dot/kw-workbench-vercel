@@ -98,10 +98,7 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                         disableDown={index === project.subprojects.length - 1}
                       />
                     </td>
-                    <td className="px-3 py-3 font-medium">
-                      {section.name}
-                      {project.default_subproject_id === section.id && <span className="ml-2 status-chip">Predefinita</span>}
-                    </td>
+                    <td className="px-3 py-3 font-medium">{section.name}</td>
                     <td className="px-3 py-3">{section._count.seeds}</td>
                     <td className="px-3 py-3">{section._count.keyword_candidates}</td>
                     <td className="px-3 py-3">

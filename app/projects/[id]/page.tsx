@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RunExtractionButton } from "@/components/run-extraction-button";
-import { SetDefaultSectionButton } from "@/components/set-default-section-button";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -78,10 +77,8 @@ export default async function ProjectDetailPage({
   }
 
   const selectedSectionId = getValue(resolvedSearchParams, "sectionId").trim();
-  const fallbackSectionId = project.default_subproject_id ?? project.subprojects[0]?.id ?? "";
   const activeSection =
     project.subprojects.find((item) => item.id === selectedSectionId) ??
-    project.subprojects.find((item) => item.id === fallbackSectionId) ??
     project.subprojects[0] ??
     null;
 
@@ -147,14 +144,13 @@ export default async function ProjectDetailPage({
           <div className="flex flex-wrap gap-2">
             {project.subprojects.map((section) => {
               const isActive = activeSection?.id === section.id;
-              const isDefault = project.default_subproject_id === section.id;
               return (
                 <Link
                   key={section.id}
                   href={`/projects/${project.id}?sectionId=${section.id}`}
                   className={isActive ? "btn-primary" : "btn-secondary"}
                 >
-                  {section.name} ({section._count.keyword_candidates}){isDefault ? " � predefinita" : ""}
+                  {section.name} ({section._count.keyword_candidates})
                 </Link>
               );
             })}
@@ -169,16 +165,10 @@ export default async function ProjectDetailPage({
               <div>
                 <h3 className="text-base font-semibold">Sezione attiva: {activeSection.name}</h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  Seed: {activeSection._count.seeds} � Keyword: {activeSection._count.keyword_candidates} � Job: {activeSection._count.jobs}
+                  Seed: {activeSection._count.seeds} - Keyword: {activeSection._count.keyword_candidates} - Job: {activeSection._count.jobs}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">Ultimo aggiornamento: {formatDate(activeSection.updated_at)}</p>
               </div>
-
-              <SetDefaultSectionButton
-                projectId={project.id}
-                subprojectId={activeSection.id}
-                isDefault={project.default_subproject_id === activeSection.id}
-              />
             </div>
 
             <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">

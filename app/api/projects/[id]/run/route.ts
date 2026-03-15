@@ -52,7 +52,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   const targetSubproject = requestedSubprojectId
     ? project.subprojects.find((item) => item.id === requestedSubprojectId) ?? null
-    : project.subprojects.find((item) => item.id === project.default_subproject_id) ?? project.subprojects[0];
+    : project.subprojects[0];
 
   if (!targetSubproject) {
     return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });

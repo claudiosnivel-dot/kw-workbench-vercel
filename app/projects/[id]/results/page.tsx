@@ -85,8 +85,7 @@ export default async function ResultsPage({
     notFound();
   }
 
-  const defaultSection =
-    project.subprojects.find((item) => item.id === project.default_subproject_id) ?? project.subprojects[0] ?? null;
+  const defaultSection = project.subprojects[0] ?? null;
 
   const viewMode = getValue(resolvedSearchParams, "view").trim().toLowerCase() === "all" ? "all" : "section";
   const requestedSubprojectId = getValue(resolvedSearchParams, "subprojectId").trim();
