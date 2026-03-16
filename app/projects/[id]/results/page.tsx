@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
 import { ResultsTable } from "@/components/results-table";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -55,6 +57,12 @@ function buildExportLink(
   return `/api/projects/${projectId}/export?${params.toString()}`;
 }
 
+function buildDefaultSheetsFileName(projectName: string, subprojectName?: string): string {
+  const date = new Date().toISOString().slice(0, 10);
+  const base = subprojectName ? `${projectName} - ${subprojectName}` : projectName;
+  return `${base} keyword export ${date}`;
+}
+
 export default async function ResultsPage({
   params,
   searchParams,
@@ -65,21 +73,24 @@ export default async function ResultsPage({
   const user = await requireAuthenticatedUserFromCookies();
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      owner_user_id: user.id,
-    },
-    include: {
-      subprojects: {
-        orderBy: [{ position: "asc" }, { created_at: "asc" }],
-        select: {
-          id: true,
-          name: true,
+  const [project, googleSheets] = await Promise.all([
+    prisma.project.findFirst({
+      where: {
+        id,
+        owner_user_id: user.id,
+      },
+      include: {
+        subprojects: {
+          orderBy: [{ position: "asc" }, { created_at: "asc" }],
+          select: {
+            id: true,
+            name: true,
+          },
         },
       },
-    },
-  });
+    }),
+    getGoogleSheetsCredentialSnapshot(user.id),
+  ]);
 
   if (!project) {
     notFound();
@@ -259,6 +270,13 @@ export default async function ResultsPage({
       <section className="card space-y-3">
         <h2 className="text-lg font-semibold">Export</h2>
         <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap">
+          <GoogleSheetsExportButton
+            projectId={project.id}
+            subprojectId={viewMode === "section" ? selectedSubproject?.id ?? null : null}
+            connected={googleSheets.connected}
+            defaultFileName={buildDefaultSheetsFileName(project.name, viewMode === "section" ? selectedSubproject?.name : undefined)}
+            filters={resolvedSearchParams}
+          />
           <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "csv", "approved", resolvedSearchParams)}>
             CSV solo approvate
           </Link>
@@ -302,4 +320,3 @@ export default async function ResultsPage({
     </div>
   );
 }
-

@@ -2,10 +2,12 @@ import { redirect } from "next/navigation";
 import { AdminUsersDashboard } from "@/components/admin-users-dashboard";
 import { BrandingSettingsCard } from "@/components/branding-settings-card";
 import { GoogleAdsIntegrationCard } from "@/components/google-ads-integration-card";
+import { GoogleSheetsApiConfigCard } from "@/components/google-sheets-api-config-card";
 import { isAdminUser, requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import { getGoogleAdsCredentialSnapshot } from "@/lib/integrations/google-ads";
 import { getGoogleAdsApiConfigSnapshot } from "@/lib/integrations/google-ads-config";
+import { getGoogleSheetsApiConfigSnapshot } from "@/lib/integrations/google-sheets-config";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +18,12 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const [branding, keywordPlannerData] = await Promise.all([
+  const [branding, keywordPlannerData, googleSheetsConfig] = await Promise.all([
     getBrandingSnapshot(),
     user.isRootAdmin
       ? Promise.all([getGoogleAdsCredentialSnapshot(), getGoogleAdsApiConfigSnapshot()])
       : Promise.resolve(null),
+    user.isRootAdmin ? getGoogleSheetsApiConfigSnapshot() : Promise.resolve(null),
   ]);
 
   return (
@@ -40,6 +43,8 @@ export default async function AdminPage() {
           logoUrlLight: branding.logoUrlLight,
         }}
       />
+
+      {user.isRootAdmin && googleSheetsConfig && <GoogleSheetsApiConfigCard initial={googleSheetsConfig} />}
 
       {user.isRootAdmin && keywordPlannerData && (
         <GoogleAdsIntegrationCard
@@ -66,9 +71,7 @@ export default async function AdminPage() {
       {!user.isRootAdmin && (
         <section className="card">
           <h2 className="text-lg font-semibold">Google Keyword Planner</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Configurazione riservata al root admin.
-          </p>
+          <p className="mt-2 text-sm text-slate-600">Configurazione riservata al root admin.</p>
         </section>
       )}
 

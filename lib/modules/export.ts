@@ -31,7 +31,7 @@ type ExportSourceRow = {
   subproject_name: string;
 };
 
-type ExportRow = {
+export type ExportRow = {
   subproject_name: string;
   keyword: string;
   normalized_keyword: string;
@@ -138,13 +138,12 @@ function buildScopeWhere(
   return { AND: andFilters };
 }
 
-export async function generateExport(params: {
+export async function getExportRows(params: {
   projectId: string;
   subprojectId?: string | null;
-  format: ExportFormat;
   scope: ExportScope;
   filters: ResultsFilters;
-}) {
+}): Promise<ExportRow[]> {
   const where = buildScopeWhere(params.projectId, params.scope, params.filters, params.subprojectId);
 
   const rows = await prisma.keywordCandidate.findMany({
@@ -180,12 +179,27 @@ export async function generateExport(params: {
     },
   });
 
-  const payload = serialize(
+  return serialize(
     rows.map((row) => ({
       ...row,
       subproject_name: row.subproject.name,
     }))
   );
+}
+
+export async function generateExport(params: {
+  projectId: string;
+  subprojectId?: string | null;
+  format: ExportFormat;
+  scope: ExportScope;
+  filters: ResultsFilters;
+}) {
+  const payload = await getExportRows({
+    projectId: params.projectId,
+    subprojectId: params.subprojectId,
+    scope: params.scope,
+    filters: params.filters,
+  });
 
   const date = new Date().toISOString().slice(0, 10);
   const filenameScope = params.subprojectId ? `subproject-${params.subprojectId}` : "project";
