@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { DeleteProjectButton } from "@/components/delete-project-button";
+import { ResumeOnboardingButton } from "@/components/resume-onboarding-button";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { getOnboardingStateForUser, shouldRedirectUserToOnboarding } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +25,11 @@ function jobStatusTone(value: string): string {
 
 export default async function DashboardPage() {
   const user = await requireAuthenticatedUserFromCookies();
+  const onboardingState = await getOnboardingStateForUser(user.id);
+
+  if (shouldRedirectUserToOnboarding(onboardingState.status)) {
+    redirect("/onboarding");
+  }
 
   const [projects, recentJobs, totalProjects, totalKeywords, totalSubprojects] = await Promise.all([
     prisma.project.findMany({
@@ -74,6 +82,21 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {onboardingState.status === "PAUSED" && (
+        <section className="card">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Onboarding in pausa</p>
+              <h2 className="mt-1 text-xl font-semibold">Riprendi il percorso guidato A-Z</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Puoi continuare dal punto in cui hai messo in pausa e arrivare al primo export.
+              </p>
+            </div>
+            <ResumeOnboardingButton className="w-full sm:w-auto" />
+          </div>
+        </section>
+      )}
+
       <section className="card overflow-hidden">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-3">

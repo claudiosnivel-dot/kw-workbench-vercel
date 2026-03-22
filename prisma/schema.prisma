@@ -98,6 +98,29 @@ enum ColorVisionMode {
   TRITANOPIA
 }
 
+enum OnboardingStatus {
+  NEEDS_CHOICE
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+}
+
+enum OnboardingStep {
+  WELCOME
+  PROJECT_CREATE
+  PROJECT_TARGETING
+  SECTION_CREATE
+  SEEDS
+  RUN
+  REVIEW_EXPORT
+}
+
+enum OnboardingEntryMode {
+  NONE
+  RESUME
+  RESTART
+}
+
 model User {
   id                String            @id @default(cuid())
   username          String            @unique
@@ -113,6 +136,7 @@ model User {
   updated_at        DateTime          @updatedAt
   projects          Project[]
   google_sheets_credential GoogleSheetsCredential?
+  onboarding_progress UserOnboardingProgress?
 
   @@index([role])
   @@index([status])
@@ -145,6 +169,7 @@ model Project {
   jobs                  Job[]
   brand_blacklist       BrandBlacklist[]
   expansion_patterns    ExpansionPattern[]
+  onboarding_active_for_users UserOnboardingProgress[] @relation("OnboardingActiveProject")
 
   @@index([owner_user_id])
   @@index([default_subproject_id])
@@ -175,6 +200,7 @@ model Subproject {
   seeds                          Seed[]
   keyword_candidates             KeywordCandidate[]
   jobs                           Job[]
+  onboarding_active_for_users    UserOnboardingProgress[] @relation("OnboardingActiveSubproject")
 
   @@unique([project_id, name])
   @@index([project_id, position])
@@ -314,6 +340,29 @@ model GoogleSheetsCredential {
 
   @@index([user_id])
   @@map("google_sheets_credentials")
+}
+
+model UserOnboardingProgress {
+  id                 String            @id @default(cuid())
+  user_id            String            @unique
+  status             OnboardingStatus  @default(NEEDS_CHOICE)
+  current_step       OnboardingStep    @default(WELCOME)
+  entry_mode         OnboardingEntryMode @default(NONE)
+  active_project_id  String?
+  active_subproject_id String?
+  first_export_at    DateTime?
+  completed_at       DateTime?
+  created_at         DateTime          @default(now())
+  updated_at         DateTime          @updatedAt
+  user               User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  active_project     Project?          @relation("OnboardingActiveProject", fields: [active_project_id], references: [id], onDelete: SetNull)
+  active_subproject  Subproject?       @relation("OnboardingActiveSubproject", fields: [active_subproject_id], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([current_step])
+  @@index([active_project_id])
+  @@index([active_subproject_id])
+  @@map("user_onboarding_progress")
 }
 
 model AppSetting {

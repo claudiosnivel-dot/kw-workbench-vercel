@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AuthRequiredError, requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import { ExportScope } from "@/lib/modules/export";
 import { GoogleSheetsExportError, exportProjectToGoogleSheets } from "@/lib/modules/google-sheets-export";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
@@ -121,6 +122,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       subprojectId,
       filters,
     });
+
+    await markOnboardingExportCompleted(user.id);
 
     return NextResponse.json({ data: output });
   } catch (error) {

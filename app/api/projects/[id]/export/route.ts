@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import { ExportFormat, ExportScope, generateExport } from "@/lib/modules/export";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
@@ -69,6 +70,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       scope,
       filters,
     });
+
+    await markOnboardingExportCompleted(user.id);
 
     return new NextResponse(output.buffer, {
       status: 200,

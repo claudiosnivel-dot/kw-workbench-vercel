@@ -34,6 +34,7 @@ export async function POST(request: Request) {
 
   const payload = (await request.json()) as Record<string, unknown>;
   const input = parseProjectPayload(payload);
+  const createInitialSection = payload.createInitialSection !== false;
   const autocompleteProvider = user.isRootAdmin ? input.autocomplete_provider : "GOOGLE_DIRECT";
 
   const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -55,32 +56,38 @@ export async function POST(request: Request) {
       },
     });
 
-    const initialSubproject = await tx.subproject.create({
-      data: {
-        project_id: created.id,
-        name: input.initial_subproject_name,
-        position: 0,
-      },
-    });
+    let initialSubprojectId: string | null = null;
 
-    await tx.project.update({
-      where: { id: created.id },
-      data: { default_subproject_id: initialSubproject.id },
-    });
-
-    if (input.seeds.length > 0) {
-      await tx.seed.createMany({
-        data: input.seeds.map((keyword) => ({
+    if (createInitialSection) {
+      const initialSubproject = await tx.subproject.create({
+        data: {
           project_id: created.id,
-          subproject_id: initialSubproject.id,
-          keyword,
-        })),
+          name: input.initial_subproject_name,
+          position: 0,
+        },
       });
+
+      initialSubprojectId = initialSubproject.id;
+
+      await tx.project.update({
+        where: { id: created.id },
+        data: { default_subproject_id: initialSubproject.id },
+      });
+
+      if (input.seeds.length > 0) {
+        await tx.seed.createMany({
+          data: input.seeds.map((keyword) => ({
+            project_id: created.id,
+            subproject_id: initialSubproject.id,
+            keyword,
+          })),
+        });
+      }
     }
 
     return {
       project: created,
-      initial_subproject_id: initialSubproject.id,
+      initial_subproject_id: initialSubprojectId,
     };
   });
 

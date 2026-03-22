@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { LogoutButton } from "@/components/logout-button";
 
 function isAuthRoute(pathname: string): boolean {
-  return pathname.startsWith("/login") || pathname.startsWith("/register");
+  return pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/onboarding");
 }
 
 function buildNavLinks(showAdminLink: boolean) {
