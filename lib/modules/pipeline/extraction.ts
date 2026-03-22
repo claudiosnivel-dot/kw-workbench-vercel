@@ -18,6 +18,33 @@ type ExtractionSummary = {
   storedCandidates: number;
 };
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const normalizedConcurrency = Math.max(1, Math.min(concurrency, items.length || 1));
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  async function runner() {
+    while (true) {
+      const index = nextIndex;
+      nextIndex += 1;
+
+      if (index >= items.length) {
+        return;
+      }
+
+      results[index] = await worker(items[index], index);
+    }
+  }
+
+  const runners = Array.from({ length: normalizedConcurrency }, () => runner());
+  await Promise.all(runners);
+  return results;
+}
+
 function chunk<T>(items: T[], size: number): T[][] {
   const output: T[][] = [];
   for (let index = 0; index < items.length; index += size) {
@@ -76,19 +103,32 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     sourceQuery: seed,
   }));
 
-  for (const query of selectedQueries) {
-    const suggestions = await autocomplete.suggest({
-      query,
-      languageCode: effective.language_code,
-      countryCode: effective.country_code,
-    });
+  const autocompleteConcurrency = Math.max(
+    1,
+    Number(process.env.AUTOCOMPLETE_CONCURRENCY ?? 6)
+  );
 
-    for (const row of suggestions) {
-      rawSuggestions.push({
+  const suggestionsByQuery = await mapWithConcurrency(
+    selectedQueries,
+    autocompleteConcurrency,
+    async (query) => {
+      const suggestions = await autocomplete.suggest({
+        query,
+        languageCode: effective.language_code,
+        countryCode: effective.country_code,
+      });
+
+      return suggestions.map((row) => ({
         keyword: row.keyword,
         source: row.source,
         sourceQuery: row.sourceQuery,
-      });
+      }));
+    }
+  );
+
+  for (const list of suggestionsByQuery) {
+    for (const item of list) {
+      rawSuggestions.push(item);
     }
   }
 

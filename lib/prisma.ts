@@ -19,12 +19,22 @@ function getTunedDatasourceUrl(): string | undefined {
       return rawUrl;
     }
 
+    const defaultConnectionLimit =
+      process.env.NODE_ENV === "production" ? "3" : "1";
+
     if (!parsed.searchParams.has("connection_limit")) {
-      parsed.searchParams.set("connection_limit", "1");
+      parsed.searchParams.set(
+        "connection_limit",
+        process.env.PRISMA_CONNECTION_LIMIT ?? defaultConnectionLimit
+      );
     }
 
     if (parsed.port === "6543" && !parsed.searchParams.has("pgbouncer")) {
       parsed.searchParams.set("pgbouncer", "true");
+    }
+
+    if (!parsed.searchParams.has("pool_timeout")) {
+      parsed.searchParams.set("pool_timeout", process.env.PRISMA_POOL_TIMEOUT ?? "15");
     }
 
     return parsed.toString();

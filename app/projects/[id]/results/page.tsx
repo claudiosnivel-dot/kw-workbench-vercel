@@ -24,6 +24,15 @@ function checked(searchParams: SearchParams, key: string): boolean {
   return ["1", "true", "on", "yes"].includes(value.toLowerCase());
 }
 
+function parsePositiveInt(raw: string, fallback: number): number {
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.max(1, Math.trunc(parsed));
+}
+
 function toQueryParams(searchParams: SearchParams): URLSearchParams {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(searchParams)) {
@@ -114,31 +123,11 @@ export default async function ResultsPage({
   const filters = parseResultsFilters(resolvedSearchParams);
   const where = buildResultsWhere(project.id, filters, selectedSubproject?.id ?? null);
 
-  const [rows, filteredCount, projectTotalCount, scopeTotalCount] = await Promise.all([
-    prisma.keywordCandidate.findMany({
-      where,
-      orderBy: [{ score: "desc" }, { keyword: "asc" }],
-      take: 1000,
-      select: {
-        id: true,
-        subproject_id: true,
-        keyword: true,
-        source: true,
-        brand_status: true,
-        review_status: true,
-        selected_for_export: true,
-        keyword_type: true,
-        search_intent: true,
-        avg_monthly_searches: true,
-        competition: true,
-        score: true,
-        subproject: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    }),
+  const requestedPage = parsePositiveInt(getValue(resolvedSearchParams, "page"), 1);
+  const requestedPageSize = parsePositiveInt(getValue(resolvedSearchParams, "pageSize"), 100);
+  const pageSize = Math.min(250, Math.max(50, requestedPageSize));
+
+  const [filteredCount, projectTotalCount, scopeTotalCount] = await Promise.all([
     prisma.keywordCandidate.count({ where }),
     prisma.keywordCandidate.count({ where: { project_id: project.id } }),
     prisma.keywordCandidate.count({
@@ -146,8 +135,39 @@ export default async function ResultsPage({
     }),
   ]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
+  const page = Math.min(requestedPage, totalPages);
+
+  const rows = await prisma.keywordCandidate.findMany({
+    where,
+    orderBy: [{ score: "desc" }, { keyword: "asc" }],
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+    select: {
+      id: true,
+      subproject_id: true,
+      keyword: true,
+      source: true,
+      brand_status: true,
+      review_status: true,
+      selected_for_export: true,
+      keyword_type: true,
+      search_intent: true,
+      avg_monthly_searches: true,
+      competition: true,
+      score: true,
+      subproject: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
   const activeViewParams = toQueryParams(resolvedSearchParams);
   activeViewParams.set("view", "section");
+  activeViewParams.set("page", "1");
+  activeViewParams.set("pageSize", String(pageSize));
   if (selectedSubproject?.id) {
     activeViewParams.set("subprojectId", selectedSubproject.id);
   } else if (defaultSection?.id) {
@@ -156,7 +176,20 @@ export default async function ResultsPage({
 
   const allViewParams = toQueryParams(resolvedSearchParams);
   allViewParams.set("view", "all");
+  allViewParams.set("page", "1");
+  allViewParams.set("pageSize", String(pageSize));
   allViewParams.delete("subprojectId");
+
+  const pageStart = filteredCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = Math.min(filteredCount, page * pageSize);
+
+  const prevPageParams = toQueryParams(resolvedSearchParams);
+  prevPageParams.set("page", String(Math.max(1, page - 1)));
+  prevPageParams.set("pageSize", String(pageSize));
+
+  const nextPageParams = toQueryParams(resolvedSearchParams);
+  nextPageParams.set("page", String(Math.min(totalPages, page + 1)));
+  nextPageParams.set("pageSize", String(pageSize));
 
   return (
     <div className="space-y-6">
@@ -193,6 +226,8 @@ export default async function ResultsPage({
 
         <form method="get" className="grid gap-3 md:grid-cols-4">
           <input type="hidden" name="view" value={viewMode} />
+          <input type="hidden" name="page" value="1" />
+          <input type="hidden" name="pageSize" value={String(pageSize)} />
 
           {viewMode === "section" && (
             <select className="select" name="subprojectId" defaultValue={selectedSubproject?.id ?? ""}>
@@ -265,6 +300,28 @@ export default async function ResultsPage({
             </button>
           </div>
         </form>
+
+        <div className="flex flex-col gap-3 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-slate-600">
+            Riga {pageStart}-{pageEnd} di {filteredCount} (pagina {page}/{totalPages})
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {page > 1 ? (
+              <Link className="btn-secondary w-full text-center sm:w-auto" href={buildPath(project.id, prevPageParams)}>
+                Pagina precedente
+              </Link>
+            ) : (
+              <span className="btn-secondary w-full text-center opacity-60 sm:w-auto">Pagina precedente</span>
+            )}
+            {page < totalPages ? (
+              <Link className="btn-secondary w-full text-center sm:w-auto" href={buildPath(project.id, nextPageParams)}>
+                Pagina successiva
+              </Link>
+            ) : (
+              <span className="btn-secondary w-full text-center opacity-60 sm:w-auto">Pagina successiva</span>
+            )}
+          </div>
+        </div>
       </section>
 
       <section className="card space-y-3">
