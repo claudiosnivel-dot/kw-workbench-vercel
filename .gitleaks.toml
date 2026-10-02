@@ -1,0 +1,22 @@
+# Configurazione gitleaks del progetto: estende le regole di default di gitleaks.
+# Ogni allowlist riconosce un solo valore finto noto, cercato dentro il match:
+# qualunque altro segreto, anche nello stesso file, resta segnalato.
+# - Niente `paths`: in un'allowlist globale fanno saltare i file interi
+#   (verificato con gitleaks 8.30.1: "scanned ~0 bytes" anche con condition AND).
+# - Niente `targetRules`: le regole di Trueline non esistono fuori dalla sua
+#   config e gitleaks lanciato da solo rifiuterebbe il file.
+
+title = "kw-workbench-vercel"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "AC-101-2: URL di database con credenziali finte (tests/unit/test-db-guard.test.ts e il testo dell'AC nel blueprint)"
+regexTarget = "match"
+regexes = ['''postgresql://u:pw-segreta@db\.example\.supabase\.co''']
+
+[[allowlists]]
+description = "T-101: segreto di sessione fittizio dei test, definito in vitest.config.ts e mai usato fuori dai test"
+regexTarget = "match"
+regexes = ['''vitest-session-secret-not-for-production-use''']
