@@ -13,7 +13,7 @@
 Chi fa SEO deve trasformare poche parole seme in liste ampie di keyword reali,
 pulite, classificate e misurate, per poi decidere su quali lavorare. Seo God Mode
 espande le seed con Google Autocomplete, normalizza e deduplica i suggerimenti, li
-classifica per intento, li arricchisce con i volumi di Google Keyword Planner e
+classifica per intento, li arricchisce con i volumi di ricerca e
 permette di revisionarli ed esportarli (CSV, XLSX, JSON, Google Sheets).
 
 L'app è online e funziona nel percorso base, ma l'audit del 2026-10-02 ha trovato
@@ -21,7 +21,8 @@ difetti in produzione e lacune che impediscono di venderla:
 
 - **Difetti visibili oggi**: un cookie corrotto manda in errore 500 tutto il sito; i
   file di `/.well-known` sono bloccati dal login; i volumi di Keyword Planner non
-  arrivano mai (API v18 dismessa; probabile accesso solo di livello Test, insufficiente per Keyword Planner);
+  arrivano mai (API v18 dismessa; Basic Access respinto; la policy riserva Keyword
+  Planner via API agli strumenti per campagne Google Ads, non a un SaaS SEO);
   le estrazioni fallite risultano riuscite; quando Google limita l'autocomplete la
   query stessa diventa una keyword.
 - **Difetti di flusso**: ogni nuova estrazione cancella le revisioni; solo le prime
@@ -35,8 +36,8 @@ difetti in produzione e lacune che impediscono di venderla:
 
 - **Clienti paganti**: freelance SEO e agenzie (team con più persone), in Italia e
   all'estero, interfaccia in italiano e inglese.
-- **Root admin**: il proprietario del servizio. Gestisce utenti, integrazione
-  globale Google Ads, branding e KPI, senza accedere ai progetti dei clienti.
+- **Root admin**: il proprietario del servizio. Gestisce utenti, fornitore delle
+  metriche e relativa spesa, branding e KPI, senza accedere ai progetti dei clienti.
 
 ## 3. Obiettivo (cosa significa "fatto")
 
@@ -45,8 +46,9 @@ Seo God Mode diventa un SaaS vendibile:
 1. i difetti dell'audit sono corretti e coperti da test;
 2. lo stack gira sui major stabili (D-03) con CI verde;
 3. l'estrazione gira in background con avanzamento visibile;
-4. i volumi di Keyword Planner si ottengono in modo affidabile (API diagnosticabile
-   via CLI e round-trip CSV, D-09);
+4. i volumi di ricerca si ottengono in modo affidabile e conforme: CSV dal Keyword
+   Planner del cliente (sempre disponibile) e fornitore con licenza con tetto di
+   spesa (D-09, D-30);
 5. clienti con email verificata, workspace di team, abbonamenti via Merchant of
    Record, quote e limiti anti-abuso;
 6. landing, prezzi, pagine legali e GDPR in IT/EN; errori tracciati, backup provati,
@@ -57,8 +59,8 @@ macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
 
 ## 4. Non-goals (cosa NON facciamo in questa versione)
 
-- Fornitori terzi a pagamento per i volumi (es. DataForSEO): esclusi finché non
-  richiesti (D-09).
+- API Google Ads per le metriche: la policy la riserva agli strumenti per campagne
+  Google Ads e la domanda di Basic Access è stata respinta (D-09).
 - Scraping dell'interfaccia di Google Keyword Planner o di Google Search (termini di
   servizio).
 - Autenticazione a due fattori, SSO/SAML, login social.
@@ -79,7 +81,7 @@ macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
 | Ambienti | Le Preview Vercel eseguono `prisma migrate deploy` + seed sul DB del proprio ambiente: nessun push di branch con migrazioni finché lo staging separato non è confermato (D-04, T-202, T-203) |
 | Dati | In produzione solo dati di test (D-05) |
 | Piattaforma | Vercel (funzioni con durata massima configurata; `maxDuration` attuale 300 s per la run e 120 s per l'export); Supabase via transaction pooler (porta 6543) per il runtime e session/direct (5432) per le migrazioni |
-| Google | Accesso ai dati Keyword Planner solo tramite API ufficiale con progetto Google Cloud in Basic Access (dal 9/9/2026 il livello è del progetto Cloud, non più del developer token) o tramite file esportati a mano dall'interfaccia (D-09) |
+| Metriche | Volumi solo da file esportati dal cliente dal proprio Keyword Planner o da un fornitore con licenza (D-09, D-30); nessuna chiamata all'API Google Ads per le metriche, nessuno scraping |
 | Pagamenti | Merchant of Record (D-06): IVA e fatture a carico del provider |
 | Lingue | Italiano (default) e inglese per interfaccia, email, landing e pagine legali (D-07) |
 | Test | Nessuna chiamata di rete reale nei test: Google, Paddle, Resend, Turnstile e Sentry sempre mockati |

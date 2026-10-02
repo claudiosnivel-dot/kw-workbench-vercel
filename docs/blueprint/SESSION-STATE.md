@@ -25,7 +25,7 @@
 | `observability-ops` (06) | todo | — | |
 | `extraction-fixes` (07) | todo | — | |
 | `results-export` (08) | todo | — | Include i 7 fix di paginazione dell'audit 2026-05-31 |
-| `google-integrations` (09) | todo | — | T-903 può richiedere all'utente la domanda di Basic Access a Google |
+| `google-integrations` (09) | todo | — | Volumi: CSV del cliente + fornitore con licenza (D-09, D-30); API Google Ads dismessa per le metriche |
 | `onboarding` (10) | todo | — | |
 | `cleanup` (11) | todo | — | Rimozioni human-gated |
 | `background-jobs` (12) | todo | — | D-10 da confermare |
@@ -64,18 +64,19 @@
 - Audit completo del 2026-10-02 in 4 aree (auth, pipeline, progetti/export, integrazioni/onboarding): circa 100 rilievi, riportati nelle note dei task.
 - Riprodotti in produzione: cookie `kwb_session` malformato → HTTP 500 su `/login`, `/` e `/api/projects`; `/.well-known/bastione-ownership.txt` → redirect 307 al login.
 - `tsc --noEmit` passato sul codice attuale; `npm audit --omit=dev`: 5 vulnerabilità (1 critica su `next` 15.5.12, risolta da 15.5.27); `knip`: 1 file e 10 export inutilizzati.
-- Blueprint generato: 18 macrotask, 106 task, 417 criteri di accettazione, 288 note di sicurezza.
+- Blueprint generato: 18 macrotask, 106 task, 418 criteri di accettazione, 288 note di sicurezza.
 - `validate_blueprint.mjs docs/blueprint`: exit 0 (TASKS_PRESENT, REQUIRED_FIELDS, AC_COVERAGE, DAG_VALID, UNIQUE_IDS, MACROTASK_OWNERSHIP, ARCH_CONTRACT_WELL_FORMED tutti OK).
 - `ac_observability_check.mjs docs/blueprint`: exit 0 (nessun `then` con token vietati).
-- Checklist semantica 6–10: nessun task senza criteri né senza `security_notes`; rilievi di atomicità aperti su T-403, T-901, T-905, T-1101, T-1202, T-1603 (più di 9 voci di DoD), da confermare o dividere con l'utente.
-- Verificato su developers.google.com (2026-10-02): dal 9/9/2026 il livello d'accesso all'API Google Ads è del progetto Google Cloud (developer token dismessi); Keyword Planner richiede Basic Access, Explorer lo esclude; ultima versione API v25. D-09 emendata.
+- Checklist semantica 6–10: nessun task senza criteri né senza `security_notes`; rilievi di atomicità aperti su T-403, T-902, T-905, T-1101, T-1202, T-1603 (più di 9 voci di DoD), da confermare o dividere con l'utente.
+- Verificato su developers.google.com (2026-10-02): dal 9/9/2026 il livello d'accesso all'API Google Ads è del progetto Google Cloud; Keyword Planner richiede Basic Access e l'uso consentito "Researching keywords and recommendations" è riservato agli strumenti che aiutano a creare e gestire campagne Google Ads.
+- La domanda di Basic Access dell'utente è stata respinta (tool dichiarato in sviluppo, senza design document). Decisione dell'utente: niente API Google Ads per le metriche; volumi da CSV del Keyword Planner del cliente + fornitore con licenza DataForSEO (D-09 emendata, D-30 nuova). Aggiornati T-304, modulo 09, T-1601, T-1605, T-1703, T-1803, visione.
 - Verificato con `npm view`: ESLint resta 9.39.x (D-03 emendata).
 - Nessun codice applicativo modificato.
 
 ## 6. Prossimi passi
 
 - L'utente rivede il blueprint e conferma o modifica le decisioni PROPOSTA del ledger (00-INDEX §4), soprattutto D-08, D-09, D-10 e D-23…D-29.
-- L'utente decide sui rilievi di atomicità (dividere o tenere T-403, T-901, T-905, T-1101, T-1202, T-1603).
-- Azione esterna consigliata in parallelo: richiesta del Basic Access del progetto Google Cloud (verifica del brand) per sbloccare Keyword Planner via API.
+- L'utente decide sui rilievi di atomicità (dividere o tenere T-403, T-902, T-905, T-1101, T-1202, T-1603).
+- Azione esterna: creare un account API DataForSEO quando si arriva a T-902 (verificare se offre un ambiente sandbox gratuito per lo sviluppo); nessuna nuova domanda di Basic Access a Google, salvo cambio di prodotto verso la gestione di campagne Google Ads.
 - L'utente fornisce D-14 (piani, prezzi, limiti) prima del macrotask 16 e D-15 (testi legali) prima di T-1803.
 - Avvio di BUILD: preflight degli oracoli, poi macrotask `foundation` su branch `trueline/build/foundation`.

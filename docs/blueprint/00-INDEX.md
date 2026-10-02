@@ -21,13 +21,13 @@
 |---|---|---|---|
 | `01-foundation.md` | `foundation` | T-101…T-110 | Test (Vitest, Postgres di test in Docker, Playwright), lint/typecheck, caratterizzazione del comportamento attuale, oracoli Trueline, contratto di altitudine, CI |
 | `02-environments.md` | `environments` | T-201…T-205 | Variabili d'ambiente fail-closed, guardia migrazioni nel build Vercel, staging separato, seed idempotente, blocco Data API Supabase |
-| `03-hotfix.md` | `hotfix` | T-301…T-306 | Difetti visibili in produzione: cookie malformato → 500, `/.well-known` bloccato, open redirect, Google Ads API v18 dismessa, job falliti mostrati come riusciti, keyword fittizie dal fallback |
+| `03-hotfix.md` | `hotfix` | T-301…T-306 | Difetti visibili in produzione: cookie malformato → 500, `/.well-known` bloccato, open redirect, chiamate all'API Google Ads dismessa, job falliti mostrati come riusciti, keyword fittizie dal fallback |
 | `04-stack-upgrade.md` | `stack-upgrade` | T-401…T-407 | Next 15.5.27 → 16.3, React 19.3, TypeScript 6.0, Prisma 7.10, Tailwind 4.3, exceljs al posto di xlsx, Node 24 |
 | `05-auth-hardening.md` | `auth-hardening` | T-501…T-507 | Sessioni revocabili, utenti sospesi, errori API uniformi, hash asincrono, header di sicurezza, branding, dashboard admin |
 | `06-observability-ops.md` | `observability-ops` | T-601…T-605 | Error tracking, log strutturati, health check, backup e ripristino, pipeline di rilascio |
 | `07-extraction-fixes.md` | `extraction-fixes` | T-701…T-707 | Budget query equo, normalizzazione multilingua, filtro brand, classificazione, re-run che conserva la revisione, job robusti, punteggio |
 | `08-results-export.md` | `results-export` | T-801…T-810 | Paginazione, sezione mostrata = esportata, azioni massive sui filtrati, CSV per Excel IT, export in streaming, Sheets, sezioni, validazione input, dashboard |
-| `09-google-integrations.md` | `google-integrations` | T-901…T-908 | Keyword Planner (parsing, metriche storiche), CLI di diagnosi API, CLI export/import CSV Planner, OAuth Google, scope minimo Sheets |
+| `09-google-integrations.md` | `google-integrations` | T-901…T-908 | Volumi di ricerca: dismissione dell'API Google Ads, fornitore con licenza (DataForSEO) con tetto di spesa, export/import CSV di Keyword Planner (CLI e interfaccia); OAuth e scope minimo di Google Sheets |
 | `10-onboarding.md` | `onboarding` | T-1001…T-1004 | Creazione idempotente, ricomincia/indietro, precondizioni dei passi, lettura leggera dello stato |
 | `11-cleanup.md` | `cleanup` | T-1101…T-1105 | Codice morto (human-gated), duplicazioni, schema e indici, accessibilità, prestazioni per richiesta |
 | `12-background-jobs.md` | `background-jobs` | T-1201…T-1205 | Estrazione in background ripartibile, continuazione firmata, API 202/stato/annulla, barra di avanzamento |
@@ -81,12 +81,12 @@ macrotask                 dipende da (macrotask che contengono i task in depends
 13 i18n                   04, 05, 12
 14 accounts-email         02, 05, 12, 13
 15 workspaces             11, 12, 13, 14
-16 billing                15
-17 abuse-quotas           05, 12, 14, 16
+16 billing                09, 15
+17 abuse-quotas           05, 09, 12, 14, 16
 18 marketing-legal        03, 09, 13, 14, 15, 16, 17
 ```
 
-Tabella calcolata dai `depends_on` reali dei 106 task (417 criteri di
+Tabella calcolata dai `depends_on` reali dei 106 task (418 criteri di
 accettazione). Ogni macrotask dipende solo da macrotask con numero inferiore.
 
 Ordine lineare consigliato: 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 →
@@ -129,7 +129,7 @@ APERTA = blocca i task che la citano finché l'utente non fornisce il valore.
 | D-06 | Pagamenti con Merchant of Record. Provider: Paddle Billing (alternativa Lemon Squeezy), dietro interfaccia `BillingProvider`. | MoR DECISO (utente); provider PROPOSTA |
 | D-07 | Mercato Italia + estero: interfaccia IT/EN, default `it`. Libreria next-intl. | Mercato DECISO (utente); libreria PROPOSTA |
 | D-08 | Account a team/workspace. Ruoli OWNER/ADMIN/MEMBER. Matrice: MEMBER legge/modifica progetti, avvia estrazioni, esporta; ADMIN + elimina progetti e gestisce membri; OWNER + billing e workspace. Ruoli di piattaforma (root admin) separati. | Workspace DECISO (utente); matrice PROPOSTA |
-| D-09 | Keyword Planner: (a) API ufficiale v25 con CLI di diagnosi. Dal 9/9/2026 i developer token sono dismessi: il livello d'accesso appartiene al **progetto Google Cloud** del client OAuth (header `developer-token` facoltativo e ignorato). Per KeywordPlanIdeaService serve il **Basic Access** del progetto Cloud, che richiede la verifica del brand (Explorer lo esclude); la richiesta si fa dalla Google Cloud Console, senza account manager (azione esterna dell'utente). (b) Round-trip CSV via CLI e upload, come strada che funziona anche senza Basic Access. Fornitori terzi a pagamento esclusi finché non richiesti; scraping dell'interfaccia Google escluso (termini di servizio). | PROPOSTA. **Emendamento 2026-10-02**: modello d'accesso aggiornato dopo verifica su developers.google.com (access-levels, no-developer-token) |
+| D-09 | Volumi di ricerca: **l'API Google Ads non si usa per le metriche**. La domanda di Basic Access è stata respinta e la policy limita KeywordPlanIdeaService agli strumenti che aiutano a creare e gestire campagne Google Ads (pagina ufficiale access-levels, "permissible use"): un SaaS SEO non rientra. Strade: (a) CSV che ogni cliente esporta dal proprio Keyword Planner e reimporta (CLI e interfaccia, T-904/T-905), sempre disponibile; (b) fornitore di dati con licenza dietro `MetricsProvider` (D-30). Il provider GOOGLE_KEYWORD_PLANNER viene disattivato (T-304) e rimosso (T-901). Scraping dell'interfaccia Google escluso (termini di servizio). | DECISA (utente, 2026-10-02: "CSV + fornitore"). Sostituisce la versione precedente basata su API ufficiale e CLI di diagnosi |
 | D-10 | Job in background senza vendor: passi con budget di tempo, continuazione firmata via `after()`, reaper al polling e via cron. Alternativa: Inngest o QStash. | PROPOSTA |
 | D-11 | Email transazionali con Resend dietro interfaccia `EmailSender`; outbox in test e sviluppo. | PROPOSTA |
 | D-12 | Rate limiting su Postgres (nessun Redis); CAPTCHA Cloudflare Turnstile. | PROPOSTA |
@@ -150,6 +150,7 @@ APERTA = blocca i task che la citano finché l'utente non fornisce il valore.
 | D-27 | Soglie di rate limit configurabili da env (T-1701); le estrazioni contano nella quota al momento dell'avvio e i job falliti non vengono stornati (T-1703). | PROPOSTA (valori da confermare con D-14) |
 | D-28 | URL pubblici: italiano senza prefisso, inglese con `/en` (landing, prezzi, pagine legali), per sitemap e hreflang; l'app autenticata usa la lingua risolta da T-1301 (T-1801). | PROPOSTA |
 | D-29 | Cancellazione account: l'unico OWNER di un workspace che ha altri membri riceve 409 `OWNERSHIP_TRANSFER_REQUIRED` (T-1804). Registrazione con risposta 202 identica per email nuove ed esistenti, con avviso `account-exists` al titolare (T-1403). Il consenso ai termini blocca le pagine, non le API JSON (T-1405). | PROPOSTA |
+| D-30 | Fornitore di metriche con licenza: DataForSEO, endpoint Google Ads search volume in modalità live (fino a 1.000 keyword per richiesta, costo per richiesta indipendente dal numero di keyword: 0,09 USD live, 0,06 USD in coda con 1–3 ore; max 12 richieste/minuto). Credenziali solo da env validata; tetto di spesa mensile globale e per estrazione (T-903); metriche con licenza riservate ai piani che le includono, con quota mensile di keyword (T-1601, T-1605, T-1703; valori da D-14). Alternative valutabili: coda standard più economica dopo i job in background (12), altri fornitori. | PROPOSTA (fornitore e prezzi verificati il 2026-10-02 su docs.dataforseo.com e dataforseo.com/pricing) |
 
 ## 5. Fonti di verità
 

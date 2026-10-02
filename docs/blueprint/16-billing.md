@@ -33,8 +33,8 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
     acquisti.
 
   definition_of_done:
-    - "lib/billing/plans.ts esporta PLANS: Record<PlanId, PlanConfig> con id, nameKey (chiave i18n), public (mostrato nella pagina prezzi), order, displayPrice per locale e intervallo (stringhe solo di visualizzazione), priceEnv (nomi delle variabili d'ambiente con i price id Paddle per intervallo) e limits: maxProjects, maxSectionsPerProject, maxSeedsPerSection, runsPerDay, maxKeywordsPerRun, keywordsPerMonth, seats (interi maggiori o uguali a 0) e sheetsExport, plannerImport (booleani)."
-    - "keywordsPerMonth è aggiunto all'elenco dell'outline perché serve alle quote mensili di T-1703."
+    - "lib/billing/plans.ts esporta PLANS: Record<PlanId, PlanConfig> con id, nameKey (chiave i18n), public (mostrato nella pagina prezzi), order, displayPrice per locale e intervallo (stringhe solo di visualizzazione), priceEnv (nomi delle variabili d'ambiente con i price id Paddle per intervallo) e limits: maxProjects, maxSectionsPerProject, maxSeedsPerSection, runsPerDay, maxKeywordsPerRun, keywordsPerMonth, licensedMetricsKeywordsPerMonth, seats (interi maggiori o uguali a 0) e sheetsExport, plannerImport, licensedMetrics (booleani). licensedMetrics abilita il fornitore di metriche con licenza (D-30, T-902); licensedMetricsKeywordsPerMonth è la quota mensile di keyword arricchite dal fornitore (T-1703)."
+    - "keywordsPerMonth è aggiunto all'elenco dell'outline perché serve alle quote mensili di T-1703; licensedMetrics e licensedMetricsKeywordsPerMonth servono al fornitore di metriche con licenza (D-09, D-30)."
     - "Valori: tutti da D-14. Finché l'utente non li fornisce il file contiene placeholder dichiarati e PLANS_CONFIG_STATUS = 'placeholder-D14'; isPlansConfigured() restituisce false e viene rispettata dal checkout (T-1602) e dalla pagina prezzi (T-1802). Il task non inventa prezzi, limiti, trial né tolleranze."
     - "Schema zod nello stesso modulo valida PLANS al caricamento: chiave mancante, tipo errato o valore negativo → errore all'avvio con nome del piano e della chiave. Esiste sempre il piano free (FREE_PLAN_ID)."
     - "resolveEntitlements(snapshot, now) è una funzione pura: snapshot nullo → free; status active o trialing → limiti del plan_id; qualunque altro status → free (la tolleranza di past_due arriva con T-1604); plan_id sconosciuto → free e un log warning con il solo planId."
@@ -236,7 +236,7 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
 - id: T-1605
   title: "Applicazione dei diritti lato server"
   macrotask: "billing"
-  depends_on: [T-1601, T-1502, T-1503]
+  depends_on: [T-1601, T-1502, T-1503, T-902]
 
   objective: >
     Verificare nelle API ogni limite di conteggio e ogni funzione a pagamento del piano del
@@ -246,7 +246,7 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
 
   definition_of_done:
     - "lib/billing/enforce.ts: assertWithinLimit(tx, workspaceId, limitKey, currentCount), assertFeature(workspaceId, featureKey) e assertSeatAvailable(tx, workspaceId) lanciano PlanLimitError, tradotto dal wrapper errori di T-503 in 402 con error, code PLAN_LIMIT, limit (nome della chiave) e max."
-    - "Punti di controllo: POST /api/projects (maxProjects per workspace); POST /api/projects/[id]/subprojects e creazione sezione dell'onboarding (maxSectionsPerProject); seed in POST progetto, PATCH sezione e step seed dell'onboarding (maxSeedsPerSection, contati dopo la deduplica); avvio estrazione (maxKeywordsPerRun passato alla pipeline come tetto: keyword oltre il tetto non salvate, result.truncated = true); POST /api/projects/[id]/export/google-sheets (sheetsExport); import CSV Planner di T-905 se presente (plannerImport)."
+    - "Punti di controllo: POST /api/projects (maxProjects per workspace); POST /api/projects/[id]/subprojects e creazione sezione dell'onboarding (maxSectionsPerProject); seed in POST progetto, PATCH sezione e step seed dell'onboarding (maxSeedsPerSection, contati dopo la deduplica); avvio estrazione (maxKeywordsPerRun passato alla pipeline come tetto: keyword oltre il tetto non salvate, result.truncated = true); POST /api/projects/[id]/export/google-sheets (sheetsExport); import CSV Planner di T-905 se presente (plannerImport); metriche con licenza (licensedMetrics): scegliere il provider DATAFORSEO in creazione o modifica di progetto o sezione senza il diritto risponde 402, e all'avvio dell'estrazione un workspace senza il diritto usa il provider NONE senza chiamate al fornitore, con result.metricsNotice = PLAN_NO_LICENSED_METRICS."
     - "Seats: assertSeatAvailable conta membership e inviti pendenti; se T-1503 è già costruito viene chiamata da creazione e accettazione invito, altrimenti l'aggancio lo fa T-1503."
     - "Conteggio e scrittura nella stessa transazione con lock della riga del workspace (SELECT ... FOR UPDATE), così richieste concorrenti non superano il limite."
     - "Il piano arriva solo da getEntitlements(workspaceId) lato server: campi plan, limits o entitlements nel body, nella query o negli header vengono ignorati."
@@ -270,10 +270,14 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
       given: "W su un piano di prova con maxSeedsPerSection = 3 e una sezione con 2 seed"
       when: "un membro invia PATCH della sezione con 4 seed distinti"
       then: "la risposta è 402 con limit 'maxSeedsPerSection' e max 3; la sezione ha ancora i 2 seed originali"
+    - id: AC-1605-5
+      given: "W su un piano di prova con licensedMetrics = false, una sezione con metrics_provider DATAFORSEO salvato prima del downgrade e il fetch del fornitore mockato"
+      when: "un membro invia PATCH della sezione impostando metrics_provider DATAFORSEO su una seconda sezione e poi avvia l'estrazione sulla prima"
+      then: "la PATCH risponde 402 con limit 'licensedMetrics'; l'estrazione si completa, il mock del fornitore ha ricevuto 0 richieste e il result del job contiene metricsNotice uguale a PLAN_NO_LICENSED_METRICS"
 
   target_tests:
     - file: "tests/integration/entitlements-enforcement.test.ts"
-      covers: [AC-1605-1, AC-1605-2, AC-1605-3, AC-1605-4]
+      covers: [AC-1605-1, AC-1605-2, AC-1605-3, AC-1605-4, AC-1605-5]
 
   security_notes:
     - "A06 Insecure Design / CWE-602 (Client-Side Enforcement of Server-Side Security): limiti verificati solo lato server da getEntitlements; la UI è informativa."

@@ -121,7 +121,7 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
 - id: T-1703
   title: "Quote d'uso per workspace"
   macrotask: "abuse-quotas"
-  depends_on: [T-1605, T-1204, T-1604]
+  depends_on: [T-1605, T-1204, T-1604, T-903]
 
   objective: >
     Contare per ogni workspace le estrazioni al giorno e le keyword salvate nel mese,
@@ -130,12 +130,13 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
     di fatturazione.
 
   definition_of_done:
-    - "prisma/schema.prisma: enum UsageMetric (runs_day, keywords_month); model UsageCounter (workspace_id, metric, period_start DateTime, count Int default 0, @@unique([workspace_id, metric, period_start])) mappato su usage_counters, con RLS abilitata senza policy (T-205)."
+    - "prisma/schema.prisma: enum UsageMetric (runs_day, keywords_month, licensed_metrics_keywords_month); model UsageCounter (workspace_id, metric, period_start DateTime, count Int default 0, @@unique([workspace_id, metric, period_start])) mappato su usage_counters, con RLS abilitata senza policy (T-205)."
     - "Periodi in UTC: runs_day parte alle 00:00Z del giorno, keywords_month alle 00:00Z del primo giorno del mese; resetAt è l'inizio del periodo successivo."
     - "lib/billing/usage.ts: reserveRun(tx, workspaceId, now) esegue un incremento condizionale atomico di runs_day (INSERT ... ON CONFLICT DO UPDATE SET count = count + 1 WHERE count è minore di runsPerDay); 0 righe → QuotaExceededError; con runsPerDay = 0 rifiuta senza eseguire l'insert; richiede anche keywords_month minore di keywordsPerMonth; è chiamata nella stessa transazione che crea il job (avvio di T-1204 per progetto e per sezione)."
     - "Oltre quota: 429 con error, code QUOTA_EXCEEDED, metric, limit e resetAt (ISO 8601); nessun job creato."
     - "Quota mensile di keyword: lo store finale della pipeline (T-1202) salva al massimo il minimo tra maxKeywordsPerRun e keywordsPerMonth meno le keyword già contate; keywords_month aumenta del numero di keyword effettivamente salvate; se si tronca per la quota, result.truncated = true e result.truncatedReason = 'monthly_quota'."
     - "Un'estrazione conta all'avvio e i job falliti non vengono stornati (scelta da confermare con D-14)."
+    - "Quota del fornitore con licenza (D-30): prima di ogni richiesta al fornitore (T-902) la pipeline riserva in modo atomico, su licensed_metrics_keywords_month, il numero di keyword del batch entro licensedMetricsKeywordsPerMonth; le keyword oltre quota restano con metrics_status missing e result.metricsNotice = LICENSED_METRICS_QUOTA_EXCEEDED, senza far fallire il job. Si somma al tetto di spesa globale di T-903, che resta il limite di sicurezza dell'intero servizio."
     - "GET /api/billing/usage?workspaceId= (qualsiasi membro, non membro 404) → runsToday, runsPerDay, keywordsThisMonth, keywordsPerMonth, resetAt per metrica; components/usage-summary.tsx lo mostra ed è montato in /billing se T-1604 è già costruito, altrimenti lo monta T-1604."
 
   acceptance_criteria:
@@ -155,13 +156,17 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
       given: "W con 1 estrazione residua nel giorno e due sezioni diverse"
       when: "si inviano 2 richieste di avvio concorrenti, una per sezione, e poi GET /api/billing/usage"
       then: "esattamente una risposta è 202 e una è 429; la GET restituisce runsToday uguale a runsPerDay; la stessa GET da un non membro riceve 404"
+    - id: AC-1703-5
+      given: "W con licensedMetrics = true, licensedMetricsKeywordsPerMonth = 1500, 1000 keyword già arricchite nel mese e una pipeline che produce 800 keyword con il fetch del fornitore mockato"
+      when: "il job arriva alla fase delle metriche"
+      then: "il mock del fornitore riceve in totale 500 keyword, 300 candidate restano con metrics_status missing, il contatore licensed_metrics_keywords_month vale 1500 e il result del job contiene metricsNotice uguale a LICENSED_METRICS_QUOTA_EXCEEDED con status del job completed"
 
   target_tests:
     - file: "tests/integration/usage-quotas.test.ts"
-      covers: [AC-1703-1, AC-1703-2, AC-1703-3, AC-1703-4]
+      covers: [AC-1703-1, AC-1703-2, AC-1703-3, AC-1703-4, AC-1703-5]
 
   security_notes:
-    - "A06 Insecure Design / CWE-770 (Allocation of Resources Without Limits or Throttling): quote per workspace sulle operazioni costose (autocomplete Google e metriche Ads), lette solo dai diritti lato server."
+    - "A06 Insecure Design / CWE-770 (Allocation of Resources Without Limits or Throttling): quote per workspace sulle operazioni costose (autocomplete Google e metriche del fornitore con licenza), lette solo dai diritti lato server."
     - "A06 / CWE-362 (Race Condition): incremento condizionale atomico in SQL, nessun check-then-increment in memoria."
     - "A01 Broken Access Control / CWE-639: GET /api/billing/usage filtra per membership; un non membro riceve 404."
 

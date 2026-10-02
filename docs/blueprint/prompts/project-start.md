@@ -38,7 +38,7 @@ PIANO DI MACROTASK (rispetta il DAG; tra parentesi i macrotask da cui dipende):
   10 onboarding (03, 05) · 11 cleanup (01, 04, 05, 07, 08) ·
   12 background-jobs (02, 03, 04, 05, 07, 10) · 13 i18n (04, 05, 12) ·
   14 accounts-email (02, 05, 12, 13) · 15 workspaces (11, 12, 13, 14) ·
-  16 billing (15) · 17 abuse-quotas (05, 12, 14, 16) ·
+  16 billing (09, 15) · 17 abuse-quotas (05, 09, 12, 14, 16) ·
   18 marketing-legal (03, 09, 13, 14, 15, 16, 17)
   Un macrotask è l'unità al cui confine gira il CHECKPOINT ed è l'unità di commit
   atomico su git. Si parte da 01 foundation.

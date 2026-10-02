@@ -26,7 +26,7 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
 | R7 | `GET` in `app/api/auth/config/route.ts` + `getAuthConfigSnapshot` + tipo `AuthConfigSnapshot` (`lib/auth/credentials.ts`) | `git grep -n "api/auth/config"`; `git grep -n "getAuthConfigSnapshot"` | `auth-settings-card.tsx` usa solo `PATCH`; `getAuthConfigSnapshot` usato solo dal `GET` |
 | R8 | `app/settings/page.tsx`, `app/settings/integrations/page.tsx` (redirect stub) | `git grep -n -E "settings/integrations\|href=\"/settings\"\|\"/settings\""` | 0 link |
 | R9 | `LEGACY_KEYS` + `getLegacyAuthValues` in `lib/auth/credentials.ts` | `git grep -n "APP_AUTH_PASSWORD_HASH"` | nessuno scrive le chiavi `app_settings` `APP_AUTH_USERNAME`/`APP_AUTH_PASSWORD_HASH` (l'env `APP_AUTH_USERNAME` letta da `lib/auth/config.ts` è un'altra cosa e resta) |
-| R10 | `loadImportedMetrics`, `mergeImportedMetrics`, import `node:fs/promises` in `google-keyword-planner.ts` + `GOOGLE_ADS_METRICS_FILE` in `.env.example` | `git grep -n "GOOGLE_ADS_METRICS_FILE"` | solo il provider e `.env.example`; legge un file locale, inutile su Vercel (sostituito dal round-trip CSV di T-904/T-905) |
+| R10 | Provider da file `GOOGLE_ADS_METRICS_FILE` (`loadImportedMetrics`, `mergeImportedMetrics` in `google-keyword-planner.ts`) + riga in `.env.example` | `git grep -n "GOOGLE_ADS_METRICS_FILE"` | **rimosso da T-901** (macrotask 09, che precede questo) insieme all'intero `google-keyword-planner.ts`: qui si verifica solo l'assenza (0 risultati); se compare ancora, si segnala e si completa T-901, non si rimuove qui |
 | R11 | `DEFAULT_METRICS_PROVIDER` in `.env.example` | `git grep -n "DEFAULT_METRICS_PROVIDER"` | solo `.env.example:52`, mai letta |
 | R12 | `runQueuedExtractionJobs`, `getJobStats` (+ import `JobStatus`) in `lib/modules/jobs/job-runner.ts` | `git grep -n -E "runQueuedExtractionJobs\|getJobStats"` | solo le definizioni |
 | R13 | parametro `isRootAdmin` di `updateUserAdminFields` (`lib/auth/credentials.ts`) | `git grep -n "updateUserAdminFields"` | unico chiamante `lib/admin/users.ts` passa solo role, status, password |
@@ -61,7 +61,7 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
     - "R1-R5: rimossi solo gli handler GET; POST, PATCH e DELETE degli stessi file restano invariati"
     - "R6: rimossi app/api/auth/session/route.ts e la voce '/api/auth/session' da PUBLIC_PATHS del proxy; R7: rimossi l'handler GET di app/api/auth/config/route.ts, getAuthConfigSnapshot e AuthConfigSnapshot, PATCH invariato"
     - "R8: rimossi app/settings/page.tsx e app/settings/integrations/page.tsx (le URL rispondono 404 con la pagina not-found di Next, quella personalizzata se T-502 è già fatto)"
-    - "R9-R11: rimossi LEGACY_KEYS e getLegacyAuthValues (il bootstrap usa solo l'env), il provider da file GOOGLE_ADS_METRICS_FILE con import node:fs/promises, e le righe GOOGLE_ADS_METRICS_FILE e DEFAULT_METRICS_PROVIDER da .env.example"
+    - "R9 e R11: rimossi LEGACY_KEYS e getLegacyAuthValues (il bootstrap usa solo l'env) e la riga DEFAULT_METRICS_PROVIDER da .env.example; R10: provider da file GOOGLE_ADS_METRICS_FILE rimosso da T-901, qui solo verificata l'assenza (git grep vuoto)"
     - "R12-R14: rimossi runQueuedExtractionJobs e getJobStats, il parametro isRootAdmin di updateUserAdminFields, getSettingValue"
     - "R15-R18: tolto export a repairCommonMojibake e isRootAdminUser, rimossi requireAdminUserFromCookies e requireRootAdminUserFromCookies e il re-export SESSION_COOKIE_NAME di lib/auth/session.ts"
     - "R19-R22: rimossi il parametro hasExport, entryMode dal payload di PATCH /api/onboarding/state (campo ignorato o 400, deciso nel task in coerenza con T-1003), il campo id di AutocompleteProviderClient e delle sue implementazioni, il ramo buildMissingMetrics([]) sostituito da new Map()"
@@ -92,7 +92,7 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
 
   security_notes:
     - "A01 Broken Access Control / CWE-284: tolta dalla allowlist pubblica del proxy la voce /api/auth/session e rimossi 5 handler GET non usati che esponevano dati di progetto, riducendo la superficie raggiungibile"
-    - "A01 Broken Access Control / CWE-73 (controllo esterno di un percorso file): eliminato fs.readFile su un percorso preso da GOOGLE_ADS_METRICS_FILE"
+    - "A01 Broken Access Control / CWE-73 (controllo esterno di un percorso file): verificata l'assenza di fs.readFile su un percorso preso da GOOGLE_ADS_METRICS_FILE (rimosso da T-901)"
     - "A07 Authentication Failures / CWE-287: eliminato il percorso di bootstrap che crea un utente da un hash letto in app_settings (LEGACY_KEYS); resta solo il bootstrap da env validata (T-201)"
     - "Processo: ogni rimozione è una proposta approvata dall'umano (L-COL-021), con evidenza grep allegata"
 

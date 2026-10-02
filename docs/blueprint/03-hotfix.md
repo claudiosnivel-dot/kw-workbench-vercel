@@ -1,13 +1,13 @@
 # 03-hotfix — Macrotask `hotfix`
 
-> Difetti già visibili in produzione da correggere prima dei major di stack: 500 da cookie malformato, file pubblici dietro login, open redirect, Google Ads v18 dismessa, job falliti che rispondono 200, keyword fittizie quando l'autocomplete fallisce (audit 2026-10-02).
+> Difetti già visibili in produzione da correggere prima dei major di stack: 500 da cookie malformato, file pubblici dietro login, open redirect, chiamate all'API Google Ads dismessa, job falliti che rispondono 200, keyword fittizie quando l'autocomplete fallisce (audit 2026-10-02).
 
 ## Obiettivo del macrotask
 
 Correggere, prima degli aggiornamenti di stack di D-03, i difetti che gli utenti vedono già in produzione,
 ciascuno con un test che lo riproduce e poi lo blocca come regressione. Il macrotask rende la verifica del
 cookie di sessione tollerante a input malformati, apre senza login solo i file pubblici previsti, centralizza
-la validazione del redirect post-login, porta Google Ads su una versione supportata dell'API e fa sì che
+la validazione del redirect post-login, ferma le chiamate all'API Google Ads dismessa rendendo esplicita l'assenza dei volumi e fa sì che
 un'estrazione fallita, o alimentata da un autocomplete in errore, risulti fallita invece di produrre una
 risposta 200 o keyword fittizie. Ogni task aggiorna con gate umano le asserzioni impacted-by delle
 caratterizzazioni di 01-foundation.
@@ -165,59 +165,51 @@ caratterizzazioni di 01-foundation.
     - "Rimando a / degli utenti già autenticati su /login e /register (T-302)"
 
 - id: T-304
-  title: "Google Ads API su una versione supportata"
+  title: "Provider Google Keyword Planner disattivato in modo esplicito"
   macrotask: "hotfix"
   depends_on: [T-106]
 
   objective: >
-    Portare l'integrazione Google Ads su una versione supportata dell'API. Oggi il
-    default è v18 (sunset 20/08/2025) in lib/integrations/google-ads-config.ts e in
-    lib/modules/providers/metrics/google-keyword-planner.ts, e
-    components/google-ads-integration-card.tsx invia sempre apiVersion, così il
-    valore v18 viene riscritto nel DB a ogni salvataggio e il provider marca come
-    failed tutte le metriche.
+    Smettere di chiamare in produzione l'API Google Ads dismessa (default v18,
+    sunset 20/08/2025) e rendere esplicita l'assenza dei volumi. Il provider
+    GOOGLE_KEYWORD_PLANNER oggi marca come failed tutte le metriche senza dirlo
+    all'utente; l'API non verrà ripresa per le metriche perché l'uso consentito
+    di KeywordPlanIdeaService è limitato agli strumenti per campagne Google Ads
+    (D-09). Il codice viene rimosso più avanti da T-901; qui si ferma l'impatto in
+    produzione con il minimo cambiamento.
 
   definition_of_done:
-    - "lib/integrations/google-ads-version.ts, senza import, esporta GOOGLE_ADS_API_VERSION (unica fonte) e SUPPORTED_GOOGLE_ADS_API_VERSIONS con i valori indicati come supportati nella pagina ufficiale https://developers.google.com/google-ads/api/docs/sunset-dates alla data del task, annotata in un commento con la data di verifica; il modulo è separato da google-ads-config.ts perché la card client non può importare un modulo che arriva a lib/prisma.ts (D-22, T-109)"
-    - "getGoogleAdsApiConfig usa il valore di DB o di env solo se è in SUPPORTED_GOOGLE_ADS_API_VERSIONS; altrimenti lo ignora, usa GOOGLE_ADS_API_VERSION e registra un console.warn con il valore scartato"
-    - "google-keyword-planner.ts non ha più il fallback v18 e costruisce l'endpoint con la versione già validata"
-    - "PATCH di app/api/integrations/google-ads/config/route.ts: apiVersion non supportata -> 400 con error che elenca le versioni ammesse e nessuna scrittura in app_settings; la rotta resta riservata al root admin (requireRootAdminUserFromRequest)"
-    - "google-ads-integration-card.tsx: select con le versioni supportate (default GOOGLE_ADS_API_VERSION); apiVersion inviata solo se modificata dall'utente"
-    - ".env.example con GOOGLE_ADS_API_VERSION allineata alla costante"
+    - "lib/modules/providers/metrics/factory.ts: per GOOGLE_KEYWORD_PLANNER restituisce un provider che non esegue chiamate di rete e marca ogni keyword con metrics_status missing e motivo PROVIDER_DISABLED; GoogleKeywordPlannerMetricsProvider non viene più istanziato"
+    - "Il result del job contiene metricsNotice = PROVIDER_DISABLED quando la sezione usa GOOGLE_KEYWORD_PLANNER; la pagina della sezione e quella dei risultati mostrano l'avviso Volumi Google Ads non disponibili: importa il CSV di Keyword Planner (testo aggiornato da T-905)"
+    - "components/project-form.tsx e components/subproject-form.tsx non offrono più l'opzione GOOGLE_KEYWORD_PLANNER per nuovi valori; un progetto che la ha già la mostra come Non disponibile, senza perderla in salvataggio"
+    - "lib/modules/project-settings.ts: parseMetricsProvider rifiuta GOOGLE_KEYWORD_PLANNER in creazione e in modifica quando il valore cambia, con 400 e codice METRICS_PROVIDER_UNAVAILABLE"
+    - "Nessuna modifica alla card di integrazione admin né alle rotte app/api/integrations/google-ads/** (le rimuove T-901)"
 
   acceptance_criteria:
     - id: AC-304-1
-      given: "getManySettingValues mockato con GOOGLE_ADS_API_VERSION=v18 e env GOOGLE_ADS_API_VERSION=v18"
-      when: "si chiama getGoogleAdsApiConfig"
-      then: "apiVersion è uguale a GOOGLE_ADS_API_VERSION, è contenuta in SUPPORTED_GOOGLE_ADS_API_VERSIONS e almeno una chiamata a console.warn ha un messaggio che contiene v18"
+      given: "una sezione con metrics_provider GOOGLE_KEYWORD_PLANNER, autocomplete MOCK e fetch globale mockato che registra ogni chiamata"
+      when: "si esegue runExtractionPipeline sulla sezione"
+      then: "nessuna chiamata di fetch ha un URL che contiene googleads.googleapis.com o oauth2.googleapis.com, tutte le candidate salvate hanno metrics_status missing e il result del job contiene metricsNotice uguale a PROVIDER_DISABLED"
     - id: AC-304-2
-      given: "configurazione Ads completa con v18 nel DB e fetch mockato per il token OAuth e per generateKeywordIdeas"
-      when: "GoogleKeywordPlannerMetricsProvider.enrichKeywords esegue la richiesta di metriche"
-      then: "l'URL chiamato inizia con https://googleads.googleapis.com/ seguito da GOOGLE_ADS_API_VERSION e /customers/ e nessuna URL chiamata contiene /v18/"
+      given: "un utente autenticato proprietario di un progetto con metrics_provider NONE"
+      when: "invia POST /api/projects con metrics_provider GOOGLE_KEYWORD_PLANNER e poi PATCH /api/projects/{id} con lo stesso valore"
+      then: "entrambe le risposte hanno status 400 con code METRICS_PROVIDER_UNAVAILABLE e la riga del progetto conserva metrics_provider NONE"
     - id: AC-304-3
-      given: "un root admin, un admin non root e app_settings senza la chiave GOOGLE_ADS_API_VERSION"
-      when: "il root admin invia PATCH /api/integrations/google-ads/config con apiVersion v18 e poi con GOOGLE_ADS_API_VERSION; l'admin non root invia la PATCH con la versione supportata"
-      then: "la prima risponde 400 con error che contiene GOOGLE_ADS_API_VERSION e app_settings resta senza la chiave; la seconda risponde 200 con data.apiVersion uguale alla costante; l'admin non root riceve 403"
-    - id: AC-304-4
-      given: "il repository dopo la modifica"
-      when: "google-ads-config.test.ts cerca il letterale v18 nei file di lib/, components/ e in .env.example"
-      then: "le occorrenze trovate sono 0"
+      given: "un progetto esistente con metrics_provider GOOGLE_KEYWORD_PLANNER"
+      when: "il proprietario invia PATCH /api/projects/{id} cambiando solo il nome"
+      then: "la risposta ha status 200, il nome è aggiornato e metrics_provider resta GOOGLE_KEYWORD_PLANNER"
 
   target_tests:
-    - file: "tests/unit/google-ads-config.test.ts"
-      covers: [AC-304-1, AC-304-2, AC-304-4]
-    - file: "tests/integration/google-ads-config-api.test.ts"
-      covers: [AC-304-3]
+    - file: "tests/integration/keyword-planner-disabled.test.ts"
+      covers: [AC-304-1, AC-304-2, AC-304-3]
 
   security_notes:
-    - "A05:2025 Injection, CWE-20 (Improper Input Validation): apiVersion è interpolata nel percorso dell'URL di googleads.googleapis.com, chiamato con le credenziali OAuth del progetto; l'allowlist SUPPORTED_GOOGLE_ADS_API_VERSIONS impedisce valori arbitrari, come segmenti ../, nel percorso"
-    - "A01:2025 Broken Access Control, CWE-285: la PATCH resta riservata al root admin; un admin non root riceve 403 senza scritture"
-    - "A03:2025 Software Supply Chain Failures, CWE-1104 (Use of Unmaintained Third Party Components): una versione dell'API dismessa non viene più usata né riscritta nel DB, quindi le metriche non falliscono più in silenzio"
+    - "A03:2025 Software Supply Chain Failures, CWE-1104 (Use of Unmaintained Third Party Components): nessuna chiamata a una versione dismessa dell'API Google Ads; le credenziali OAuth Ads non vengono più usate a runtime"
+    - "A01:2025 Broken Access Control, CWE-639: le PATCH restano filtrate per owner_user_id come oggi; il nuovo controllo sul provider non apre letture o scritture su progetti altrui"
 
   out_of_scope:
-    - "Parsing numerico, batch parziali, retry, timeout e customerId (T-901)"
-    - "generateKeywordHistoricalMetrics e match canonico (T-902)"
-    - "CLI di diagnosi dell'API (T-903)"
+    - "Rimozione del codice e dei dati Google Ads (T-901)"
+    - "Fornitore di metriche con licenza (T-902) e import CSV di Keyword Planner (T-905)"
 
 - id: T-305
   title: "Esito reale dell'estrazione: un job fallito non risponde 200"
