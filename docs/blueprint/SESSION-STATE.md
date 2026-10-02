@@ -39,7 +39,7 @@
 ## 2. Macrotask corrente
 
 - **Selezionato**: `foundation` (01) — nessuna dipendenza.
-- **Task atomici in corso**: nessuno (si parte da T-101 e T-102, indipendenti).
+- **Task atomici in corso**: nessuno (si parte da T-101; ordine: T-101, poi T-102, T-103…T-107, T-109, T-108, T-110).
 - **Criteri/test di riferimento**: `docs/blueprint/01-foundation.md`.
 
 ## 3. Stato git
@@ -50,7 +50,7 @@
 | Ultimo commit | commit del blueprint su `trueline/blueprint` |
 | Stato merge su `master` | non eseguito |
 | Deploy-coupling | `main_deploy_coupled: true` (rilevato da `detect_deploy_coupling.mjs`, segnale `vercel.json`): ogni push su `master` va in produzione → merge su `master` sempre human-gated |
-| Push dei branch | sospeso per i branch con migrazioni finché T-203 non conferma un DB di Preview separato (D-04) |
+| Push dei branch | sospeso per ogni branch che non contiene T-202 (il deploy Preview esegue migrazioni e seed) e, per i branch con migrazioni, finché T-203 non conferma un DB di Preview separato (D-04, emendamento 2026-10-02) |
 
 ## 4. Baseline & budget
 
@@ -72,6 +72,7 @@
 - La domanda di Basic Access dell'utente è stata respinta (tool dichiarato in sviluppo, senza design document). Decisione dell'utente: niente API Google Ads per le metriche; volumi da CSV del Keyword Planner del cliente + fornitore con licenza DataForSEO (D-09 emendata, D-30 nuova). Aggiornati T-304, modulo 09, T-1601, T-1605, T-1703, T-1803, visione.
 - Verificato con `npm view`: ESLint resta 9.39.x (D-03 emendata).
 - Nessun codice applicativo modificato.
+- Emendamenti del 2026-10-02, approvati dall'utente all'avvio di BUILD: D-04 esteso a ogni push di branch prima di T-202, con la prima run della CI spostata da T-110 a T-202; quarto progetto Vitest `tooling` in T-101 e `test:tooling` nel job checks di T-110; dipendenze di T-102 (+T-101), T-109 (+T-101) e T-108 (+T-101, T-103, T-109); jscpd in T-108; il riferimento a ESLint 10 in T-102 diventa 9.39.x.
 
 ## 6. Prossimi passi
 

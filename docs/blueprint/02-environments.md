@@ -79,7 +79,7 @@ Il risultato è un raggio d'azione ridotto per qualunque errore di configurazion
 - id: T-202
   title: "Guardia sulle migrazioni nel build Vercel"
   macrotask: "environments"
-  depends_on: [T-201]
+  depends_on: [T-201, T-110]
 
   objective: >
     Impedire che un deploy Preview applichi migrazioni o seed al DB di
@@ -95,6 +95,7 @@ Il risultato è un raggio d'azione ridotto per qualunque errore di configurazion
     - "Un comando fallito interrompe la sequenza e il processo esce con lo stesso exit code: next build non parte dopo una migrazione fallita"
     - "package.json: vercel-build = node scripts/vercel-build.mjs; db:deploy resta per l'uso locale; PRODUCTION_DB_HOST documentata in .env.example e in ENV_KEYS di lib/env.ts come variabile del solo ambiente Preview"
     - "I log mostrano al più hostname e username del DB, mai password o query string di DIRECT_URL"
+    - "Prima run verde della CI di T-110 su un branch pubblicato che contiene questo task (spostata da T-110, D-04): prima del push la guardia è già nel branch, quindi il deploy Preview salta migrazioni e seed; link alla run annotato in docs/blueprint/SESSION-STATE.md"
 
   acceptance_criteria:
     - id: AC-202-1

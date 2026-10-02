@@ -45,7 +45,8 @@ ridiscute il design.
 
 5) PROMEMORIA: al CONFINE DEL MACROTASK gira il CHECKPOINT prima di committare.
    master è accoppiato al deploy di produzione: il merge resta un mio "vai".
-   Niente push di branch con migrazioni finché T-203 non è chiuso (D-04).
+   Niente push di branch senza T-202, né di branch con migrazioni finché T-203
+   non è chiuso (D-04).
 
 INVARIANTI NON NEGOZIABILI — tienile in testa per OGNI task:
   • ORACLE-AS-JUDGE, MAI LLM-AS-JUDGE (L-COL-002): "verde" = esito di un oracolo

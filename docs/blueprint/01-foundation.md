@@ -30,9 +30,9 @@ se rompe un comportamento esistente.
     locale.
 
   definition_of_done:
-    - "vitest.config.ts definisce tre progetti: unit (tests/unit, environment node), component (tests/component, environment jsdom con @testing-library/react e @testing-library/jest-dom), integration (tests/integration, environment node, fileParallelism disattivato perché il DB è condiviso); alias @/ risolto come in tsconfig.json"
+    - "vitest.config.ts definisce quattro progetti: unit (tests/unit, environment node), component (tests/component, environment jsdom con @testing-library/react e @testing-library/jest-dom), integration (tests/integration, environment node, fileParallelism disattivato perché il DB è condiviso), tooling (tests/tooling, environment node, per i test di lint, typecheck, oracoli, architettura e CI di T-102, T-108, T-109, T-110); alias @/ risolto come in tsconfig.json"
     - "docker-compose.test.yml avvia postgres:16 sulla porta host 54329 con database kw_workbench_test e credenziali solo locali; .env.test.example documenta TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:54329/kw_workbench_test"
-    - "package.json: script test (tutti i progetti), test:unit, test:component, test:integration; il globalSetup del progetto integration esegue prima la guardia e poi prisma migrate deploy con DATABASE_URL e DIRECT_URL uguali a TEST_DATABASE_URL"
+    - "package.json: script test (tutti i progetti), test:unit, test:component, test:integration, test:tooling; il globalSetup del progetto integration esegue prima la guardia e poi prisma migrate deploy con DATABASE_URL e DIRECT_URL uguali a TEST_DATABASE_URL"
     - "Il setup del progetto integration imposta DATABASE_URL = TEST_DATABASE_URL e un APP_SESSION_SECRET fittizio prima di qualunque import di lib/prisma.ts (il client Prisma è un singleton creato all'import)"
     - "tests/helpers/db-guard.ts esporta assertLocalTestDatabase(url): accetta solo gli host localhost, 127.0.0.1 e ::1; in ogni altro caso, o se TEST_DATABASE_URL manca, lancia un errore che nomina l'host o la variabile e mai la password"
     - "tests/helpers/db.ts esporta resetDatabase(), che svuota con TRUNCATE ... CASCADE tutte le tabelle dello schema public tranne _prisma_migrations"
@@ -78,7 +78,7 @@ se rompe un comportamento esistente.
 - id: T-102
   title: "Lint e typecheck come comandi"
   macrotask: "foundation"
-  depends_on: []
+  depends_on: [T-101]
 
   objective: >
     Rendere lint e typecheck due comandi deterministici e non interattivi. Oggi
@@ -120,7 +120,7 @@ se rompe un comportamento esistente.
     - "A03:2025 Software Supply Chain Failures, CWE-1357: eslint, eslint-config-next e plugin aggiunti come devDependencies con versione esatta; nessuno script postinstall nuovo"
 
   out_of_scope:
-    - "Passaggio a ESLint 10 ed eslint-config-next 16 (T-404, D-03)"
+    - "Passaggio a eslint-config-next 16 (T-404); ESLint resta 9.39.x (D-03)"
     - "TypeScript 6.0 (T-402)"
 
 - id: T-103
@@ -366,7 +366,7 @@ se rompe un comportamento esistente.
 - id: T-108
   title: "Oracoli Trueline: knip, baseline d'igiene e file ignorati"
   macrotask: "foundation"
-  depends_on: [T-102]
+  depends_on: [T-101, T-102, T-103, T-109]
 
   objective: >
     Configurare gli oracoli Trueline sul repo: knip per il codice morto con le
@@ -381,6 +381,7 @@ se rompe un comportamento esistente.
     - "Script npm knip = knip --reporter json; ulteriori segnalazioni presenti al momento del task sono risolte in knip.json se falsi positivi di configurazione, altrimenti aggiunte alla baseline con una nota, previa approvazione umana"
     - ".gitignore contiene .trueline/* con la negazione !.trueline/hygiene-baseline.json (report, binari e baseline di sicurezza restano locali; la baseline d'igiene è versionata) e tsconfig.tsbuildinfo (aggiunto da T-102)"
     - "Baseline Trueline di sicurezza catturata con baseline.mjs capture in .trueline/baseline.json, non versionata"
+    - "jscpd 4.x come devDependency con versione esatta: è l'oracolo di duplicazione dell'ecosistema postgres-jsts (min_tokens 50) e, con madge di T-109, serve alla cattura della baseline d'igiene"
     - "Baseline d'igiene catturata con baseline.mjs capture . --hygiene in .trueline/hygiene-baseline.json e committata: senza di essa il controllo 1 del checkpoint BUILD non può risultare verde"
 
   acceptance_criteria:
@@ -407,7 +408,7 @@ se rompe un comportamento esistente.
 
   security_notes:
     - "A02:2025 Security Misconfiguration, CWE-538: .trueline/ contiene i report degli oracoli (gitleaks può riportare frammenti di segreti trovati); è ignorata da git e mai pubblicata come artefatto della CI"
-    - "A03:2025 Software Supply Chain Failures, CWE-1357: knip con versione esatta"
+    - "A03:2025 Software Supply Chain Failures, CWE-1357: knip e jscpd con versione esatta"
 
   out_of_scope:
     - "Rimozione del codice morto (T-1101, human-gated)"
@@ -416,7 +417,7 @@ se rompe un comportamento esistente.
 - id: T-109
   title: "Contratto di altitudine: tipi condivisi fuori dai moduli server"
   macrotask: "foundation"
-  depends_on: [T-102]
+  depends_on: [T-101, T-102]
 
   objective: >
     Rendere verificabile il contratto di altitudine D-22 (ui = components/**,
@@ -475,18 +476,17 @@ se rompe un comportamento esistente.
 
   definition_of_done:
     - ".github/workflows/ci.yml attivato su push e pull_request verso master (mai pull_request_target), permissions contents: read a livello di workflow, concurrency che annulla le run superate dello stesso ref"
-    - "Job checks: npm ci, npx prisma generate, npm run typecheck, npm run lint, npm run test:unit, npm run test:component"
+    - "Job checks: npm ci, npx prisma generate, npm run typecheck, npm run lint, npm run test:unit, npm run test:component, npm run test:tooling"
     - "Job integration ed e2e: service postgres:16 mappato su 54329, TEST_DATABASE_URL su localhost; e2e esegue npx playwright install --with-deps chromium e npm run test:e2e e carica il report come artefatto solo in caso di fallimento"
     - "Job build: next build con env fittizie generate nel job (APP_SESSION_SECRET e APP_ENCRYPTION_KEY casuali di 48 caratteri, DATABASE_URL e DIRECT_URL locali)"
     - "Node 22.x provvisorio, compatibile con engines >=20.0.0; il pin a 24.x è di T-407"
     - "Ogni azione referenziata in uses è fissata allo SHA di commit completo con un commento che riporta la versione"
-    - "Prima run verde su un branch di prova; link alla run annotato in docs/blueprint/SESSION-STATE.md"
 
   acceptance_criteria:
     - id: AC-110-1
       given: ".github/workflows/ci.yml"
       when: "ci-workflow.test.ts lo legge con il pacchetto yaml (devDependency)"
-      then: "esistono i job checks, integration, e2e e build; gli step contengono npm ci, npx prisma generate e i comandi typecheck, lint, test:unit, test:component, test:integration, test:e2e e build; integration ed e2e dichiarano services.postgres con image postgres:16"
+      then: "esistono i job checks, integration, e2e e build; gli step contengono npm ci, npx prisma generate e i comandi typecheck, lint, test:unit, test:component, test:tooling, test:integration, test:e2e e build; integration ed e2e dichiarano services.postgres con image postgres:16"
     - id: AC-110-2
       given: "lo stesso file"
       when: "si cercano riferimenti a segreti e URL di database"
@@ -512,6 +512,7 @@ se rompe un comportamento esistente.
   out_of_scope:
     - "Deploy, Ignored Build Step e pipeline di rilascio (T-605)"
     - "Pin di Node 24 (T-407) e audit delle dipendenze (T-401)"
+    - "Prima run della CI su un branch pubblicato: spostata a T-202, perché prima di T-202 ogni push avvia un deploy Preview che esegue migrazioni e seed (D-04)"
 ```
 
 ## Self-check

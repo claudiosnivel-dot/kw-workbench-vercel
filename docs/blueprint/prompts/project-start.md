@@ -56,8 +56,9 @@ ECOSISTEMA E POSIZIONI
 VINCOLI SPECIFICI DI QUESTO PROGETTO
   • master è ACCOPPIATO AL DEPLOY (vercel.json: ogni push su master va in
     produzione): il merge su master è sempre un "vai" umano, anche a checkpoint verde.
-  • Le Preview Vercel eseguono prisma migrate deploy + seed: NON pushare branch con
-    migrazioni finché T-203 non conferma un DB di Preview separato (D-04).
+  • Le Preview Vercel eseguono prisma migrate deploy + seed: NON pushare alcun
+    branch che non contenga T-202, e NON pushare branch con migrazioni finché
+    T-203 non conferma un DB di Preview separato (D-04).
   • In produzione ci sono solo dati di test (D-05).
 
 INVARIANTI NON NEGOZIABILI (regole della casa per l'intero progetto):

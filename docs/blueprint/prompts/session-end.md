@@ -37,8 +37,9 @@ FATTI verificati, mai a sensazione (L-COL-006).
    • Branch di lavoro e commit (con id dei task + esito del gate).
    • Merge su master: avvenuto SOLO se checkpoint verde E mio "vai" (master è
      accoppiato al deploy di produzione); altrimenti SOSPESO.
-   • Push: indica se il branch è stato pushato e se contiene migrazioni (vietato
-     finché T-203 non conferma un DB di Preview separato).
+   • Push: indica se il branch è stato pushato, se contiene T-202 e se contiene
+     migrazioni (vietato senza T-202; con migrazioni vietato finché T-203 non
+     conferma un DB di Preview separato).
 
 4) VERIFICA-FIX RIVERIFICATA (L-COL-003)
    Per ogni fix applicata in sessione, conferma che è stata riverificata con lo
