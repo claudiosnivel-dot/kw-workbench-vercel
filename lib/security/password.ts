@@ -1,14 +1,27 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 
 const KEY_LENGTH = 64;
 
-export function hashPassword(password: string): string {
+/** crypto.scrypt con callback, eseguito nel threadpool di libuv: non blocca l'event loop. */
+function deriveKey(password: string, salt: Buffer, keyLength: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, keyLength, (error, derivedKey) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(derivedKey);
+    });
+  });
+}
+
+export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
-  const hash = scryptSync(password, salt, KEY_LENGTH);
+  const hash = await deriveKey(password, salt, KEY_LENGTH);
   return `scrypt$${salt.toString("base64url")}$${hash.toString("base64url")}`;
 }
 
-export function verifyPassword(password: string, stored: string): boolean {
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [algo, saltPart, hashPart] = stored.split("$");
   if (algo !== "scrypt" || !saltPart || !hashPart) {
     return false;
@@ -17,7 +30,11 @@ export function verifyPassword(password: string, stored: string): boolean {
   try {
     const salt = Buffer.from(saltPart, "base64url");
     const expected = Buffer.from(hashPart, "base64url");
-    const actual = scryptSync(password, salt, expected.length);
+    if (expected.length === 0) {
+      return false;
+    }
+
+    const actual = await deriveKey(password, salt, expected.length);
 
     if (actual.length !== expected.length) {
       return false;

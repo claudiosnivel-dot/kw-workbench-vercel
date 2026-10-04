@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { ColorVisionMode, FontScaleMode, Prisma, ThemeMode, UserRole, UserStatus } from "@/lib/generated/prisma/client";
 import { getAuthPassword, getAuthUsername } from "@/lib/auth/config";
 import { getManySettingValues } from "@/lib/integrations/app-settings";
@@ -57,6 +58,14 @@ export type VerifyLoginResult = {
   user: AuthUser | null;
   reason?: LoginFailureReason;
 };
+
+let dummyPasswordHash: Promise<string> | null = null;
+
+/** Hash fittizio calcolato una sola volta per processo, verificato quando lo username non esiste. */
+function getDummyPasswordHash(): Promise<string> {
+  dummyPasswordHash ??= hashPassword(randomBytes(32).toString("hex"));
+  return dummyPasswordHash;
+}
 
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
@@ -173,7 +182,7 @@ export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
   const legacy = await getLegacyAuthValues();
   const fallbackUsername = normalizeUsername(getAuthUsername()) || ROOT_ADMIN_USERNAME;
   const username = legacy?.username || fallbackUsername;
-  const passwordHash = legacy?.passwordHash || hashPassword(getAuthPassword());
+  const passwordHash = legacy?.passwordHash || (await hashPassword(getAuthPassword()));
 
   try {
     const created = await prisma.user.create({
@@ -270,10 +279,12 @@ export async function verifyLoginCredentials(username: string, password: string)
   });
 
   if (!user) {
+    // Stesso calcolo di una password errata: i tempi di risposta non rivelano quali username esistono.
+    await verifyPassword(password, await getDummyPasswordHash());
     return { user: null, reason: "INVALID_CREDENTIALS" };
   }
 
-  if (!verifyPassword(password, user.password_hash)) {
+  if (!(await verifyPassword(password, user.password_hash))) {
     return { user: null, reason: "INVALID_CREDENTIALS" };
   }
 
@@ -306,7 +317,7 @@ export async function registerUser(input: {
     const created = await prisma.user.create({
       data: {
         username,
-        password_hash: hashPassword(password),
+        password_hash: await hashPassword(password),
         role,
         status: UserStatus.ACTIVE,
         is_root_admin: false,
@@ -352,7 +363,7 @@ export async function updateAuthCredentials(input: {
   }
 
   if (typeof input.password === "string" && input.password.length > 0) {
-    data.password_hash = hashPassword(validatePassword(input.password));
+    data.password_hash = await hashPassword(validatePassword(input.password));
   }
 
   if (!data.username && !data.password_hash) {
@@ -399,7 +410,7 @@ export async function updateUserAdminFields(input: {
   }
 
   if (typeof input.password === "string" && input.password.length > 0) {
-    data.password_hash = hashPassword(validatePassword(input.password));
+    data.password_hash = await hashPassword(validatePassword(input.password));
   }
 
   if (typeof input.isRootAdmin === "boolean") {

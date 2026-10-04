@@ -22,7 +22,7 @@ export async function createUserWithSession(
   const user = await prisma.user.create({
     data: {
       username: options.username ?? `test-user-${userCounter}`,
-      password_hash: hashPassword(options.password ?? TEST_USER_PASSWORD),
+      password_hash: await hashPassword(options.password ?? TEST_USER_PASSWORD),
       role: options.role ?? UserRole.SUBSCRIBER,
       status: options.status ?? UserStatus.ACTIVE,
       is_root_admin: options.isRootAdmin ?? false,

@@ -26,7 +26,7 @@ export default async function globalSetup(): Promise<void> {
   const user = await prisma.user.create({
     data: {
       username: E2E_USERNAME,
-      password_hash: hashPassword(E2E_USER_PASSWORD),
+      password_hash: await hashPassword(E2E_USER_PASSWORD),
       created_at: FIXED_AT,
       updated_at: FIXED_AT,
     },
