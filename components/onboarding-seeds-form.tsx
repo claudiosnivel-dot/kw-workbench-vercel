@@ -6,7 +6,7 @@ import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/clien
 import {
   type OnboardingProjectSnapshot,
   type OnboardingSubprojectSnapshot,
-} from "@/lib/onboarding/progress";
+} from "@/lib/onboarding/types";
 
 type OnboardingSeedsFormProps = {
   project: OnboardingProjectSnapshot;

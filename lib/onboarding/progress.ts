@@ -1,17 +1,14 @@
-import {
-  OnboardingEntryMode,
-  OnboardingStatus,
-  OnboardingStep,
-  type AutocompleteProvider,
-  type MetricsProvider,
-} from "@prisma/client";
+import { OnboardingEntryMode, OnboardingStatus, OnboardingStep } from "@prisma/client";
 import {
   type OnboardingEntryModeKey,
   type OnboardingStatusKey,
   type OnboardingStepKey,
   stepToPath,
 } from "@/lib/onboarding/constants";
+import type { OnboardingProjectSnapshot, OnboardingSubprojectSnapshot } from "@/lib/onboarding/types";
 import { prisma } from "@/lib/prisma";
+
+export type { OnboardingProjectSnapshot, OnboardingSubprojectSnapshot } from "@/lib/onboarding/types";
 
 type OnboardingProgressRow = {
   id: string;
@@ -25,40 +22,6 @@ type OnboardingProgressRow = {
   completed_at: Date | null;
   created_at: Date;
   updated_at: Date;
-};
-
-export type OnboardingProjectSnapshot = {
-  id: string;
-  name: string;
-  language_code: string;
-  country_code: string;
-  autocomplete_provider: AutocompleteProvider;
-  metrics_provider: MetricsProvider;
-  min_volume: number;
-  exclude_brands: boolean;
-  expand_alpha: boolean;
-  expand_numeric: boolean;
-  expand_patterns: boolean;
-  auto_classification: boolean;
-  scoring_profile: string;
-};
-
-export type OnboardingSubprojectSnapshot = {
-  id: string;
-  project_id: string;
-  name: string;
-  description: string | null;
-  language_code_override: string | null;
-  country_code_override: string | null;
-  autocomplete_provider_override: AutocompleteProvider | null;
-  metrics_provider_override: MetricsProvider | null;
-  min_volume_override: number | null;
-  exclude_brands_override: boolean | null;
-  expand_alpha_override: boolean | null;
-  expand_numeric_override: boolean | null;
-  expand_patterns_override: boolean | null;
-  auto_classification_override: boolean | null;
-  scoring_profile_override: string | null;
 };
 
 export type OnboardingState = {
