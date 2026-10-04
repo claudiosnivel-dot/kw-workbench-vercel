@@ -1,4 +1,5 @@
 // Gate di T-503 (AC-503-1…AC-503-4): errori API uniformi {error, code, requestId} senza dettagli interni.
+import { randomBytes } from "node:crypto";
 import { Prisma, UserRole } from "@/lib/generated/prisma/client";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH as patchAdminUser } from "@/app/api/admin/users/[id]/route";
@@ -6,6 +7,7 @@ import { POST as createAdminUser } from "@/app/api/admin/users/route";
 import { PATCH as patchAuthConfig } from "@/app/api/auth/config/route";
 import { POST as register } from "@/app/api/auth/register/route";
 import { PATCH as patchBranding } from "@/app/api/settings/branding/route";
+import { resetEnvForTests } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
@@ -16,10 +18,14 @@ type ErrorBody = { error?: string; code?: string; requestId?: string };
 beforeAll(() => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");
   vi.stubEnv("APP_PUBLIC_SIGNUP_ENABLED", "true");
+  // Chiave generata a ogni esecuzione: serve a cifrare i valori di app_settings prima dell'upsert.
+  vi.stubEnv("APP_ENCRYPTION_KEY", randomBytes(32).toString("hex"));
+  resetEnvForTests();
 });
 
 afterAll(() => {
   vi.unstubAllEnvs();
+  resetEnvForTests();
 });
 
 beforeEach(async () => {
@@ -123,7 +129,7 @@ describe("branding con errore Prisma imprevisto", () => {
       code: "P2034",
       clientVersion: "7.10.0",
     });
-    vi.spyOn(prisma.appSetting, "upsert").mockImplementation(() => {
+    const upsert = vi.spyOn(prisma.appSetting, "upsert").mockImplementation(() => {
       throw prismaError;
     });
     vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -136,6 +142,7 @@ describe("branding con errore Prisma imprevisto", () => {
     });
     const text = await response.text();
 
+    expect(upsert).toHaveBeenCalled();
     expect(response.status).toBe(500);
     expect((JSON.parse(text) as ErrorBody).code).toBe("INTERNAL_ERROR");
     expect(text).not.toContain("deadlock-interno-su-app_settings");

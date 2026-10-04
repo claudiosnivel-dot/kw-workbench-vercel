@@ -14,7 +14,8 @@ export async function getSettingValue(key: string): Promise<string | null> {
   }
 }
 
-export async function upsertSettingValue(params: { key: string; value: string; isSecret?: boolean }) {
+/** Restituisce la PrismaPromise non ancora eseguita: si può attendere o passare a prisma.$transaction. */
+export function upsertSettingValue(params: { key: string; value: string; isSecret?: boolean }) {
   return prisma.appSetting.upsert({
     where: { key: params.key },
     update: {
@@ -29,8 +30,9 @@ export async function upsertSettingValue(params: { key: string; value: string; i
   });
 }
 
-export async function deleteSettingValue(key: string) {
-  await prisma.appSetting.deleteMany({ where: { key } });
+/** Restituisce la PrismaPromise non ancora eseguita: si può attendere o passare a prisma.$transaction. */
+export function deleteSettingValue(key: string) {
+  return prisma.appSetting.deleteMany({ where: { key } });
 }
 
 export async function getManySettingValues(keys: string[]): Promise<Record<string, string>> {

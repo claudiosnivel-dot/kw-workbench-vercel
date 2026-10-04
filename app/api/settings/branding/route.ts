@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminUserFromRequest } from "@/lib/auth/current-user";
+import { requireAdminUserFromRequest, requireRootAdminUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import { getBrandingSnapshot, updateBrandingSettings } from "@/lib/integrations/branding";
 
@@ -10,7 +10,8 @@ export const GET = withApiErrors(async (request: Request) => {
 });
 
 export const PATCH = withApiErrors(async (request: Request) => {
-  await requireAdminUserFromRequest(request);
+  // Il branding è globale: lo modifica solo il root admin (403 FORBIDDEN per gli altri admin, T-506).
+  await requireRootAdminUserFromRequest(request);
 
   const payload = (await request.json()) as {
     appName?: string;
@@ -19,7 +20,7 @@ export const PATCH = withApiErrors(async (request: Request) => {
     logoUrlLight?: string | null;
   };
 
-  // Un logo non valido arriva come ValidationError (400); ogni altro errore resta un 500 senza dettagli.
+  // Un campo non valido arriva come ValidationError (400) prima di ogni scrittura; ogni altro errore è un 500.
   const snapshot = await updateBrandingSettings({
     appName: payload.appName,
     logoUrl: payload.logoUrl,

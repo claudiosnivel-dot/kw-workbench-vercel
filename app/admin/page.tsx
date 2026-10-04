@@ -43,6 +43,7 @@ export default async function AdminPage() {
           logoUrlDark: branding.logoUrlDark,
           logoUrlLight: branding.logoUrlLight,
         }}
+        canEdit={user.isRootAdmin}
       />
 
       {user.isRootAdmin && googleSheetsConfig && <GoogleSheetsApiConfigCard initial={googleSheetsConfig} />}
