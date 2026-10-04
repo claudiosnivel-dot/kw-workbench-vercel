@@ -9,6 +9,10 @@
 - PostgreSQL
 - Tailwind CSS
 
+## Requisiti
+
+- Node.js 24 (`.nvmrc`, `engines.node` = `24.x`): è la major usata in CI e su Vercel, dove il build si ferma se la major è diversa (T-407). Con un'altra versione installata in locale usare `nvm use`.
+
 ## Setup locale (DB separato da Docker)
 
 ### 1) Prepara PostgreSQL locale
@@ -62,7 +66,7 @@ Build command configurato:
 
 ## Note runtime
 
-- Prisma applica tuning automatico per URL Supabase pooler (`connection_limit=1`; su porta 6543 imposta anche `pgbouncer=true` se assente).
+- Prisma 7 usa il pool di `pg` (adapter `@prisma/adapter-pg`): dimensione e attesa arrivano da `PRISMA_CONNECTION_LIMIT` e `PRISMA_POOL_TIMEOUT`; `connection_limit`, `pgbouncer`, `pool_timeout` e `sslmode` nell'URL sono ignorati. Verso gli host Supabase il TLS è verificato con la CA di Supabase (`lib/db/ssl.ts`).
 - Cookie auth/OAuth: `APP_COOKIE_SECURE=auto`
 - Route lunghe serverless:
   - `POST /api/projects/:id/run` -> `maxDuration = 300`

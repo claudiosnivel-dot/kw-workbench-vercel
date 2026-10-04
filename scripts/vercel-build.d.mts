@@ -7,6 +7,8 @@ export function dbIdentity(url: string | undefined): DbIdentity | null;
 
 export function sameDatabase(target: DbIdentity, reference: DbIdentity): boolean;
 
+export function assertNodeMajor(version: string, expected: number): void;
+
 export function decideMigration(env: {
   VERCEL_ENV?: string;
   DIRECT_URL?: string;
