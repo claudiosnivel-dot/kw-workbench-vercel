@@ -11,3 +11,8 @@ pnpm-debug.log*
 .vercel
 .DS_Store
 coverage
+tsconfig.tsbuildinfo
+playwright-report
+test-results
+.trueline/*
+!.trueline/hygiene-baseline.json

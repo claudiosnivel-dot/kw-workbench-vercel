@@ -1,0 +1,17 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { LogoutButton } from "@/components/logout-button";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+
+describe("smoke component", () => {
+  // covers: AC-101-3
+  it("renderizza LogoutButton con un solo pulsante Esci", () => {
+    render(<LogoutButton />);
+
+    expect(screen.getAllByRole("button", { name: "Esci" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Esci" })).toBeInTheDocument();
+  });
+});

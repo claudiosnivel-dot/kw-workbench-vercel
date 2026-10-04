@@ -9,7 +9,7 @@ import {
   isSupportedCountryCode,
   isSupportedLanguageCode,
 } from "@/lib/constants/locale-options";
-import { type OnboardingProjectSnapshot } from "@/lib/onboarding/progress";
+import { type OnboardingProjectSnapshot } from "@/lib/onboarding/types";
 
 type ProjectTargetingFormProps = {
   project: OnboardingProjectSnapshot;

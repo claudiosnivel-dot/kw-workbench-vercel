@@ -133,7 +133,7 @@ export function GoogleAdsIntegrationCard({
       <div>
         <h2 className="text-lg font-semibold">Google Keyword Planner</h2>
         <p className="text-sm text-slate-600">
-          Configura qui le credenziali OAuth/API globali. Tutti i progetti dell'app useranno questa integrazione condivisa.
+          Configura qui le credenziali OAuth/API globali. Tutti i progetti dell&apos;app useranno questa integrazione condivisa.
         </p>
       </div>
 

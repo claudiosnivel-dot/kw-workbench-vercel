@@ -1,0 +1,38 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "next": true,
+  "playwright": {
+    "config": [],
+    "entry": [
+      "tests/e2e/**/*.spec.ts",
+      "tests/e2e/global-setup.ts"
+    ]
+  },
+  "entry": [
+    "app/**/{page,layout,route}.{ts,tsx}",
+    "middleware.ts",
+    "prisma/seed.ts",
+    "scripts/**/*.{mjs,ts}",
+    "next.config.ts",
+    "tailwind.config.ts",
+    "postcss.config.js",
+    "vitest.config.ts",
+    "playwright.config.ts"
+  ],
+  "project": [
+    "app/**/*.{ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "lib/**/*.{ts,tsx}",
+    "prisma/**/*.ts",
+    "scripts/**/*.{mjs,ts}",
+    "tests/**/*.{ts,tsx}"
+  ],
+  "ignore": [
+    "tests/fixtures/tooling/**"
+  ],
+  "ignoreDependencies": [
+    "eslint-config-next",
+    "jscpd"
+  ],
+  "ignoreExportsUsedInFile": true
+}
