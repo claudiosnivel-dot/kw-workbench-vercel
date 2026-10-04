@@ -153,7 +153,8 @@ describe("caratterizzazione: middleware e sessione", () => {
     const api = await middleware(middlewareRequest("/api/projects"));
     expect(api.status).toBe(401);
     // impacted-by: T-502 (aggiornata da T-502: il 401 del proxy porta code AUTH_REQUIRED e il messaggio italiano)
-    expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED" });
+    // impacted-by: T-602 (il 401 del proxy porta anche il requestId assegnato alla richiesta)
+    expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED", requestId: expect.any(String) });
 
     const anonymous = await callRoute(session, { url: "/api/auth/session" });
     expect(anonymous.status).toBe(401);

@@ -57,6 +57,7 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `SENTRY_AUTH_TOKEN` | facolt. (solo build: caricamento delle source map; senza token il caricamento si salta e la build prosegue; mai con prefisso `NEXT_PUBLIC_`) | facolt. | no | sì | Vercel (Sensitive) / CI |
 | `SENTRY_ORG` | facolt. (slug dell'organizzazione Sentry, solo build) | facolt. | no | no | Vercel |
 | `SENTRY_PROJECT` | facolt. (slug del progetto Sentry, solo build) | facolt. | no | no | Vercel |
+| `LOG_LEVEL` | facolt. (`debug`, `info`, `warn` o `error`; default `info`) | facolt. | facolt. | no | Vercel / locale |
 
 ## Production
 

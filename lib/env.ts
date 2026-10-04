@@ -21,6 +21,11 @@ export const INT_ENV = {
 
 type IntEnvKey = keyof typeof INT_ENV;
 
+/** Livelli del logger (T-602), dal più al meno verboso; LOG_LEVEL fissa il minimo (default info). */
+export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
+export type LogLevel = (typeof LOG_LEVELS)[number];
+const DEFAULT_LOG_LEVEL: LogLevel = "info";
+
 const AUTH_DISABLING_VALUES = new Set(["0", "false", "no", "off"]);
 const SECRET_KEYS = ["APP_SESSION_SECRET", "APP_ENCRYPTION_KEY"] as const;
 const MIN_SECRET_LENGTH = 32;
@@ -81,6 +86,7 @@ const envSchema = z.object({
   SENTRY_AUTH_TOKEN: optional,
   SENTRY_ORG: optional,
   SENTRY_PROJECT: optional,
+  LOG_LEVEL: optional,
 });
 
 type RawEnv = z.infer<typeof envSchema>;
@@ -142,6 +148,16 @@ export function envInt(name: string, def: number, min: number, max: number, sour
   return Math.min(max, Math.max(min, Number(raw)));
 }
 
+function isLogLevel(value: string): value is LogLevel {
+  return (LOG_LEVELS as readonly string[]).includes(value);
+}
+
+/** Livello minimo del logger: assente o vuoto -> info. Un valore non ammesso è già un errore di parseEnv. */
+export function getLogLevel(source: EnvSource = process.env): LogLevel {
+  const raw = present(source.LOG_LEVEL)?.trim().toLowerCase();
+  return raw !== undefined && isLogLevel(raw) ? raw : DEFAULT_LOG_LEVEL;
+}
+
 export function getIntEnv(name: IntEnvKey, source: EnvSource = process.env): number {
   const { def, min, max } = INT_ENV[name];
   return envInt(name, def, min, max, source);
@@ -172,6 +188,11 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
     if (dsn !== undefined && !isSentryDsn(dsn)) {
       ctx.addIssue({ code: "custom", path: [name], message: "deve essere un DSN di Sentry (https://<chiave>@<host>/<progetto>)" });
     }
+  }
+
+  const logLevel = present(raw.LOG_LEVEL)?.trim().toLowerCase();
+  if (logLevel !== undefined && !isLogLevel(logLevel)) {
+    ctx.addIssue({ code: "custom", path: ["LOG_LEVEL"], message: `deve essere uno tra ${LOG_LEVELS.join(", ")}` });
   }
 
   for (const name of Object.keys(INT_ENV) as IntEnvKey[]) {

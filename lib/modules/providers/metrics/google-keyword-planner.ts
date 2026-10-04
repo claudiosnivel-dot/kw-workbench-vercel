@@ -3,6 +3,7 @@ import { MetricsContext, KeywordMetric, MetricsProviderClient } from "@/lib/modu
 import { buildMissingMetrics } from "@/lib/modules/providers/metrics/types";
 import { getDecryptedGoogleAdsRefreshToken, getGoogleAdsCredentialRecord } from "@/lib/integrations/google-ads";
 import { getGoogleAdsApiConfig } from "@/lib/integrations/google-ads-config";
+import { logger } from "@/lib/observability/logger";
 
 type ImportedMetric = {
   keyword: string;
@@ -156,7 +157,7 @@ export class GoogleKeywordPlannerMetricsProvider implements MetricsProviderClien
 
       return resultMap;
     } catch (error) {
-      console.warn("GoogleKeywordPlannerMetricsProvider error", {
+      logger.warn("keyword_planner_error", {
         error: error instanceof Error ? error.message : String(error),
       });
       return buildMissingMetrics(keywords, this.id, "failed");
@@ -350,7 +351,7 @@ export class GoogleKeywordPlannerMetricsProvider implements MetricsProviderClien
       }
       return map;
     } catch (error) {
-      console.warn("Failed to load GOOGLE_ADS_METRICS_FILE", {
+      logger.warn("metrics_file_load_failed", {
         filePath,
         error: error instanceof Error ? error.message : String(error),
       });
