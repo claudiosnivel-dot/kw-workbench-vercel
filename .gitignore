@@ -17,3 +17,6 @@ playwright-report
 test-results
 .trueline/*
 !.trueline/hygiene-baseline.json
+# Backup logici del DB (T-604): contengono hash di password e token cifrati, mai nel repo
+backups/
+*.dump
