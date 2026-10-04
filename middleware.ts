@@ -11,6 +11,9 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/session",
 ]);
 
+// File di public serviti senza login: un solo segmento (es. /robots.txt) con estensione ammessa.
+const PUBLIC_ROOT_FILE = /^\/[^/]+\.(?:txt|xml|ico|png|jpg|jpeg|svg|webp|webmanifest)$/;
+
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) {
     return true;
@@ -20,7 +23,11 @@ function isPublicPath(pathname: string): boolean {
     return true;
   }
 
-  return false;
+  if (pathname.startsWith("/.well-known/")) {
+    return true;
+  }
+
+  return PUBLIC_ROOT_FILE.test(pathname);
 }
 
 export async function middleware(request: NextRequest) {
@@ -45,7 +52,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("next", pathname);
+  loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
   return NextResponse.redirect(loginUrl);
 }
 

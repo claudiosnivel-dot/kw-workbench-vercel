@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { ensureExtractionCompleted } from "@/lib/client/run-extraction";
 
 type RunExtractionButtonProps = {
   projectId?: string;
@@ -45,10 +45,7 @@ export function RunExtractionButton({
       }
 
       const response = await fetch(endpoint, requestInit);
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Estrazione non riuscita"));
-      }
+      await ensureExtractionCompleted(response);
 
       router.refresh();
     } catch (runError) {

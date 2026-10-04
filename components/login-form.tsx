@@ -2,15 +2,11 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
-  const safeNextPath = useMemo(() => {
-    if (nextPath && nextPath.startsWith("/")) {
-      return nextPath;
-    }
-    return "/";
-  }, [nextPath]);
+  const redirectPath = useMemo(() => safeNextPath(nextPath), [nextPath]);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -35,7 +31,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         throw new Error(buildApiErrorMessage(response, payload, "Accesso non riuscito"));
       }
 
-      window.location.assign(safeNextPath);
+      window.location.assign(redirectPath);
       return;
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");

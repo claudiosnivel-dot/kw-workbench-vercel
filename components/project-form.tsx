@@ -289,6 +289,7 @@ export function ProjectForm({
             languageOptions={LANGUAGE_OPTIONS}
             countryOptions={countryOptions}
             canEditAutocompleteProvider={canEditAutocompleteProvider}
+            keepsPlannerProvider={initialValues?.metrics_provider === "GOOGLE_KEYWORD_PLANNER"}
           />
 
           <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-background)] p-3">
@@ -315,6 +316,7 @@ export function ProjectForm({
             languageOptions={LANGUAGE_OPTIONS}
             countryOptions={countryOptions}
             canEditAutocompleteProvider={canEditAutocompleteProvider}
+            keepsPlannerProvider={initialValues?.metrics_provider === "GOOGLE_KEYWORD_PLANNER"}
           />
         </section>
       )}
@@ -358,6 +360,8 @@ type AdvancedProjectFieldsProps = {
   languageOptions: ReadonlyArray<{ code: string; label: string }>;
   countryOptions: ReadonlyArray<{ code: string; label: string }>;
   canEditAutocompleteProvider: boolean;
+  /** Il progetto ha già GOOGLE_KEYWORD_PLANNER: l'opzione resta visibile come non disponibile (T-304). */
+  keepsPlannerProvider: boolean;
 };
 
 function AdvancedProjectFields({
@@ -370,6 +374,7 @@ function AdvancedProjectFields({
   languageOptions,
   countryOptions,
   canEditAutocompleteProvider,
+  keepsPlannerProvider,
 }: AdvancedProjectFieldsProps) {
   return (
     <>
@@ -443,7 +448,10 @@ function AdvancedProjectFields({
           >
             <option value="NONE">Nessuna metrica</option>
             <option value="MOCK">Mock</option>
-            <option value="GOOGLE_KEYWORD_PLANNER">Google Keyword Planner</option>
+            {/* Non più selezionabile (T-304): resta solo per il progetto che lo ha già. */}
+            {keepsPlannerProvider && (
+              <option value="GOOGLE_KEYWORD_PLANNER">Google Keyword Planner - Non disponibile</option>
+            )}
           </select>
         </div>
 

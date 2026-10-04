@@ -323,7 +323,10 @@ export function SubprojectForm({
                 <option value="">Usa default progetto</option>
                 <option value="NONE">NoMetricsProvider</option>
                 <option value="MOCK">MockMetricsProvider</option>
-                <option value="GOOGLE_KEYWORD_PLANNER">GoogleKeywordPlannerMetricsProvider</option>
+                {/* Non più selezionabile (T-304): resta solo per la sezione che lo ha già. */}
+                {initialValues?.metrics_provider_override === "GOOGLE_KEYWORD_PLANNER" && (
+                  <option value="GOOGLE_KEYWORD_PLANNER">Google Keyword Planner - Non disponibile</option>
+                )}
               </select>
             </div>
 

@@ -17,6 +17,11 @@ import { createUserWithSession } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";
 
+// Da T-302 la pagina di login legge l'utente dai cookie: qui nessun cookie di sessione.
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ get: () => undefined }),
+}));
+
 const BOOTSTRAP_USERNAME = "char-bootstrap";
 const KNOWN_PASSWORD = "char-password-not-real";
 
@@ -158,18 +163,20 @@ describe("caratterizzazione: middleware e sessione", () => {
 describe("caratterizzazione: difetti noti dell'audit 2026-10-02", () => {
   // covers: AC-104-4
   it("cookie malformato, query persa nel redirect e next non validato", async () => {
-    // impacted-by: T-301
-    await expect(middleware(middlewareRequest("/projects", "kwb_session=abc.!!!"))).rejects.toThrow();
+    // impacted-by: T-301 (aggiornata da T-301: il cookie malformato vale come sessione assente)
+    const malformed = await middleware(middlewareRequest("/projects", "kwb_session=abc.!!!"));
+    expect(malformed.status).toBe(307);
+    expect(new URL(malformed.headers.get("location") ?? "").pathname).toBe("/login");
 
     const redirect = await middleware(middlewareRequest("/projects/x/results?view=all"));
     const location = new URL(redirect.headers.get("location") ?? "");
-    // impacted-by: T-302
-    expect(location.searchParams.get("next")).toBe("/projects/x/results");
+    // impacted-by: T-302 (aggiornata da T-302: next conserva anche la query)
+    expect(location.searchParams.get("next")).toBe("/projects/x/results?view=all");
 
     const element = await LoginPage({ searchParams: Promise.resolve({ next: "//evil.com" }) });
     const form = findElement(element, LoginForm);
     expect(form).not.toBeNull();
-    // impacted-by: T-303
-    expect(form?.props.nextPath).toBe("//evil.com");
+    // impacted-by: T-303 (aggiornata da T-303: safeNextPath riporta //evil.com a /)
+    expect(form?.props.nextPath).toBe("/");
   });
 });

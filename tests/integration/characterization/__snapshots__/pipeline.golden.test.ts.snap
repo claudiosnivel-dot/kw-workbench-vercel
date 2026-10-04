@@ -3,6 +3,8 @@
 exports[`golden master della pipeline di estrazione > il riepilogo restituito coincide con il DB e con lo snapshot 1`] = `
 {
   "dedupedCandidates": 927,
+  "failedQueries": 0,
+  "partial": false,
   "queries": 135,
   "rawSuggestions": 948,
   "storedCandidates": 927,

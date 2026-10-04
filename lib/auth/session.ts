@@ -58,12 +58,13 @@ export async function verifySessionToken(token: string | undefined | null): Prom
     return null;
   }
 
-  const valid = await verifyPayload(payloadPart, signaturePart, getSessionSecret());
-  if (!valid) {
-    return null;
-  }
-
   try {
+    // Ogni errore di decodifica o verifica vale come sessione assente, mai come token valido.
+    const valid = await verifyPayload(payloadPart, signaturePart, getSessionSecret());
+    if (!valid) {
+      return null;
+    }
+
     const payload = decodeJson<SessionPayload>(payloadPart);
     const nowSeconds = Math.floor(Date.now() / 1000);
 

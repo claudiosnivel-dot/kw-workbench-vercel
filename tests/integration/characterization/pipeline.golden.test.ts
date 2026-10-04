@@ -117,11 +117,14 @@ describe("golden master della pipeline di estrazione", () => {
 
     expect(summary.queries).toBe(135);
     expect(summary.storedCandidates).toBe(await prisma.keywordCandidate.count({ where: { subproject_id: subprojectId } }));
+    // Aggiornata da T-306: il riepilogo dichiara anche partial e failedQueries.
     expect({
       queries: summary.queries,
       rawSuggestions: summary.rawSuggestions,
       dedupedCandidates: summary.dedupedCandidates,
       storedCandidates: summary.storedCandidates,
+      partial: summary.partial,
+      failedQueries: summary.failedQueries,
     }).toMatchSnapshot();
   });
 

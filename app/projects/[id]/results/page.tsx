@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
+import { PlannerDisabledNotice } from "@/components/planner-disabled-notice";
 import { ResultsTable } from "@/components/results-table";
 import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
@@ -94,6 +95,7 @@ export default async function ResultsPage({
           select: {
             id: true,
             name: true,
+            metrics_provider_override: true,
           },
         },
       },
@@ -119,6 +121,11 @@ export default async function ResultsPage({
   if (requestedSubprojectId && !project.subprojects.some((item) => item.id === requestedSubprojectId)) {
     notFound();
   }
+
+  // Avviso di T-304 se una delle sezioni mostrate usa il provider Keyword Planner spento.
+  const plannerDisabled = (selectedSubproject ? [selectedSubproject] : project.subprojects).some(
+    (section) => (section.metrics_provider_override ?? project.metrics_provider) === "GOOGLE_KEYWORD_PLANNER"
+  );
 
   const filters = parseResultsFilters(resolvedSearchParams);
   const where = buildResultsWhere(project.id, filters, selectedSubproject?.id ?? null);
@@ -217,6 +224,8 @@ export default async function ResultsPage({
             Tutto il progetto
           </Link>
         </div>
+
+        {plannerDisabled && <PlannerDisabledNotice />}
 
         <p className="text-sm text-slate-600">
           Mostrate {filteredCount} keyword su {scopeTotalCount}

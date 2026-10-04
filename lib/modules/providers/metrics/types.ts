@@ -17,6 +17,8 @@ export type MetricsContext = {
 
 export interface MetricsProviderClient {
   readonly id: MetricsProvider;
+  /** Presente quando il provider è spento: l'estrazione lo riporta come metricsNotice. */
+  readonly disabledReason?: "PROVIDER_DISABLED";
   enrichKeywords(keywords: string[], context: MetricsContext): Promise<Map<string, KeywordMetric>>;
 }
 

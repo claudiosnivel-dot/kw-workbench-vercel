@@ -53,6 +53,21 @@ export type EffectiveProjectSettings = {
   scoring_profile: string;
 };
 
+/** GOOGLE_KEYWORD_PLANNER non si può scegliere come nuovo valore (T-304, D-09): le rotte rispondono 400. */
+export class MetricsProviderUnavailableError extends Error {
+  readonly code = "METRICS_PROVIDER_UNAVAILABLE";
+
+  constructor() {
+    super("Volumi Google Ads non disponibili: il provider Google Keyword Planner non si può più selezionare");
+    this.name = "MetricsProviderUnavailableError";
+  }
+
+  /** Corpo della risposta 400 delle rotte. */
+  get body() {
+    return { error: this.message, code: this.code };
+  }
+}
+
 export function parseProjectPayload(payload: Record<string, unknown>): ProjectSettingsInput {
   const seedInput = String(payload.seeds ?? "");
   const seeds = Array.from(new Set(splitLines(seedInput))).slice(0, 500);
@@ -64,13 +79,17 @@ export function parseProjectPayload(payload: Record<string, unknown>): ProjectSe
   };
 }
 
-export function parseProjectDefaultsPayload(payload: Record<string, unknown>): ProjectDefaultsInput {
+/** currentMetricsProvider: valore salvato del progetto in modifica, assente in creazione. */
+export function parseProjectDefaultsPayload(
+  payload: Record<string, unknown>,
+  currentMetricsProvider?: MetricsProvider
+): ProjectDefaultsInput {
   return {
     name: String(payload.name ?? "Progetto senza nome").trim() || "Progetto senza nome",
     language_code: normalizeLanguageCode(payload.language_code, "en"),
     country_code: normalizeCountryCode(payload.country_code, "US"),
     autocomplete_provider: parseAutocompleteProvider(payload.autocomplete_provider),
-    metrics_provider: parseMetricsProvider(payload.metrics_provider),
+    metrics_provider: parseMetricsProvider(payload.metrics_provider, currentMetricsProvider),
     min_volume: parseNonNegativeInt(payload.min_volume, 0),
     exclude_brands: parseBoolean(payload.exclude_brands, true),
     expand_alpha: parseBoolean(payload.expand_alpha, true),
@@ -156,12 +175,16 @@ function parseAutocompleteProvider(raw: unknown): AutocompleteProvider {
   return raw === "MOCK" ? "MOCK" : "GOOGLE_DIRECT";
 }
 
-function parseMetricsProvider(raw: unknown): MetricsProvider {
+function parseMetricsProvider(raw: unknown, current?: MetricsProvider): MetricsProvider {
   if (raw === "MOCK") {
     return "MOCK";
   }
 
   if (raw === "GOOGLE_KEYWORD_PLANNER") {
+    // Resta solo su un progetto che lo ha già: in creazione o come nuovo valore è rifiutato.
+    if (current !== "GOOGLE_KEYWORD_PLANNER") {
+      throw new MetricsProviderUnavailableError();
+    }
     return "GOOGLE_KEYWORD_PLANNER";
   }
 
