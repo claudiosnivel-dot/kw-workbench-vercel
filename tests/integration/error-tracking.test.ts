@@ -112,10 +112,13 @@ describe("onRequestError con DSN", () => {
     const Sentry = await import("@sentry/nextjs");
     await Sentry.flush(2000);
 
-    expect(envelopes).toHaveLength(1);
-    const [, items] = envelopes[0];
+    // Con una release nota (in CI da GITHUB_SHA, su Vercel dal commit) l'SDK invia anche un envelope
+    // "session" per lo stato della sessione di processo: si conta l'envelope con l'evento.
+    const withEvent = envelopes.filter(([, items]) => items.some(([header]) => header.type === "event"));
+    expect(withEvent).toHaveLength(1);
+    const [, items] = withEvent[0];
     expect(items.map(([header]) => header.type)).toEqual(["event"]);
-    const content = JSON.stringify(envelopes[0]);
+    const content = JSON.stringify(envelopes);
     expect(content).not.toContain(SESSION_TOKEN);
     expect(content).not.toContain(BEARER_SECRET);
   });
