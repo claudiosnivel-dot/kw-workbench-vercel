@@ -167,6 +167,15 @@ export function validatePassword(input: string): string {
   return password;
 }
 
+/** Hash della nuova password validata, o undefined se la password non va cambiata. */
+async function hashNewPassword(password: string | undefined): Promise<string | undefined> {
+  if (typeof password !== "string" || password.length === 0) {
+    return undefined;
+  }
+
+  return hashPassword(validatePassword(password));
+}
+
 export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
   const firstUser = await prisma.user.findFirst({
     orderBy: { created_at: "asc" },
@@ -367,8 +376,9 @@ export async function updateAuthCredentials(input: {
     data.username = validateUsername(input.username);
   }
 
-  if (typeof input.password === "string" && input.password.length > 0) {
-    data.password_hash = await hashPassword(validatePassword(input.password));
+  const passwordHash = await hashNewPassword(input.password);
+  if (passwordHash) {
+    data.password_hash = passwordHash;
     // Il cambio password revoca i token già emessi (T-501).
     data.session_version = { increment: 1 };
   }
@@ -411,8 +421,9 @@ export async function updateUserAdminFields(input: {
     data.status = input.status;
   }
 
-  if (typeof input.password === "string" && input.password.length > 0) {
-    data.password_hash = await hashPassword(validatePassword(input.password));
+  const passwordHash = await hashNewPassword(input.password);
+  if (passwordHash) {
+    data.password_hash = passwordHash;
   }
 
   if (typeof input.isRootAdmin === "boolean") {

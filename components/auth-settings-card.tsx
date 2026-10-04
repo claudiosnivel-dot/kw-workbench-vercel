@@ -20,23 +20,6 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [signingOutEverywhere, setSigningOutEverywhere] = useState(false);
-  const router = useRouter();
-
-  // Revoca tutti i token dell'utente (session_version + 1), compreso quello di questo dispositivo.
-  const logoutEverywhere = async () => {
-    setSigningOutEverywhere(true);
-    setError(null);
-    const response = await fetch("/api/auth/logout-all", { method: "POST" });
-    if (!response.ok) {
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      setError(buildApiErrorMessage(response, payload, "Impossibile chiudere le sessioni"));
-      setSigningOutEverywhere(false);
-      return;
-    }
-    router.push("/login");
-    router.refresh();
-  };
 
   const save = async () => {
     setSaving(true);
@@ -86,6 +69,7 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
         <p>
           <span className="font-medium">Username attivo:</span> {username}
         </p>
+        <LogoutEverywhereButton />
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -151,18 +135,37 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
 
       {error && <p className="text-sm text-red-700">{error}</p>}
       {success && <p className="text-sm text-green-700">{success}</p>}
-
-      <div className="border-t border-slate-200 pt-4">
-        <p className="text-sm text-slate-600">Chiude la sessione su ogni dispositivo in cui hai effettuato l&apos;accesso, compreso questo.</p>
-        <button
-          className="btn btn-secondary mt-2 w-full sm:w-auto"
-          type="button"
-          onClick={logoutEverywhere}
-          disabled={signingOutEverywhere}
-        >
-          {signingOutEverywhere ? "Uscita in corso..." : "Esci da tutti i dispositivi"}
-        </button>
-      </div>
     </section>
+  );
+}
+
+/** «Esci da tutti i dispositivi»: revoca ogni token dell'utente (session_version + 1), compreso questo. */
+function LogoutEverywhereButton() {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const logoutEverywhere = async () => {
+    setPending(true);
+    setFailure(null);
+    const response = await fetch("/api/auth/logout-all", { method: "POST" });
+    if (!response.ok) {
+      const payload = await readJsonSafe<ApiErrorPayload>(response);
+      setFailure(buildApiErrorMessage(response, payload, "Impossibile chiudere le sessioni"));
+      setPending(false);
+      return;
+    }
+    router.push("/login");
+    router.refresh();
+  };
+
+  return (
+    <div className="mt-3 border-t border-slate-200 pt-3">
+      <p className="text-slate-600">Chiude la sessione su ogni dispositivo in cui hai effettuato l&apos;accesso, compreso questo.</p>
+      <button className="btn btn-secondary mt-2" type="button" onClick={logoutEverywhere} disabled={pending}>
+        {pending ? "Uscita in corso..." : "Esci da tutti i dispositivi"}
+      </button>
+      {failure && <p className="mt-2 text-red-700">{failure}</p>}
+    </div>
   );
 }
