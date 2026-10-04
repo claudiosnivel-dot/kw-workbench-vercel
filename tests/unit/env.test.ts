@@ -1,0 +1,87 @@
+// Gate di T-201: configurazione validata e fail-closed (AC-201-1, AC-201-2, AC-201-3).
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { envInt, parseEnv } from "@/lib/env";
+
+// Segreto fittizio conforme ai vincoli di produzione (almeno 32 caratteri), mai un valore reale.
+const VALID_SECRET = "x".repeat(40);
+const PRODUCTION = {
+  NODE_ENV: "production",
+  APP_SESSION_SECRET: VALID_SECRET,
+  APP_ENCRYPTION_KEY: VALID_SECRET,
+};
+
+function errorMessageOf(run: () => unknown): string {
+  try {
+    run();
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+  throw new Error("nessun errore lanciato");
+}
+
+function listFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    return entry.isDirectory() ? listFiles(path) : [path];
+  });
+}
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+describe("APP_AUTH_ENABLED fail-closed", () => {
+  // covers: AC-201-1
+  it("un refuso lascia l'auth attiva e in produzione disattivarla è un errore che nomina la variabile", () => {
+    expect(parseEnv({ NODE_ENV: "development", APP_AUTH_ENABLED: "ture" }).authEnabled).toBe(true);
+    expect(() => parseEnv({ ...PRODUCTION, APP_AUTH_ENABLED: "false" })).toThrow(/APP_AUTH_ENABLED/);
+  });
+});
+
+describe("segreti obbligatori in produzione", () => {
+  const cases = [
+    { name: "APP_SESSION_SECRET", placeholder: "change-this-session-secret" },
+    { name: "APP_ENCRYPTION_KEY", placeholder: "change-this-encryption-key" },
+  ] as const;
+
+  for (const { name, placeholder } of cases) {
+    // covers: AC-201-2
+    it(`${name} assente, segnaposto o corta: l'errore nomina la variabile e non il valore`, () => {
+      for (const value of [undefined, placeholder, "a".repeat(31)]) {
+        const message = errorMessageOf(() => parseEnv({ ...PRODUCTION, [name]: value }));
+
+        expect(message).toContain(name);
+        if (value !== undefined) {
+          expect(message).not.toContain(value);
+        }
+      }
+    });
+  }
+});
+
+describe("envInt", () => {
+  // covers: AC-201-3
+  it("default per il vuoto, errore per il non intero, valore riportato nell'intervallo", () => {
+    vi.stubEnv("AUTOCOMPLETE_CONCURRENCY", "");
+    expect(envInt("AUTOCOMPLETE_CONCURRENCY", 6, 1, 20)).toBe(6);
+
+    for (const invalid of ["abc", "6x", "1.5"]) {
+      vi.stubEnv("AUTOCOMPLETE_CONCURRENCY", invalid);
+      expect(() => envInt("AUTOCOMPLETE_CONCURRENCY", 6, 1, 20)).toThrow(/AUTOCOMPLETE_CONCURRENCY/);
+    }
+
+    vi.stubEnv("AUTOCOMPLETE_CONCURRENCY", "999");
+    expect(envInt("AUTOCOMPLETE_CONCURRENCY", 6, 1, 20)).toBe(20);
+  });
+
+  // covers: AC-201-3
+  it("nessuna lettura numerica diretta di process.env in lib/", () => {
+    const occurrences = listFiles("lib").flatMap((file) =>
+      readFileSync(file, "utf8").includes("Number(process.env.") ? [file] : []
+    );
+
+    expect(occurrences).toEqual([]);
+  });
+});

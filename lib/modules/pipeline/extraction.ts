@@ -1,4 +1,5 @@
 import { MetricsProvider, Prisma } from "@prisma/client";
+import { getIntEnv } from "@/lib/env";
 import { evaluateBrandStatus } from "@/lib/modules/brand-filter";
 import { classifyKeyword } from "@/lib/modules/classification";
 import { dedupeCandidates, RawKeywordCandidate } from "@/lib/modules/dedupe";
@@ -93,7 +94,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     patterns: patternRows.map((row) => row.pattern),
   });
 
-  const queryLimit = Math.max(50, Number(process.env.MAX_EXPANSION_QUERIES ?? 250));
+  const queryLimit = getIntEnv("MAX_EXPANSION_QUERIES");
   const selectedQueries = queries.slice(0, queryLimit);
 
   const autocomplete = createAutocompleteProvider(effective.autocomplete_provider);
@@ -103,10 +104,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     sourceQuery: seed,
   }));
 
-  const autocompleteConcurrency = Math.max(
-    1,
-    Number(process.env.AUTOCOMPLETE_CONCURRENCY ?? 6)
-  );
+  const autocompleteConcurrency = getIntEnv("AUTOCOMPLETE_CONCURRENCY");
 
   const suggestionsByQuery = await mapWithConcurrency(
     selectedQueries,

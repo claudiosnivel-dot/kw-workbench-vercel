@@ -1,3 +1,4 @@
+import { getIntEnv } from "@/lib/env";
 import {
   AutocompleteProviderClient,
   AutocompleteSuggestion,
@@ -48,7 +49,7 @@ function parseAutocompletePayload(rawText: string): unknown {
 }
 
 async function withRateLimit<T>(fn: () => Promise<T>): Promise<T> {
-  const intervalMs = Math.max(50, Number(process.env.AUTOCOMPLETE_RATE_LIMIT_MS ?? 180));
+  const intervalMs = getIntEnv("AUTOCOMPLETE_RATE_LIMIT_MS");
 
   rateLimiter = rateLimiter.then(async () => {
     const now = Date.now();
@@ -72,7 +73,7 @@ export class GoogleDirectAutocompleteProvider implements AutocompleteProviderCli
       return [];
     }
 
-    const cacheTtlMs = Math.max(30_000, Number(process.env.AUTOCOMPLETE_CACHE_TTL_MS ?? 300_000));
+    const cacheTtlMs = getIntEnv("AUTOCOMPLETE_CACHE_TTL_MS");
     const cacheKey = `${input.languageCode}|${input.countryCode}|${query.toLowerCase()}`;
     const cached = cache.get(cacheKey);
 
@@ -80,8 +81,8 @@ export class GoogleDirectAutocompleteProvider implements AutocompleteProviderCli
       return cached.data;
     }
 
-    const maxRetries = Math.max(0, Number(process.env.AUTOCOMPLETE_MAX_RETRIES ?? 2));
-    const timeoutMs = Math.max(1000, Number(process.env.AUTOCOMPLETE_TIMEOUT_MS ?? 4500));
+    const maxRetries = getIntEnv("AUTOCOMPLETE_MAX_RETRIES");
+    const timeoutMs = getIntEnv("AUTOCOMPLETE_TIMEOUT_MS");
 
     let attempt = 0;
     let lastError: unknown;

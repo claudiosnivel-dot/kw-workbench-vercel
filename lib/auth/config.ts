@@ -1,16 +1,37 @@
+import { getEnv, getIntEnv } from "@/lib/env";
+
 export const SESSION_COOKIE_NAME = "kwb_session";
 
+const DEVELOPMENT_BOOTSTRAP_PASSWORD = "changeme";
+const MIN_BOOTSTRAP_PASSWORD_LENGTH = 12;
+
 export function isAuthEnabled(): boolean {
-  const raw = (process.env.APP_AUTH_ENABLED ?? "true").toLowerCase();
-  return ["1", "true", "yes", "on"].includes(raw);
+  return getEnv().authEnabled;
 }
 
 export function getAuthUsername(): string {
-  return process.env.APP_AUTH_USERNAME ?? "admin";
+  return getEnv().authUsername;
 }
 
+/** Password del primo utente: in produzione niente default, niente changeme e almeno 12 caratteri. */
 export function getAuthPassword(): string {
-  return process.env.APP_AUTH_PASSWORD ?? "changeme";
+  const { isProduction, authPassword } = getEnv();
+
+  if (!isProduction) {
+    return authPassword ?? DEVELOPMENT_BOOTSTRAP_PASSWORD;
+  }
+
+  if (
+    !authPassword ||
+    authPassword === DEVELOPMENT_BOOTSTRAP_PASSWORD ||
+    authPassword.length < MIN_BOOTSTRAP_PASSWORD_LENGTH
+  ) {
+    throw new Error(
+      `APP_AUTH_PASSWORD non valida per il bootstrap del primo utente in produzione: obbligatoria, diversa dal default e lunga almeno ${MIN_BOOTSTRAP_PASSWORD_LENGTH} caratteri`
+    );
+  }
+
+  return authPassword;
 }
 
 export function isPublicSignupEnabled(): boolean {
@@ -19,16 +40,15 @@ export function isPublicSignupEnabled(): boolean {
 }
 
 export function getSessionSecret(): string {
-  return process.env.APP_SESSION_SECRET ?? "change-this-session-secret";
+  return getEnv().sessionSecret;
 }
 
 export function getSessionMaxAgeSeconds(): number {
-  const raw = Number(process.env.APP_SESSION_MAX_AGE_SECONDS ?? 60 * 60 * 24 * 7);
-  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 60 * 60 * 24 * 7;
+  return getIntEnv("APP_SESSION_MAX_AGE_SECONDS");
 }
 
 export function getEncryptionKeyMaterial(): string {
-  return process.env.APP_ENCRYPTION_KEY ?? "change-this-encryption-key";
+  return getEnv().encryptionKey;
 }
 
 export function shouldUseSecureCookies(): boolean {
