@@ -28,8 +28,9 @@ ridiscute il design.
    16 billing (09, 15) · 17 abuse-quotas (05, 09, 12, 14, 16) ·
    18 marketing-legal (03, 09, 13, 14, 15, 16, 17)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
-   Se usa una decisione PROPOSTA del ledger non ancora confermata, chiedimela; se
-   usa una decisione APERTA (D-14, D-15), fermati.
+   Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
+   decisione APERTA (D-14, D-15), non costruirlo: costruisci gli altri task e
+   chiedimi la decisione nel riepilogo finale.
 
 3) RIPETI i task atomici del macrotask scelto. Per ciascuno enuncia, dal blueprint:
    • definition_of_done — gli artefatti osservabili che provano che il lavoro c'è;
@@ -55,6 +56,10 @@ REGOLE DI SESSIONE (decise dall'utente il 2026-10-04):
   • NESSUN UTILIZZO DI AGENTI: niente subagenti né workflow multi-agente;
     ricerche, letture e verifiche si fanno direttamente, anche quando una skill
     suggerirebbe di delegare.
+  • MODALITÀ SILENZIOSA (~/.claude/CLAUDE.md): nessun messaggio intermedio e
+    nessuna pausa per chiedere il via. Ci si ferma solo per un blocco vero (vedi
+    punto 2, fix o rimozioni human-gated, controllo rosso a budget esaurito), dopo
+    aver completato tutto ciò che non dipende dal blocco.
 
 INVARIANTI NON NEGOZIABILI — tienile in testa per OGNI task:
   • ORACLE-AS-JUDGE, MAI LLM-AS-JUDGE (L-COL-002): "verde" = esito di un oracolo
@@ -72,7 +77,8 @@ Posizioni utili: blueprint/stato → docs/blueprint/ / docs/blueprint/SESSION-ST
 baseline → .trueline/baseline.json, .trueline/hygiene-baseline.json; budget →
 MAX_RETRIES_PER_FINDING = 2, GLOBAL_WALL_CLOCK_MS = 242401.
 
-Dopo aver letto docs/blueprint/SESSION-STATE.md: dichiara in poche righe lo stato,
-il macrotask scelto coi suoi task/criteri/test, il branch preparato, ed eventuali
-blocchi. Poi attendi il mio via prima di costruire.
+Dopo aver letto docs/blueprint/SESSION-STATE.md costruisci il macrotask senza
+messaggi intermedi, esegui il CHECKPOINT al suo confine, poi esegui in autonomia
+docs/blueprint/prompts/session-end.md. L'unico output della sessione è il
+riepilogo finale di session-end.
 ```

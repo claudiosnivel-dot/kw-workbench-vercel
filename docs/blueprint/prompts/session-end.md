@@ -9,7 +9,9 @@
 ```
 Chiudiamo la sessione di lavoro su **Seo God Mode** (postgres-jsts). Niente nuovo
 lavoro: consolida, registra, lascia tutto riprendibile. Il "fatto" si dichiara per
-FATTI verificati, mai a sensazione (L-COL-006).
+FATTI verificati, mai a sensazione (L-COL-006). In modalità silenziosa
+(~/.claude/CLAUDE.md) questo prompt si esegue in autonomia al termine del
+macrotask, senza chiedere conferme.
 
 1) CHECKPOINT AL CONFINE DEL MACROTASK
    Conferma che il CHECKPOINT è girato al confine del macrotask e riassumine
@@ -51,6 +53,7 @@ FATTI verificati, mai a sensazione (L-COL-006).
    MAI "Seo God Mode è sicuro/pronto". Dichiara sempre la COPERTURA: cosa è stato
    verificato e cosa no.
 
-Produci: (a) il riepilogo dei punti 1, 3 e 5; (b) il DIFF preciso che applicherai
-a docs/blueprint/SESSION-STATE.md. Applicalo solo dopo la mia conferma.
+Applica l'aggiornamento a docs/blueprint/SESSION-STATE.md e committalo sul branch
+di lavoro in autonomia. Unico output: il riepilogo dei punti 1, 3 e 5, con i
+commit fatti e merge/push eseguiti o sospesi con il motivo.
 ```
