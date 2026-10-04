@@ -1,0 +1,3 @@
+# Fine riga LF nel repository e nei working tree (anche su Windows): i fingerprint di jscpd
+# del checkpoint Trueline dipendono dai fine riga dei file analizzati.
+* text=auto eol=lf

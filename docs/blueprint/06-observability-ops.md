@@ -7,7 +7,7 @@
 Dare al progetto gli strumenti minimi per accorgersi dei problemi e rimediare senza improvvisare.
 Gli errori di server e client arrivano a Sentry (D-13) senza dati personali; i log diventano righe JSON correlate da un request id che attraversa proxy, route e job; un endpoint pubblico di health permette il monitoraggio esterno dell'uptime.
 I backup logici del database sono scriptati e provati con un ripristino verificato sul container di test, e la documentazione riporta cosa offre ogni piano Supabase.
-Infine il rilascio passa da CI verde e Preview su staging (D-04) prima della produzione, con un Ignored Build Step che evita build inutili per i soli commit di documentazione.
+Infine il rilascio passa da PR con CI e checkpoint verdi prima della produzione, senza staging (D-04 emendata 2026-10-05), con la branch protection su master e un Ignored Build Step che evita build inutili per i soli commit di documentazione.
 
 ## Task atomici
 
@@ -124,7 +124,7 @@ Infine il rilascio passa da CI verde e Preview su staging (D-04) prima della pro
     - "app/api/health/route.ts: GET e HEAD pubblici, con il percorso esatto /api/health aggiunto ai percorsi pubblici di proxy.ts; esegue SELECT 1 tramite prisma con timeout di 2 s; risponde {status: 'ok', db: 'ok', version} con 200 oppure {status: 'degraded', db: 'error', version} con 503; header Cache-Control no-store."
     - "version = primi 7 caratteri di VERCEL_GIT_COMMIT_SHA (variabile di sistema Vercel disponibile a build e runtime), altrimenti il campo version di package.json."
     - "Nessun dettaglio dell'errore nel body (niente messaggio Prisma, host o stack); il fallimento è registrato lato server con il logger di T-602 se già presente."
-    - "docs/OPERATIONS.md, sezione «Monitoraggio uptime»: URL da monitorare (/api/health di produzione e di staging), intervallo consigliato, condizione di allarme (status diverso da 200 per 2 controlli consecutivi) e destinatario; il servizio esterno lo configura l'utente e la conferma è registrata in SESSION-STATE."
+    - "docs/OPERATIONS.md, sezione «Monitoraggio uptime»: URL da monitorare (/api/health di produzione; niente staging, D-04), intervallo consigliato, condizione di allarme (status diverso da 200 per 2 controlli consecutivi) e destinatario; il servizio esterno lo configura l'utente e la conferma è registrata in SESSION-STATE."
 
   acceptance_criteria:
     - id: AC-603-1
@@ -173,8 +173,8 @@ Infine il rilascio passa da CI verde e Preview su staging (D-04) prima della pro
     - "scripts/db-restore.mjs: esegue pg_restore (--clean --if-exists --no-owner) verso un database di destinazione indicato in modo esplicito; rifiuta con exit code 2 una destinazione il cui host coincide con PRODUCTION_DB_HOST (T-202, T-203) se manca il flag --confirm-production."
     - "Script npm db:backup e db:restore; backups/ e i file .dump in .gitignore."
     - "Versioni: lo script stampa la versione del client pg_dump e quella del server; pg_dump non esporta da un server di major più recente della propria, quindi una differenza produce un errore esplicito."
-    - "docs/OPERATIONS.md, sezione «Backup e ripristino», con i fatti verificati sulla documentazione Supabase il 2026-10-02: il piano Free non ha backup giornalieri automatici e va esportato con supabase db dump o pg_dump; Pro conserva 7 giorni di backup giornalieri, Team 14, Enterprise fino a 30; il Point-in-Time Recovery è un add-on per Pro, Team ed Enterprise e richiede almeno l'add-on di compute Small. La sezione indica anche frequenza del backup logico, conservazione fuori dal repo con accesso ristretto e una prova di ripristino periodica sullo staging di T-203."
-    - "Scelta del piano Supabase e della retention lasciata all'utente e registrata come decisione aperta nel ledger."
+    - "docs/OPERATIONS.md, sezione «Backup e ripristino», con i fatti verificati sulla documentazione Supabase il 2026-10-02: il piano Free non ha backup giornalieri automatici e va esportato con supabase db dump o pg_dump; Pro conserva 7 giorni di backup giornalieri, Team 14, Enterprise fino a 30; il Point-in-Time Recovery è un add-on per Pro, Team ed Enterprise e richiede almeno l'add-on di compute Small. La sezione indica anche frequenza del backup logico, conservazione fuori dal repo con accesso ristretto e una prova di ripristino periodica su un Postgres locale in Docker con gli stessi controlli di AC-604-1 e AC-604-2 (niente staging, D-04 emendata 2026-10-05)."
+    - "Piano Supabase Free deciso dall'utente (D-31): niente backup giornalieri automatici, quindi il backup logico periodico è la sola copia; frequenza e conservazione proposte in docs/OPERATIONS.md e da confermare con l'utente."
 
   acceptance_criteria:
     - id: AC-604-1
@@ -200,7 +200,7 @@ Infine il rilascio passa da CI verde e Preview su staging (D-04) prima della pro
 
   security_notes:
     - "OWASP A02:2025 Security Misconfiguration — CWE-530 (esposizione dei file di backup): il dump contiene hash di password e token OAuth cifrati; backups/ e i .dump sono in .gitignore, i file vanno conservati fuori dal repo con accesso ristretto e mai caricati come artifact della CI."
-    - "OWASP A08:2025 Software or Data Integrity Failures — CWE-353 (verifica d'integrità mancante): un backup è valido solo dopo un restore con conteggi e hash identici; la prova periodica sullo staging è parte della procedura."
+    - "OWASP A08:2025 Software or Data Integrity Failures — CWE-353 (verifica d'integrità mancante): un backup è valido solo dopo un restore con conteggi e hash identici; la prova periodica su un Postgres locale in Docker è parte della procedura."
     - "OWASP A06:2025 Insecure Design — CWE-693: il restore rifiuta l'host di produzione senza un flag esplicito; CWE-532: la password dell'URL non viene mai stampata."
 
   out_of_scope:
@@ -208,21 +208,21 @@ Infine il rilascio passa da CI verde e Preview su staging (D-04) prima della pro
     - "Acquisto di add-on Supabase come il PITR (decisione dell'utente)."
 
 - id: T-605
-  title: "Pipeline di rilascio: CI verde, staging, poi produzione"
+  title: "Pipeline di rilascio: PR, CI e checkpoint verdi, poi produzione"
   macrotask: "observability-ops"
   depends_on: [T-110, T-203]
 
   objective: >
     Interrompere l'accoppiamento per cui ogni push su master va in produzione senza
-    passaggi: rilascio documentato tramite PR con CI verde e Preview su staging,
-    protezione del branch consigliata e un Ignored Build Step che salta le build dei
-    commit che toccano solo documentazione.
+    passaggi: rilascio documentato tramite PR con CI e checkpoint verdi (niente
+    staging, D-04), protezione del branch attivata e un Ignored Build Step che salta le
+    build dei commit che toccano solo documentazione.
 
   definition_of_done:
     - "scripts/vercel-ignore-build.mjs: legge VERCEL_GIT_PREVIOUS_SHA e VERCEL_GIT_COMMIT_SHA (variabili di sistema Vercel; la prima è esposta solo quando un Ignored Build Step è configurato ed è vuota al primo deploy di un branch), ricava i file cambiati con git diff --name-only e decide con la funzione pura shouldSkipBuild(files): exit 0 (build annullata, stato CANCELED) solo se tutti i file stanno sotto docs/; exit 1 (build normale) in ogni altro caso, compresi SHA precedente vuoto o git diff in errore."
     - "vercel.json: ignoreCommand 'node scripts/vercel-ignore-build.mjs' (secondo la documentazione Vercel sovrascrive l'Ignored Build Step delle impostazioni del progetto: exit 1 prosegue, exit 0 annulla); buildCommand introdotto da T-202 invariato."
-    - "docs/RELEASE.md: flusso branch, PR, CI verde (job di T-110), Preview su DB di staging (T-203, D-04), verifica manuale, merge su master, produzione; checklist di rilascio (migrazioni presenti, nuove variabili in tutte le colonne di docs/ENVIRONMENTS.md, npm run env:check di T-203 senza l'avviso 'PREVIEW USA IL DB DI PRODUZIONE', controllo di /api/health dopo il deploy); procedura di rollback (verificare nella documentazione Vercel la funzione di rollback al deploy precedente) e nota sulle migrazioni non reversibili."
-    - "Protezione del branch master consigliata e documentata (PR obbligatoria, status check della CI obbligatori, niente force push): azione dell'utente su GitHub con conferma registrata in SESSION-STATE."
+    - "docs/RELEASE.md: flusso branch, checkpoint Trueline verde, PR, CI verde (job di T-110), merge su master, produzione; niente staging: le Preview leggono il DB di produzione senza applicare migrazioni né seed (T-202, D-04); checklist di rilascio (migrazioni presenti, nuove variabili in tutte le colonne di docs/ENVIRONMENTS.md, npm run env:check di T-203 con l'avviso 'PREVIEW USA IL DB DI PRODUZIONE' atteso, controllo di /api/health dopo il deploy); procedura di rollback (verificare nella documentazione Vercel la funzione di rollback al deploy precedente) e nota sulle migrazioni non reversibili."
+    - "Protezione del branch master attivata dall'agente via API GitHub (decisione dell'utente del 2026-10-05): PR obbligatoria, status check obbligatori checks, integration, e2e e build, niente force push né cancellazione del branch; configurazione documentata in docs/RELEASE.md e riletta con gh api dopo l'attivazione, esito in SESSION-STATE."
     - "Nota in docs/RELEASE.md: secondo la documentazione Vercel anche le build annullate dall'Ignored Build Step contano nelle quote di deploy."
 
   acceptance_criteria:
@@ -248,8 +248,8 @@ Infine il rilascio passa da CI verde e Preview su staging (D-04) prima della pro
       covers: [AC-605-1, AC-605-2, AC-605-3, AC-605-4]
 
   security_notes:
-    - "OWASP A08:2025 Software or Data Integrity Failures — CWE-284 (controllo d'accesso improprio sul ramo di produzione): oggi ogni push su master va in produzione senza CI; con branch protection e status check obbligatori in produzione arriva solo codice passato da CI e Preview su staging."
-    - "OWASP A02:2025 Security Misconfiguration — CWE-668: la Preview usa il DB di staging (D-04, T-203), così le migrazioni dei branch non toccano il DB di produzione."
+    - "OWASP A08:2025 Software or Data Integrity Failures — CWE-284 (controllo d'accesso improprio sul ramo di produzione): oggi ogni push su master va in produzione senza CI; con branch protection e status check obbligatori in produzione arriva solo codice passato da PR, CI e checkpoint."
+    - "OWASP A02:2025 Security Misconfiguration — CWE-668: senza staging la Preview legge il DB di produzione ma non applica migrazioni né seed (T-202, D-04); il rischio residuo è accettato con D-05."
     - "Fail-safe: qualunque errore dello script porta alla build normale (exit 1), mai a saltare in silenzio un deploy che contiene codice; lo script non legge segreti e non stampa variabili d'ambiente (CWE-532)."
 
   out_of_scope:
