@@ -1,0 +1,32 @@
+[
+  {
+    "ghsa": "GHSA-4r6h-8v6p-xvw6",
+    "package": "xlsx",
+    "reason": "Prototype pollution in xlsx 0.18.5, ultima versione su npm: il fix esiste solo fuori dal registry. Usato solo dall'export XLSX lato server.",
+    "closedBy": ["T-406"]
+  },
+  {
+    "ghsa": "GHSA-5pgg-2g8v-p4x9",
+    "package": "xlsx",
+    "reason": "ReDoS in xlsx 0.18.5, ultima versione su npm: il fix esiste solo fuori dal registry. Usato solo dall'export XLSX lato server.",
+    "closedBy": ["T-406"]
+  },
+  {
+    "ghsa": "GHSA-6g55-p6wh-862q",
+    "package": "postcss",
+    "reason": "postcss fino a 8.5.11: next 15.5.27 fissa in modo esatto postcss 8.4.31 (next 16.3.8 dichiara 8.5.23) e postcss 8.4.49 è una devDependency diretta del build CSS di Tailwind 3. Gira solo in build sul CSS del repo.",
+    "closedBy": ["T-404", "T-405"]
+  },
+  {
+    "ghsa": "GHSA-r28c-9q8g-f849",
+    "package": "postcss",
+    "reason": "postcss fino a 8.5.17: stessi due percorsi di GHSA-6g55-p6wh-862q (8.4.31 annidato in next 15.5.27, 8.4.49 diretto per Tailwind 3). Gira solo in build sul CSS del repo.",
+    "closedBy": ["T-404", "T-405"]
+  },
+  {
+    "ghsa": "GHSA-vfj7-8cjw-p6xm",
+    "package": "braces",
+    "reason": "braces fino a 3.0.3, l'ultima su npm: nessun fix upstream. Solo strumenti di sviluppo via micromatch: tailwindcss 3 (chiuso da T-405), @next/eslint-plugin-next con fast-glob 3.3.1 (anche in eslint-config-next 16.3.8) e jscpd 4.3.0 (fix solo in jscpd 5, major non pianificato). Per questi due percorsi nessun task del blueprint chiude l'advisory: decisione dell'utente aperta.",
+    "closedBy": []
+  }
+]
