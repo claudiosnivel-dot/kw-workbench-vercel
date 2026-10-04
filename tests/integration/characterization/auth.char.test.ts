@@ -17,6 +17,11 @@ import { createUserWithSession } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";
 
+// Da T-302 la pagina di login legge l'utente dai cookie: qui nessun cookie di sessione.
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ get: () => undefined }),
+}));
+
 const BOOTSTRAP_USERNAME = "char-bootstrap";
 const KNOWN_PASSWORD = "char-password-not-real";
 
@@ -165,8 +170,8 @@ describe("caratterizzazione: difetti noti dell'audit 2026-10-02", () => {
 
     const redirect = await middleware(middlewareRequest("/projects/x/results?view=all"));
     const location = new URL(redirect.headers.get("location") ?? "");
-    // impacted-by: T-302
-    expect(location.searchParams.get("next")).toBe("/projects/x/results");
+    // impacted-by: T-302 (aggiornata da T-302: next conserva anche la query)
+    expect(location.searchParams.get("next")).toBe("/projects/x/results?view=all");
 
     const element = await LoginPage({ searchParams: Promise.resolve({ next: "//evil.com" }) });
     const form = findElement(element, LoginForm);

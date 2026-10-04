@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { RegisterForm } from "@/components/register-form";
 import { isPublicSignupEnabled } from "@/lib/auth/config";
+import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +11,11 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  // Solo un utente esistente e ACTIVE (letto dal DB) torna alla dashboard: non basta la firma del token.
+  if (await getOptionalAuthenticatedUserFromCookies()) {
+    redirect("/");
+  }
+
   const params = await searchParams;
   const nextValue = params.next;
   const nextPath = Array.isArray(nextValue) ? nextValue[0] : nextValue;
