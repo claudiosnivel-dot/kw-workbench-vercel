@@ -118,6 +118,7 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
     - "ExportScope ed ExportFormat definiti una sola volta in lib/modules/export-types.ts (nessun import di lib/prisma.ts), importati da lib/modules/export.ts, components/google-sheets-export-button.tsx e components/onboarding-review-export-step.tsx"
     - "Helper unico setSessionCookie(response, user) in lib/auth/session-cookie.ts usato da tutti i punti che emettono il cookie di sessione (oggi 4: api/auth/login, api/auth/register, PATCH api/auth/config, PATCH api/user/preferences; il numero effettivo dopo T-501 si riverifica nel task)"
     - "jscpd come devDependency a versione fissata, configurato con min-tokens 50 sui file elencati sopra; nessun cambiamento di comportamento (snapshot di caratterizzazione invariati)"
+    - "Advisory braces GHSA-vfj7-8cjw-p6xm (voce di tests/tooling/audit-allowlist.json con closedBy T-1102, decisione dell'utente del 2026-10-04): rivalutata con jscpd 5 e con la versione di eslint-config-next disponibile; se nessun pacchetto dell'albero la riporta più la voce si toglie, altrimenti si riporta all'utente il percorso residuo"
 
   acceptance_criteria:
     - id: AC-1102-1
