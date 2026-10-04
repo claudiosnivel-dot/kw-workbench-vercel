@@ -13,6 +13,8 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/logout",
   "/api/auth/session",
   "/api/auth/session-ended",
+  // Health check per il monitoraggio esterno (T-603): solo il percorso esatto, nessun prefisso.
+  "/api/health",
 ]);
 
 // File di public serviti senza login: un solo segmento (es. /robots.txt) con estensione ammessa.
