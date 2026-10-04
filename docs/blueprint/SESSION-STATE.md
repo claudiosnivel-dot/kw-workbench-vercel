@@ -9,7 +9,7 @@
 | **Progetto** | Seo God Mode (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-10-04 |
-| **Sessione corrente** | 2026-10-04 (seconda) — merge di `foundation` su `master`; BUILD del macrotask `environments` (T-201…T-204; T-205 sospeso su D-20), checkpoint VERDE; deploy Vercel falliti per il DB Supabase di produzione in pausa |
+| **Sessione corrente** | 2026-10-04 (seconda) — merge di `foundation` e `environments` su `master` (T-205 sospeso su D-20), checkpoint VERDE; DB di produzione riattivato dall'utente e redeploy di produzione verde; staging annullato (emendamento di D-04) |
 
 ---
 
@@ -18,7 +18,7 @@
 | Macrotask | Stato | Checkpoint | Note |
 |---|---|---|---|
 | `foundation` (01) | chiuso | VERDE (2026-10-04) | T-101…T-110 chiusi; CI verde; PR #1 mergiata su `master` (`37d2bd0`) |
-| `environments` (02) | costruito in parte | VERDE (2026-10-04) | T-201, T-202, T-204 chiusi; T-203 chiuso nel codice, passi manuali dell'utente aperti (staging); T-205 non costruito: usa D-20 (PROPOSTA). PR #2 |
+| `environments` (02) | costruito in parte | VERDE (2026-10-04) | T-201…T-204 chiusi (i passi manuali di T-203 sono annullati: niente staging, D-04 emendata); T-205 non costruito: usa D-20 (PROPOSTA). PR #2 mergiata (`7b41a41`) |
 | `hotfix` (03) | todo | — | Difetti visibili in produzione |
 | `stack-upgrade` (04) | todo | — | |
 | `auth-hardening` (05) | todo | — | |
@@ -38,8 +38,8 @@
 
 ## 2. Macrotask corrente
 
-- **Ultimo costruito**: `environments` (02): T-201, T-202, T-204 chiusi; T-203 chiuso nel codice (AC-203-1…4 verdi) con i passi manuali dell'utente ancora aperti; T-205 non costruito perché usa D-20, ancora PROPOSTA. Checkpoint VERDE.
-- **Prossimo**: `hotfix` (03, dipende solo da 01). T-205 si costruisce dopo la conferma di D-20 e blocca T-403 (04 `stack-upgrade`); i passi manuali di T-203 (staging) bloccano T-604, T-605 (06) e T-1203 (12).
+- **Ultimo costruito**: `environments` (02): T-201…T-204 chiusi (per T-203 i passi manuali dello staging sono annullati dall'emendamento di D-04 del 2026-10-04); T-205 non costruito perché usa D-20, ancora PROPOSTA. Checkpoint VERDE.
+- **Prossimo**: `hotfix` (03, dipende solo da 01). T-205 si costruisce dopo la conferma di D-20 e blocca T-403 (04 `stack-upgrade`). Senza staging, T-601 e T-605 (06) vanno adattati quando si costruisce il macrotask 06 (vedi D-04).
 - **Criteri/test di riferimento**: `docs/blueprint/03-hotfix.md`.
 
 ## 3. Stato git
@@ -49,8 +49,9 @@
 | Branch di lavoro | `trueline/build/environments` (da `master` `37d2bd0`), pushato su `origin` il 2026-10-04; PR #2 verso `master` (https://github.com/claudiosnivel-dot/kw-workbench-vercel/pull/2) |
 | Ultimo commit | chiusura sessione (questo file); prima `0580772` (fix del checkpoint, T-201), `a1fc82e` T-204, `92530ee` T-203, `c768f9d` T-202, `218f046` T-201 |
 | CI della PR | verde su `0580772`: run 37189337083 (checks, integration, e2e, build) |
+| Deploy di produzione | **verde**: `dpl_CrjmSdcVDdpYrg3G722PKCbNkkRU`, redeploy di `7b41a41` dopo la riattivazione del DB (nessuna migrazione pendente, seed eseguito, alias `titanseo.vercel.app`). Smoke: `/login` 200, sessione anonima 401, login con credenziali vuote 401, `/` senza cookie 307 verso `/login`. I due deploy precedenti (`dpl_8hbtXBoMhS1RcQnzHQTUwvyLR6kr`, `dpl_nVqrr5NksfJd3PxzoPBJm7rr1Qzj`) erano falliti per il DB in pausa |
 | Deploy Preview del branch | **verde**: `dpl_AXiKaLgQ2Wy3Fe1tSonVHjAy5nj7` (87 s). Con T-202 il build di Preview salta migrazioni e seed (`PRODUCTION_DB_HOST` non impostata) e `next build` passa: conferma che i deploy falliti si fermavano a `prisma migrate deploy` |
-| Merge su `master` | PR #1 mergiata (`37d2bd0`). PR #2: merge autonomo a checkpoint e CI verdi dopo questo commit di chiusura. Il deploy di produzione che ne segue esegue ancora le migrazioni e fallirà finché il DB Supabase di produzione resta in pausa; il sito resta sul deploy di giugno |
+| Merge su `master` | PR #1 mergiata (`37d2bd0`), PR #2 mergiata (`7b41a41`, CI su `master` verde: run 37189624123). L'emendamento di D-04 (niente staging) arriva su `master` dal branch `trueline/emend/no-staging` |
 | Deploy-coupling | `main_deploy_coupled: true` (segnale `vercel.json`): ogni push su `master` va in produzione. Merge e push su `master` autonomi a checkpoint verde (D-04 emendata 2026-10-04) |
 | Push dei branch | `trueline/build/environments` pushato a checkpoint verde; contiene T-202 e nessuna migrazione |
 
@@ -60,7 +61,7 @@
 - **Baseline d'igiene**: invariata (`.trueline/hygiene-baseline.json`, 202 finding: jscpd 201, twin 1, cicli 0). I fingerprint di jscpd dipendono dai fine riga del working tree: con `core.autocrlf=true` un checkout riscrive in CRLF i file cambiati e il checkpoint vede cloni «nuovi» in file mai toccati (9 nella prima esecuzione di questa sessione). Il working tree è stato riportato a LF (contenuto identico all'indice, `git diff` vuoto) e il checkpoint è tornato a dup 201. Prima di un checkpoint: `git ls-files --eol` non deve mostrare `i/lf w/crlf`.
 - **Budget consumato** (macrotask 02): 2 finding gitleaks CRITICAL (`trueline-generic-assigned-secret` sui default di sviluppo di `APP_SESSION_SECRET` e `APP_ENCRYPTION_KEY` in `lib/env.ts`), chiusi `verified` al primo tentativo togliendo i default (`0580772`; riverifica: `run_gitleaks` senza i due finding, `npm test` 58/58, checkpoint VERDE). 9 duplicazioni `new` da fine riga CRLF, chiuse senza modifiche al codice (normalizzazione LF del working tree; riverifica: checkpoint VERDE con dup 201). Nessun retry. `GLOBAL_WALL_CLOCK_MS = 242401` superato dalle sole esecuzioni del checkpoint (circa 283 s l'una, 2 esecuzioni): loop condotto a mano, non da `run_loop.mjs`.
 - **Preflight oracoli**: PREFLIGHT OK del 2026-10-04 (semgrep via Docker, gitleaks 8.30.1, osv-scanner 1.9.2, knip 6.39.0, jscpd 4.3.0, madge 8.0.0, rls_check built-in), non ripetuto. Trueline installata: 0.4.2.
-- **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5 e jsdom 30, funziona con avviso; riferimento la CI su Node 22). Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel non autenticata; CLI Supabase autenticata (`supabase projects list`).
+- **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5 e jsdom 30, funziona con avviso; riferimento la CI su Node 22). Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
 
@@ -77,6 +78,7 @@
 - **Altre verifiche**: `tsc --noEmit` e `eslint . --max-warnings=0` exit 0; E2E su Windows 2 passati e 3 visivi saltati; E2E nel container `mcr.microsoft.com/playwright:v1.63.0-noble` con `CI=true`: 5/5.
 - **Copertura non verificata** (dichiarata): controllo 4 sul ramo legacy (`npm test`, senza E2E, eseguiti a parte); potere delle asserzioni (AT-1 Fase C) non eseguito; osv normalizza tutto a MEDIUM; `instrumentation.ts` con configurazione invalida provato solo tramite i test di `parseEnv`, non con un `next start` reale; T-203 non verificato contro le env reali di Vercel (serve lo staging).
 - **Dipendenze aggiunte**: zod 4.6.5 (già presente come dipendenza transitiva, ora diretta).
+- **Dopo la chiusura**: l'utente ha riattivato il progetto Supabase di produzione e autenticato la CLI Vercel. Il log del deploy fallito conferma la causa (`prisma migrate deploy`: `FATAL: (ENOTFOUND) tenant/user postgres.<ref> not found`). Le variabili di produzione, scaricate in un file temporaneo poi cancellato, passano `parseEnv` con `NODE_ENV=production` (segreti di 64 caratteri; `APP_AUTH_PASSWORD` di 11 caratteri, sotto il minimo di T-201 ma usata solo per il bootstrap a tabella `users` vuota). Redeploy di produzione verde (§3). L'utente ha deciso di lavorare senza staging: emendamento di D-04 in 00-INDEX §4 e `docs/ENVIRONMENTS.md` aggiornato.
 
 ### Sessione 2026-10-04 — BUILD del macrotask `foundation`
 
@@ -120,9 +122,8 @@
 
 ## 6. Prossimi passi
 
-- **Utente (sblocca i deploy)**: riattivare il progetto Supabase di produzione «keyword miner» dal pannello Supabase (oggi `INACTIVE`); poi rilanciare il deploy di produzione (Redeploy su Vercel, o il prossimo merge su `master`). Senza questo ogni deploy Production fallisce a `prisma migrate deploy`. Prima del deploy con T-201 controllare che in Production `APP_SESSION_SECRET` e `APP_ENCRYPTION_KEY` abbiano almeno 32 caratteri e non siano segnaposto: altrimenti l'app non parte (fail-closed voluto). Se `APP_ENCRYPTION_KEY` cambia, le credenziali Google cifrate a DB non si leggono più.
 - **Utente**: confermare o modificare D-20 (RLS senza policy sulle tabelle `public`): sblocca T-205 e, tramite T-205, T-403 del macrotask 04.
-- **Utente (T-203)**: creare il progetto Supabase di staging e configurare le env Preview seguendo `docs/ENVIRONMENTS.md` (passi manuali), poi `npm run env:check` con exit 0; la conferma va registrata qui. Sblocca T-604, T-605 (06) e T-1203 (12).
+- **Utente (consigliato)**: portare `APP_AUTH_PASSWORD` su Vercel ad almeno 12 caratteri: oggi ne ha 11 e un bootstrap su tabella `users` vuota verrebbe rifiutato da T-201.
 - **Utente**: confermare la scelta `ignoreExportsUsedInFile: true` di `knip.json` (T-108) o chiedere di tornare al default con le 7 voci in più nella baseline.
 - **Utente**: confermare o modificare le altre decisioni PROPOSTA del ledger (00-INDEX §4) e decidere sui rilievi di atomicità (T-403, T-902, T-905, T-1101, T-1202, T-1603); D-14 prima del macrotask 16, D-15 prima di T-1803; account DataForSEO per T-902.
 - **Utente (facoltativo)**: per evitare i falsi «nuovi» duplicati da fine riga, valutare un `.gitattributes` con `* text=auto eol=lf` o `core.autocrlf=false` in questo clone (vedi §4).

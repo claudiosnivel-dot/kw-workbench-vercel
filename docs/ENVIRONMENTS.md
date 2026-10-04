@@ -16,19 +16,19 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `NODE_ENV` | `production` | `production` | `development` | no | piattaforma (Next: `next build`/`next start` in production, `next dev` in development) |
 | `APP_AUTH_ENABLED` | facolt. (attiva; disattivarla è un errore) | facolt. (come Production) | facolt. | no | Vercel / locale |
 | `APP_AUTH_USERNAME` | facolt. (default `admin`) | facolt. | facolt. | no | Vercel / locale |
-| `APP_AUTH_PASSWORD` | obbl. solo per il bootstrap del primo utente (tabella `users` vuota): almeno 12 caratteri, diversa da `changeme` | come Production, sul DB di staging | facolt. (default `changeme`) | sì | Vercel (Sensitive) / locale |
+| `APP_AUTH_PASSWORD` | obbl. solo per il bootstrap del primo utente (tabella `users` vuota): almeno 12 caratteri, diversa da `changeme` | come Production (stesso DB) | facolt. (default `changeme`) | sì | Vercel (Sensitive) / locale |
 | `APP_PUBLIC_SIGNUP_ENABLED` | facolt. (default `true`) | facolt. | facolt. | no | Vercel / locale |
-| `APP_SESSION_SECRET` | obbl.: almeno 32 caratteri, non un segnaposto | obbl., diversa da Production | obbl. (nessun default; fuori produzione sono ammessi i segnaposto di `.env.example`) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
+| `APP_SESSION_SECRET` | obbl.: almeno 32 caratteri, non un segnaposto | obbl., stessi vincoli di Production | obbl. (nessun default; fuori produzione sono ammessi i segnaposto di `.env.example`) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
 | `APP_SESSION_MAX_AGE_SECONDS` | facolt. (intero 60…31536000, default 604800) | facolt. | facolt. | no | Vercel / locale |
-| `APP_ENCRYPTION_KEY` | obbl.: almeno 32 caratteri, non un segnaposto; se cambia, le credenziali Google cifrate a DB non si leggono più | obbl., diversa da Production | obbl. (nessun default; fuori produzione sono ammessi i segnaposto di `.env.example`) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
+| `APP_ENCRYPTION_KEY` | obbl.: almeno 32 caratteri, non un segnaposto; se cambia, le credenziali Google cifrate a DB non si leggono più | obbl., uguale a Production (stesso DB, stesse credenziali cifrate) | obbl. (nessun default; fuori produzione sono ammessi i segnaposto di `.env.example`) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
 | `APP_COOKIE_SECURE` | facolt. (`auto`: secure in produzione) | facolt. | facolt. | no | Vercel / locale |
 | `APP_BRAND_NAME` | facolt. | facolt. | facolt. | no | Vercel / locale |
 | `APP_BRAND_LOGO_URL` | facolt. | facolt. | facolt. | no | Vercel / locale |
 | `APP_BRAND_LOGO_URL_DARK` | facolt. | facolt. | facolt. | no | Vercel / locale |
 | `APP_BRAND_LOGO_URL_LIGHT` | facolt. | facolt. | facolt. | no | Vercel / locale |
-| `DATABASE_URL` | obbl.: pooler del progetto Supabase di produzione (porta 6543) | obbl.: pooler del progetto Supabase di **staging** (porta 6543) | obbl.: Postgres locale | sì (contiene la password) | Vercel (Sensitive) / locale |
-| `DIRECT_URL` | obbl.: produzione, porta 5432 (migrate e seed) | obbl.: **staging**, porta 5432 | obbl.: Postgres locale | sì (contiene la password) | Vercel (Sensitive) / locale |
-| `PRODUCTION_DB_HOST` | no | obbl. per migrare: identità del DB di produzione, `postgres.<ref-produzione>@<host del pooler>` | no | no | Vercel (solo Preview) |
+| `DATABASE_URL` | obbl.: pooler del progetto Supabase di produzione (porta 6543) | obbl.: lo stesso di Production (nessuno staging, D-04) | obbl.: Postgres locale | sì (contiene la password) | Vercel (Sensitive) / locale |
+| `DIRECT_URL` | obbl.: produzione, porta 5432 (migrate e seed) | obbl.: lo stesso di Production (nessuno staging, D-04) | obbl.: Postgres locale | sì (contiene la password) | Vercel (Sensitive) / locale |
+| `PRODUCTION_DB_HOST` | no | no finché non c'è uno staging: senza, le Preview non migrano né fanno il seed | no | no | Vercel (solo Preview, se si introduce uno staging) |
 | `PRISMA_CONNECTION_LIMIT` | facolt. (intero 1…50, default 3) | facolt. | facolt. (default 1) | no | Vercel / locale |
 | `PRISMA_POOL_TIMEOUT` | facolt. (intero 1…120, default 15) | facolt. | facolt. | no | Vercel / locale |
 | `MAX_EXPANSION_QUERIES` | facolt. (intero 50…5000, default 250) | facolt. | facolt. | no | Vercel / locale |
@@ -65,12 +65,14 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 
 ## Preview
 
-- DB: un progetto Supabase di **staging**, separato da quello di produzione; i deploy Preview
-  eseguono codice di branch non revisionato.
-- `PRODUCTION_DB_HOST` è impostata solo qui. Il build applica migrazioni e seed solo se
-  l'identità del DB di `DIRECT_URL` è diversa da quella indicata (utente e host per il pooler
-  Supabase, solo host altrimenti); se la variabile manca, o `DIRECT_URL` non è valida, le salta e
-  lo scrive nel log con il prefisso `[vercel-build]`.
+- DB: lo stesso di Production. Niente staging, per decisione dell'utente del 2026-10-04
+  (emendamento di D-04): le variabili sono condivise tra Production, Preview e Development.
+- `PRODUCTION_DB_HOST` non è impostata, quindi il build di Preview salta migrazioni e seed e lo
+  scrive nel log con il prefisso `[vercel-build]` (T-202). Le migrazioni arrivano sul DB solo con
+  il deploy di Production, cioè dopo il merge su `master`.
+- Il codice di un branch in Preview legge e scrive il DB di produzione (rischio accettato con D-05:
+  in produzione ci sono solo dati di prova). Se il branch contiene una migrazione nuova, in Preview
+  gira sullo schema vecchio finché non viene mergiato.
 - `NODE_ENV` vale `production` anche qui: valgono gli stessi vincoli di Production su
   autenticazione e segreti.
 
@@ -82,7 +84,11 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 - Il file `.env.development.local` scritto da `vercel env pull --environment=development` è
   facoltativo per `env:check`.
 
-## Passi manuali per l'utente (staging)
+## Staging
+
+Non previsto: decisione dell'utente del 2026-10-04 (emendamento di D-04). Con la configurazione
+attuale `npm run env:check` esce con 1 e stampa `PREVIEW USA IL DB DI PRODUZIONE`: è l'esito
+atteso. Se in futuro serve uno staging, i passi sono questi.
 
 1. Creare il progetto Supabase di staging (stessa regione della produzione).
 2. Copiare le stringhe di connessione dello staging nelle variabili dell'ambiente **Preview** di
@@ -104,6 +110,6 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
    ambiente, con la password sostituita da `***`; esce con 1 e stampa
    `PREVIEW USA IL DB DI PRODUZIONE` se Preview e Production condividono il DB, oppure se manca
    il file di uno dei due ambienti (indicando il comando `vercel env pull` da eseguire).
-6. Comunicare l'esito: la conferma viene registrata in `docs/blueprint/SESSION-STATE.md`.
+6. Registrare la decisione con un emendamento di D-04 e l'esito in `docs/blueprint/SESSION-STATE.md`.
 
 I file `.env*.local` contengono segreti reali e sono esclusi da git (`.gitignore`).
