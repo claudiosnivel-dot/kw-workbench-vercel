@@ -5,8 +5,7 @@
 // La password della URL non compare mai in stdout o stderr.
 import { mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { majorOf, parseArgs, pgCommand, redact, resolveTarget, runTool } from "./db-tools.mjs";
+import { majorOf, pgCommand, prepareCommand, runIfMain, runTool } from "./db-tools.mjs";
 
 const DUMP_FLAGS = ["--format=custom", "--no-owner", "--no-privileges"];
 
@@ -41,20 +40,10 @@ export async function runBackup({
   log = (line) => process.stdout.write(`${line}\n`),
   logError = (line) => process.stderr.write(`${line}\n`),
 }) {
-  const args = parseArgs(argv);
-  let secrets = [];
-  const fail = (message, code = 1) => {
-    logError(`[db-backup] ${redact(message, secrets)}`);
-    return code;
-  };
-
-  let target;
-  try {
-    target = resolveTarget(args);
-  } catch (error) {
-    return fail(error instanceof Error ? error.message : "URL non valida", 2);
+  const { args, target, fail, error } = prepareCommand("db-backup", argv, [], logError);
+  if (!target) {
+    return fail(error, 2);
   }
-  secrets = [target.password, args.url && encodeURIComponent(target.password)];
 
   const client = await run(versionCommand(target));
   if (client.code !== 0) {
@@ -84,6 +73,4 @@ export async function runBackup({
   return 0;
 }
 
-if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
-  process.exitCode = await runBackup({ argv: process.argv.slice(2) });
-}
+await runIfMain(import.meta.url, (argv) => runBackup({ argv }));

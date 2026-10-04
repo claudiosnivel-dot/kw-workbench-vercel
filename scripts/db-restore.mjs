@@ -3,9 +3,7 @@
 // <database> [--user postgres]. Una destinazione con l'host di PRODUCTION_DB_HOST (T-202) si rifiuta con exit
 // code 2 senza --confirm-production. La password della URL non compare mai in stdout o stderr.
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { parseArgs, pgCommand, redact, resolveTarget, runTool } from "./db-tools.mjs";
+import { pgCommand, prepareCommand, runIfMain, runTool } from "./db-tools.mjs";
 import { dbIdentity, parseProductionDbHost, sameDatabase } from "./vercel-build.mjs";
 
 const RESTORE_FLAGS = ["--clean", "--if-exists", "--no-owner"];
@@ -24,20 +22,10 @@ export async function runRestore({
   log = (line) => process.stdout.write(`${line}\n`),
   logError = (line) => process.stderr.write(`${line}\n`),
 }) {
-  const args = parseArgs(argv, ["confirm-production"]);
-  let secrets = [];
-  const fail = (message, code = 1) => {
-    logError(`[db-restore] ${redact(message, secrets)}`);
-    return code;
-  };
-
-  let target;
-  try {
-    target = resolveTarget(args);
-  } catch (error) {
-    return fail(error instanceof Error ? error.message : "URL non valida", 2);
+  const { args, target, fail, error } = prepareCommand("db-restore", argv, ["confirm-production"], logError);
+  if (!target) {
+    return fail(error, 2);
   }
-  secrets = [target.password, args.url && encodeURIComponent(target.password)];
 
   if (args.url && isProductionTarget(args.url, env.PRODUCTION_DB_HOST) && !args["confirm-production"]) {
     return fail(
@@ -60,6 +48,4 @@ export async function runRestore({
   return 0;
 }
 
-if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
-  process.exitCode = await runRestore({ argv: process.argv.slice(2) });
-}
+await runIfMain(import.meta.url, (argv) => runRestore({ argv }));

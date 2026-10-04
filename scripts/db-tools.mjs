@@ -2,6 +2,8 @@
 // non finiscono mai negli argomenti dei processi né nei log: viaggiano in PGPASSWORD.
 import { spawn } from "node:child_process";
 import { createReadStream, createWriteStream } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 /** Argomenti `--nome valore` (o `--nome=valore`); i nomi in `flags` sono booleani senza valore. */
 export function parseArgs(argv, flags = []) {
@@ -101,4 +103,32 @@ export function resolveTarget(args) {
     return { container: args.container, database: args.db, user: args.user ?? "postgres", password: "", hostname: null };
   }
   throw new Error("indica --url <postgresql://…> oppure --container <nome> --db <database>");
+}
+
+/**
+ * Argomenti, sorgente o destinazione e `fail`, che scrive su stderr il messaggio senza la password con il
+ * prefisso del comando e restituisce l'exit code. Con argomenti insufficienti `target` è null e `error` dice perché.
+ */
+export function prepareCommand(prefix, argv, flags, logError) {
+  const args = parseArgs(argv, flags);
+  let secrets = [];
+  const fail = (message, code = 1) => {
+    logError(`[${prefix}] ${redact(message, secrets)}`);
+    return code;
+  };
+
+  try {
+    const target = resolveTarget(args);
+    secrets = [target.password, args.url && encodeURIComponent(target.password)];
+    return { args, target, fail, error: null };
+  } catch (error) {
+    return { args, target: null, fail, error: error instanceof Error ? error.message : "URL non valida" };
+  }
+}
+
+/** Esegue `main` con gli argomenti della riga di comando quando il modulo è lo script lanciato da node. */
+export async function runIfMain(moduleUrl, main) {
+  if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === moduleUrl) {
+    process.exitCode = await main(process.argv.slice(2));
+  }
 }
