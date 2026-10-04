@@ -9,7 +9,7 @@
 | **Progetto** | Seo God Mode (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-10-04 |
-| **Sessione corrente** | 2026-10-04 (seconda) — merge di `foundation` e `environments` su `master` (T-205 sospeso su D-20), checkpoint VERDE; DB di produzione riattivato dall'utente e redeploy di produzione verde; staging annullato (emendamento di D-04) |
+| **Sessione corrente** | 2026-10-04 (seconda) — merge di `foundation` e `environments` su `master` (T-205 in attesa di D-20, poi confermata), checkpoint VERDE; DB di produzione riattivato dall'utente e redeploy di produzione verde; staging annullato (emendamento di D-04) |
 
 ---
 
@@ -18,7 +18,7 @@
 | Macrotask | Stato | Checkpoint | Note |
 |---|---|---|---|
 | `foundation` (01) | chiuso | VERDE (2026-10-04) | T-101…T-110 chiusi; CI verde; PR #1 mergiata su `master` (`37d2bd0`) |
-| `environments` (02) | costruito in parte | VERDE (2026-10-04) | T-201…T-204 chiusi (i passi manuali di T-203 sono annullati: niente staging, D-04 emendata); T-205 non costruito: usa D-20 (PROPOSTA). PR #2 mergiata (`7b41a41`) |
+| `environments` (02) | costruito in parte | VERDE (2026-10-04) | T-201…T-204 chiusi (i passi manuali di T-203 sono annullati: niente staging, D-04 emendata); T-205 da costruire (D-20 confermata il 2026-10-04). PR #2 mergiata (`7b41a41`) |
 | `hotfix` (03) | todo | — | Difetti visibili in produzione |
 | `stack-upgrade` (04) | todo | — | |
 | `auth-hardening` (05) | todo | — | |
@@ -38,8 +38,8 @@
 
 ## 2. Macrotask corrente
 
-- **Ultimo costruito**: `environments` (02): T-201…T-204 chiusi (per T-203 i passi manuali dello staging sono annullati dall'emendamento di D-04 del 2026-10-04); T-205 non costruito perché usa D-20, ancora PROPOSTA. Checkpoint VERDE.
-- **Prossimo**: `hotfix` (03, dipende solo da 01). T-205 si costruisce dopo la conferma di D-20 e blocca T-403 (04 `stack-upgrade`). Senza staging, T-601 e T-605 (06) vanno adattati quando si costruisce il macrotask 06 (vedi D-04).
+- **Ultimo costruito**: `environments` (02): T-201…T-204 chiusi (per T-203 i passi manuali dello staging sono annullati dall'emendamento di D-04 del 2026-10-04); T-205 non costruito perché D-20 era ancora PROPOSTA; l'utente l'ha confermata a fine sessione. Checkpoint VERDE.
+- **Prossimo**: completare `environments` (02) con T-205, ora sbloccato da D-20 confermata: è il primo macrotask non chiuso e T-205 blocca T-403 (04 `stack-upgrade`). Poi `hotfix` (03). Senza staging, T-601 e T-605 (06) vanno adattati quando si costruisce il macrotask 06 (vedi D-04).
 - **Criteri/test di riferimento**: `docs/blueprint/03-hotfix.md`.
 
 ## 3. Stato git
@@ -73,7 +73,7 @@
 - **T-202** (`c768f9d`): `scripts/vercel-build.mjs` (`decideMigration`, `runVercelBuild`) e `vercel-build = node scripts/vercel-build.mjs`; `PRODUCTION_DB_HOST` in `.env.example` ed `ENV_KEYS`. Gate: `tests/unit/vercel-build-guard.test.ts` (AC-202-1…4) 4/4; CLI provata su Windows e su Linux (Node 22): Preview senza `PRODUCTION_DB_HOST` e senza DB → migrazioni saltate e build exit 0; Production → migrate, seed, build exit 0; Production con DB irraggiungibile → exit 1 senza `next build`.
 - **T-203** (`92530ee`): `docs/ENVIRONMENTS.md` (matrice per ogni chiave di `ENV_KEYS`, passi manuali), `scripts/env-check.mjs` e `npm run env:check`, `.env*.local` in `.gitignore`. Gate: `tests/unit/env-check.test.ts` (AC-203-1…4) 4/4. **Aperto**: i passi manuali dell'utente (progetto Supabase di staging, env Preview, `env:check` con exit 0) e la loro conferma qui.
 - **T-204** (`a1fc82e`): `seedGlobalDefaults` in un'unica transazione, solo inserimenti dei default mancanti, `main` solo da CLI. Gate: `tests/integration/seed.test.ts` (AC-204-1…4) 4/4, rossi prima dell'implementazione; CLI: due esecuzioni → 5 brand e 8 pattern, DB irraggiungibile → exit 1.
-- **T-205**: non costruito, usa D-20 (PROPOSTA non confermata).
+- **T-205**: non costruito in sessione perché D-20 era PROPOSTA; confermata dall'utente a fine sessione (ledger aggiornato).
 - **Checkpoint** (`run_checkpoint.mjs --in-place --mode build --blueprint docs/blueprint`, baseline dei fingerprint): prima esecuzione NON-VERDE (2 segreti nuovi CRITICAL in `lib/env.ts`; 9 duplicazioni `new` da fine riga CRLF); dopo il loop di fix (§4) **VERDE**: 1 igiene verde (dead-code 8, dup 201, cicli 0, twin 1, arch 0, tutti preesistenti), 2 sicurezza verde (gitleaks 4, osv 47, semgrep 0, nessun nuovo ≥ HIGH), 3 regressioni verde, 4 conformità verde (`npm test` 58/58). Tracciabilità AC: `ac_assertion_trace_check` ristretto a `02-environments.md`: OK, 5 target test in scope (gli AC di T-205 sono saltati perché il suo target test non esiste).
 - **Altre verifiche**: `tsc --noEmit` e `eslint . --max-warnings=0` exit 0; E2E su Windows 2 passati e 3 visivi saltati; E2E nel container `mcr.microsoft.com/playwright:v1.63.0-noble` con `CI=true`: 5/5.
 - **Copertura non verificata** (dichiarata): controllo 4 sul ramo legacy (`npm test`, senza E2E, eseguiti a parte); potere delle asserzioni (AT-1 Fase C) non eseguito; osv normalizza tutto a MEDIUM; `instrumentation.ts` con configurazione invalida provato solo tramite i test di `parseEnv`, non con un `next start` reale; T-203 non verificato contro le env reali di Vercel (serve lo staging).
@@ -122,11 +122,10 @@
 
 ## 6. Prossimi passi
 
-- **Utente**: confermare o modificare D-20 (RLS senza policy sulle tabelle `public`): sblocca T-205 e, tramite T-205, T-403 del macrotask 04.
 - **Utente (consigliato)**: portare `APP_AUTH_PASSWORD` su Vercel ad almeno 12 caratteri: oggi ne ha 11 e un bootstrap su tabella `users` vuota verrebbe rifiutato da T-201.
 - **Utente**: confermare la scelta `ignoreExportsUsedInFile: true` di `knip.json` (T-108) o chiedere di tornare al default con le 7 voci in più nella baseline.
 - **Utente**: confermare o modificare le altre decisioni PROPOSTA del ledger (00-INDEX §4) e decidere sui rilievi di atomicità (T-403, T-902, T-905, T-1101, T-1202, T-1603); D-14 prima del macrotask 16, D-15 prima di T-1803; account DataForSEO per T-902.
 - **Utente (facoltativo)**: per evitare i falsi «nuovi» duplicati da fine riga, valutare un `.gitattributes` con `* text=auto eol=lf` o `core.autocrlf=false` in questo clone (vedi §4).
-- **BUILD**: macrotask `hotfix` (03) su `trueline/build/hotfix` da `master`; usa solo D-03 e D-09, entrambe DECISE.
+- **BUILD**: completare `environments` (02) con T-205 su `trueline/build/environments-t205` (nuovo branch da `master`: `trueline/build/environments` esiste già ed è mergiato), checkpoint al confine e merge; poi `hotfix` (03), che usa solo D-03 e D-09, entrambe DECISE. Dopo il deploy di T-205 l'utente verifica nel Security Advisor di Supabase che l'avviso di RLS disattivata su `public` sia sparito e l'esito si annota qui.
 - **Trueline**: riportare al repo della skill i problemi della sessione precedente e i nuovi: fingerprint di jscpd sensibili ai fine riga del working tree; `ac_assertion_trace_check` sull'intero blueprint fallisce per i target test condivisi dei macrotask futuri (va ristretto al macrotask corrente).
 - Per test d'integrazione ed E2E: `docker compose -f docker-compose.test.yml up -d` e `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:54329/kw_workbench_test` nella shell; per il checkpoint, `.trueline/baseline-fingerprints.json` come `--baseline` (rigenerabile da `.trueline/baseline.json`, campo `fingerprints`).
