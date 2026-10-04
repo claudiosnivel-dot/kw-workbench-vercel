@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 type UserRole = "ADMIN" | "SUBSCRIBER";
@@ -19,7 +19,7 @@ type AdminUserRecord = {
 
 type AdminUsersTotals = {
   totalUsers: number;
-  totalAdmins: number;
+  totalAdmins: number | null;
   totalSubscribers: number;
   totalActive: number;
   totalSuspended: number;
@@ -29,8 +29,14 @@ type AdminUsersResponse = ApiErrorPayload & {
   data?: {
     users: AdminUserRecord[];
     totals: AdminUsersTotals;
+    page: number;
+    pageSize: number;
+    total: number;
   };
 };
+
+const PAGE_SIZE = 50;
+const SEARCH_DEBOUNCE_MS = 300;
 
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
   { value: "ADMIN", label: "Admin" },
@@ -75,8 +81,13 @@ export function AdminUsersDashboard({
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"ALL" | UserRole>("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | UserStatus>("ALL");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  // Richiesta della lista in corso: una nuova la annulla, così vince sempre l'ultima.
+  const inFlight = useRef<AbortController | null>(null);
 
   const [createUsername, setCreateUsername] = useState("");
   const [createPassword, setCreatePassword] = useState("");
@@ -97,18 +108,24 @@ export function AdminUsersDashboard({
   );
 
   const loadUsers = useCallback(async () => {
+    inFlight.current?.abort();
+    const controller = new AbortController();
+    inFlight.current = controller;
     setLoading(true);
     setError(null);
 
     try {
       const params = new URLSearchParams();
-      if (searchText.trim()) params.set("searchText", searchText.trim());
+      if (debouncedSearch) params.set("searchText", debouncedSearch);
       if (roleFilter !== "ALL") params.set("role", roleFilter);
       if (statusFilter !== "ALL") params.set("status", statusFilter);
+      params.set("page", String(page));
+      params.set("pageSize", String(PAGE_SIZE));
 
       const response = await fetch(`/api/admin/users?${params.toString()}`, {
         method: "GET",
         credentials: "same-origin",
+        signal: controller.signal,
       });
 
       const payload = await readJsonSafe<AdminUsersResponse>(response);
@@ -119,6 +136,7 @@ export function AdminUsersDashboard({
       const nextUsers = payload?.data?.users ?? [];
       setUsers(nextUsers);
       setTotals(payload?.data?.totals ?? null);
+      setTotal(payload?.data?.total ?? nextUsers.length);
 
       const nextRoleDrafts: Record<string, UserRole> = {};
       const nextStatusDrafts: Record<string, UserStatus> = {};
@@ -129,15 +147,31 @@ export function AdminUsersDashboard({
       setRoleDrafts(nextRoleDrafts);
       setStatusDrafts(nextStatusDrafts);
     } catch (loadError) {
+      if (controller.signal.aborted) {
+        return;
+      }
       setError(loadError instanceof Error ? loadError.message : "Errore imprevisto");
     } finally {
-      setLoading(false);
+      if (inFlight.current === controller) {
+        setLoading(false);
+      }
     }
-  }, [roleFilter, searchText, statusFilter]);
+  }, [debouncedSearch, page, roleFilter, statusFilter]);
 
   useEffect(() => {
     void loadUsers();
   }, [loadUsers]);
+
+  // Ricerca con debounce: parte una sola richiesta quando si smette di digitare, dalla prima pagina.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchText.trim());
+      setPage(1);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const onCreateUser = async () => {
     setCreating(true);
@@ -281,7 +315,10 @@ export function AdminUsersDashboard({
               id="admin-role-filter"
               className="select"
               value={roleFilter}
-              onChange={(event) => setRoleFilter(event.target.value as "ALL" | UserRole)}
+              onChange={(event) => {
+                setRoleFilter(event.target.value as "ALL" | UserRole);
+                setPage(1);
+              }}
             >
               <option value="ALL">Tutti</option>
               {ROLE_OPTIONS.map((option) => (
@@ -300,7 +337,10 @@ export function AdminUsersDashboard({
               id="admin-status-filter"
               className="select"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as "ALL" | UserStatus)}
+              onChange={(event) => {
+                setStatusFilter(event.target.value as "ALL" | UserStatus);
+                setPage(1);
+              }}
             >
               <option value="ALL">Tutti</option>
               {STATUS_OPTIONS.map((option) => (
@@ -528,6 +568,30 @@ export function AdminUsersDashboard({
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-600">
+            Pagina {page} di {totalPages} · {total} utenti
+          </p>
+          <div className="flex gap-2">
+            <button
+              className="btn-secondary"
+              type="button"
+              disabled={loading || page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              Precedente
+            </button>
+            <button
+              className="btn-secondary"
+              type="button"
+              disabled={loading || page >= totalPages}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Successiva
+            </button>
+          </div>
         </div>
       </section>
     </div>

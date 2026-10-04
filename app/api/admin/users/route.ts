@@ -16,6 +16,8 @@ export const GET = withApiErrors(async (request: Request) => {
     searchText,
     role,
     status,
+    page: Number(searchParams.get("page") ?? 1),
+    pageSize: Number(searchParams.get("pageSize") ?? undefined),
   });
 
   return NextResponse.json({ data });
