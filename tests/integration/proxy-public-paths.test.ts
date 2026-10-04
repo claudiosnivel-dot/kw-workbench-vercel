@@ -1,6 +1,6 @@
 // Gate di T-302 (AC-302-1…AC-302-4): file pubblici senza login, query conservata nel redirect,
 // /login e /register rimandano a / solo l'utente esistente e ACTIVE.
-import { UserStatus } from "@prisma/client";
+import { UserStatus } from "@/lib/generated/prisma/enums";
 import { NextRequest } from "next/server";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";

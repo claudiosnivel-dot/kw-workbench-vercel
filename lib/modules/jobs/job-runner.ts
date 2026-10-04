@@ -1,4 +1,4 @@
-import { JobStatus } from "@prisma/client";
+import { JobStatus } from "@/lib/generated/prisma/enums";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";
 

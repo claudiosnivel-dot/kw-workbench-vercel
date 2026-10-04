@@ -1,4 +1,4 @@
-import { OnboardingEntryMode, OnboardingStatus, OnboardingStep } from "@prisma/client";
+import { OnboardingEntryMode, OnboardingStatus, OnboardingStep } from "@/lib/generated/prisma/enums";
 import {
   type OnboardingEntryModeKey,
   type OnboardingStatusKey,

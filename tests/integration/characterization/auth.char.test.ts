@@ -1,7 +1,7 @@
 // Caratterizzazione di T-104: fotografa login, registrazione, logout, sessione e middleware
 // così come sono oggi, difetti noti compresi. Le asserzioni marcate impacted-by cambiano
 // solo con il task indicato e passando da gate umano.
-import { UserStatus } from "@prisma/client";
+import { UserStatus } from "@/lib/generated/prisma/enums";
 import { NextRequest } from "next/server";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";

@@ -1,12 +1,13 @@
+// Client generato in lib/generated/prisma (gitignorato): runtime senza engine Rust, quindi senza binaryTargets.
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
+  provider     = "prisma-client"
+  output       = "../lib/generated/prisma"
+  moduleFormat = "cjs"
 }
 
+// Gli URL non stanno più nello schema: la CLI legge prisma.config.ts, l'app passa l'adapter pg (lib/prisma.ts).
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 enum AutocompleteProvider {

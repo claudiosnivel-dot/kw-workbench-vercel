@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildResultsWhere, ResultsFilters } from "@/lib/modules/results-filters";
 

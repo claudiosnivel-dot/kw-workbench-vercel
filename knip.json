@@ -13,6 +13,7 @@
     "middleware.ts",
     "prisma/seed.ts",
     "scripts/**/*.{mjs,ts}",
+    "prisma.config.ts",
     "next.config.ts",
     "tailwind.config.ts",
     "postcss.config.js",
@@ -28,11 +29,13 @@
     "tests/**/*.{ts,tsx}"
   ],
   "ignore": [
-    "tests/fixtures/tooling/**"
+    "tests/fixtures/tooling/**",
+    "lib/generated/**"
   ],
   "ignoreDependencies": [
     "eslint-config-next",
-    "jscpd"
+    "jscpd",
+    "@prisma/client"
   ],
   "ignoreExportsUsedInFile": true
 }

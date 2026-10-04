@@ -1,4 +1,4 @@
-import { BrandStatus, KeywordType, Prisma, ReviewStatus, SearchIntent } from "@prisma/client";
+import { BrandStatus, KeywordType, Prisma, ReviewStatus, SearchIntent } from "@/lib/generated/prisma/client";
 
 export type ResultsFilters = {
   searchText?: string;

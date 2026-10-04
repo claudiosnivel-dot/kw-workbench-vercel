@@ -1,4 +1,4 @@
-import { Prisma, UserRole, UserStatus } from "@prisma/client";
+import { Prisma, UserRole, UserStatus } from "@/lib/generated/prisma/client";
 import { type AuthUser, registerUser, updateUserAdminFields, validatePassword, validateUsername } from "@/lib/auth/credentials";
 import { prisma } from "@/lib/prisma";
 

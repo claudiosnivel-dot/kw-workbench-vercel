@@ -18,6 +18,8 @@ const eslintConfig = [
       "test-results/**",
       "tests/fixtures/tooling/**",
       "next-env.d.ts",
+      // Client Prisma generato da prisma generate (T-403).
+      "lib/generated/**",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),

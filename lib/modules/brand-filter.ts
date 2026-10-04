@@ -1,4 +1,4 @@
-import { BrandStatus } from "@prisma/client";
+import { BrandStatus } from "@/lib/generated/prisma/enums";
 
 export type BrandFilterResult = {
   brand_status: BrandStatus;

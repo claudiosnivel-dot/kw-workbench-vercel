@@ -12,6 +12,7 @@ pnpm-debug.log*
 .DS_Store
 coverage
 tsconfig.tsbuildinfo
+lib/generated
 playwright-report
 test-results
 .trueline/*

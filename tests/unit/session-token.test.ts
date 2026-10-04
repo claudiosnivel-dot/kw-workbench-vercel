@@ -1,6 +1,6 @@
 // Gate di T-301 (AC-301-1, AC-301-2): verifySessionToken non lancia mai e accetta solo firme valide.
 import { randomBytes } from "node:crypto";
-import { UserRole, UserStatus } from "@prisma/client";
+import { UserRole, UserStatus } from "@/lib/generated/prisma/enums";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { signPayload } from "@/lib/auth/crypto";
 import { createSessionToken, verifySessionToken } from "@/lib/auth/session";

@@ -1,4 +1,4 @@
-import { AutocompleteProvider } from "@prisma/client";
+import { AutocompleteProvider } from "@/lib/generated/prisma/enums";
 import { GoogleDirectAutocompleteProvider } from "@/lib/modules/providers/autocomplete/google-direct";
 import { MockAutocompleteProvider } from "@/lib/modules/providers/autocomplete/mock";
 import { AutocompleteProviderClient } from "@/lib/modules/providers/autocomplete/types";

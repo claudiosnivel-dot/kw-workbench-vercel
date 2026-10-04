@@ -1,4 +1,4 @@
-import { UserRole, UserStatus } from "@prisma/client";
+import { UserRole, UserStatus } from "@/lib/generated/prisma/enums";
 import { NextResponse } from "next/server";
 import { AdminActionError, createUserFromAdmin, listAdminUsers } from "@/lib/admin/users";
 import { AuthRequiredError, ForbiddenError, requireAdminUserFromRequest } from "@/lib/auth/current-user";

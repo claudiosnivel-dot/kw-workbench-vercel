@@ -1,4 +1,4 @@
-import { MetricsProvider } from "@prisma/client";
+import { MetricsProvider } from "@/lib/generated/prisma/enums";
 import { DisabledMetricsProvider } from "@/lib/modules/providers/metrics/disabled";
 import { MockMetricsProvider } from "@/lib/modules/providers/metrics/mock";
 import { NoMetricsProvider } from "@/lib/modules/providers/metrics/no-metrics";
