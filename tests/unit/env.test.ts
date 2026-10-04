@@ -61,6 +61,17 @@ describe("segreti obbligatori in produzione", () => {
   }
 });
 
+describe("DSN di Sentry (T-601)", () => {
+  it("accetta un DSN https o l'assenza e rifiuta un valore non conforme nominando la variabile, mai il valore", () => {
+    expect(() => parseEnv({ NODE_ENV: "development", SENTRY_DSN: "https://chiave@o1.ingest.sentry.io/2" })).not.toThrow();
+    expect(() => parseEnv({ NODE_ENV: "development", SENTRY_DSN: "" })).not.toThrow();
+
+    const message = errorMessageOf(() => parseEnv({ NODE_ENV: "development", NEXT_PUBLIC_SENTRY_DSN: "http://valore-errato" }));
+    expect(message).toMatch(/NEXT_PUBLIC_SENTRY_DSN/);
+    expect(message).not.toContain("valore-errato");
+  });
+});
+
 describe("envInt", () => {
   // covers: AC-201-3
   it("default per il vuoto, errore per il non intero, valore riportato nell'intervallo", () => {

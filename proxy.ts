@@ -53,7 +53,7 @@ function forward(request: NextRequest): NextResponse {
   }
 
   const nonce = btoa(crypto.randomUUID());
-  const csp = buildCsp(nonce, process.env.NODE_ENV === "development");
+  const csp = buildCsp(nonce, process.env.NODE_ENV === "development", process.env.NEXT_PUBLIC_SENTRY_DSN);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);

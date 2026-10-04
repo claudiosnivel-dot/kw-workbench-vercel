@@ -1,8 +1,16 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
+import { useEffect } from "react";
+
 // Sostituisce il layout radice quando l'errore nasce lì: html e body propri, senza gli stili globali.
-// Mostra solo il digest dell'errore, mai message o stack (CWE-209).
+// Mostra solo il digest dell'errore, mai message o stack (CWE-209). L'eccezione va a Sentry (T-601),
+// che senza DSN non è inizializzato e la ignora.
 export default function GlobalError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="it">
       <body>

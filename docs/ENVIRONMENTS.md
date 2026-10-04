@@ -52,6 +52,11 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `GOOGLE_SHEETS_OAUTH_CLIENT_ID` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
 | `GOOGLE_SHEETS_OAUTH_CLIENT_SECRET` | facolt. | facolt. | facolt. | sì | Vercel / locale / dashboard admin |
 | `GOOGLE_SHEETS_OAUTH_REDIRECT_URI` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
+| `SENTRY_DSN` | facolt. (senza DSN Sentry resta spento sul server; DSN https del progetto Sentry) | facolt. (come Production: stesse variabili) | facolt. (di norma vuota) | no (configurazione, non segreto) | Vercel / locale |
+| `NEXT_PUBLIC_SENTRY_DSN` | facolt. (stesso DSN, per il browser; letta in build, aggiunge l'host di ingest a `connect-src` della CSP) | facolt. | facolt. (di norma vuota) | no (finisce nel bundle client) | Vercel / locale |
+| `SENTRY_AUTH_TOKEN` | facolt. (solo build: caricamento delle source map; senza token il caricamento si salta e la build prosegue; mai con prefisso `NEXT_PUBLIC_`) | facolt. | no | sì | Vercel (Sensitive) / CI |
+| `SENTRY_ORG` | facolt. (slug dell'organizzazione Sentry, solo build) | facolt. | no | no | Vercel |
+| `SENTRY_PROJECT` | facolt. (slug del progetto Sentry, solo build) | facolt. | no | no | Vercel |
 
 ## Production
 

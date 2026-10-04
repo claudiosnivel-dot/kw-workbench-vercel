@@ -32,6 +32,7 @@ const KNOWN_PLACEHOLDERS = new Set([
 ]);
 
 const optional = z.string().optional();
+const SENTRY_DSN_KEYS = ["SENTRY_DSN", "NEXT_PUBLIC_SENTRY_DSN"] as const;
 
 const envSchema = z.object({
   NODE_ENV: optional,
@@ -74,6 +75,12 @@ const envSchema = z.object({
   GOOGLE_SHEETS_OAUTH_CLIENT_ID: optional,
   GOOGLE_SHEETS_OAUTH_CLIENT_SECRET: optional,
   GOOGLE_SHEETS_OAUTH_REDIRECT_URI: optional,
+  // Sentry (T-601): senza DSN l'SDK non si inizializza. Token, org e progetto servono solo in build per le source map.
+  SENTRY_DSN: optional,
+  NEXT_PUBLIC_SENTRY_DSN: optional,
+  SENTRY_AUTH_TOKEN: optional,
+  SENTRY_ORG: optional,
+  SENTRY_PROJECT: optional,
 });
 
 type RawEnv = z.infer<typeof envSchema>;
@@ -98,6 +105,16 @@ function present(value: string | undefined): string | undefined {
 
 function isAuthEnabledValue(raw: string | undefined): boolean {
   return !AUTH_DISABLING_VALUES.has((raw ?? "").trim().toLowerCase());
+}
+
+// DSN di Sentry: https://<chiave pubblica>@<host>/<id numerico del progetto>.
+function isSentryDsn(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.username !== "" && /\/\d+$/.test(url.pathname);
+  } catch {
+    return false;
+  }
 }
 
 function checkSecret(value: string | undefined): string | null {
@@ -147,6 +164,13 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
       if (problem) {
         ctx.addIssue({ code: "custom", path: [name], message: problem });
       }
+    }
+  }
+
+  for (const name of SENTRY_DSN_KEYS) {
+    const dsn = present(raw[name]);
+    if (dsn !== undefined && !isSentryDsn(dsn)) {
+      ctx.addIssue({ code: "custom", path: [name], message: "deve essere un DSN di Sentry (https://<chiave>@<host>/<progetto>)" });
     }
   }
 
