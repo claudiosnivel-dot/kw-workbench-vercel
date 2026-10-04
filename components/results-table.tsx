@@ -164,7 +164,7 @@ export function ResultsTable({
                       <span className="status-chip">{row.subproject_name}</span>
                     </td>
                   )}
-                  <td className="max-w-[20rem] break-words px-3 py-3 font-medium">{displayKeyword}</td>
+                  <td className="max-w-[20rem] wrap-break-word px-3 py-3 font-medium">{displayKeyword}</td>
                   <td className="px-3 py-3 text-xs">{row.source}</td>
                   <td className="hidden px-3 py-3 md:table-cell">
                     <span className="status-chip">{row.search_intent}</span>

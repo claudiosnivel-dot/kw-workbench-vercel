@@ -101,7 +101,7 @@ export default async function DashboardPage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Panoramica</p>
-            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl sm:leading-10">
               Controlla i tuoi progetti SEO e organizza il lavoro per sezioni
             </h1>
             <p className="text-sm text-slate-600 sm:text-base">

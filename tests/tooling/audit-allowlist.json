@@ -12,21 +12,9 @@
     "closedBy": ["T-406"]
   },
   {
-    "ghsa": "GHSA-6g55-p6wh-862q",
-    "package": "postcss",
-    "reason": "postcss fino a 8.5.11: resta solo postcss 8.4.49, devDependency diretta del build CSS di Tailwind 3 (il percorso annidato in next è chiuso da T-404: next 16.3.8 usa postcss 8.5.23). Gira solo in build sul CSS del repo.",
-    "closedBy": ["T-405"]
-  },
-  {
-    "ghsa": "GHSA-r28c-9q8g-f849",
-    "package": "postcss",
-    "reason": "postcss fino a 8.5.17: stesso percorso residuo di GHSA-6g55-p6wh-862q (postcss 8.4.49 diretto per Tailwind 3; next 16.3.8 usa 8.5.23). Gira solo in build sul CSS del repo.",
-    "closedBy": ["T-405"]
-  },
-  {
     "ghsa": "GHSA-vfj7-8cjw-p6xm",
     "package": "braces",
-    "reason": "braces fino a 3.0.3, l'ultima su npm: nessun fix upstream. Solo strumenti di sviluppo via micromatch: tailwindcss 3 (chiuso da T-405), @next/eslint-plugin-next con fast-glob 3.3.1 (anche in eslint-config-next 16.3.8) e jscpd 4.3.0 (fix solo in jscpd 5, major non pianificato). Per questi due percorsi nessun task del blueprint chiude l'advisory: decisione dell'utente aperta.",
+    "reason": "braces fino a 3.0.3, l'ultima su npm: nessun fix upstream. Solo strumenti di sviluppo via micromatch: @next/eslint-plugin-next con fast-glob 3.3.1 (anche in eslint-config-next 16.3.8) e jscpd 4.3.0 (fix solo in jscpd 5, major non pianificato); il percorso di tailwindcss 3 è chiuso da T-405. Per questi due percorsi nessun task del blueprint chiude l'advisory: decisione dell'utente aperta.",
     "closedBy": []
   }
 ]

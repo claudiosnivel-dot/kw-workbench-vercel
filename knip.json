@@ -15,8 +15,7 @@
     "scripts/**/*.{mjs,ts}",
     "prisma.config.ts",
     "next.config.ts",
-    "tailwind.config.ts",
-    "postcss.config.js",
+    "postcss.config.mjs",
     "vitest.config.ts",
     "playwright.config.ts"
   ],
@@ -35,7 +34,8 @@
   "ignoreDependencies": [
     "eslint-config-next",
     "jscpd",
-    "@prisma/client"
+    "@prisma/client",
+    "tailwindcss"
   ],
   "ignoreExportsUsedInFile": true
 }
