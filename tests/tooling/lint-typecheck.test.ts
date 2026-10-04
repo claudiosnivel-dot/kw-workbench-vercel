@@ -1,7 +1,13 @@
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const COMMAND_TIMEOUT_MS = 240_000;
+
+function readJson<T>(relativePath: string): T {
+  return JSON.parse(readFileSync(join(process.cwd(), relativePath), "utf8")) as T;
+}
 
 /** Esegue un comando nella radice del repo con stdin chiuso: un prompt interattivo non riceverebbe input. */
 function run(command: string): SpawnSyncReturns<string> {
@@ -56,4 +62,42 @@ describe("lint e typecheck come comandi", () => {
     expect(status.stdout.split("\n").filter((line) => line.includes("tsconfig.tsbuildinfo"))).toEqual([]);
     expect(checkIgnore.status).toBe(0);
   });
+
+  // covers: AC-402-1
+  it("tsc è la 6.0 e package.json la fissa senza prefissi", () => {
+    const version = run("npx tsc --version");
+    const pkg = readJson<{ devDependencies: Record<string, string> }>("package.json");
+
+    expect(version.status, version.stderr).toBe(0);
+    expect(version.stdout.trim().startsWith("Version 6.0.")).toBe(true);
+    expect(pkg.devDependencies.typescript).toMatch(/^6\.0\.\d+$/);
+  }, COMMAND_TIMEOUT_MS);
+
+  // covers: AC-402-2
+  it("npm run typecheck esce 0 senza righe error TS", () => {
+    const output = typecheck.stdout + typecheck.stderr;
+
+    expect(typecheck.status, output).toBe(0);
+    expect(output.split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
+  });
+
+  // covers: AC-402-3
+  it("tsconfig.json dichiara types con node e non ha ignoreDeprecations né baseUrl", () => {
+    const { compilerOptions } = readJson<{ compilerOptions: Record<string, unknown> }>("tsconfig.json");
+
+    expect(compilerOptions.types).toContain("node");
+    expect(compilerOptions).not.toHaveProperty("ignoreDeprecations");
+    expect(compilerOptions).not.toHaveProperty("baseUrl");
+  });
+
+  // covers: AC-402-4
+  it("npm run lint e npm ls typescript-eslint escono 0 senza invalid né ERESOLVE", () => {
+    // Con eslint-config-next 15 typescript-eslint arriva come @typescript-eslint/*; da Next 16 anche come meta-pacchetto.
+    const ls = run("npm ls typescript-eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin");
+
+    for (const result of [lint, ls]) {
+      expect(result.status, result.stdout + result.stderr).toBe(0);
+      expect(result.stdout + result.stderr).not.toMatch(/invalid|ERESOLVE/);
+    }
+  }, COMMAND_TIMEOUT_MS);
 });
