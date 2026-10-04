@@ -23,6 +23,7 @@ type ExtractionSummary = {
   storedCandidates: number;
   partial?: boolean;
   failedQueries?: number;
+  metricsNotice?: "PROVIDER_DISABLED";
 };
 
 async function mapWithConcurrency<T, R>(
@@ -267,5 +268,6 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     storedCandidates: preparedRows.length,
     partial: failedQueries > 0,
     failedQueries,
+    ...(metricsProvider.disabledReason ? { metricsNotice: metricsProvider.disabledReason } : {}),
   };
 }

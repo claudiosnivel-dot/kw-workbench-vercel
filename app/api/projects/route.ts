@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { parseProjectPayload } from "@/lib/modules/project-settings";
+import { invalidSettingsResponse } from "@/lib/modules/project-settings-response";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
@@ -33,7 +34,16 @@ export async function POST(request: Request) {
   const user = await requireAuthenticatedUserFromRequest(request);
 
   const payload = (await request.json()) as Record<string, unknown>;
-  const input = parseProjectPayload(payload);
+  let input: ReturnType<typeof parseProjectPayload>;
+  try {
+    input = parseProjectPayload(payload);
+  } catch (error) {
+    const invalid = invalidSettingsResponse(error);
+    if (!invalid) {
+      throw error;
+    }
+    return invalid;
+  }
   const createInitialSection = payload.createInitialSection !== false;
   const autocompleteProvider = user.isRootAdmin ? input.autocomplete_provider : "GOOGLE_DIRECT";
 

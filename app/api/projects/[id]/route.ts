@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { parseProjectDefaultsPayload } from "@/lib/modules/project-settings";
+import { invalidSettingsResponse } from "@/lib/modules/project-settings-response";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -61,20 +62,22 @@ export async function PATCH(request: Request, context: RouteContext) {
     const user = await requireAuthenticatedUserFromRequest(request);
     const { id } = await context.params;
     const payload = (await request.json()) as Record<string, unknown>;
-    const input = parseProjectDefaultsPayload(payload);
-    const autocompleteProvider = user.isRootAdmin ? input.autocomplete_provider : "GOOGLE_DIRECT";
 
+    // Il provider salvato serve a parseProjectDefaultsPayload: GOOGLE_KEYWORD_PLANNER resta solo se c'era già.
     const project = await prisma.project.findFirst({
       where: {
         id,
         owner_user_id: user.id,
       },
-      select: { id: true },
+      select: { metrics_provider: true },
     });
 
     if (!project) {
       return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
     }
+
+    const input = parseProjectDefaultsPayload(payload, project.metrics_provider);
+    const autocompleteProvider = user.isRootAdmin ? input.autocomplete_provider : "GOOGLE_DIRECT";
 
     const updated = await prisma.project.update({
       where: { id },
@@ -96,6 +99,10 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return NextResponse.json({ data: updated });
   } catch (error) {
+    const invalid = invalidSettingsResponse(error);
+    if (invalid) {
+      return invalid;
+    }
     console.error("PATCH /api/projects/[id] failed", error);
     return NextResponse.json({ error: "Errore interno durante il salvataggio del progetto" }, { status: 500 });
   }
