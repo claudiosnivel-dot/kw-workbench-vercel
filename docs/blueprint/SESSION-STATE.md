@@ -9,7 +9,7 @@
 | **Progetto** | Seo God Mode (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-10-04 |
-| **Sessione corrente** | 2026-10-02/04 — avvio BUILD: emendamenti al blueprint, T-101, correzione di Trueline (0.4.2) |
+| **Sessione corrente** | 2026-10-04 — BUILD del macrotask `foundation` (T-102…T-110), checkpoint VERDE, CI verde, merge su `master` sospeso (deploy Preview Vercel fallito) |
 
 ---
 
@@ -17,7 +17,7 @@
 
 | Macrotask | Stato | Checkpoint | Note |
 |---|---|---|---|
-| `foundation` (01) | in corso | non eseguito | T-101 chiuso (`a1d1ad2`); prossimo T-102 |
+| `foundation` (01) | costruito; merge sospeso | VERDE (2026-10-04) | T-101…T-110 chiusi; CI verde (run 37168260206); PR #1 aperta, merge in attesa della causa del deploy Preview fallito |
 | `environments` (02) | todo | — | T-203 richiede un'azione dell'utente (creare il DB di staging) |
 | `hotfix` (03) | todo | — | Difetti visibili in produzione |
 | `stack-upgrade` (04) | todo | — | |
@@ -38,29 +38,43 @@
 
 ## 2. Macrotask corrente
 
-- **Selezionato**: `foundation` (01) — nessuna dipendenza.
-- **Task atomici**: T-101 chiuso. Prossimo T-102, poi T-103…T-107, T-109, T-108, T-110.
-- **Criteri/test di riferimento**: `docs/blueprint/01-foundation.md`.
+- **Ultimo costruito**: `foundation` (01): tutti i task chiusi, checkpoint VERDE, CI verde; manca solo il merge su `master` (sospeso, vedi §3).
+- **Prossimo**: `environments` (02, dipende da 01) dopo il merge di 01; in alternativa `hotfix` (03, dipende solo da 01). T-203 richiede di creare il DB di staging.
+- **Criteri/test di riferimento**: `docs/blueprint/02-environments.md`.
 
 ## 3. Stato git
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/foundation` (da `trueline/blueprint` `36487f8`); locale, non pushato |
-| Ultimo commit | `24fbdd0` (allowlist gitleaks); prima `a1d1ad2` (T-101) e `36487f8` (emendamenti, su `trueline/blueprint`) |
-| Stato merge su `master` | non eseguito |
+| Branch di lavoro | `trueline/build/foundation` (da `trueline/blueprint` `36487f8`), pushato su `origin` il 2026-10-04; PR #1 verso `master` (https://github.com/claudiosnivel-dot/kw-workbench-vercel/pull/1) |
+| Ultimo commit | chiusura sessione (questo file); prima `41e2f19` (fix del checkpoint su `ci.yml`), `4f8c27c` T-110, `4ac9f5c` T-108, `f21f390` T-109, `21bf448` T-107, `1da8135` T-106, `bc52a88` T-105, `c4d3357` T-104, `892a970` T-103, `2cccdd1` T-102 |
+| Stato merge su `master` | **SOSPESO**. Checkpoint e CI verdi, ma il deploy Preview Vercel del branch (`dpl_8Jx64SmFd7F47ae1kEGUgkTNAYNj`, check «Vercel» della PR) è fallito con causa non leggibile da questa macchina: CLI Vercel non autenticata e Chrome collegato a un altro account Vercel (404). È il primo deploy Preview del progetto (prima solo Production). Il merge farebbe partire il deploy di produzione con lo stesso `vercel-build`; si riprende dopo aver letto i log (`npx vercel inspect dpl_8Jx64SmFd7F47ae1kEGUgkTNAYNj --logs`). `master` è antenato del branch: merge fast-forward possibile |
 | Deploy-coupling | `main_deploy_coupled: true` (rilevato da `detect_deploy_coupling.mjs`, segnale `vercel.json`): ogni push su `master` va in produzione. Merge e push su `master` autonomi a checkpoint verde (deploy automatico), per decisione dell'utente del 2026-10-04 (D-04 emendata) |
-| Push dei branch | nessun branch pushato finora. Da ora push autonomo a checkpoint verde; rischio accettato: prima di T-202/T-203 il deploy Preview può migrare e fare il seed sul DB di produzione (D-04 emendata 2026-10-04, D-05) |
+| Push dei branch | `trueline/build/foundation` pushato a checkpoint verde (nessuna migrazione nel branch, nessun T-202); il push ha avviato il deploy Preview (che usa `vercel-build`: rischio accettato con D-04 emendata e D-05), fallito per una causa non ancora nota |
 
 ## 4. Baseline & budget
 
-- **Baseline di sicurezza**: non ancora catturata (`.trueline/baseline.json`, al primo checkpoint dopo T-108).
-- **Baseline d'igiene**: non ancora catturata (`.trueline/hygiene-baseline.json`, T-108).
-- **Budget consumato**: 0 / `MAX_RETRIES_PER_FINDING = 2` per finding, `GLOBAL_WALL_CLOCK_MS = 242401` per sessione.
-- **Preflight oracoli** (2026-10-02, solo controllo): pronti semgrep 1.175.1 (Docker), gitleaks 8.30.1, osv-scanner 1.9.2 e rls_check (built-in); mancano knip (T-108), jscpd (T-108) e madge (T-109). Trueline installata: 0.4.2.
+- **Baseline di sicurezza**: catturata il 2026-10-04 (`.trueline/baseline.json`, locale e gitignorata): 59 finding (gitleaks 4, osv 47, knip 8, rls 0). Confrontata con una cattura sul commit `36487f8` (prima del macrotask): i soli finding in più sono il segreto in `.npm-cache/` (cache locale gitignorata, già nota) e `uuid@8.3.2` MEDIUM (GHSA-w5hq-g745-h8pq, portato da exceljs di T-107). Il checkpoint di Trueline 0.4.2 non legge il formato snapshot con `--baseline` (si aspetta un array): si passa `.trueline/baseline-fingerprints.json`, array dei 59 fingerprint.
+- **Baseline d'igiene**: catturata e versionata (`.trueline/hygiene-baseline.json`): 202 finding (jscpd 201, twin 1, cicli 0).
+- **Budget consumato**: 2 finding nel loop di fix, entrambi chiusi `verified`: segreto nuovo in `playwright.config.ts` (1 tentativo) e duplicazione nuova in `.github/workflows/ci.yml` (2 tentativi su 3, cioè 1 retry su `MAX_RETRIES_PER_FINDING = 2`). `GLOBAL_WALL_CLOCK_MS = 242401` superato dalle sole esecuzioni del checkpoint (circa 260-270 s l'una, 3 esecuzioni): il loop è stato condotto a mano, non da `run_loop.mjs`.
+- **Preflight oracoli** (2026-10-04): PREFLIGHT OK, semgrep (Docker), gitleaks 8.30.1, osv-scanner 1.9.2, knip 6.39.0, jscpd 4.3.0, madge 8.0.0, rls_check built-in. Trueline installata: 0.4.2.
 - **Ambiente**: Docker 29.5; Node 25.5 locale, fuori dagli engines di vitest 5 e jsdom 30 (funziona con avviso; il riferimento è la CI su Node 22, poi Node 24 con T-407). Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari.
 
 ## 5. Esiti dell'ultima sessione
+
+### Sessione 2026-10-04 — BUILD del macrotask `foundation`
+
+- **T-102** (`2cccdd1`): `eslint.config.mjs` flat con eslint-config-next 15.5.12 via FlatCompat, ESLint 9.39.5; `lint` = `eslint . --max-warnings=0`, `typecheck` = `tsc --noEmit`; 4 escape in JSX; `no-unused-vars` ignora i parametri `_` (motivo nel config). Gate: `tests/tooling/lint-typecheck.test.ts` 4/4.
+- **T-103** (`892a970`): Playwright 1.63.0, server `next build` + `next start` su 3100 con ogni variabile dell'app esplicita, segreti casuali a ogni run, global setup con e2e-user e 30 candidate a timestamp fissi; baseline login, dashboard e risultati generate nel container `mcr.microsoft.com/playwright:v1.63.0-noble`. Gate: smoke verde su Windows e Linux; su Linux con `CI=true` confronti verdi (exit 0) e, senza una baseline, exit 1 senza crearla; job e2e della CI verde.
+- **T-104** (`c4d3357`), **T-105** (`bc52a88`), **T-106** (`1da8135`), **T-107** (`21bf448`): caratterizzazione di auth e sessione (4/4), isolamento tra utenti e invarianti (5/5), golden master della pipeline (4/4; 927 candidate, 135 query; stabile su 3 esecuzioni), export CSV/XLSX/JSON (4/4, exceljs 4.4.0). Difetti fotografati con `impacted-by` T-301, T-302, T-303, T-705, T-706, T-804, T-807, T-1003. Nessuna modifica al codice di produzione.
+- **T-109** (`f21f390`): `lib/onboarding/types.ts` (solo `import type`), `progress.ts` importa e ri-esporta, i due componenti importano da `types`; madge 8.0.0 e `findForbiddenPaths`. Gate: test scritto prima e rosso (2 cammini `components` → `lib/prisma.ts`), poi 4/4.
+- **T-108** (`4ac9f5c`): knip 6.39.0 (minimo di Trueline: 6), jscpd 4.3.0, `knip.json`, `tests/tooling/knip-baseline.json` con il morto dell'audit, `diffKnipAgainstBaseline`, `.gitignore` con `.trueline/*` e la negazione della baseline d'igiene. Gate: 4/4. Falsi positivi di configurazione risolti in `knip.json`: plugin Playwright senza caricare la config (che esige `TEST_DATABASE_URL`), `eslint-config-next` e `jscpd` in `ignoreDependencies`, `ignoreExportsUsedInFile: true`. Con quest'ultima opzione 3 voci dell'audit (`isRootAdminUser`, `requireAdminUserFromCookies`, `repairCommonMojibake`, usate nel proprio file) non sono più segnalate e restano nella baseline; senza l'opzione sarebbero comparse 7 segnalazioni fuori dall'audit (3 costanti di `lib/onboarding/constants.ts`, `LoginFailureReason`, `TEST_USER_PASSWORD`, le due ri-esportazioni di T-109), tutte usate nel proprio file.
+- **T-110** (`4f8c27c`, `41e2f19`): `.github/workflows/ci.yml` su push e pull_request verso `master`, `permissions: contents: read`, azioni fissate per SHA (checkout v7.0.1, setup-node v7.0.0, upload-artifact v7.0.1), Node 22.x, Postgres 16 di servizio, env fittizie generate nel job; ancore YAML per i passi condivisi. Gate: `tests/tooling/ci-workflow.test.ts` 4/4; **prima run verde**: https://github.com/claudiosnivel-dot/kw-workbench-vercel/actions/runs/37168260206 (checks, integration, e2e, build: success).
+- **Checkpoint** (`run_checkpoint.mjs --in-place --mode build --blueprint docs/blueprint`, baseline dei fingerprint): **VERDE** — 1 igiene verde (dead-code 8, dup 201, cicli 0, twin 1, arch 0, tutti preesistenti), 2 sicurezza verde (gitleaks 4, osv 47, semgrep 0 su 139 file, rls 0; nessun nuovo ≥ HIGH), 3 regressioni verde, 4 conformità verde (`npm test`). Tracciabilità AC: oracolo `assertionTrace` di Trueline ristretto ai 10 task di `foundation`: 39 AC, 13 target test, ok.
+- **Loop di fix**: (a) segreto nuovo in `playwright.config.ts` (password di bootstrap letterale di T-103): ora generata a ogni run; riverificato con l'oracolo secret (sparito) e con lo smoke E2E. (b) duplicazione nuova in `ci.yml` (2 tentativi, vedi §4): riverificata con `run_dupcheck` (0 cloni in `ci.yml`), con il test di T-110 e con il checkpoint completo. Nessuna rimozione di dead-code.
+- **Copertura non verificata** (dichiarata): il controllo 4 del checkpoint gira sul ramo legacy (`npm test`, senza E2E) perché il pack `postgres-jsts` non dichiara `test_runner.run_file`; il controllo del potere delle asserzioni (AT-1 Fase C) non è stato eseguito. L'oracolo osv di Trueline normalizza tutte le vulnerabilità come MEDIUM: la soglia HIGH non può scattare (`npm audit`: 21 voci, 1 critica `next` e 14 alte, preesistenti o della stessa famiglia braces/micromatch; correzioni in T-401/T-402). L'E2E visivo è verificato solo su Linux (container e CI).
+- **Dipendenze aggiunte** (versione esatta): eslint 9.39.5, eslint-config-next 15.5.12, @eslint/eslintrc 3.3.7, @playwright/test 1.63.0, exceljs 4.4.0, madge 8.0.0, @types/madge 5.0.3, knip 6.39.0, jscpd 4.3.0, yaml 2.9.1. `npm audit`: 11 → 21 voci (stessi avvisi su nuovi percorsi: braces/micromatch via @next/eslint-plugin-next e jscpd; nuovo `uuid` MEDIUM via exceljs).
+- **Problemi di Trueline 0.4.2 da riportare al repo della skill** (non corretti in questa sessione, regola un macrotask per sessione): `run_checkpoint.mjs --baseline` ignora lo snapshot di `baseline.mjs` (campo `findings` oggetto); `baseline.mjs capture --hygiene` senza `--out` sovrascrive `.trueline/baseline.json`; `run_semgrep.mjs` risolve i percorsi relativi contro la radice della skill (dentro il checkpoint riceve il percorso assoluto e scansiona il progetto); osv senza severità; i path dei finding d'igiene sono prefissati `eval/reference-app/`.
 
 ### Sessione 2026-10-02/04 — avvio BUILD
 
@@ -90,9 +104,10 @@
 
 ## 6. Prossimi passi
 
-- L'utente rivede il blueprint e conferma o modifica le decisioni PROPOSTA del ledger (00-INDEX §4), soprattutto D-08, D-09, D-10 e D-23…D-29.
-- L'utente decide sui rilievi di atomicità (dividere o tenere T-403, T-902, T-905, T-1101, T-1202, T-1603).
-- Azione esterna: creare un account API DataForSEO quando si arriva a T-902 (verificare se offre un ambiente sandbox gratuito per lo sviluppo); nessuna nuova domanda di Basic Access a Google, salvo cambio di prodotto verso la gestione di campagne Google Ads.
-- L'utente fornisce D-14 (piani, prezzi, limiti) prima del macrotask 16 e D-15 (testi legali) prima di T-1803.
-- BUILD, macrotask `foundation` su `trueline/build/foundation`: prossimo T-102 (lint e typecheck), poi T-103…T-107, T-109, T-108, T-110, poi il checkpoint a 4 controlli.
-- Per i test d'integrazione: `docker compose -f docker-compose.test.yml up -d` (il container è fermo) e `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:54329/kw_workbench_test` nella shell.
+- **Utente**: leggere i log del deploy Preview fallito (`npx vercel inspect dpl_8Jx64SmFd7F47ae1kEGUgkTNAYNj --logs`, oppure il check «Vercel» della PR #1) e dire se la causa riguarda il codice o la configurazione del progetto Vercel (per esempio variabili d'ambiente non definite per l'ambiente Preview). Poi merge di PR #1 su `master` (deploy di produzione automatico).
+- **Utente**: confermare la scelta `ignoreExportsUsedInFile: true` di `knip.json` (T-108) o chiedere di tornare al default con le 7 voci in più nella baseline.
+- **Utente**: confermare o modificare le decisioni PROPOSTA del ledger (00-INDEX §4), in particolare quelle che servono ai macrotask 02 e 03, e decidere sui rilievi di atomicità (T-403, T-902, T-905, T-1101, T-1202, T-1603).
+- **Utente**: D-14 (piani, prezzi, limiti) prima del macrotask 16, D-15 (testi legali) prima di T-1803; azioni esterne: creare il DB di staging per T-203 e l'account DataForSEO per T-902.
+- **BUILD**: dopo il merge di 01, macrotask `environments` (02) su `trueline/build/environments`.
+- **Trueline**: riportare al repo della skill i problemi elencati nella sessione 2026-10-04.
+- Per test d'integrazione ed E2E: `docker compose -f docker-compose.test.yml up -d` e `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:54329/kw_workbench_test` nella shell; per il checkpoint, `.trueline/baseline-fingerprints.json` come `--baseline` (rigenerabile da `.trueline/baseline.json`, campo `fingerprints`).
