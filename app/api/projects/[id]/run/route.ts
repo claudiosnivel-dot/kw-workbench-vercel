@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { enqueueExtractionJob, jobFailedPayload, runJobById } from "@/lib/modules/jobs/job-runner";
+import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
+import { runJobResponse } from "@/lib/modules/jobs/run-response";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -61,10 +62,6 @@ export async function POST(request: Request, context: RouteContext) {
   const job = await enqueueExtractionJob(project.id, targetSubproject.id);
   const completed = await runJobById(job.id);
 
-  if (completed?.status === "failed") {
-    return NextResponse.json(jobFailedPayload(completed.id), { status: 500 });
-  }
-
-  return NextResponse.json({ data: completed, meta: { subprojectId: targetSubproject.id } });
+  return runJobResponse(completed, { data: completed, meta: { subprojectId: targetSubproject.id } });
 }
 

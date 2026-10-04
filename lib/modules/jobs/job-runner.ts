@@ -14,11 +14,6 @@ export async function enqueueExtractionJob(projectId: string, subprojectId: stri
   });
 }
 
-/** Corpo della risposta per un job failed: senza error_message grezzo, che può contenere dettagli interni. */
-export function jobFailedPayload(jobId: string) {
-  return { error: "Estrazione non riuscita", code: "JOB_FAILED", jobId };
-}
-
 export async function runJobById(jobId: string) {
   const job = await prisma.job.findUnique({ where: { id: jobId } });
   if (!job) {

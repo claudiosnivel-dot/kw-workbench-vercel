@@ -1,12 +1,13 @@
 // Gate di T-301 (AC-301-1, AC-301-2): verifySessionToken non lancia mai e accetta solo firme valide.
+import { randomBytes } from "node:crypto";
 import { UserRole, UserStatus } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { signPayload } from "@/lib/auth/crypto";
 import { createSessionToken, verifySessionToken } from "@/lib/auth/session";
 import { resetEnvForTests } from "@/lib/env";
 
-// Segreto di sessione fittizio, usato solo da questo test: mai un valore reale.
-const TEST_SECRET = "unit-session-secret-not-for-production-use";
+// Segreto di sessione generato a ogni esecuzione: nessun valore letterale nel sorgente.
+const TEST_SECRET = randomBytes(32).toString("hex");
 
 function base64Url(text: string): string {
   return Buffer.from(text, "utf8").toString("base64url");
