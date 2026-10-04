@@ -1,5 +1,5 @@
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
@@ -29,6 +29,13 @@ function run(command: string): SpawnSyncReturns<string> {
 
 function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(join(process.cwd(), relativePath), "utf8")) as T;
+}
+
+function sourceFiles(dir: string): string[] {
+  return readdirSync(join(process.cwd(), dir), { recursive: true, encoding: "utf8" })
+    .map((file) => join(dir, file))
+    .filter((file) => /\.(ts|tsx|mjs|js)$/.test(file) && statSync(join(process.cwd(), file)).isFile())
+    .filter((file) => !file.replace(/\\/g, "/").startsWith("lib/generated/"));
 }
 
 /** Advisory high dell'albero, per id GHSA, con i pacchetti che le dichiarano direttamente. */
@@ -97,4 +104,19 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
 
     expect(allowlist.filter((entry) => !reported.get(entry.ghsa)?.has(entry.package)).map((e) => e.ghsa)).toEqual([]);
   });
+
+  // covers: AC-406-4
+  it("xlsx non è nell'albero delle dipendenze e nessun sorgente lo importa", () => {
+    const ls = run("npm ls xlsx --json");
+    const tree = JSON.parse(ls.stdout) as LsOutput;
+    expect(tree.dependencies ?? {}).not.toHaveProperty("xlsx");
+    expect(ls.stdout).not.toContain("\"xlsx\"");
+
+    const importers = ["app", "lib", "components", "prisma", "scripts"]
+      .flatMap(sourceFiles)
+      .filter((file) =>
+        /from\s+["']xlsx["']|require\(\s*["']xlsx["']\s*\)/.test(readFileSync(join(process.cwd(), file), "utf8"))
+      );
+    expect(importers).toEqual([]);
+  }, COMMAND_TIMEOUT_MS);
 });
