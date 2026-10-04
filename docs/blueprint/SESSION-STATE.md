@@ -9,7 +9,7 @@
 | **Progetto** | Seo God Mode (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-10-04 |
-| **Sessione corrente** | 2026-10-04 (seconda) — merge di `foundation` e `environments` su `master` (T-205 in attesa di D-20, poi confermata), checkpoint VERDE; DB di produzione riattivato dall'utente e redeploy di produzione verde; staging annullato (emendamento di D-04) |
+| **Sessione corrente** | 2026-10-04 (terza) — BUILD di T-205 (RLS deny-by-default): macrotask `environments` chiuso, checkpoint VERDE, CI verde, PR #5 mergiata su `master` e deploy di produzione verde con la migrazione 0012 applicata |
 
 ---
 
@@ -18,7 +18,7 @@
 | Macrotask | Stato | Checkpoint | Note |
 |---|---|---|---|
 | `foundation` (01) | chiuso | VERDE (2026-10-04) | T-101…T-110 chiusi; CI verde; PR #1 mergiata su `master` (`37d2bd0`) |
-| `environments` (02) | costruito in parte | VERDE (2026-10-04) | T-201…T-204 chiusi (i passi manuali di T-203 sono annullati: niente staging, D-04 emendata); T-205 da costruire (D-20 confermata il 2026-10-04). PR #2 mergiata (`7b41a41`) |
+| `environments` (02) | chiuso | VERDE (2026-10-04, due esecuzioni: T-201…T-204 e T-205) | T-201…T-205 chiusi (i passi manuali di T-203 sono annullati: niente staging, D-04 emendata). PR #2 (`7b41a41`) e PR #5 (`41fc5e1`) mergiate; resta la verifica dell'utente nel Security Advisor di Supabase (DoD di T-205) |
 | `hotfix` (03) | todo | — | Difetti visibili in produzione |
 | `stack-upgrade` (04) | todo | — | |
 | `auth-hardening` (05) | todo | — | |
@@ -38,32 +38,42 @@
 
 ## 2. Macrotask corrente
 
-- **Ultimo costruito**: `environments` (02): T-201…T-204 chiusi (per T-203 i passi manuali dello staging sono annullati dall'emendamento di D-04 del 2026-10-04); T-205 non costruito perché D-20 era ancora PROPOSTA; l'utente l'ha confermata a fine sessione. Checkpoint VERDE.
-- **Prossimo**: completare `environments` (02) con T-205, ora sbloccato da D-20 confermata: è il primo macrotask non chiuso e T-205 blocca T-403 (04 `stack-upgrade`). Poi `hotfix` (03). Senza staging, T-601 e T-605 (06) vanno adattati quando si costruisce il macrotask 06 (vedi D-04).
+- **Ultimo costruito**: `environments` (02), chiuso con T-205 in questa sessione (T-201…T-204 nella sessione precedente; per T-203 i passi manuali dello staging sono annullati dall'emendamento di D-04 del 2026-10-04). Checkpoint VERDE.
+- **Prossimo**: `hotfix` (03), primo macrotask non chiuso con le dipendenze verdi (dipende solo da 01); usa D-03 e D-09, entrambe DECISE. Senza staging, T-601 e T-605 (06) vanno adattati quando si costruisce il macrotask 06 (vedi D-04).
 - **Criteri/test di riferimento**: `docs/blueprint/03-hotfix.md`.
 
 ## 3. Stato git
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/environments` (da `master` `37d2bd0`), pushato su `origin` il 2026-10-04; PR #2 verso `master` (https://github.com/claudiosnivel-dot/kw-workbench-vercel/pull/2) |
-| Ultimo commit | chiusura sessione (questo file); prima `0580772` (fix del checkpoint, T-201), `a1fc82e` T-204, `92530ee` T-203, `c768f9d` T-202, `218f046` T-201 |
-| CI della PR | verde su `0580772`: run 37189337083 (checks, integration, e2e, build) |
-| Deploy di produzione | **verde**: `dpl_CrjmSdcVDdpYrg3G722PKCbNkkRU`, redeploy di `7b41a41` dopo la riattivazione del DB (nessuna migrazione pendente, seed eseguito, alias `titanseo.vercel.app`). Smoke: `/login` 200, sessione anonima 401, login con credenziali vuote 401, `/` senza cookie 307 verso `/login`. I due deploy precedenti (`dpl_8hbtXBoMhS1RcQnzHQTUwvyLR6kr`, `dpl_nVqrr5NksfJd3PxzoPBJm7rr1Qzj`) erano falliti per il DB in pausa |
-| Deploy Preview del branch | **verde**: `dpl_AXiKaLgQ2Wy3Fe1tSonVHjAy5nj7` (87 s). Con T-202 il build di Preview salta migrazioni e seed (`PRODUCTION_DB_HOST` non impostata) e `next build` passa: conferma che i deploy falliti si fermavano a `prisma migrate deploy` |
-| Merge su `master` | PR #1 mergiata (`37d2bd0`), PR #2 mergiata (`7b41a41`, CI su `master` verde: run 37189624123). L'emendamento di D-04 (niente staging) arriva su `master` dal branch `trueline/emend/no-staging` |
+| Branch di lavoro | `trueline/build/environments-t205` (da `master` `cc87d61`), pushato su `origin` il 2026-10-04; PR #5 verso `master` (https://github.com/claudiosnivel-dot/kw-workbench-vercel/pull/5), mergiata. La chiusura di sessione (questo file) arriva su `master` con una PR successiva dallo stesso branch |
+| Ultimo commit | chiusura sessione (questo file); prima `a00fd55` T-205 (migrazione 0012 e `tests/integration/rls-lockdown.test.ts`, checkpoint VERDE) |
+| CI della PR | verde su `a00fd55`: run 37196493164 (checks, integration, e2e, build) |
+| Deploy di produzione | **verde**: `dpl_GBUztKNupE8XLshorSwUzY1jz7o2`, deploy di `41fc5e1` (merge di PR #5), alias `titanseo.vercel.app`. Log del build: `Applying migration 0012_enable_rls_deny_by_default`, «All migrations have been successfully applied», seed eseguito dopo la migrazione. Smoke: `/login` 200, sessione anonima 401, `/` senza cookie 307 verso `/login`, login con credenziali vuote 401 e con utente inesistente 401 (entrambi leggono `users` via Prisma: niente 500) |
+| Deploy Preview del branch | **verde** (check Vercel della PR #5, `dpl_6h5JEbHwT8tuDDJ4X3qsnYD72uBj`); con T-202 le Preview non applicano migrazioni né seed |
+| Merge su `master` | PR #1 (`37d2bd0`), PR #2 (`7b41a41`), PR #5 (`41fc5e1`, a checkpoint e CI verdi; CI su `master` verde: run 37196647861). Gli emendamenti di D-04 e D-20 sono arrivati con PR #3 e PR #4 |
 | Deploy-coupling | `main_deploy_coupled: true` (segnale `vercel.json`): ogni push su `master` va in produzione. Merge e push su `master` autonomi a checkpoint verde (D-04 emendata 2026-10-04) |
-| Push dei branch | `trueline/build/environments` pushato a checkpoint verde; contiene T-202 e nessuna migrazione |
+| Push dei branch | `trueline/build/environments-t205` pushato a checkpoint verde; contiene la migrazione 0012, applicata in produzione dal deploy di `master` (non dalle Preview, T-202) |
 
 ## 4. Baseline & budget
 
 - **Baseline di sicurezza**: invariata (`.trueline/baseline.json`, locale e gitignorata, 59 finding: gitleaks 4, osv 47, knip 8, rls 0; al checkpoint si passa `.trueline/baseline-fingerprints.json`, array dei 59 fingerprint, perché Trueline 0.4.2 non legge il formato snapshot con `--baseline`).
 - **Baseline d'igiene**: invariata (`.trueline/hygiene-baseline.json`, 202 finding: jscpd 201, twin 1, cicli 0). I fingerprint di jscpd dipendono dai fine riga del working tree: con `core.autocrlf=true` un checkout riscrive in CRLF i file cambiati e il checkpoint vede cloni «nuovi» in file mai toccati (9 nella prima esecuzione di questa sessione). Il working tree è stato riportato a LF (contenuto identico all'indice, `git diff` vuoto) e il checkpoint è tornato a dup 201. Prima di un checkpoint: `git ls-files --eol` non deve mostrare `i/lf w/crlf`.
-- **Budget consumato** (macrotask 02): 2 finding gitleaks CRITICAL (`trueline-generic-assigned-secret` sui default di sviluppo di `APP_SESSION_SECRET` e `APP_ENCRYPTION_KEY` in `lib/env.ts`), chiusi `verified` al primo tentativo togliendo i default (`0580772`; riverifica: `run_gitleaks` senza i due finding, `npm test` 58/58, checkpoint VERDE). 9 duplicazioni `new` da fine riga CRLF, chiuse senza modifiche al codice (normalizzazione LF del working tree; riverifica: checkpoint VERDE con dup 201). Nessun retry. `GLOBAL_WALL_CLOCK_MS = 242401` superato dalle sole esecuzioni del checkpoint (circa 283 s l'una, 2 esecuzioni): loop condotto a mano, non da `run_loop.mjs`.
+- **Budget consumato** (macrotask 02, T-205): nessun finding nuovo, nessun loop di fix, nessun retry; una sola esecuzione del checkpoint, VERDE al primo giro.
+- **Budget consumato** (macrotask 02, T-201…T-204): 2 finding gitleaks CRITICAL (`trueline-generic-assigned-secret` sui default di sviluppo di `APP_SESSION_SECRET` e `APP_ENCRYPTION_KEY` in `lib/env.ts`), chiusi `verified` al primo tentativo togliendo i default (`0580772`; riverifica: `run_gitleaks` senza i due finding, `npm test` 58/58, checkpoint VERDE). 9 duplicazioni `new` da fine riga CRLF, chiuse senza modifiche al codice (normalizzazione LF del working tree; riverifica: checkpoint VERDE con dup 201). Nessun retry. `GLOBAL_WALL_CLOCK_MS = 242401` superato dalle sole esecuzioni del checkpoint (circa 283 s l'una, 2 esecuzioni): loop condotto a mano, non da `run_loop.mjs`.
 - **Preflight oracoli**: PREFLIGHT OK del 2026-10-04 (semgrep via Docker, gitleaks 8.30.1, osv-scanner 1.9.2, knip 6.39.0, jscpd 4.3.0, madge 8.0.0, rls_check built-in), non ripetuto. Trueline installata: 0.4.2.
 - **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5 e jsdom 30, funziona con avviso; riferimento la CI su Node 22). Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
+
+### Sessione 2026-10-04 (terza) — BUILD di T-205, chiusura di `environments`
+
+- **T-205** (`a00fd55`): `prisma/migrations/0012_enable_rls_deny_by_default/migration.sql` abilita RLS sulle 13 tabelle di `public` (compresa `_prisma_migrations`) senza `CREATE POLICY` né `FORCE` e senza nominare `anon` e `authenticated`; commento in testa con R1, eccezione R2 rimandata a D-20 e convenzione per le migrazioni future. Gate: `tests/integration/rls-lockdown.test.ts` 4/4 — AC-205-1 (cataloghi: 0 tabelle senza RLS, 0 FORCE, 0 policy, almeno 13 tabelle), AC-205-2 (ruolo `rls_probe` non proprietario: `SELECT count(*) FROM users` dà 0 con 1 riga presente, INSERT in `projects` con SQLSTATE 42501), AC-205-3 (Prisma crea, rilegge, aggiorna e cancella 1 riga) e la convenzione «ogni CREATE TABLE dalla migrazione 0012 in poi ha ENABLE ROW LEVEL SECURITY nello stesso file» (regex provata a parte su casi positivi e negativi). Prima della migrazione AC-205-1 e AC-205-2 erano rossi (13 tabelle senza RLS; il ruolo leggeva 1 utente), AC-205-3 e la convenzione già verdi. Il ruolo di prova viene rimosso a fine file (`DROP OWNED BY`, `DROP ROLE`).
+- **Altre verifiche**: `npm test` 62/62 (comprese le caratterizzazioni di T-104…T-107); `tsc --noEmit` ed `eslint . --max-warnings=0` exit 0; `ac_assertion_trace_check` ristretto a `02-environments.md`: OK, 6 target test in scope; `validate_blueprint`: OK; `prisma migrate deploy` sul DB di test registra 0012 come conclusa.
+- **Checkpoint** (`run_checkpoint.mjs --in-place --mode build --blueprint docs/blueprint`, baseline dei fingerprint): **VERDE** al primo giro, `degraded` vuoto — 1 igiene verde (dead-code 8, dup 201, cicli 0, twin 1, arch 0, tutti preesistenti), 2 sicurezza verde (gitleaks 4, osv 47, semgrep 0; nessun nuovo ≥ HIGH), 3 regressioni verde, 4 conformità verde. Nessun finding da correggere, quindi nessun fix_state da registrare.
+- **Produzione**: CI della PR verde (run 37196493164), merge di PR #5 (`41fc5e1`), deploy `dpl_GBUztKNupE8XLshorSwUzY1jz7o2` verde con 0012 applicata e smoke verde (§3). L'app non usa la Data API (nessun client Supabase nel codice: solo Prisma).
+- **Copertura non verificata** (dichiarata): il Security Advisor di Supabase non è stato letto da qui (verifica dell'utente prevista dal DoD); la proprietà delle tabelle in produzione non è stata interrogata direttamente (la lettura delle variabili di produzione per collegarsi al DB è stata negata dal classificatore dei permessi): l'evidenza indiretta è il seed eseguito dopo la migrazione nel build e il login che legge `users` senza errori; l'oracolo statico `rls_check` di Trueline analizza ogni file di migrazione da solo e continua a segnalare 12 RLS001 HIGH sulle CREATE TABLE di 0001…0011, perché non collega gli `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` di 0012 (il manifest `postgres-jsts` non lo mette nel checkpoint; la verifica valida è quella dinamica sul DB di test); controllo 4 sul ramo legacy (`npm test`) e potere delle asserzioni (AT-1 Fase C) non eseguito, come nelle sessioni precedenti; E2E non rieseguiti in locale (verdi nella CI).
+- **Dipendenze aggiunte**: nessuna.
 
 ### Sessione 2026-10-04 (seconda) — merge di `foundation`, BUILD di `environments`
 
@@ -126,6 +136,7 @@
 - **Utente**: confermare la scelta `ignoreExportsUsedInFile: true` di `knip.json` (T-108) o chiedere di tornare al default con le 7 voci in più nella baseline.
 - **Utente**: confermare o modificare le altre decisioni PROPOSTA del ledger (00-INDEX §4) e decidere sui rilievi di atomicità (T-403, T-902, T-905, T-1101, T-1202, T-1603); D-14 prima del macrotask 16, D-15 prima di T-1803; account DataForSEO per T-902.
 - **Utente (facoltativo)**: per evitare i falsi «nuovi» duplicati da fine riga, valutare un `.gitattributes` con `* text=auto eol=lf` o `core.autocrlf=false` in questo clone (vedi §4).
-- **BUILD**: completare `environments` (02) con T-205 su `trueline/build/environments-t205` (nuovo branch da `master`: `trueline/build/environments` esiste già ed è mergiato), checkpoint al confine e merge; poi `hotfix` (03), che usa solo D-03 e D-09, entrambe DECISE. Dopo il deploy di T-205 l'utente verifica nel Security Advisor di Supabase che l'avviso di RLS disattivata su `public` sia sparito e l'esito si annota qui.
-- **Trueline**: riportare al repo della skill i problemi della sessione precedente e i nuovi: fingerprint di jscpd sensibili ai fine riga del working tree; `ac_assertion_trace_check` sull'intero blueprint fallisce per i target test condivisi dei macrotask futuri (va ristretto al macrotask corrente).
+- **Utente**: verificare nel Security Advisor di Supabase (progetto «keyword miner») che l'avviso di RLS disattivata su `public` sia sparito dopo il deploy `dpl_GBUztKNupE8XLshorSwUzY1jz7o2`; l'esito si annota qui (ultimo punto del DoD di T-205). Facoltativo (fuori scope di T-205): revocare i grant di `anon` e `authenticated` o disattivare la Data API dal pannello.
+- **BUILD**: `hotfix` (03) su `trueline/build/hotfix` da `master`; usa solo D-03 e D-09, entrambe DECISE.
+- **Trueline**: riportare al repo della skill i problemi delle sessioni precedenti e i nuovi: fingerprint di jscpd sensibili ai fine riga del working tree; `ac_assertion_trace_check` sull'intero blueprint fallisce per i target test condivisi dei macrotask futuri (va ristretto al macrotask corrente); `rls_check` valuta ogni file di migrazione da solo e non vede un `ENABLE ROW LEVEL SECURITY` aggiunto da una migrazione successiva (12 falsi RLS001 su questo repo).
 - Per test d'integrazione ed E2E: `docker compose -f docker-compose.test.yml up -d` e `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:54329/kw_workbench_test` nella shell; per il checkpoint, `.trueline/baseline-fingerprints.json` come `--baseline` (rigenerabile da `.trueline/baseline.json`, campo `fingerprints`).
