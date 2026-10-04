@@ -1,57 +1,31 @@
 import { NextResponse } from "next/server";
-import {
-  AuthRequiredError,
-  ForbiddenError,
-  requireAdminUserFromRequest,
-} from "@/lib/auth/current-user";
+import { requireAdminUserFromRequest } from "@/lib/auth/current-user";
+import { withApiErrors } from "@/lib/http/errors";
 import { getBrandingSnapshot, updateBrandingSettings } from "@/lib/integrations/branding";
 
-function toResponseError(error: unknown) {
-  if (error instanceof AuthRequiredError) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withApiErrors(async (request: Request) => {
+  await requireAdminUserFromRequest(request);
+  const snapshot = await getBrandingSnapshot();
+  return NextResponse.json({ data: snapshot });
+});
 
-  if (error instanceof ForbiddenError) {
-    return NextResponse.json({ error: "Operazione riservata agli admin" }, { status: 403 });
-  }
+export const PATCH = withApiErrors(async (request: Request) => {
+  await requireAdminUserFromRequest(request);
 
-  return NextResponse.json({ error: error instanceof Error ? error.message : "Errore interno" }, { status: 500 });
-}
+  const payload = (await request.json()) as {
+    appName?: string;
+    logoUrl?: string | null;
+    logoUrlDark?: string | null;
+    logoUrlLight?: string | null;
+  };
 
-export async function GET(request: Request) {
-  try {
-    await requireAdminUserFromRequest(request);
-    const snapshot = await getBrandingSnapshot();
-    return NextResponse.json({ data: snapshot });
-  } catch (error) {
-    return toResponseError(error);
-  }
-}
+  // Un logo non valido arriva come ValidationError (400); ogni altro errore resta un 500 senza dettagli.
+  const snapshot = await updateBrandingSettings({
+    appName: payload.appName,
+    logoUrl: payload.logoUrl,
+    logoUrlDark: payload.logoUrlDark,
+    logoUrlLight: payload.logoUrlLight,
+  });
 
-export async function PATCH(request: Request) {
-  try {
-    await requireAdminUserFromRequest(request);
-
-    const payload = (await request.json()) as {
-      appName?: string;
-      logoUrl?: string | null;
-      logoUrlDark?: string | null;
-      logoUrlLight?: string | null;
-    };
-
-    const snapshot = await updateBrandingSettings({
-      appName: payload.appName,
-      logoUrl: payload.logoUrl,
-      logoUrlDark: payload.logoUrlDark,
-      logoUrlLight: payload.logoUrlLight,
-    });
-
-    return NextResponse.json({ data: snapshot });
-  } catch (error) {
-    if (error instanceof Error && !(error instanceof AuthRequiredError) && !(error instanceof ForbiddenError)) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return toResponseError(error);
-  }
-}
+  return NextResponse.json({ data: snapshot });
+});

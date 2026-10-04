@@ -92,7 +92,8 @@ describe("middleware: file pubblici", () => {
     for (const path of ["/api/projects.json", "/api/projects"]) {
       const response = await proxy(middlewareRequest(path));
       expect(response.status).toBe(401);
-      expect(await response.json()).toEqual({ error: "Unauthorized" });
+      // impacted-by: T-502 (il 401 del proxy usa la risposta condivisa con code AUTH_REQUIRED)
+      expect(await response.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED" });
     }
 
     const nested = await proxy(middlewareRequest("/projects/abc.png"));

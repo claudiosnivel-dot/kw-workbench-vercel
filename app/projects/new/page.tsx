@@ -1,10 +1,10 @@
 import { ProjectForm } from "@/components/project-form";
-import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewProjectPage() {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
 
   return (
     <div className="space-y-6">

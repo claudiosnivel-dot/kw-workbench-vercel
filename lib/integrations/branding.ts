@@ -1,3 +1,4 @@
+import { ValidationError } from "@/lib/http/errors";
 import { deleteSettingValue, getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
 
 const KEYS = {
@@ -85,7 +86,7 @@ function buildLogoWrite(key: string, value: string | null | undefined): Promise<
 
   const normalizedLogoUrl = normalizeLogoUrl(rawLogoValue);
   if (!normalizedLogoUrl) {
-    throw new Error("Logo non valido. Inserisci un URL http/https, un percorso locale (/logo.svg) o un data URL immagine.");
+    throw new ValidationError("Logo non valido. Inserisci un URL http/https, un percorso locale (/logo.svg) o un data URL immagine.");
   }
 
   return upsertSettingValue({

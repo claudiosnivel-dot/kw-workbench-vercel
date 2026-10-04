@@ -42,7 +42,8 @@ describe("middleware con cookie di sessione malformato", () => {
 
     const api = await proxy(middlewareRequest("/api/projects", MALFORMED_COOKIE));
     expect(api.status).toBe(401);
-    expect(await api.json()).toEqual({ error: "Unauthorized" });
+    // impacted-by: T-502 (il 401 del proxy usa la risposta condivisa con code AUTH_REQUIRED)
+    expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED" });
   });
 });
 
@@ -51,7 +52,8 @@ describe("proxy senza sessione (Next 16)", () => {
   it("risponde 401 JSON su /api/projects, redirige /projects/abc?tab=x al login e middleware.ts non esiste", async () => {
     const api = await proxy(new NextRequest(new URL("/api/projects", "http://localhost:3000")));
     expect(api.status).toBe(401);
-    expect(await api.json()).toEqual({ error: "Unauthorized" });
+    // impacted-by: T-502 (il 401 del proxy usa la risposta condivisa con code AUTH_REQUIRED)
+    expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED" });
 
     const page = await proxy(new NextRequest(new URL("/projects/abc?tab=x", "http://localhost:3000")));
     expect(page.status).toBe(307);

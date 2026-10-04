@@ -36,18 +36,21 @@ describe("bootstrap del primo utente in produzione", () => {
     const anonymous = await callRoute(session, { url: "/api/auth/session" });
     expect(anonymous.status).toBe(401);
 
-    // Un errore lanciato dal route handler diventa una risposta 500 di Next, senza cookie.
+    // impacted-by: T-503 (l'errore di bootstrap diventa un 500 INTERNAL_ERROR di withApiErrors: il motivo
+    // resta nel log del server e non arriva al client)
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const weak = await callRoute(login, {
       method: "POST",
       url: "/api/auth/login",
       body: { username: BOOTSTRAP_USERNAME, password: "changeme" },
-    }).then(
-      (response) => ({ response, error: null }),
-      (error: unknown) => ({ response: null, error })
-    );
-    expect(weak.response?.status).not.toBe(200);
-    expect(weak.response?.headers.get("set-cookie") ?? null).toBeNull();
-    expect(String(weak.error)).toContain("APP_AUTH_PASSWORD");
+    });
+    const weakText = await weak.text();
+    expect(weak.status).not.toBe(200);
+    expect(weak.status).toBe(500);
+    expect(weak.headers.get("set-cookie")).toBeNull();
+    expect(weakText).not.toContain("APP_AUTH_PASSWORD");
+    expect(consoleError.mock.calls.flat().some((arg) => String(arg).includes("APP_AUTH_PASSWORD"))).toBe(true);
+    consoleError.mockRestore();
     expect(await prisma.user.count()).toBe(0);
 
     vi.stubEnv("APP_AUTH_PASSWORD", STRONG_PASSWORD);

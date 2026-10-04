@@ -1,13 +1,13 @@
 import { AuthSettingsCard } from "@/components/auth-settings-card";
 import { GoogleSheetsPersonalCard } from "@/components/google-sheets-personal-card";
 import { PersonalizationSettingsCard } from "@/components/personalization-settings-card";
-import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 
 export const dynamic = "force-dynamic";
 
 export default async function PersonalizzaPage() {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
   const googleSheets = await getGoogleSheetsCredentialSnapshot(user.id);
 
   return (

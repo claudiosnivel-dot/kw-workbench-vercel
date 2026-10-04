@@ -3,8 +3,9 @@ import { NextResponse } from "next/server";
 import { isAuthEnabled, isPublicSignupEnabled } from "@/lib/auth/config";
 import { registerUser } from "@/lib/auth/credentials";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
+import { withApiErrors } from "@/lib/http/errors";
 
-export async function POST(request: Request) {
+export const POST = withApiErrors(async (request: Request) => {
   if (!isAuthEnabled()) {
     return NextResponse.json({ error: "Registrazione non disponibile con autenticazione disabilitata" }, { status: 400 });
   }
@@ -31,12 +32,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Password e conferma non coincidono" }, { status: 400 });
   }
 
-  try {
-    const user = await registerUser({ username, password, role: UserRole.SUBSCRIBER });
-    const response = NextResponse.json({ success: true });
-    await setSessionCookie(response, user);
-    return response;
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Registrazione non riuscita" }, { status: 400 });
-  }
-}
+  // Username non valido (400) o già in uso (409): AppError gestiti da withApiErrors, mai error.message grezzo.
+  const user = await registerUser({ username, password, role: UserRole.SUBSCRIBER });
+  const response = NextResponse.json({ success: true });
+  await setSessionCookie(response, user);
+  return response;
+});

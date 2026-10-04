@@ -1,6 +1,7 @@
 import { ColorVisionMode, FontScaleMode, ThemeMode } from "@/lib/generated/prisma/enums";
 import { NextRequest, NextResponse } from "next/server";
-import { AuthRequiredError, requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { ValidationError, withApiErrors } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma";
 
 const THEME_VALUES = new Set<ThemeMode>(Object.values(ThemeMode));
@@ -20,7 +21,7 @@ function parseThemeMode(raw: unknown): ThemeMode | null {
 
   const value = String(raw).trim().toUpperCase() as ThemeMode;
   if (!THEME_VALUES.has(value)) {
-    throw new Error("themeMode non valido");
+    throw new ValidationError("themeMode non valido");
   }
 
   return value;
@@ -33,7 +34,7 @@ function parseFontScaleMode(raw: unknown): FontScaleMode | null {
 
   const value = String(raw).trim().toUpperCase() as FontScaleMode;
   if (!FONT_SCALE_VALUES.has(value)) {
-    throw new Error("fontScaleMode non valido");
+    throw new ValidationError("fontScaleMode non valido");
   }
 
   return value;
@@ -46,89 +47,69 @@ function parseColorVisionMode(raw: unknown): ColorVisionMode | null {
 
   const value = String(raw).trim().toUpperCase() as ColorVisionMode;
   if (!COLOR_VISION_VALUES.has(value)) {
-    throw new Error("colorVisionMode non valido");
+    throw new ValidationError("colorVisionMode non valido");
   }
 
   return value;
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const user = await requireAuthenticatedUserFromRequest(request);
+export const GET = withApiErrors(async (request: NextRequest) => {
+  const user = await requireAuthenticatedUserFromRequest(request);
 
-    const snapshot = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        theme_mode: true,
-        font_scale_mode: true,
-        color_vision_mode: true,
-      },
-    });
+  const snapshot = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      theme_mode: true,
+      font_scale_mode: true,
+      color_vision_mode: true,
+    },
+  });
 
-    if (!snapshot) {
-      return NextResponse.json({ error: "Utente non trovato" }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      data: {
-        themeMode: snapshot.theme_mode,
-        fontScaleMode: snapshot.font_scale_mode,
-        colorVisionMode: snapshot.color_vision_mode,
-      },
-    });
-  } catch (error) {
-    if (error instanceof AuthRequiredError) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Errore interno" }, { status: 500 });
+  if (!snapshot) {
+    return NextResponse.json({ error: "Utente non trovato" }, { status: 404 });
   }
-}
 
-export async function PATCH(request: NextRequest) {
-  try {
-    const user = await requireAuthenticatedUserFromRequest(request);
-    const payload = (await request.json()) as PreferencesPayload;
+  return NextResponse.json({
+    data: {
+      themeMode: snapshot.theme_mode,
+      fontScaleMode: snapshot.font_scale_mode,
+      colorVisionMode: snapshot.color_vision_mode,
+    },
+  });
+});
 
-    const themeMode = parseThemeMode(payload.themeMode);
-    const fontScaleMode = parseFontScaleMode(payload.fontScaleMode);
-    const colorVisionMode = parseColorVisionMode(payload.colorVisionMode);
+export const PATCH = withApiErrors(async (request: NextRequest) => {
+  const user = await requireAuthenticatedUserFromRequest(request);
+  const payload = (await request.json()) as PreferencesPayload;
 
-    if (!themeMode && !fontScaleMode && !colorVisionMode) {
-      return NextResponse.json({ error: "Nessuna preferenza da aggiornare" }, { status: 400 });
-    }
+  const themeMode = parseThemeMode(payload.themeMode);
+  const fontScaleMode = parseFontScaleMode(payload.fontScaleMode);
+  const colorVisionMode = parseColorVisionMode(payload.colorVisionMode);
 
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        theme_mode: themeMode ?? undefined,
-        font_scale_mode: fontScaleMode ?? undefined,
-        color_vision_mode: colorVisionMode ?? undefined,
-      },
-      select: {
-        theme_mode: true,
-        font_scale_mode: true,
-        color_vision_mode: true,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        themeMode: updated.theme_mode,
-        fontScaleMode: updated.font_scale_mode,
-        colorVisionMode: updated.color_vision_mode,
-      },
-    });
-  } catch (error) {
-    if (error instanceof AuthRequiredError) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (error instanceof Error && error.message.endsWith("non valido")) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Errore interno" }, { status: 500 });
+  if (!themeMode && !fontScaleMode && !colorVisionMode) {
+    return NextResponse.json({ error: "Nessuna preferenza da aggiornare" }, { status: 400 });
   }
-}
+
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      theme_mode: themeMode ?? undefined,
+      font_scale_mode: fontScaleMode ?? undefined,
+      color_vision_mode: colorVisionMode ?? undefined,
+    },
+    select: {
+      theme_mode: true,
+      font_scale_mode: true,
+      color_vision_mode: true,
+    },
+  });
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      themeMode: updated.theme_mode,
+      fontScaleMode: updated.font_scale_mode,
+      colorVisionMode: updated.color_vision_mode,
+    },
+  });
+});

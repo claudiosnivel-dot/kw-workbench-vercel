@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
 import { PlannerDisabledNotice } from "@/components/planner-disabled-notice";
 import { ResultsTable } from "@/components/results-table";
-import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
@@ -80,7 +80,7 @@ export default async function ResultsPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<SearchParams>;
 }) {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
   const [project, googleSheets] = await Promise.all([

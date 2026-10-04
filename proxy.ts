@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthEnabled, SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { verifySessionToken } from "@/lib/auth/session";
+import { authRequiredResponse } from "@/lib/http/auth-required";
 
 const PUBLIC_PATHS = new Set([
   "/login",
@@ -9,6 +10,7 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/register",
   "/api/auth/logout",
   "/api/auth/session",
+  "/api/auth/session-ended",
 ]);
 
 // File di public serviti senza login: un solo segmento (es. /robots.txt) con estensione ammessa.
@@ -48,7 +50,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return authRequiredResponse();
   }
 
   const loginUrl = new URL("/login", request.url);

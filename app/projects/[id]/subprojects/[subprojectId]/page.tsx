@@ -4,7 +4,7 @@ import { DeleteSubprojectButton } from "@/components/delete-subproject-button";
 import { PlannerDisabledNotice } from "@/components/planner-disabled-notice";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { SubprojectForm } from "@/components/subproject-form";
-import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
 import { prisma } from "@/lib/prisma";
 
@@ -15,7 +15,7 @@ export default async function SubprojectSettingsPage({
 }: {
   params: Promise<{ id: string; subprojectId: string }>;
 }) {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
   const { id, subprojectId } = await params;
 
   const subproject = await prisma.subproject.findFirst({

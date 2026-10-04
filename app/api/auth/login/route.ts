@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { isAuthEnabled } from "@/lib/auth/config";
 import { verifyLoginCredentials } from "@/lib/auth/credentials";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
+import { withApiErrors } from "@/lib/http/errors";
 
-export async function POST(request: Request) {
+export const POST = withApiErrors(async (request: Request) => {
   if (!isAuthEnabled()) {
     return NextResponse.json({ success: true, authEnabled: false });
   }
@@ -28,4 +29,4 @@ export async function POST(request: Request) {
   const response = NextResponse.json({ success: true });
   await setSessionCookie(response, result.user);
   return response;
-}
+});

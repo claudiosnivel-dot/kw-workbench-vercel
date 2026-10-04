@@ -3,6 +3,7 @@ import { ColorVisionMode, FontScaleMode, Prisma, ThemeMode, UserRole, UserStatus
 import { getAuthPassword, getAuthUsername } from "@/lib/auth/config";
 import { getManySettingValues } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
+import { ConflictError, NotFoundError, ValidationError } from "@/lib/http/errors";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
 
 const LEGACY_KEYS = {
@@ -72,6 +73,11 @@ function getDummyPasswordHash(): Promise<string> {
 
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
+
+/** Username già in uso (P2002) come ConflictError (409); ogni altro errore resta invariato. */
+function usernameConflictOr(error: unknown): unknown {
+  return isUniqueViolation(error) ? new ConflictError("Username gia in uso") : error;
 }
 
 function normalizeUsername(input: string): string {
@@ -147,11 +153,11 @@ export function validateUsername(input: string): string {
   const username = normalizeUsername(input);
 
   if (username.length < 3 || username.length > 40) {
-    throw new Error("Username non valido: usa da 3 a 40 caratteri");
+    throw new ValidationError("Username non valido: usa da 3 a 40 caratteri");
   }
 
   if (!USERNAME_PATTERN.test(username)) {
-    throw new Error("Username non valido: usa solo lettere minuscole, numeri, punto, underscore o trattino");
+    throw new ValidationError("Username non valido: usa solo lettere minuscole, numeri, punto, underscore o trattino");
   }
 
   return username;
@@ -161,7 +167,7 @@ export function validatePassword(input: string): string {
   const password = String(input ?? "");
 
   if (password.length < 8) {
-    throw new Error("Password troppo corta: minimo 8 caratteri");
+    throw new ValidationError("Password troppo corta: minimo 8 caratteri");
   }
 
   return password;
@@ -257,7 +263,7 @@ export async function findAuthUserById(userId: string): Promise<AuthUser | null>
 export async function getAuthConfigSnapshot(userId: string): Promise<AuthConfigSnapshot> {
   const user = await findAuthUserById(userId);
   if (!user) {
-    throw new Error("Utente non trovato");
+    throw new NotFoundError("Utente non trovato");
   }
 
   return {
@@ -344,11 +350,7 @@ export async function registerUser(input: {
 
     return mapAuthUser(created as AuthUserRow);
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      throw new Error("Username gia in uso");
-    }
-
-    throw error;
+    throw usernameConflictOr(error);
   }
 }
 
@@ -384,7 +386,7 @@ export async function updateAuthCredentials(input: {
   }
 
   if (!data.username && !data.password_hash) {
-    throw new Error("Nessuna modifica da salvare");
+    throw new ValidationError("Nessuna modifica da salvare");
   }
 
   try {
@@ -396,11 +398,7 @@ export async function updateAuthCredentials(input: {
 
     return mapAuthUser(updated as AuthUserRow);
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      throw new Error("Username gia in uso");
-    }
-
-    throw error;
+    throw usernameConflictOr(error);
   }
 }
 
@@ -431,7 +429,7 @@ export async function updateUserAdminFields(input: {
   }
 
   if (!data.role && !data.status && !data.password_hash && data.is_root_admin === undefined) {
-    throw new Error("Nessuna modifica da salvare");
+    throw new ValidationError("Nessuna modifica da salvare");
   }
 
   // Password impostata dall'admin o sospensione: i token già emessi non valgono più (T-501).

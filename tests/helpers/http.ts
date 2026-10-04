@@ -11,9 +11,10 @@ export async function callRoute<P extends Record<string, string>>(
     body?: unknown;
     cookie?: string;
     params?: P;
+    headers?: Record<string, string>;
   }
 ): Promise<Response> {
-  const headers = new Headers();
+  const headers = new Headers(options.headers);
   if (options.cookie) {
     headers.set("cookie", options.cookie);
   }

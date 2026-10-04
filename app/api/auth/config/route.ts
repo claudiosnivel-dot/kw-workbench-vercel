@@ -6,14 +6,15 @@ import {
 } from "@/lib/auth/credentials";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
+import { withApiErrors } from "@/lib/http/errors";
 
-export async function GET(request: NextRequest) {
+export const GET = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);
   const snapshot = await getAuthConfigSnapshot(user.id);
   return NextResponse.json({ data: snapshot });
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);
 
   const payload = (await request.json()) as {
@@ -45,27 +46,24 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Nuova password e conferma non coincidono" }, { status: 400 });
   }
 
-  try {
-    const updatedUser = await updateAuthCredentials({
-      userId: user.id,
-      username: username || undefined,
-      password: newPassword || undefined,
-    });
+  // Errori di validazione (400) e username già in uso (409) arrivano come AppError a withApiErrors.
+  const updatedUser = await updateAuthCredentials({
+    userId: user.id,
+    username: username || undefined,
+    password: newPassword || undefined,
+  });
 
-    const response = NextResponse.json({
-      data: {
-        username: updatedUser.username,
-      },
-    });
+  const response = NextResponse.json({
+    data: {
+      username: updatedUser.username,
+    },
+  });
 
-    // Il cambio password ha incrementato session_version: solo questo dispositivo riceve il token nuovo.
-    // Lo username non è nel token, quindi cambiarlo non riemette il cookie.
-    if (newPassword) {
-      await setSessionCookie(response, updatedUser);
-    }
-
-    return response;
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Errore durante il salvataggio" }, { status: 400 });
+  // Il cambio password ha incrementato session_version: solo questo dispositivo riceve il token nuovo.
+  // Lo username non è nel token, quindi cambiarlo non riemette il cookie.
+  if (newPassword) {
+    await setSessionCookie(response, updatedUser);
   }
-}
+
+  return response;
+});

@@ -4,7 +4,7 @@ import { DeleteSubprojectButton } from "@/components/delete-subproject-button";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { SectionOrderButtons } from "@/components/section-order-buttons";
 import { SubprojectForm } from "@/components/subproject-form";
-import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ function jobStatusTone(value: string): string {
 }
 
 export default async function ProjectSectionsPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
   const { id } = await params;
 
   const project = await prisma.project.findFirst({

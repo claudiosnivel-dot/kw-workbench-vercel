@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { withApiErrors } from "@/lib/http/errors";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -24,7 +25,7 @@ async function ensureOwnedSubproject(params: {
   });
 }
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = withApiErrors(async (request: NextRequest, context: RouteContext) => {
   const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await context.params;
   const rawSubprojectId = request.nextUrl.searchParams.get("subprojectId");
@@ -122,9 +123,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
     },
   });
-}
+});
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = withApiErrors(async (request: NextRequest, context: RouteContext) => {
   const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await context.params;
 
@@ -192,6 +193,5 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   return NextResponse.json({ success: true });
-}
-
+});
 
