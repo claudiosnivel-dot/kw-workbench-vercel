@@ -74,6 +74,7 @@
     "43c35201064ddda3bc195e05ae6d0a94",
     "4414b12de1178f7455dbf1770487b2bb",
     "45166ac18e135e798a3b342089bd14c0",
+    "4529c899cfa878c99a5d430e9e9aaf74",
     "4540703ee73c056734c7e4e23890552a",
     "46c0bf9913266dfa3fe25e5dc020ba27",
     "48255bc3e1b691318dba5c5cfdf74b10",
@@ -186,7 +187,6 @@
     "dd42d97e4388f408336d31b26d8b012f",
     "e1dc0a7767d80b8f129a8aae654f21eb",
     "e3dfd5723ab2ae9253e8eb3179ed8f2c",
-    "e4dbfc3028aa0260d047ac804a460028",
     "e4dc33be931ad1a844c67cd57defed86",
     "e4e9f94824bd325c8962edf6b99dca7f",
     "e4f96ea75753f0f45e1135e31d31b64b",
@@ -1542,6 +1542,27 @@
         "end_line": 33
       },
       "evidence": "Blocco duplicato (6 righe, 55 token) tra eval/reference-app/components/results-table.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
+      "source_oracle": {
+        "oracle": "jscpd",
+        "tool_version": "jscpd@4",
+        "rule_id": "duplicate-block"
+      },
+      "fix_state": "detected",
+      "baseline_status": "pre-existing",
+      "run_id": "baseline",
+      "created_at": "1970-01-01T00:00:00.000Z",
+      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
+    },
+    "4529c899cfa878c99a5d430e9e9aaf74": {
+      "fingerprint": "4529c899cfa878c99a5d430e9e9aaf74",
+      "category": "duplication",
+      "severity": "LOW",
+      "location": {
+        "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts",
+        "start_line": 1,
+        "end_line": 8
+      },
+      "evidence": "Blocco duplicato (8 righe, 86 token) tra eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -3894,27 +3915,6 @@
         "end_line": 117
       },
       "evidence": "Blocco duplicato (10 righe, 76 token) tra eval/reference-app/app/api/integrations/google-ads/callback/route.ts e eval/reference-app/app/api/integrations/google-sheets/callback/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "e4dbfc3028aa0260d047ac804a460028": {
-      "fingerprint": "e4dbfc3028aa0260d047ac804a460028",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts",
-        "start_line": 1,
-        "end_line": 8
-      },
-      "evidence": "Blocco duplicato (8 righe, 86 token) tra eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
