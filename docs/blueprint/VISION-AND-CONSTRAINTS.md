@@ -77,8 +77,8 @@ macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
 |---|---|
 | Ecosistema | `postgres-jsts`: isolamento applicativo per utente (poi per workspace) su ogni rotta; nessuna dipendenza da supabase-js |
 | Sicurezza | Nessun segreto nel sorgente; variabili d'ambiente validate e fail-closed (T-201); RLS deny-all sulle tabelle `public` per chiudere la Data API Supabase (D-20); OWASP Top 10:2025 come vocabolario |
-| Git | Branch a strati; `main_deploy_coupled: true` (`vercel.json`, ogni push su `master` va in produzione): **ogni merge su `master` è human-gated anche col checkpoint verde** (`L-COL-024`, `L-COL-025`) |
-| Ambienti | Le Preview Vercel eseguono `prisma migrate deploy` + seed sul DB del proprio ambiente: nessun push di branch che non contenga la guardia di T-202, e nessun push di branch con migrazioni finché lo staging separato non è confermato (D-04, T-202, T-203) |
+| Git | Branch a strati; `main_deploy_coupled: true` (`vercel.json`, ogni push su `master` va in produzione): **a checkpoint verde merge e push su `master` sono autonomi: deploy automatico in produzione** (decisione dell'utente 2026-10-04, D-04; prevale sul gate di deploy `L-COL-025`); operazioni distruttive mai autonome (`L-COL-024`) |
+| Ambienti | Le Preview Vercel eseguono `prisma migrate deploy` + seed sul DB del proprio ambiente: finché T-202 (guardia) e T-203 (staging separato) non sono fatti, un branch pubblicato può migrare e fare il seed sul DB di produzione; rischio accettato dall'utente (D-04 emendata 2026-10-04, D-05) |
 | Dati | In produzione solo dati di test (D-05) |
 | Piattaforma | Vercel (funzioni con durata massima configurata; `maxDuration` attuale 300 s per la run e 120 s per l'export); Supabase via transaction pooler (porta 6543) per il runtime e session/direct (5432) per le migrazioni |
 | Metriche | Volumi solo da file esportati dal cliente dal proprio Keyword Planner o da un fornitore con licenza (D-09, D-30); nessuna chiamata all'API Google Ads per le metriche, nessuno scraping |

@@ -45,9 +45,11 @@ ridiscute il design.
    macrotask ha test d'integrazione.
 
 5) PROMEMORIA: al CONFINE DEL MACROTASK gira il CHECKPOINT prima di committare.
-   master è accoppiato al deploy di produzione: il merge resta un mio "vai".
-   Niente push di branch senza T-202, né di branch con migrazioni finché T-203
-   non è chiuso (D-04).
+   master è accoppiato al deploy di produzione: a checkpoint verde push del
+   branch e merge su master sono autonomi, quindi il deploy è automatico (D-04
+   emendata 2026-10-04). Prima di T-202/T-203 il deploy Preview può migrare e
+   fare il seed sul DB di produzione: rischio accettato (D-05). Mai force push
+   né riscrittura della storia pubblicata.
 
 REGOLE DI SESSIONE (decise dall'utente il 2026-10-04):
   • UN MACROTASK PER SESSIONE: la sessione lavora sul solo macrotask scelto al
@@ -69,7 +71,8 @@ INVARIANTI NON NEGOZIABILI — tienile in testa per OGNI task:
   • HUMAN-IN-THE-LOOP SULLE FIX; DEAD-CODE MAI CANCELLATO IN AUTONOMIA
     (L-COL-005, L-COL-021).
   • GIT A STRATI (L-COL-024, L-COL-025): branch autonomo, merge su master gated
-    dal verde e da me, distruttive mai autonome, DEPLOY NON SUPERVISIONATO BLOCCATO.
+    dal checkpoint verde e poi autonomo (deploy automatico, D-04), distruttive
+    mai autonome.
   • NESSUN FALSO "VIA LIBERA"; COPERTURA SEMPRE DICHIARATA (L-COL-006): un
     controllo non eseguito NON è un verde.
 

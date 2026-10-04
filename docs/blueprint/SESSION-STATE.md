@@ -49,8 +49,8 @@
 | Branch di lavoro | `trueline/build/foundation` (da `trueline/blueprint` `36487f8`); locale, non pushato |
 | Ultimo commit | `24fbdd0` (allowlist gitleaks); prima `a1d1ad2` (T-101) e `36487f8` (emendamenti, su `trueline/blueprint`) |
 | Stato merge su `master` | non eseguito |
-| Deploy-coupling | `main_deploy_coupled: true` (rilevato da `detect_deploy_coupling.mjs`, segnale `vercel.json`): ogni push su `master` va in produzione → merge su `master` sempre human-gated |
-| Push dei branch | nessun branch pushato. Sospeso per ogni branch che non contiene T-202 (il deploy Preview esegue migrazioni e seed) e, per i branch con migrazioni, finché T-203 non conferma un DB di Preview separato (D-04, emendamento 2026-10-02) |
+| Deploy-coupling | `main_deploy_coupled: true` (rilevato da `detect_deploy_coupling.mjs`, segnale `vercel.json`): ogni push su `master` va in produzione. Merge e push su `master` autonomi a checkpoint verde (deploy automatico), per decisione dell'utente del 2026-10-04 (D-04 emendata) |
+| Push dei branch | nessun branch pushato finora. Da ora push autonomo a checkpoint verde; rischio accettato: prima di T-202/T-203 il deploy Preview può migrare e fare il seed sul DB di produzione (D-04 emendata 2026-10-04, D-05) |
 
 ## 4. Baseline & budget
 
@@ -65,6 +65,7 @@
 ### Sessione 2026-10-02/04 — avvio BUILD
 
 - Emendamenti al blueprint approvati dall'utente (`36487f8` su `trueline/blueprint`): D-04 esteso a ogni push di branch prima di T-202, con la prima run della CI spostata da T-110 a T-202; quarto progetto Vitest `tooling` in T-101 e `test:tooling` nel job checks di T-110; dipendenze di T-102 (+T-101), T-109 (+T-101) e T-108 (+T-101, T-103, T-109); jscpd in T-108; il riferimento a ESLint 10 in T-102 diventa 9.39.x. `validate_blueprint` e `ac_observability_check`: exit 0.
+- Emendamento del 2026-10-04 (decisione dell'utente «deploy automatici»): a checkpoint verde push e merge su `master` sono autonomi, anche prima di T-202/T-203, con il rischio sulle Preview accettato (D-04, D-05). La prima run della CI torna a T-110 e T-202 non dipende più da T-110. Aggiornati 00-INDEX, VISION, 01-foundation, 02-environments e i tre prompt.
 - **T-101 chiuso** (`a1d1ad2`): `vitest.config.ts` con 4 progetti (unit, component, integration, tooling), `docker-compose.test.yml` (postgres:16 su 54329), `.env.test.example`, helper `tests/helpers/` (db-guard, db, auth, http), globalSetup e setup d'integrazione. Gate: target_tests AC-101-1…4 verdi (`npm test`: 3 file, 7 test, exit 0); `ac_assertion_trace_check` OK; `tsc --noEmit` exit 0; `next build` exit 0; guardia provata con variabile assente e host remoto (exit 1, password mai stampata); 11/11 migrazioni applicate su `localhost:54329`.
 - Scostamenti di T-101: aggiunte `vite` 8.3.2 e `@testing-library/dom` 10.4.2 (peer obbligatorie); `@types/node` 22.9.0 → 22.20.5 (peer di vite, senza `--legacy-peer-deps`); il client Prisma carica il `.env` reale all'import, quindi il setup d'integrazione scarta le variabili aggiunte (verificato con una sonda); `npm run test:tooling` esce 1 finché T-102 non aggiunge il primo test.
 - `npm audit` dopo T-101: nessun pacchetto vulnerabile nuovo (12 → 11, `nanoid` uscito).

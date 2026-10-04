@@ -55,10 +55,11 @@ ECOSISTEMA E POSIZIONI
 
 VINCOLI SPECIFICI DI QUESTO PROGETTO
   • master è ACCOPPIATO AL DEPLOY (vercel.json: ogni push su master va in
-    produzione): il merge su master è sempre un "vai" umano, anche a checkpoint verde.
-  • Le Preview Vercel eseguono prisma migrate deploy + seed: NON pushare alcun
-    branch che non contenga T-202, e NON pushare branch con migrazioni finché
-    T-203 non conferma un DB di Preview separato (D-04).
+    produzione): a checkpoint verde push e merge su master sono autonomi, quindi
+    il deploy è automatico (decisione dell'utente, D-04 emendata 2026-10-04).
+  • Le Preview Vercel eseguono prisma migrate deploy + seed: finché T-202 e T-203
+    non sono fatti, un branch pubblicato può migrare e fare il seed sul DB di
+    produzione; rischio accettato dall'utente (D-04, D-05).
   • In produzione ci sono solo dati di test (D-05).
 
 INVARIANTI NON NEGOZIABILI (regole della casa per l'intero progetto):
@@ -72,8 +73,8 @@ INVARIANTI NON NEGOZIABILI (regole della casa per l'intero progetto):
     (L-COL-005, L-COL-021): le rimozioni e le decisioni di merito passano da me;
     il dead-code si segnala, non si elimina da soli.
   • GIT A STRATI (L-COL-024, L-COL-025): lavora su BRANCH autonomo; il merge su
-    master è GATED dal verde e, qui, anche da me; le operazioni distruttive non
-    sono mai autonome; il DEPLOY NON SUPERVISIONATO È BLOCCATO.
+    master è GATED dal checkpoint verde e poi autonomo (deploy automatico, D-04);
+    le operazioni distruttive non sono mai autonome.
   • NESSUN FALSO "VIA LIBERA"; COPERTURA SEMPRE DICHIARATA (L-COL-006): un
     controllo non eseguito NON è un verde; dichiara sempre cosa è stato verificato
     e cosa no. Usa "verificato X" / "il controllo Y è passato", mai "è sicuro".

@@ -481,6 +481,7 @@ se rompe un comportamento esistente.
     - "Job build: next build con env fittizie generate nel job (APP_SESSION_SECRET e APP_ENCRYPTION_KEY casuali di 48 caratteri, DATABASE_URL e DIRECT_URL locali)"
     - "Node 22.x provvisorio, compatibile con engines >=20.0.0; il pin a 24.x è di T-407"
     - "Ogni azione referenziata in uses è fissata allo SHA di commit completo con un commento che riporta la versione"
+    - "Prima run verde della CI sul branch pubblicato a fine macrotask; link alla run annotato in docs/blueprint/SESSION-STATE.md"
 
   acceptance_criteria:
     - id: AC-110-1
@@ -512,7 +513,6 @@ se rompe un comportamento esistente.
   out_of_scope:
     - "Deploy, Ignored Build Step e pipeline di rilascio (T-605)"
     - "Pin di Node 24 (T-407) e audit delle dipendenze (T-401)"
-    - "Prima run della CI su un branch pubblicato: spostata a T-202, perché prima di T-202 ogni push avvia un deploy Preview che esegue migrazioni e seed (D-04)"
 ```
 
 ## Self-check

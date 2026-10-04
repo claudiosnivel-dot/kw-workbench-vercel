@@ -37,11 +37,12 @@ macrotask, senza chiedere conferme.
 
 3) REGISTRA LO STATO GIT (git a strati — L-COL-024, L-COL-025):
    • Branch di lavoro e commit (con id dei task + esito del gate).
-   • Merge su master: avvenuto SOLO se checkpoint verde E mio "vai" (master è
-     accoppiato al deploy di produzione); altrimenti SOSPESO.
-   • Push: indica se il branch è stato pushato, se contiene T-202 e se contiene
-     migrazioni (vietato senza T-202; con migrazioni vietato finché T-203 non
-     conferma un DB di Preview separato).
+   • Merge su master: eseguito in autonomia SOLO se il checkpoint è verde (master
+     è accoppiato al deploy: il merge avvia il deploy in produzione, D-04 emendata
+     2026-10-04); con checkpoint o CI non verdi resta SOSPESO, con il motivo.
+   • Push: eseguito in autonomia a checkpoint verde; indica se il branch contiene
+     T-202 e migrazioni (prima di T-202/T-203 il deploy Preview può migrare e
+     fare il seed sul DB di produzione: rischio accettato, D-05). Mai force push.
 
 4) VERIFICA-FIX RIVERIFICATA (L-COL-003)
    Per ogni fix applicata in sessione, conferma che è stata riverificata con lo
