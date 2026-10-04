@@ -1,14 +1,8 @@
 import { UserRole } from "@/lib/generated/prisma/enums";
 import { NextResponse } from "next/server";
-import {
-  getSessionMaxAgeSeconds,
-  isAuthEnabled,
-  isPublicSignupEnabled,
-  SESSION_COOKIE_NAME,
-  shouldUseSecureCookies,
-} from "@/lib/auth/config";
+import { isAuthEnabled, isPublicSignupEnabled } from "@/lib/auth/config";
 import { registerUser } from "@/lib/auth/credentials";
-import { createSessionToken } from "@/lib/auth/session";
+import { setSessionCookie } from "@/lib/auth/session-cookie";
 
 export async function POST(request: Request) {
   if (!isAuthEnabled()) {
@@ -39,28 +33,8 @@ export async function POST(request: Request) {
 
   try {
     const user = await registerUser({ username, password, role: UserRole.SUBSCRIBER });
-    const token = await createSessionToken({
-      userId: user.id,
-      username: user.username,
-      role: user.role,
-      status: user.status,
-      isRootAdmin: user.isRootAdmin,
-      themeMode: user.themeMode,
-      fontScaleMode: user.fontScaleMode,
-      colorVisionMode: user.colorVisionMode,
-    });
-
     const response = NextResponse.json({ success: true });
-    response.cookies.set({
-      name: SESSION_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureCookies(),
-      maxAge: getSessionMaxAgeSeconds(),
-      path: "/",
-    });
-
+    await setSessionCookie(response, user);
     return response;
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Registrazione non riuscita" }, { status: 400 });

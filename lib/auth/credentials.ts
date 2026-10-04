@@ -22,6 +22,7 @@ const AUTH_USER_SELECT = {
   theme_mode: true,
   font_scale_mode: true,
   color_vision_mode: true,
+  session_version: true,
 } satisfies Prisma.UserSelect;
 
 type AuthUserRow = {
@@ -33,6 +34,7 @@ type AuthUserRow = {
   theme_mode: ThemeMode;
   font_scale_mode: FontScaleMode;
   color_vision_mode: ColorVisionMode;
+  session_version: number;
 };
 
 export type AuthUser = {
@@ -44,6 +46,7 @@ export type AuthUser = {
   themeMode: ThemeMode;
   fontScaleMode: FontScaleMode;
   colorVisionMode: ColorVisionMode;
+  sessionVersion: number;
 };
 
 export type AuthConfigSnapshot = {
@@ -85,6 +88,7 @@ function mapAuthUser(row: AuthUserRow): AuthUser {
     themeMode: row.theme_mode,
     fontScaleMode: row.font_scale_mode,
     colorVisionMode: row.color_vision_mode,
+    sessionVersion: row.session_version,
   };
 }
 
@@ -274,6 +278,7 @@ export async function verifyLoginCredentials(username: string, password: string)
       theme_mode: true,
       font_scale_mode: true,
       color_vision_mode: true,
+      session_version: true,
       password_hash: true,
     },
   });
@@ -356,7 +361,7 @@ export async function updateAuthCredentials(input: {
   username?: string;
   password?: string;
 }): Promise<AuthUser> {
-  const data: { username?: string; password_hash?: string } = {};
+  const data: Prisma.UserUpdateInput = {};
 
   if (typeof input.username === "string" && input.username.trim()) {
     data.username = validateUsername(input.username);
@@ -364,6 +369,8 @@ export async function updateAuthCredentials(input: {
 
   if (typeof input.password === "string" && input.password.length > 0) {
     data.password_hash = await hashPassword(validatePassword(input.password));
+    // Il cambio password revoca i token già emessi (T-501).
+    data.session_version = { increment: 1 };
   }
 
   if (!data.username && !data.password_hash) {
@@ -394,12 +401,7 @@ export async function updateUserAdminFields(input: {
   password?: string;
   isRootAdmin?: boolean;
 }): Promise<AuthUser> {
-  const data: {
-    role?: UserRole;
-    status?: UserStatus;
-    password_hash?: string;
-    is_root_admin?: boolean;
-  } = {};
+  const data: Prisma.UserUpdateInput = {};
 
   if (input.role) {
     data.role = input.role;
@@ -421,6 +423,11 @@ export async function updateUserAdminFields(input: {
     throw new Error("Nessuna modifica da salvare");
   }
 
+  // Password impostata dall'admin o sospensione: i token già emessi non valgono più (T-501).
+  if (data.password_hash || data.status === UserStatus.SUSPENDED) {
+    data.session_version = { increment: 1 };
+  }
+
   const updated = await prisma.user.update({
     where: { id: input.targetUserId },
     data,
@@ -428,4 +435,12 @@ export async function updateUserAdminFields(input: {
   });
 
   return mapAuthUser(updated as AuthUserRow);
+}
+
+/** «Esci da tutti i dispositivi»: incremento atomico che invalida ogni token emesso finora. */
+export async function revokeAllSessions(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { session_version: { increment: 1 } },
+  });
 }

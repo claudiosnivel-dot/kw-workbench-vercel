@@ -5,12 +5,7 @@ import {
   verifyUserPassword,
 } from "@/lib/auth/credentials";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import {
-  getSessionMaxAgeSeconds,
-  SESSION_COOKIE_NAME,
-  shouldUseSecureCookies,
-} from "@/lib/auth/config";
-import { createSessionToken } from "@/lib/auth/session";
+import { setSessionCookie } from "@/lib/auth/session-cookie";
 
 export async function GET(request: NextRequest) {
   const user = await requireAuthenticatedUserFromRequest(request);
@@ -57,32 +52,17 @@ export async function PATCH(request: NextRequest) {
       password: newPassword || undefined,
     });
 
-    const token = await createSessionToken({
-      userId: updatedUser.id,
-      username: updatedUser.username,
-      role: updatedUser.role,
-      status: updatedUser.status,
-      isRootAdmin: updatedUser.isRootAdmin,
-      themeMode: updatedUser.themeMode,
-      fontScaleMode: updatedUser.fontScaleMode,
-      colorVisionMode: updatedUser.colorVisionMode,
-    });
-
     const response = NextResponse.json({
       data: {
         username: updatedUser.username,
       },
     });
 
-    response.cookies.set({
-      name: SESSION_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureCookies(),
-      maxAge: getSessionMaxAgeSeconds(),
-      path: "/",
-    });
+    // Il cambio password ha incrementato session_version: solo questo dispositivo riceve il token nuovo.
+    // Lo username non è nel token, quindi cambiarlo non riemette il cookie.
+    if (newPassword) {
+      await setSessionCookie(response, updatedUser);
+    }
 
     return response;
   } catch (error) {

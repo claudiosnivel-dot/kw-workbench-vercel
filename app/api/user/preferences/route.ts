@@ -1,12 +1,6 @@
 import { ColorVisionMode, FontScaleMode, ThemeMode } from "@/lib/generated/prisma/enums";
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getSessionMaxAgeSeconds,
-  SESSION_COOKIE_NAME,
-  shouldUseSecureCookies,
-} from "@/lib/auth/config";
 import { AuthRequiredError, requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { createSessionToken } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 const THEME_VALUES = new Set<ThemeMode>(Object.values(ThemeMode));
@@ -118,18 +112,7 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    const token = await createSessionToken({
-      userId: user.id,
-      username: user.username,
-      role: user.role,
-      status: user.status,
-      isRootAdmin: user.isRootAdmin,
-      themeMode: updated.theme_mode,
-      fontScaleMode: updated.font_scale_mode,
-      colorVisionMode: updated.color_vision_mode,
-    });
-
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       data: {
         themeMode: updated.theme_mode,
@@ -137,18 +120,6 @@ export async function PATCH(request: NextRequest) {
         colorVisionMode: updated.color_vision_mode,
       },
     });
-
-    response.cookies.set({
-      name: SESSION_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureCookies(),
-      maxAge: getSessionMaxAgeSeconds(),
-      path: "/",
-    });
-
-    return response;
   } catch (error) {
     if (error instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

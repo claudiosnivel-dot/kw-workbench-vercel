@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
-import { createSessionToken } from "@/lib/auth/session";
-import {
-  getSessionMaxAgeSeconds,
-  isAuthEnabled,
-  SESSION_COOKIE_NAME,
-  shouldUseSecureCookies,
-} from "@/lib/auth/config";
+import { isAuthEnabled } from "@/lib/auth/config";
 import { verifyLoginCredentials } from "@/lib/auth/credentials";
+import { setSessionCookie } from "@/lib/auth/session-cookie";
 
 export async function POST(request: Request) {
   if (!isAuthEnabled()) {
@@ -30,27 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Credenziali non valide" }, { status: 401 });
   }
 
-  const token = await createSessionToken({
-    userId: result.user.id,
-    username: result.user.username,
-    role: result.user.role,
-    status: result.user.status,
-    isRootAdmin: result.user.isRootAdmin,
-    themeMode: result.user.themeMode,
-    fontScaleMode: result.user.fontScaleMode,
-    colorVisionMode: result.user.colorVisionMode,
-  });
-
   const response = NextResponse.json({ success: true });
-  response.cookies.set({
-    name: SESSION_COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    sameSite: "lax",
-    secure: shouldUseSecureCookies(),
-    maxAge: getSessionMaxAgeSeconds(),
-    path: "/",
-  });
-
+  await setSessionCookie(response, result.user);
   return response;
 }

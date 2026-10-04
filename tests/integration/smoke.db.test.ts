@@ -48,6 +48,7 @@ describe("smoke DB di test", () => {
     const session = await verifySessionToken(token);
 
     expect(cookie.startsWith("kwb_session=")).toBe(true);
-    expect(session?.userId).toBe(stored.id);
+    // impacted-by: T-501 (il token porta uid al posto di userId)
+    expect(session?.uid).toBe(stored.id);
   });
 });
