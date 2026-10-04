@@ -276,7 +276,7 @@ export function ProjectForm({
         <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
           <h2 className="text-base font-semibold">Step 2 (obbligatorio): Configura lingua e paese di estrazione</h2>
           <p className="text-xs text-slate-500">
-            Questo step è richiesto: la qualità dell'autocomplete dipende da lingua e paese impostati.
+            Questo step è richiesto: la qualità dell&apos;autocomplete dipende da lingua e paese impostati.
           </p>
 
           <AdvancedProjectFields
@@ -521,7 +521,7 @@ function AdvancedProjectFields({
             />
             Classificazione automatica
           </label>
-          <p className="mt-1 text-xs text-slate-500">Assegna intento e tipo keyword durante l'analisi.</p>
+          <p className="mt-1 text-xs text-slate-500">Assegna intento e tipo keyword durante l&apos;analisi.</p>
         </div>
       </div>
     </>

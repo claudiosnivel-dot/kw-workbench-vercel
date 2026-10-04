@@ -11,3 +11,4 @@ pnpm-debug.log*
 .vercel
 .DS_Store
 coverage
+tsconfig.tsbuildinfo

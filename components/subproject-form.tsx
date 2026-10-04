@@ -236,7 +236,7 @@ export function SubprojectForm({
           onChange={(event) => update("seeds", event.target.value)}
           placeholder="keyword uno\nkeyword due\nkeyword tre"
         />
-        <p className="mt-1 text-xs text-slate-500">Seed specifiche della sezione. L'estrazione agira solo su queste keyword iniziali.</p>
+        <p className="mt-1 text-xs text-slate-500">Seed specifiche della sezione. L&apos;estrazione agira solo su queste keyword iniziali.</p>
       </div>
 
       {showAdvanced && (
