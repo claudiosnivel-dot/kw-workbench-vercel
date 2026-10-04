@@ -158,8 +158,10 @@ describe("caratterizzazione: middleware e sessione", () => {
 describe("caratterizzazione: difetti noti dell'audit 2026-10-02", () => {
   // covers: AC-104-4
   it("cookie malformato, query persa nel redirect e next non validato", async () => {
-    // impacted-by: T-301
-    await expect(middleware(middlewareRequest("/projects", "kwb_session=abc.!!!"))).rejects.toThrow();
+    // impacted-by: T-301 (aggiornata da T-301: il cookie malformato vale come sessione assente)
+    const malformed = await middleware(middlewareRequest("/projects", "kwb_session=abc.!!!"));
+    expect(malformed.status).toBe(307);
+    expect(new URL(malformed.headers.get("location") ?? "").pathname).toBe("/login");
 
     const redirect = await middleware(middlewareRequest("/projects/x/results?view=all"));
     const location = new URL(redirect.headers.get("location") ?? "");
