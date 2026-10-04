@@ -1,6 +1,7 @@
 import { getIntEnv } from "@/lib/env";
 import {
   AutocompleteProviderClient,
+  AutocompleteQueryFailedError,
   AutocompleteSuggestion,
   SuggestionRequest,
 } from "@/lib/modules/providers/autocomplete/types";
@@ -14,8 +15,29 @@ const cache = new Map<string, { expiresAt: number; data: AutocompleteSuggestion[
 let rateLimiter = Promise.resolve();
 let lastRequestAt = 0;
 
+export function resetAutocompleteCacheForTests(): void {
+  cache.clear();
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+class AutocompleteHttpError extends Error {
+  constructor(readonly status: number) {
+    super(`Autocomplete HTTP ${status}`);
+    this.name = "AutocompleteHttpError";
+  }
+}
+
+// Si ritentano solo errori di rete (TypeError di fetch), timeout (AbortError), 429 e 5xx.
+function isTransientFailure(error: unknown): boolean {
+  if (error instanceof AutocompleteHttpError) {
+    return error.status === 429 || error.status >= 500;
+  }
+
+  const name = typeof error === "object" && error !== null ? (error as { name?: unknown }).name : undefined;
+  return name === "AbortError" || name === "TypeError";
 }
 
 function extractKeywords(payload: unknown): string[] {
@@ -66,6 +88,12 @@ async function withRateLimit<T>(fn: () => Promise<T>): Promise<T> {
 
 export class GoogleDirectAutocompleteProvider implements AutocompleteProviderClient {
   readonly id = "GOOGLE_DIRECT";
+  private readonly wait: (ms: number) => Promise<void>;
+
+  /** wait: attesa tra un tentativo e il successivo, iniettabile nei test. */
+  constructor(options: { wait?: (ms: number) => Promise<void> } = {}) {
+    this.wait = options.wait ?? sleep;
+  }
 
   async suggest(input: SuggestionRequest): Promise<AutocompleteSuggestion[]> {
     const query = input.query.trim();
@@ -84,10 +112,7 @@ export class GoogleDirectAutocompleteProvider implements AutocompleteProviderCli
     const maxRetries = getIntEnv("AUTOCOMPLETE_MAX_RETRIES");
     const timeoutMs = getIntEnv("AUTOCOMPLETE_TIMEOUT_MS");
 
-    let attempt = 0;
-    let lastError: unknown;
-
-    while (attempt <= maxRetries) {
+    for (let attempt = 0; ; attempt += 1) {
       try {
         const suggestions = await withRateLimit(() => this.fetchSuggestions(input, timeoutMs));
 
@@ -98,22 +123,22 @@ export class GoogleDirectAutocompleteProvider implements AutocompleteProviderCli
 
         return suggestions;
       } catch (error) {
-        lastError = error;
-        attempt += 1;
-        const delayMs = Math.min(3000, 250 * Math.pow(2, attempt));
-        await sleep(delayMs);
+        if (attempt >= maxRetries || !isTransientFailure(error)) {
+          console.warn("GoogleDirectAutocompleteProvider: query non riuscita", {
+            query,
+            languageCode: input.languageCode,
+            countryCode: input.countryCode,
+            error: error instanceof Error ? error.message : String(error),
+          });
+
+          // Nessun fallback e nessuna cache: la pipeline conta la query come fallita.
+          const status = error instanceof AutocompleteHttpError ? error.status : undefined;
+          throw new AutocompleteQueryFailedError(query, status, { cause: error });
+        }
+
+        await this.wait(Math.min(3000, 250 * Math.pow(2, attempt + 1)));
       }
     }
-
-    console.warn("GoogleDirectAutocompleteProvider fallback triggered", {
-      query,
-      languageCode: input.languageCode,
-      countryCode: input.countryCode,
-      error: lastError instanceof Error ? lastError.message : String(lastError),
-    });
-
-    // Safe fallback: return no external suggestions and keep the pipeline alive.
-    return [{ keyword: query, source: "google-direct-fallback", sourceQuery: query }];
   }
 
   private async fetchSuggestions(input: SuggestionRequest, timeoutMs: number): Promise<AutocompleteSuggestion[]> {
@@ -140,7 +165,7 @@ export class GoogleDirectAutocompleteProvider implements AutocompleteProviderCli
       });
 
       if (!response.ok) {
-        throw new Error(`Autocomplete HTTP ${response.status}`);
+        throw new AutocompleteHttpError(response.status);
       }
 
       const rawText = decodeResponseText(await response.arrayBuffer(), response.headers.get("content-type"));

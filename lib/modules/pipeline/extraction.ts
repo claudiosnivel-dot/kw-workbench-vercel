@@ -5,6 +5,7 @@ import { classifyKeyword } from "@/lib/modules/classification";
 import { dedupeCandidates, RawKeywordCandidate } from "@/lib/modules/dedupe";
 import { buildExpansionQueries } from "@/lib/modules/expansion-engine";
 import { createAutocompleteProvider } from "@/lib/modules/providers/autocomplete/factory";
+import { AutocompleteQueryFailedError } from "@/lib/modules/providers/autocomplete/types";
 import { createMetricsProvider } from "@/lib/modules/providers/metrics/factory";
 import { buildMissingMetrics } from "@/lib/modules/providers/metrics/types";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
@@ -12,11 +13,16 @@ import { scoreKeyword } from "@/lib/modules/scoring";
 import { parseSeedsFromRows } from "@/lib/modules/seed-parser";
 import { prisma } from "@/lib/prisma";
 
+/** Quota di query di autocomplete fallite oltre la quale l'estrazione fallisce senza toccare i risultati. */
+export const AUTOCOMPLETE_FAILURE_THRESHOLD = 0.3;
+
 type ExtractionSummary = {
   queries: number;
   rawSuggestions: number;
   dedupedCandidates: number;
   storedCandidates: number;
+  partial?: boolean;
+  failedQueries?: number;
 };
 
 async function mapWithConcurrency<T, R>(
@@ -105,24 +111,38 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
   }));
 
   const autocompleteConcurrency = getIntEnv("AUTOCOMPLETE_CONCURRENCY");
+  let failedQueries = 0;
 
   const suggestionsByQuery = await mapWithConcurrency(
     selectedQueries,
     autocompleteConcurrency,
     async (query) => {
-      const suggestions = await autocomplete.suggest({
-        query,
-        languageCode: effective.language_code,
-        countryCode: effective.country_code,
-      });
+      try {
+        const suggestions = await autocomplete.suggest({
+          query,
+          languageCode: effective.language_code,
+          countryCode: effective.country_code,
+        });
 
-      return suggestions.map((row) => ({
-        keyword: row.keyword,
-        source: row.source,
-        sourceQuery: row.sourceQuery,
-      }));
+        return suggestions.map((row) => ({
+          keyword: row.keyword,
+          source: row.source,
+          sourceQuery: row.sourceQuery,
+        }));
+      } catch (error) {
+        if (!(error instanceof AutocompleteQueryFailedError)) {
+          throw error;
+        }
+        failedQueries += 1;
+        return [];
+      }
     }
   );
+
+  // Prima della transazione di scrittura: sopra soglia i risultati salvati in precedenza restano.
+  if (failedQueries / selectedQueries.length > AUTOCOMPLETE_FAILURE_THRESHOLD) {
+    throw new Error(`Autocomplete non disponibile: ${failedQueries} query su ${selectedQueries.length} fallite`);
+  }
 
   for (const list of suggestionsByQuery) {
     for (const item of list) {
@@ -245,5 +265,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     rawSuggestions: rawSuggestions.length,
     dedupedCandidates: deduped.length,
     storedCandidates: preparedRows.length,
+    partial: failedQueries > 0,
+    failedQueries,
   };
 }

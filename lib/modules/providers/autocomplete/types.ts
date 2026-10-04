@@ -14,3 +14,15 @@ export interface AutocompleteProviderClient {
   readonly id: string;
   suggest(input: SuggestionRequest): Promise<AutocompleteSuggestion[]>;
 }
+
+/** Query di autocomplete non riuscita dopo i tentativi ammessi: il chiamante decide, mai un risultato fittizio. */
+export class AutocompleteQueryFailedError extends Error {
+  constructor(
+    readonly query: string,
+    readonly status: number | undefined,
+    options?: { cause?: unknown }
+  ) {
+    super(`Autocomplete non riuscito per la query "${query}"${status ? ` (HTTP ${status})` : ""}`, options);
+    this.name = "AutocompleteQueryFailedError";
+  }
+}
