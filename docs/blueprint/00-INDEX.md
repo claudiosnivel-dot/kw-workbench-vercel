@@ -140,7 +140,7 @@ APERTA = blocca i task che la citano finché l'utente non fornisce il valore.
 | D-17 | Volumi di Keyword Planner a range ("1K – 10K") importati come punto medio con `metrics_precision = 'range'`. | PROPOSTA |
 | D-18 | Ordinamento risultati: prima le keyword con metriche reali, poi quelle con solo punteggio euristico (`score_source`). | PROPOSTA |
 | D-19 | Re-run: le keyword non più prodotte vengono rimosse; quelle ancora prodotte conservano `review_status` e `selected_for_export`. | PROPOSTA |
-| D-20 | RLS abilitata senza policy sulle tabelle `public` di Supabase (Data API non usata; Prisma accede come owner). Deroga documentata allo standard R2. | PROPOSTA |
+| D-20 | RLS abilitata senza policy sulle tabelle `public` di Supabase (Data API non usata; Prisma accede come owner). Deroga documentata allo standard R2. | DECISA (utente, 2026-10-04: «confermo d-20»). Sblocca T-205 |
 | D-21 | La "sezione predefinita" si usa davvero (`default_subproject_id`) e si collega il pulsante esistente `SetDefaultSectionButton`, invece di rimuoverlo. | PROPOSTA |
 | D-22 | Contratto di altitudine §1bis: ui=`components/**`, domain=`lib/modules/**`, data=`lib/prisma.ts`, routes=`app/**`; vietati ui→data, domain→ui, domain→routes. | DECISA (deriva dal codice) |
 | D-23 | Risultati ed export: pagina da 20 a 250 righe, default 100 (T-801); CSV di default nel formato Excel italiano (`;`, decimali con virgola) con opzione `csvDialect=rfc4180` (T-804); export Sheets a blocchi di 5.000 righe (T-806); ogni scope di export si combina con i filtri della vista e "selected" esclude le rifiutate (T-807); colonna `projects.last_activity_at` (T-810). | PROPOSTA |
