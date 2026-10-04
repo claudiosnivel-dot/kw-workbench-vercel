@@ -176,7 +176,7 @@ describe("caratterizzazione: difetti noti dell'audit 2026-10-02", () => {
     const element = await LoginPage({ searchParams: Promise.resolve({ next: "//evil.com" }) });
     const form = findElement(element, LoginForm);
     expect(form).not.toBeNull();
-    // impacted-by: T-303
-    expect(form?.props.nextPath).toBe("//evil.com");
+    // impacted-by: T-303 (aggiornata da T-303: safeNextPath riporta //evil.com a /)
+    expect(form?.props.nextPath).toBe("/");
   });
 });

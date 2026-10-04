@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { RegisterForm } from "@/components/register-form";
 import { isPublicSignupEnabled } from "@/lib/auth/config";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { safeNextPath } from "@/lib/auth/safe-next-path";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function RegisterPage({
 
   const params = await searchParams;
   const nextValue = params.next;
-  const nextPath = Array.isArray(nextValue) ? nextValue[0] : nextValue;
+  const nextPath = safeNextPath(Array.isArray(nextValue) ? nextValue[0] : nextValue);
   const signupEnabled = isPublicSignupEnabled();
 
   return (
@@ -28,7 +29,7 @@ export default async function RegisterPage({
         {signupEnabled ? (
           <>
             <p className="text-sm text-slate-600">Compila i campi per attivare il tuo workspace.</p>
-            <RegisterForm nextPath={nextPath && nextPath.startsWith("/") ? nextPath : "/"} />
+            <RegisterForm nextPath={nextPath} />
           </>
         ) : (
           <>
