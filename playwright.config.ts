@@ -24,7 +24,7 @@ const appEnv: Record<string, string> = {
   PRISMA_POOL_TIMEOUT: "15",
   APP_AUTH_ENABLED: "true",
   APP_AUTH_USERNAME: "e2e-bootstrap-admin",
-  APP_AUTH_PASSWORD: "e2e-bootstrap-password-not-real",
+  APP_AUTH_PASSWORD: testSecret(),
   APP_PUBLIC_SIGNUP_ENABLED: "true",
   APP_SESSION_SECRET: testSecret(),
   APP_SESSION_MAX_AGE_SECONDS: "604800",

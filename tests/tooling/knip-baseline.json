@@ -1,0 +1,21 @@
+{
+  "description": "Codice morto preesistente rilevato dall'audit del 2026-10-02 (T-108). Il gate segnala solo le segnalazioni di knip assenti da qui; la rimozione è di T-1101, human-gated.",
+  "entries": [
+    {
+      "type": "files",
+      "file": "components/set-default-section-button.tsx",
+      "symbol": "components/set-default-section-button.tsx",
+      "note": "D-21: va collegato in T-802, non rimosso"
+    },
+    { "type": "exports", "file": "lib/auth/current-user.ts", "symbol": "isRootAdminUser" },
+    { "type": "exports", "file": "lib/auth/current-user.ts", "symbol": "requireAdminUserFromCookies" },
+    { "type": "exports", "file": "lib/auth/current-user.ts", "symbol": "requireRootAdminUserFromCookies" },
+    { "type": "exports", "file": "lib/auth/session.ts", "symbol": "SESSION_COOKIE_NAME" },
+    { "type": "exports", "file": "lib/integrations/app-settings.ts", "symbol": "getSettingValue" },
+    { "type": "exports", "file": "lib/modules/jobs/job-runner.ts", "symbol": "runQueuedExtractionJobs" },
+    { "type": "exports", "file": "lib/modules/jobs/job-runner.ts", "symbol": "getJobStats" },
+    { "type": "exports", "file": "lib/text/encoding.ts", "symbol": "repairCommonMojibake" },
+    { "type": "exports", "file": "lib/utils.ts", "symbol": "parseBoolean" },
+    { "type": "exports", "file": "lib/utils.ts", "symbol": "toNumber" }
+  ]
+}
