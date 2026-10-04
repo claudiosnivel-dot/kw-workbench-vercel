@@ -1,6 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import type { PoolConfig } from "pg";
-import { sslForDatabaseUrl } from "@/lib/db/ssl";
+import { poolConnection } from "@/lib/db/ssl";
 import { envInt, getIntEnv, INT_ENV, type EnvSource } from "@/lib/env";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 
@@ -13,7 +13,8 @@ const IDLE_TIMEOUT_MS = 10_000;
 
 /**
  * Pool di pg dell'adapter. Con l'adapter connection_limit, pgbouncer e pool_timeout nell'URL non
- * governano più nulla: limite e attesa di una connessione arrivano dall'env validata (T-201).
+ * governano più nulla: si tolgono dall'URL (con i parametri TLS, vedi lib/db/ssl.ts) e limite e
+ * attesa di una connessione arrivano dall'env validata (T-201).
  * Senza connectionTimeoutMillis pg attenderebbe una connessione libera all'infinito.
  */
 export function buildPoolConfig(source: EnvSource = process.env): PoolConfig {
@@ -21,11 +22,10 @@ export function buildPoolConfig(source: EnvSource = process.env): PoolConfig {
   const defaultConnectionLimit = source.NODE_ENV === "production" ? 3 : 1;
 
   return {
-    connectionString: source.DATABASE_URL,
+    ...poolConnection(source.DATABASE_URL),
     max: envInt("PRISMA_CONNECTION_LIMIT", defaultConnectionLimit, min, max, source),
     connectionTimeoutMillis: getIntEnv("PRISMA_POOL_TIMEOUT", source) * 1000,
     idleTimeoutMillis: IDLE_TIMEOUT_MS,
-    ssl: sslForDatabaseUrl(source.DATABASE_URL),
   };
 }
 

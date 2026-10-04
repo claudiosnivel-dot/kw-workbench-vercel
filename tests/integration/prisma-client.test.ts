@@ -100,6 +100,14 @@ describe("Prisma 7: prisma.config.ts e adapter pg", () => {
     expect(config.connectionString).toBe(process.env.DATABASE_URL);
     expect(config.connectionString).not.toMatch(/connection_limit|pgbouncer|pool_timeout/);
 
+    // Anche con un URL del pooler nel formato documentato (README) i parametri del vecchio engine spariscono.
+    const pooled = buildPoolConfig({
+      DATABASE_URL: "postgresql://u:p@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&pool_timeout=20",
+      PRISMA_CONNECTION_LIMIT: "2",
+      PRISMA_POOL_TIMEOUT: "7",
+    });
+    expect(pooled.connectionString).not.toMatch(/connection_limit|pgbouncer|pool_timeout/);
+
     await resetDatabase();
     const created = await prisma.user.create({
       data: { username: "prisma-adapter-probe", password_hash: "hash-non-usato" },

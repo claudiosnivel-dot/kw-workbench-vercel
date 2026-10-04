@@ -32,6 +32,23 @@ o/bKiIz+Fq8=
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
+// Parametri dell'URL che il pool di pg non deve ricevere: quelli del vecchio engine di Prisma
+// (connection_limit, pgbouncer, pool_timeout: limiti e attese arrivano da buildPoolConfig) e quelli
+// TLS. pg-connection-string traduce sslmode=require in una verifica con le sole CA di sistema che
+// sovrascrive l'opzione ssl del pool: sulla catena di Supabase la connessione fallirebbe.
+const POOL_IGNORED_PARAMS = [
+  "connection_limit",
+  "pgbouncer",
+  "pool_timeout",
+  "sslmode",
+  "sslrootcert",
+  "sslcert",
+  "sslkey",
+  "ssl",
+  "sslnegotiation",
+  "uselibpqcompat",
+];
+
 /**
  * TLS per il pool di pg: nessuno sui DB locali (sviluppo, test, CI), verifica completa altrove;
  * per gli host Supabase la verifica usa la CA di Supabase, per gli altri le CA di sistema.
@@ -51,4 +68,27 @@ export function sslForDatabaseUrl(url: string | undefined): ConnectionOptions | 
     return { ca: SUPABASE_ROOT_CA_2021, rejectUnauthorized: true };
   }
   return { rejectUnauthorized: true };
+}
+
+/**
+ * URL e TLS per il pool di pg: l'URL perde i parametri di POOL_IGNORED_PARAMS e il TLS segue
+ * sslForDatabaseUrl; solo sslmode=disable, scelto esplicitamente nell'URL, lo spegne.
+ */
+export function poolConnection(url: string | undefined): {
+  connectionString: string | undefined;
+  ssl: ConnectionOptions | false;
+} {
+  let parsed: URL;
+  try {
+    parsed = new URL(url ?? "");
+  } catch {
+    return { connectionString: url, ssl: sslForDatabaseUrl(url) };
+  }
+
+  const sslDisabled = parsed.searchParams.get("sslmode") === "disable";
+  for (const name of POOL_IGNORED_PARAMS) {
+    parsed.searchParams.delete(name);
+  }
+
+  return { connectionString: parsed.toString(), ssl: sslDisabled ? false : sslForDatabaseUrl(url) };
 }
