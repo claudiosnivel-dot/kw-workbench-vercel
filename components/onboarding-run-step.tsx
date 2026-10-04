@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { ensureExtractionCompleted } from "@/lib/client/run-extraction";
 
 type OnboardingRunStepProps = {
   projectId: string;
@@ -33,10 +33,7 @@ export function OnboardingRunStep({
         body: JSON.stringify({ subprojectId }),
       });
 
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Estrazione non riuscita"));
-      }
+      await ensureExtractionCompleted(response);
 
       const onboardingResponse = await fetch("/api/onboarding/state", {
         method: "PATCH",
