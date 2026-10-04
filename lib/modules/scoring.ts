@@ -1,4 +1,4 @@
-import { MetricsStatus, SearchIntent } from "@prisma/client";
+import { MetricsStatus, SearchIntent } from "@/lib/generated/prisma/enums";
 import { clamp } from "@/lib/utils";
 import { keywordCleanlinessScore } from "@/lib/modules/normalization";
 

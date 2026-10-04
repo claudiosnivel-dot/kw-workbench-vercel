@@ -1,4 +1,4 @@
-import { UserRole, UserStatus } from "@prisma/client";
+import { UserRole, UserStatus } from "@/lib/generated/prisma/enums";
 import { cookies } from "next/headers";
 import { isAuthEnabled, SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { ensureLegacyDefaultUser, findAuthUserById, type AuthUser } from "@/lib/auth/credentials";

@@ -10,7 +10,7 @@ export default defineConfig({
   resolve: {
     alias: [{ find: /^@\//, replacement: rootDir }],
   },
-  // tsconfig.json ha jsx "preserve" (per Next): nei test il JSX va trasformato qui.
+  // Il JSX dei test si trasforma qui con il runtime automatico (lo stesso di jsx "react-jsx" in tsconfig.json).
   oxc: {
     jsx: { runtime: "automatic" },
   },

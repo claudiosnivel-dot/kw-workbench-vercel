@@ -137,7 +137,7 @@ export function BrandingSettingsCard({ initial }: { initial: BrandingSnapshot })
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.1fr,0.9fr]">
+      <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-5">
           <div>
             <label className="label" htmlFor="appName">

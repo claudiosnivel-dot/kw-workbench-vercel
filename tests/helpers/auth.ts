@@ -1,4 +1,4 @@
-import { UserRole, UserStatus, type User } from "@prisma/client";
+import { UserRole, UserStatus, type User } from "@/lib/generated/prisma/client";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { createSessionToken } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";

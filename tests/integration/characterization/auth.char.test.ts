@@ -1,7 +1,10 @@
 // Caratterizzazione di T-104: fotografa login, registrazione, logout, sessione e middleware
 // così come sono oggi, difetti noti compresi. Le asserzioni marcate impacted-by cambiano
 // solo con il task indicato e passando da gate umano.
-import { UserStatus } from "@prisma/client";
+// Oracolo di non regressione degli upgrade di 04-stack-upgrade (snapshot invariati):
+// covers: AC-401-3
+// covers: AC-403-4
+import { UserStatus } from "@/lib/generated/prisma/enums";
 import { NextRequest } from "next/server";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -12,7 +15,8 @@ import { GET as session } from "@/app/api/auth/session/route";
 import LoginPage from "@/app/login/page";
 import { LoginForm } from "@/components/login-form";
 import { prisma } from "@/lib/prisma";
-import { middleware } from "@/middleware";
+// T-404: con Next 16 il middleware è proxy.ts (stessa logica, funzione rinominata).
+import { proxy as middleware } from "@/proxy";
 import { createUserWithSession } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";

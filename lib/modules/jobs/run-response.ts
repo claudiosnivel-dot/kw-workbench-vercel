@@ -1,4 +1,4 @@
-import type { Job } from "@prisma/client";
+import type { Job } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
 
 /**

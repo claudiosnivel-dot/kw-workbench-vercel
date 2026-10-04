@@ -1,4 +1,4 @@
-import { ColorVisionMode, FontScaleMode, ThemeMode } from "@prisma/client";
+import { ColorVisionMode, FontScaleMode, ThemeMode } from "@/lib/generated/prisma/enums";
 import { NextRequest, NextResponse } from "next/server";
 import {
   getSessionMaxAgeSeconds,

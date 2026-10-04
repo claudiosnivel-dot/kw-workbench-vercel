@@ -5,6 +5,9 @@ import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+// Major di Node di produzione (T-407): la stessa di .nvmrc, engines.node e CI.
+const REQUIRED_NODE_MAJOR = 24;
+
 const MIGRATE = ["prisma", "migrate", "deploy"];
 const SEED = ["prisma", "db", "seed"];
 const BUILD = ["next", "build"];
@@ -52,6 +55,14 @@ function parseProductionDbHost(value) {
 
 function describeDb(identity) {
   return identity.username ? `host ${identity.hostname}, utente ${identity.username}` : `host ${identity.hostname}`;
+}
+
+/** Lancia se la major di version (es. v24.3.0) è diversa da expected. */
+export function assertNodeMajor(version, expected) {
+  const major = Number(/^v?(\d+)\./.exec(version ?? "")?.[1]);
+  if (major !== expected) {
+    throw new Error(`[vercel-build] il build richiede Node ${expected}: il runtime è ${version}`);
+  }
 }
 
 export function decideMigration({ VERCEL_ENV, DIRECT_URL, PRODUCTION_DB_HOST }) {
@@ -108,5 +119,15 @@ function runCommand(argv) {
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+  process.stdout.write(`[vercel-build] Node ${process.version}\n`);
+  // Su Vercel una major diversa da quella testata in CI ferma il build prima di migrazioni e next build.
+  if (process.env.VERCEL === "1") {
+    try {
+      assertNodeMajor(process.version, REQUIRED_NODE_MAJOR);
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`);
+      process.exit(1);
+    }
+  }
   process.exitCode = await runVercelBuild({ env: process.env, run: runCommand });
 }

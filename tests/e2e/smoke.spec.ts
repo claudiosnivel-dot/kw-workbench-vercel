@@ -1,13 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { E2E_USER_PASSWORD, E2E_USERNAME } from "./credentials";
+
+async function submitLogin(page: Page, password: string): Promise<void> {
+  await page.goto("/login");
+  await page.getByLabel("Username").fill(E2E_USERNAME);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Accedi" }).click();
+}
 
 test.describe("smoke di login", () => {
   // covers: AC-103-1
   test("con credenziali valide porta alla dashboard con il cookie di sessione", async ({ page, context }) => {
-    await page.goto("/login");
-    await page.getByLabel("Username").fill(E2E_USERNAME);
-    await page.getByLabel("Password").fill(E2E_USER_PASSWORD);
-    await page.getByRole("button", { name: "Accedi" }).click();
+    await submitLogin(page, E2E_USER_PASSWORD);
 
     await page.waitForURL((url) => url.pathname === "/");
     expect(new URL(page.url()).pathname).toBe("/");
@@ -15,14 +19,42 @@ test.describe("smoke di login", () => {
     await expect(page.getByRole("button", { name: "Esci" }).first()).toBeVisible();
   });
 
+  // covers: AC-401-4
+  // covers: AC-404-4
+  test("dopo il login dell'utente seed la dashboard risponde 200", async ({ page }) => {
+    await submitLogin(page, E2E_USER_PASSWORD);
+    await page.waitForURL((url) => url.pathname === "/");
+
+    const dashboard = await page.goto("/");
+    expect(dashboard?.status()).toBe(200);
+    await expect(page.getByRole("button", { name: "Esci" }).first()).toBeVisible();
+  });
+
   // covers: AC-103-2
   test("con password errata resta su /login e mostra l'errore", async ({ page }) => {
-    await page.goto("/login");
-    await page.getByLabel("Username").fill(E2E_USERNAME);
-    await page.getByLabel("Password").fill("password-errata");
-    await page.getByRole("button", { name: "Accedi" }).click();
+    await submitLogin(page, "password-errata");
 
     await expect(page.getByText("Credenziali non valide")).toBeVisible();
     expect(new URL(page.url()).pathname).toBe("/login");
+  });
+});
+
+test.describe("smoke del proxy", () => {
+  // covers: AC-404-2
+  test("una richiesta anonima con x-middleware-subrequest su /api/projects riceve 401 (CVE-2025-29927)", async ({
+    request,
+  }) => {
+    const response = await request.get("/api/projects", {
+      headers: { "x-middleware-subrequest": "middleware:middleware:middleware:middleware:middleware" },
+    });
+
+    expect(response.status()).toBe(401);
+  });
+
+  // covers: AC-404-4
+  test("/login con il cookie di sessione malformato risponde 200", async ({ request }) => {
+    const response = await request.get("/login", { headers: { cookie: "kwb_session=abc.!!!" } });
+
+    expect(response.status()).toBe(200);
   });
 });

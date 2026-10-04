@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../lib/generated/prisma/client";
 
 export const DEFAULT_BRANDS = [
   { brand: "google", reason: "Global brand default" },
@@ -49,7 +49,8 @@ export async function seedGlobalDefaults(client: Pick<PrismaClient, "$transactio
 }
 
 async function main() {
-  const prisma = new PrismaClient();
+  // Stesso client e stesso adapter pg dell'app (in v7 PrismaClient richiede un driver adapter).
+  const { prisma } = await import("../lib/prisma");
 
   try {
     await seedGlobalDefaults(prisma);

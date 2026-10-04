@@ -2,6 +2,9 @@
 // separatori, righe, header HTTP, semantica degli scope) prima della sostituzione di xlsx
 // (T-406) e delle correzioni del CSV (T-804) e degli scope (T-807). L'XLSX si legge con
 // exceljs, indipendente dalla libreria che lo scrive.
+// Oracolo di non regressione degli upgrade di 04-stack-upgrade (snapshot invariati):
+// covers: AC-401-3
+// covers: AC-403-4
 import ExcelJS from "exceljs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";

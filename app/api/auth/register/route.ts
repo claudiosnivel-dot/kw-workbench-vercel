@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/generated/prisma/enums";
 import { NextResponse } from "next/server";
 import {
   getSessionMaxAgeSeconds,

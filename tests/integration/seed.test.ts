@@ -1,9 +1,14 @@
-// Gate di T-204: seed dei default globali idempotente e transazionale (AC-204-1…4).
-import type { PrismaClient } from "@prisma/client";
+// Gate di T-204: seed dei default globali idempotente e transazionale (AC-204-1…4); T-403: AC-403-4.
+import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
+import type { PrismaClient } from "@/lib/generated/prisma/client";
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { seedGlobalDefaults } from "@/prisma/seed";
 import { resetDatabase } from "../helpers/db";
+
+const require = createRequire(import.meta.url);
+const PRISMA_CLI = require.resolve("prisma/build/index.js");
 
 async function globalCounts() {
   return {
@@ -107,4 +112,19 @@ describe("seed dei default globali", () => {
       patterns: await prisma.expansionPattern.count(),
     }).toEqual(before);
   });
+
+  // covers: AC-403-4
+  it("prisma db seed lanciato due volte dalla CLI lascia 5 brand e 8 pattern globali", async () => {
+    // DATABASE_URL e DIRECT_URL sono già quelle del DB di test (setup d'integrazione).
+    for (let run = 0; run < 2; run += 1) {
+      const seed = spawnSync(process.execPath, [PRISMA_CLI, "db", "seed"], {
+        env: process.env,
+        encoding: "utf8",
+        timeout: 180_000,
+      });
+      expect(seed.status, seed.stdout + seed.stderr).toBe(0);
+    }
+
+    expect(await globalCounts()).toEqual({ brands: 5, patterns: 8 });
+  }, 400_000);
 });

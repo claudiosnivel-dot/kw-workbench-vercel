@@ -1,4 +1,4 @@
-import { MetricsProvider, Prisma } from "@prisma/client";
+import { MetricsProvider, Prisma } from "@/lib/generated/prisma/client";
 import { getIntEnv } from "@/lib/env";
 import { evaluateBrandStatus } from "@/lib/modules/brand-filter";
 import { classifyKeyword } from "@/lib/modules/classification";

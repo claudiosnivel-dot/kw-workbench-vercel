@@ -1,4 +1,4 @@
-import type { AutocompleteProvider, MetricsProvider } from "@prisma/client";
+import type { AutocompleteProvider, MetricsProvider } from "@/lib/generated/prisma/enums";
 
 // Tipi condivisi con i componenti client: nessun import del client Prisma dell'app (contratto D-22).
 

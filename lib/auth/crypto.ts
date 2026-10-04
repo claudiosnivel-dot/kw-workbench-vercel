@@ -12,7 +12,7 @@ function toBase64Url(input: Uint8Array): string {
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]*$/;
 
-function fromBase64Url(input: string): Uint8Array {
+function fromBase64Url(input: string): Uint8Array<ArrayBuffer> {
   // atob lancia su caratteri fuori alfabeto: l'input (cookie del client) si valida prima.
   if (!BASE64URL_PATTERN.test(input)) {
     throw new Error("Valore base64url non valido");

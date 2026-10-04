@@ -1,4 +1,4 @@
-import { AutocompleteProvider, MetricsProvider } from "@prisma/client";
+import { AutocompleteProvider, MetricsProvider } from "@/lib/generated/prisma/enums";
 import { normalizeCountryCode, normalizeLanguageCode } from "@/lib/constants/locale-options";
 import { splitLines } from "@/lib/utils";
 

@@ -1,6 +1,47 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/*
+  Interlinee di Tailwind 3: in v4 le classi text-* usano rapporti senza unità, che i figli con un
+  font più piccolo ereditano ricalcolati (es. le intestazioni delle tabelle dentro text-sm passano
+  da 20px a 16,5px). Con i valori in rem di v3 l'aspetto resta quello delle baseline di T-103.
+*/
+@theme {
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+}
+
+/*
+  Tailwind 4 usa currentColor come colore predefinito dei bordi (in v3 era gray-200): stile di
+  compatibilità suggerito dallo strumento di upgrade di Tailwind, perché i bordi senza colore
+  esplicito restino come in v3 (T-405). Per toglierlo, ogni elemento che dipende dal default va
+  colorato a mano.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* Preflight di v3, come indicato dalla guida di upgrade: segnaposto gray-400 e puntatore sui bottoni. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 :root,
 html[data-theme="DARK"] {

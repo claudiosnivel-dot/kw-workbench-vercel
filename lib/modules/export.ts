@@ -1,5 +1,5 @@
-import * as XLSX from "xlsx";
-import { Prisma } from "@prisma/client";
+import ExcelJS from "exceljs";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildResultsWhere, ResultsFilters } from "@/lib/modules/results-filters";
 
@@ -101,6 +101,26 @@ function rowsToCsv(rows: ExportRow[]): string {
   }
 
   return lines.join("\n");
+}
+
+/**
+ * Foglio "keywords" con exceljs: intestazione dalle chiavi di ExportRow e una riga per record. I valori
+ * sono scritti come numeri, booleani o stringhe (mai come formula: un testo che inizia con = resta
+ * testo); null resta una cella vuota. Con 0 righe il foglio è vuoto, come con il vecchio xlsx.
+ */
+async function rowsToXlsx(rows: ExportRow[]): Promise<Buffer<ArrayBuffer>> {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("keywords");
+
+  if (rows.length > 0) {
+    const headers = Object.keys(rows[0]) as (keyof ExportRow)[];
+    sheet.addRow(headers);
+    for (const row of rows) {
+      sheet.addRow(headers.map((header) => row[header]));
+    }
+  }
+
+  return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
 function buildScopeWhere(
@@ -221,14 +241,9 @@ export async function generateExport(params: {
     };
   }
 
-  const worksheet = XLSX.utils.json_to_sheet(payload);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "keywords");
-  const binary = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-
   return {
     contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     filename: `${filenameBase}.xlsx`,
-    buffer: Buffer.from(binary),
+    buffer: await rowsToXlsx(payload),
   };
 }

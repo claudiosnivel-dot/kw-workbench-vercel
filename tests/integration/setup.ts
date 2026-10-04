@@ -5,8 +5,8 @@ const url = assertLocalTestDatabase(process.env.TEST_DATABASE_URL);
 process.env.DATABASE_URL = url;
 process.env.DIRECT_URL = url;
 
-// Il client Prisma, quando viene creato, carica il .env della radice nelle variabili non impostate:
-// quelle aggiunte in quel momento si scartano, così i test non usano valori del .env reale.
+// Rete di sicurezza: se un import carica il .env della radice (lo faceva il client di Prisma 5;
+// quello di Prisma 7 no, T-403), le variabili aggiunte si scartano e i test non usano valori reali.
 const keysBeforePrisma = new Set(Object.keys(process.env));
 await import("@/lib/prisma");
 for (const key of Object.keys(process.env)) {

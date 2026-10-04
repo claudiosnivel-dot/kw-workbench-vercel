@@ -1,10 +1,14 @@
 // Gate di T-205: Data API di Supabase chiusa con RLS deny-by-default (AC-205-1…3, D-20).
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { resetDatabase } from "../helpers/db";
+
+type DriverAdapterFailure = Prisma.PrismaClientKnownRequestError & {
+  meta?: { driverAdapterError?: { cause?: { originalCode?: string; originalMessage?: string } } };
+};
 
 const PROBE_ROLE = "rls_probe";
 const MIGRATIONS_DIR = path.join(process.cwd(), "prisma", "migrations");
@@ -75,10 +79,10 @@ describe("RLS deny-by-default sulle tabelle di public", () => {
     const error = await probe.catch((caught: unknown) => caught);
     expect(visibleUsers).toBe(0);
     expect(error).toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
-    expect((error as Prisma.PrismaClientKnownRequestError).meta?.code).toBe("42501");
-    expect(String((error as Prisma.PrismaClientKnownRequestError).meta?.message)).toContain(
-      "new row violates row-level security policy"
-    );
+    // Con l'adapter pg (T-403) SQLSTATE e messaggio di Postgres stanno in meta.driverAdapterError.cause.
+    const cause = (error as DriverAdapterFailure).meta?.driverAdapterError?.cause;
+    expect(cause?.originalCode).toBe("42501");
+    expect(String(cause?.originalMessage)).toContain("new row violates row-level security policy");
     expect(await prisma.project.count()).toBe(0);
   });
 

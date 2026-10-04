@@ -1,4 +1,4 @@
-import { KeywordType, SearchIntent } from "@prisma/client";
+import { KeywordType, SearchIntent } from "@/lib/generated/prisma/enums";
 
 export type ClassificationResult = {
   keyword_type: KeywordType;

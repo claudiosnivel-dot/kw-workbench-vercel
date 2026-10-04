@@ -27,7 +27,13 @@ describe("contratto di altitudine D-22", () => {
   // covers: AC-109-1
   it("nessun componente raggiunge lib/prisma.ts", () => {
     expect(Object.keys(graph)).toContain("components/onboarding-seeds-form.tsx");
-    expect(findForbiddenPaths(graph, [{ from: "components/**", to: "lib/prisma.ts" }])).toEqual([]);
+    // T-403: neppure il client generato da Prisma 7 (ai componenti arrivano solo i tipi degli enum).
+    expect(
+      findForbiddenPaths(graph, [
+        { from: "components/**", to: "lib/prisma.ts" },
+        { from: "components/**", to: "lib/generated/prisma/client.ts" },
+      ])
+    ).toEqual([]);
   });
 
   // covers: AC-109-2

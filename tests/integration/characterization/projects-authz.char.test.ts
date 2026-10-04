@@ -1,6 +1,9 @@
 // Caratterizzazione di T-105: isolamento applicativo tra utenti (route-authz, D-02) su
 // progetti, sezioni, risultati, export ed estrazione, più due invarianti di dominio.
 // È la rete che protegge il passaggio ai workspace (T-1502).
+// Oracolo di non regressione degli upgrade di 04-stack-upgrade (snapshot invariati):
+// covers: AC-401-3
+// covers: AC-403-4
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as createProject } from "@/app/api/projects/route";
 import {

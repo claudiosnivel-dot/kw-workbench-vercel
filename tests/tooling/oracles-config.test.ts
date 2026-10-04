@@ -36,7 +36,8 @@ describe("oracoli Trueline: knip e file ignorati", () => {
     );
 
     expect(unusedFiles.filter((file) => /^app\/.*\/?(page|layout|route)\.tsx?$/.test(file))).toEqual([]);
-    expect(unusedFiles).not.toContain("middleware.ts");
+    // T-404: con Next 16 il middleware è proxy.ts.
+    expect(unusedFiles).not.toContain("proxy.ts");
     expect(unusedFiles).not.toContain("prisma/seed.ts");
   });
 

@@ -1,0 +1,8 @@
+[
+  {
+    "ghsa": "GHSA-vfj7-8cjw-p6xm",
+    "package": "braces",
+    "reason": "braces fino a 3.0.3, l'ultima su npm: nessun fix upstream. Solo strumenti di sviluppo via micromatch: @next/eslint-plugin-next con fast-glob 3.3.1 (anche in eslint-config-next 16.3.8) e jscpd 4.3.0 (fix solo in jscpd 5); il percorso di tailwindcss 3 è chiuso da T-405. Accettata dall'utente il 2026-10-04 fino a T-1102, che rivaluta jscpd 5 ed eslint-config-next.",
+    "closedBy": ["T-1102"]
+  }
+]

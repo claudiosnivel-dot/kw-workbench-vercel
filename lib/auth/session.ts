@@ -1,4 +1,4 @@
-import { ColorVisionMode, FontScaleMode, ThemeMode, UserRole, UserStatus } from "@prisma/client";
+import { ColorVisionMode, FontScaleMode, ThemeMode, UserRole, UserStatus } from "@/lib/generated/prisma/enums";
 import {
   getSessionMaxAgeSeconds,
   getSessionSecret,

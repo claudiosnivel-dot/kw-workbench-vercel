@@ -1,4 +1,4 @@
-import { MetricsProvider, MetricsStatus } from "@prisma/client";
+import { MetricsProvider, MetricsStatus } from "@/lib/generated/prisma/enums";
 
 export type KeywordMetric = {
   keyword: string;

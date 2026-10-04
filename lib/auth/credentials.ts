@@ -1,4 +1,4 @@
-import { ColorVisionMode, FontScaleMode, Prisma, ThemeMode, UserRole, UserStatus } from "@prisma/client";
+import { ColorVisionMode, FontScaleMode, Prisma, ThemeMode, UserRole, UserStatus } from "@/lib/generated/prisma/client";
 import { getAuthPassword, getAuthUsername } from "@/lib/auth/config";
 import { getManySettingValues } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
