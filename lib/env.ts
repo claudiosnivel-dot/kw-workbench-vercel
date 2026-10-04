@@ -54,6 +54,8 @@ const envSchema = z.object({
   APP_BRAND_LOGO_URL_LIGHT: optional,
   DATABASE_URL: optional,
   DIRECT_URL: optional,
+  // Solo nell'ambiente Preview: identità del DB di produzione per la guardia del build (T-202).
+  PRODUCTION_DB_HOST: optional,
   PRISMA_CONNECTION_LIMIT: optional,
   PRISMA_POOL_TIMEOUT: optional,
   MAX_EXPANSION_QUERIES: optional,
