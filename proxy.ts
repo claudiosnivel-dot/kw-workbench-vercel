@@ -30,7 +30,7 @@ function isPublicPath(pathname: string): boolean {
   return PUBLIC_ROOT_FILE.test(pathname);
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (!isAuthEnabled()) {
     return NextResponse.next();
   }

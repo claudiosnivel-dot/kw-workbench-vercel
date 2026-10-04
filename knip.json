@@ -10,7 +10,7 @@
   },
   "entry": [
     "app/**/{page,layout,route}.{ts,tsx}",
-    "middleware.ts",
+    "proxy.ts",
     "prisma/seed.ts",
     "scripts/**/*.{mjs,ts}",
     "prisma.config.ts",

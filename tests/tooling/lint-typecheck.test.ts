@@ -1,4 +1,5 @@
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -10,10 +11,11 @@ function readJson<T>(relativePath: string): T {
 }
 
 /** Esegue un comando nella radice del repo con stdin chiuso: un prompt interattivo non riceverebbe input. */
-function run(command: string): SpawnSyncReturns<string> {
+function run(command: string, env: NodeJS.ProcessEnv = process.env): SpawnSyncReturns<string> {
   return spawnSync(command, {
     shell: true,
     cwd: process.cwd(),
+    env,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: COMMAND_TIMEOUT_MS,
@@ -100,4 +102,20 @@ describe("lint e typecheck come comandi", () => {
       expect(result.stdout + result.stderr).not.toMatch(/invalid|ERESOLVE/);
     }
   }, COMMAND_TIMEOUT_MS);
+
+  // covers: AC-404-3
+  it("npm ls riporta next 16.3, lint e build escono 0 e package.json non contiene next lint", () => {
+    const ls = run("npm ls next --json");
+    const tree = JSON.parse(ls.stdout) as { dependencies?: { next?: { version?: string } } };
+    expect(ls.status, ls.stderr).toBe(0);
+    expect(tree.dependencies?.next?.version).toMatch(/^16\.3\.\d+$/);
+
+    expect(lint.status, lint.stdout + lint.stderr).toBe(0);
+    expect(readFileSync(join(process.cwd(), "package.json"), "utf8")).not.toContain("next lint");
+
+    // Segreti fittizi generati a ogni run, come nel job build della CI: mai valori reali.
+    const secret = () => randomBytes(24).toString("hex");
+    const build = run("npm run build", { ...process.env, APP_SESSION_SECRET: secret(), APP_ENCRYPTION_KEY: secret() });
+    expect(build.status, build.stdout.slice(-2000) + build.stderr.slice(-2000)).toBe(0);
+  }, 2 * COMMAND_TIMEOUT_MS);
 });

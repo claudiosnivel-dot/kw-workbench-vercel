@@ -12,7 +12,8 @@ import { GET as session } from "@/app/api/auth/session/route";
 import LoginPage from "@/app/login/page";
 import { LoginForm } from "@/components/login-form";
 import { prisma } from "@/lib/prisma";
-import { middleware } from "@/middleware";
+// T-404: con Next 16 il middleware è proxy.ts (stessa logica, funzione rinominata).
+import { proxy as middleware } from "@/proxy";
 import { createUserWithSession } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";

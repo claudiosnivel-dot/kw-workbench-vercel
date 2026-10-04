@@ -19,7 +19,7 @@ test.describe("smoke di login", () => {
     await expect(page.getByRole("button", { name: "Esci" }).first()).toBeVisible();
   });
 
-  // covers: AC-401-4
+  // covers: AC-401-4, AC-404-4
   test("dopo il login dell'utente seed la dashboard risponde 200", async ({ page }) => {
     await submitLogin(page, E2E_USER_PASSWORD);
     await page.waitForURL((url) => url.pathname === "/");
@@ -35,5 +35,25 @@ test.describe("smoke di login", () => {
 
     await expect(page.getByText("Credenziali non valide")).toBeVisible();
     expect(new URL(page.url()).pathname).toBe("/login");
+  });
+});
+
+test.describe("smoke del proxy", () => {
+  // covers: AC-404-2
+  test("una richiesta anonima con x-middleware-subrequest su /api/projects riceve 401 (CVE-2025-29927)", async ({
+    request,
+  }) => {
+    const response = await request.get("/api/projects", {
+      headers: { "x-middleware-subrequest": "middleware:middleware:middleware:middleware:middleware" },
+    });
+
+    expect(response.status()).toBe(401);
+  });
+
+  // covers: AC-404-4
+  test("/login con il cookie di sessione malformato risponde 200", async ({ request }) => {
+    const response = await request.get("/login", { headers: { cookie: "kwb_session=abc.!!!" } });
+
+    expect(response.status()).toBe(200);
   });
 });

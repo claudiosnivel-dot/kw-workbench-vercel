@@ -54,18 +54,19 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
   }, 2 * COMMAND_TIMEOUT_MS);
 
   // covers: AC-401-1
-  it("npm ls riporta next 15.5.27 e react/react-dom 19.3.x senza dipendenze invalid o missing", () => {
+  // impacted-by: T-404 (next 15.5.27 era la patch sul ramo 15; dal macrotask 04 next è 16.3.x).
+  it("npm ls riporta next 16.3.x e react/react-dom 19.3.x senza dipendenze invalid o missing", () => {
     expect(ls.error).toBeUndefined();
     expect(ls.status, ls.stderr).toBe(0);
     const tree = JSON.parse(ls.stdout) as LsOutput;
     expect(tree.problems ?? []).toEqual([]);
     expect(ls.stdout).not.toMatch(/"(invalid|missing)"/);
-    expect(tree.dependencies?.next?.version).toBe("15.5.27");
+    expect(tree.dependencies?.next?.version).toMatch(/^16\.3\.\d+$/);
     expect(tree.dependencies?.react?.version).toMatch(/^19\.3\.\d+$/);
     expect(tree.dependencies?.["react-dom"]?.version).toMatch(/^19\.3\.\d+$/);
 
     const pkg = readJson<{ dependencies: Record<string, string> }>("package.json");
-    expect(pkg.dependencies.next).toBe("15.5.27");
+    expect(pkg.dependencies.next).toMatch(/^16\.3\.\d+$/);
   });
 
   // covers: AC-401-2

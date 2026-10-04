@@ -8,7 +8,7 @@ import LoginPage from "@/app/login/page";
 import RegisterPage from "@/app/register/page";
 import { LoginForm } from "@/components/login-form";
 import { RegisterForm } from "@/components/register-form";
-import { middleware } from "@/middleware";
+import { proxy } from "@/proxy";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
@@ -81,7 +81,7 @@ describe("middleware: file pubblici", () => {
   // covers: AC-302-1
   it("lascia passare /.well-known/* e i file di un solo segmento con estensione ammessa", async () => {
     for (const path of ["/.well-known/bastione-ownership.txt", "/.well-known/security.txt", "/robots.txt"]) {
-      const response = await middleware(middlewareRequest(path));
+      const response = await proxy(middlewareRequest(path));
       expect(response.headers.get("x-middleware-next")).toBe("1");
       expect(response.headers.get("location")).toBeNull();
     }
@@ -90,12 +90,12 @@ describe("middleware: file pubblici", () => {
   // covers: AC-302-2
   it("le API restano autenticate anche con un'estensione e i percorsi con più segmenti restano protetti", async () => {
     for (const path of ["/api/projects.json", "/api/projects"]) {
-      const response = await middleware(middlewareRequest(path));
+      const response = await proxy(middlewareRequest(path));
       expect(response.status).toBe(401);
       expect(await response.json()).toEqual({ error: "Unauthorized" });
     }
 
-    const nested = await middleware(middlewareRequest("/projects/abc.png"));
+    const nested = await proxy(middlewareRequest("/projects/abc.png"));
     expect(nested.status).toBe(307);
     expect(new URL(nested.headers.get("location") ?? "").pathname).toBe("/login");
   });
@@ -104,7 +104,7 @@ describe("middleware: file pubblici", () => {
 describe("middleware: redirect al login", () => {
   // covers: AC-302-3
   it("next conserva percorso e query della richiesta", async () => {
-    const response = await middleware(middlewareRequest("/projects/abc/results?view=all&page=2"));
+    const response = await proxy(middlewareRequest("/projects/abc/results?view=all&page=2"));
     const location = new URL(response.headers.get("location") ?? "");
 
     expect(response.status).toBe(307);

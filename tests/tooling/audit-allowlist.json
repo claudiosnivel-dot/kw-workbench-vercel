@@ -14,14 +14,14 @@
   {
     "ghsa": "GHSA-6g55-p6wh-862q",
     "package": "postcss",
-    "reason": "postcss fino a 8.5.11: next 15.5.27 fissa in modo esatto postcss 8.4.31 (next 16.3.8 dichiara 8.5.23) e postcss 8.4.49 è una devDependency diretta del build CSS di Tailwind 3. Gira solo in build sul CSS del repo.",
-    "closedBy": ["T-404", "T-405"]
+    "reason": "postcss fino a 8.5.11: resta solo postcss 8.4.49, devDependency diretta del build CSS di Tailwind 3 (il percorso annidato in next è chiuso da T-404: next 16.3.8 usa postcss 8.5.23). Gira solo in build sul CSS del repo.",
+    "closedBy": ["T-405"]
   },
   {
     "ghsa": "GHSA-r28c-9q8g-f849",
     "package": "postcss",
-    "reason": "postcss fino a 8.5.17: stessi due percorsi di GHSA-6g55-p6wh-862q (8.4.31 annidato in next 15.5.27, 8.4.49 diretto per Tailwind 3). Gira solo in build sul CSS del repo.",
-    "closedBy": ["T-404", "T-405"]
+    "reason": "postcss fino a 8.5.17: stesso percorso residuo di GHSA-6g55-p6wh-862q (postcss 8.4.49 diretto per Tailwind 3; next 16.3.8 usa 8.5.23). Gira solo in build sul CSS del repo.",
+    "closedBy": ["T-405"]
   },
   {
     "ghsa": "GHSA-vfj7-8cjw-p6xm",
