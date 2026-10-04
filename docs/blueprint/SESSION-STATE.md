@@ -48,7 +48,7 @@
 | Campo | Valore |
 |---|---|
 | Branch di lavoro | `trueline/build/stack-upgrade` (da `master` `336a561`), **solo locale**: non pushato perché il checkpoint è NON-VERDE; nessuna PR |
-| Commit del branch | `35ee4b8` T-401, `f90e873` T-402, `1552b5b` T-403, `6f255ed` T-404, `ced38ea` T-405, `0a4c776` T-406, `3949a18` fix di T-403 (URL e TLS del pool di pg), `82d3050` T-407, `c5d5622` tag `covers:` nei test condivisi, `72a35c9` `.madgerc` (loop di fix), poi questa chiusura |
+| Commit del branch | `35ee4b8` T-401, `f90e873` T-402, `1552b5b` T-403, `6f255ed` T-404, `ced38ea` T-405, `0a4c776` T-406, `3949a18` fix di T-403 (URL e TLS del pool di pg), `82d3050` T-407, `c5d5622` tag `covers:` nei test condivisi, `72a35c9` `.madgerc` (loop di fix), `5532816` chiusura, `9cf0482` `next-env.d.ts` nel formato di `next build` 16, poi questo aggiornamento |
 | CI | non eseguita su questo branch (non pushato). Equivalente locale nel container `mcr.microsoft.com/playwright:v1.63.0-noble` (Linux, Node 24.20, `npm ci` dal lockfile, `CI=true`): E2E 9/9 con le baseline visive; Vitest 112/115 con i 2 rossi attesi (§5) più il test della baseline d'igiene, rosso solo perché la copia nel container escludeva `.trueline/` |
 | Deploy di produzione | invariato: `dpl_HsEPydxE3LoGq4kFrdW6t7g1UEJF` (deploy di `3de0e74`), alias `titanseo.vercel.app` |
 | Deploy Preview del branch | nessuno (branch non pushato) |
