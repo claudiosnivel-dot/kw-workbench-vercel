@@ -48,6 +48,14 @@ ridiscute il design.
    Niente push di branch senza T-202, né di branch con migrazioni finché T-203
    non è chiuso (D-04).
 
+REGOLE DI SESSIONE (decise dall'utente il 2026-10-04):
+  • UN MACROTASK PER SESSIONE: la sessione lavora sul solo macrotask scelto al
+    punto 2 e si chiude al suo confine (checkpoint + session-end.md) o prima;
+    non si inizia il macrotask successivo nella stessa sessione.
+  • NESSUN UTILIZZO DI AGENTI: niente subagenti né workflow multi-agente;
+    ricerche, letture e verifiche si fanno direttamente, anche quando una skill
+    suggerirebbe di delegare.
+
 INVARIANTI NON NEGOZIABILI — tienile in testa per OGNI task:
   • ORACLE-AS-JUDGE, MAI LLM-AS-JUDGE (L-COL-002): "verde" = esito di un oracolo
     o di un test, mai una tua frase ("è sicuro", "ho sistemato").
