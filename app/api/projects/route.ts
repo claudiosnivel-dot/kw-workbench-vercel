@@ -1,11 +1,12 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { withApiErrors } from "@/lib/http/errors";
 import { parseProjectPayload } from "@/lib/modules/project-settings";
 import { invalidSettingsResponse } from "@/lib/modules/project-settings-response";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: Request) {
+export const GET = withApiErrors(async (request: Request) => {
   const user = await requireAuthenticatedUserFromRequest(request);
 
   const projects = await prisma.project.findMany({
@@ -28,9 +29,9 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json({ data: projects });
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withApiErrors(async (request: Request) => {
   const user = await requireAuthenticatedUserFromRequest(request);
 
   const payload = (await request.json()) as Record<string, unknown>;
@@ -102,5 +103,5 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json({ data: result }, { status: 201 });
-}
+});
 

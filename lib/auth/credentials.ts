@@ -1,7 +1,9 @@
+import { randomBytes } from "node:crypto";
 import { ColorVisionMode, FontScaleMode, Prisma, ThemeMode, UserRole, UserStatus } from "@/lib/generated/prisma/client";
 import { getAuthPassword, getAuthUsername } from "@/lib/auth/config";
 import { getManySettingValues } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
+import { ConflictError, NotFoundError, ValidationError } from "@/lib/http/errors";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
 
 const LEGACY_KEYS = {
@@ -21,6 +23,7 @@ const AUTH_USER_SELECT = {
   theme_mode: true,
   font_scale_mode: true,
   color_vision_mode: true,
+  session_version: true,
 } satisfies Prisma.UserSelect;
 
 type AuthUserRow = {
@@ -32,6 +35,7 @@ type AuthUserRow = {
   theme_mode: ThemeMode;
   font_scale_mode: FontScaleMode;
   color_vision_mode: ColorVisionMode;
+  session_version: number;
 };
 
 export type AuthUser = {
@@ -43,6 +47,7 @@ export type AuthUser = {
   themeMode: ThemeMode;
   fontScaleMode: FontScaleMode;
   colorVisionMode: ColorVisionMode;
+  sessionVersion: number;
 };
 
 export type AuthConfigSnapshot = {
@@ -58,8 +63,21 @@ export type VerifyLoginResult = {
   reason?: LoginFailureReason;
 };
 
+let dummyPasswordHash: Promise<string> | null = null;
+
+/** Hash fittizio calcolato una sola volta per processo, verificato quando lo username non esiste. */
+function getDummyPasswordHash(): Promise<string> {
+  dummyPasswordHash ??= hashPassword(randomBytes(32).toString("hex"));
+  return dummyPasswordHash;
+}
+
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
+
+/** Username già in uso (P2002) come ConflictError (409); ogni altro errore resta invariato. */
+function usernameConflictOr(error: unknown): unknown {
+  return isUniqueViolation(error) ? new ConflictError("Username gia in uso") : error;
 }
 
 function normalizeUsername(input: string): string {
@@ -76,6 +94,7 @@ function mapAuthUser(row: AuthUserRow): AuthUser {
     themeMode: row.theme_mode,
     fontScaleMode: row.font_scale_mode,
     colorVisionMode: row.color_vision_mode,
+    sessionVersion: row.session_version,
   };
 }
 
@@ -134,11 +153,11 @@ export function validateUsername(input: string): string {
   const username = normalizeUsername(input);
 
   if (username.length < 3 || username.length > 40) {
-    throw new Error("Username non valido: usa da 3 a 40 caratteri");
+    throw new ValidationError("Username non valido: usa da 3 a 40 caratteri");
   }
 
   if (!USERNAME_PATTERN.test(username)) {
-    throw new Error("Username non valido: usa solo lettere minuscole, numeri, punto, underscore o trattino");
+    throw new ValidationError("Username non valido: usa solo lettere minuscole, numeri, punto, underscore o trattino");
   }
 
   return username;
@@ -148,10 +167,19 @@ export function validatePassword(input: string): string {
   const password = String(input ?? "");
 
   if (password.length < 8) {
-    throw new Error("Password troppo corta: minimo 8 caratteri");
+    throw new ValidationError("Password troppo corta: minimo 8 caratteri");
   }
 
   return password;
+}
+
+/** Hash della nuova password validata, o undefined se la password non va cambiata. */
+async function hashNewPassword(password: string | undefined): Promise<string | undefined> {
+  if (typeof password !== "string" || password.length === 0) {
+    return undefined;
+  }
+
+  return hashPassword(validatePassword(password));
 }
 
 export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
@@ -173,7 +201,7 @@ export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
   const legacy = await getLegacyAuthValues();
   const fallbackUsername = normalizeUsername(getAuthUsername()) || ROOT_ADMIN_USERNAME;
   const username = legacy?.username || fallbackUsername;
-  const passwordHash = legacy?.passwordHash || hashPassword(getAuthPassword());
+  const passwordHash = legacy?.passwordHash || (await hashPassword(getAuthPassword()));
 
   try {
     const created = await prisma.user.create({
@@ -235,7 +263,7 @@ export async function findAuthUserById(userId: string): Promise<AuthUser | null>
 export async function getAuthConfigSnapshot(userId: string): Promise<AuthConfigSnapshot> {
   const user = await findAuthUserById(userId);
   if (!user) {
-    throw new Error("Utente non trovato");
+    throw new NotFoundError("Utente non trovato");
   }
 
   return {
@@ -265,15 +293,18 @@ export async function verifyLoginCredentials(username: string, password: string)
       theme_mode: true,
       font_scale_mode: true,
       color_vision_mode: true,
+      session_version: true,
       password_hash: true,
     },
   });
 
   if (!user) {
+    // Stesso calcolo di una password errata: i tempi di risposta non rivelano quali username esistono.
+    await verifyPassword(password, await getDummyPasswordHash());
     return { user: null, reason: "INVALID_CREDENTIALS" };
   }
 
-  if (!verifyPassword(password, user.password_hash)) {
+  if (!(await verifyPassword(password, user.password_hash))) {
     return { user: null, reason: "INVALID_CREDENTIALS" };
   }
 
@@ -306,7 +337,7 @@ export async function registerUser(input: {
     const created = await prisma.user.create({
       data: {
         username,
-        password_hash: hashPassword(password),
+        password_hash: await hashPassword(password),
         role,
         status: UserStatus.ACTIVE,
         is_root_admin: false,
@@ -319,11 +350,7 @@ export async function registerUser(input: {
 
     return mapAuthUser(created as AuthUserRow);
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      throw new Error("Username gia in uso");
-    }
-
-    throw error;
+    throw usernameConflictOr(error);
   }
 }
 
@@ -345,18 +372,21 @@ export async function updateAuthCredentials(input: {
   username?: string;
   password?: string;
 }): Promise<AuthUser> {
-  const data: { username?: string; password_hash?: string } = {};
+  const data: Prisma.UserUpdateInput = {};
 
   if (typeof input.username === "string" && input.username.trim()) {
     data.username = validateUsername(input.username);
   }
 
-  if (typeof input.password === "string" && input.password.length > 0) {
-    data.password_hash = hashPassword(validatePassword(input.password));
+  const passwordHash = await hashNewPassword(input.password);
+  if (passwordHash) {
+    data.password_hash = passwordHash;
+    // Il cambio password revoca i token già emessi (T-501).
+    data.session_version = { increment: 1 };
   }
 
   if (!data.username && !data.password_hash) {
-    throw new Error("Nessuna modifica da salvare");
+    throw new ValidationError("Nessuna modifica da salvare");
   }
 
   try {
@@ -368,11 +398,7 @@ export async function updateAuthCredentials(input: {
 
     return mapAuthUser(updated as AuthUserRow);
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      throw new Error("Username gia in uso");
-    }
-
-    throw error;
+    throw usernameConflictOr(error);
   }
 }
 
@@ -383,12 +409,7 @@ export async function updateUserAdminFields(input: {
   password?: string;
   isRootAdmin?: boolean;
 }): Promise<AuthUser> {
-  const data: {
-    role?: UserRole;
-    status?: UserStatus;
-    password_hash?: string;
-    is_root_admin?: boolean;
-  } = {};
+  const data: Prisma.UserUpdateInput = {};
 
   if (input.role) {
     data.role = input.role;
@@ -398,8 +419,9 @@ export async function updateUserAdminFields(input: {
     data.status = input.status;
   }
 
-  if (typeof input.password === "string" && input.password.length > 0) {
-    data.password_hash = hashPassword(validatePassword(input.password));
+  const passwordHash = await hashNewPassword(input.password);
+  if (passwordHash) {
+    data.password_hash = passwordHash;
   }
 
   if (typeof input.isRootAdmin === "boolean") {
@@ -407,7 +429,12 @@ export async function updateUserAdminFields(input: {
   }
 
   if (!data.role && !data.status && !data.password_hash && data.is_root_admin === undefined) {
-    throw new Error("Nessuna modifica da salvare");
+    throw new ValidationError("Nessuna modifica da salvare");
+  }
+
+  // Password impostata dall'admin o sospensione: i token già emessi non valgono più (T-501).
+  if (data.password_hash || data.status === UserStatus.SUSPENDED) {
+    data.session_version = { increment: 1 };
   }
 
   const updated = await prisma.user.update({
@@ -417,4 +444,12 @@ export async function updateUserAdminFields(input: {
   });
 
   return mapAuthUser(updated as AuthUserRow);
+}
+
+/** «Esci da tutti i dispositivi»: incremento atomico che invalida ogni token emesso finora. */
+export async function revokeAllSessions(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { session_version: { increment: 1 } },
+  });
 }

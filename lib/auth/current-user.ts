@@ -3,20 +3,7 @@ import { cookies } from "next/headers";
 import { isAuthEnabled, SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { ensureLegacyDefaultUser, findAuthUserById, type AuthUser } from "@/lib/auth/credentials";
 import { verifySessionToken } from "@/lib/auth/session";
-
-export class AuthRequiredError extends Error {
-  constructor(message = "Unauthorized") {
-    super(message);
-    this.name = "AuthRequiredError";
-  }
-}
-
-export class ForbiddenError extends Error {
-  constructor(message = "Forbidden") {
-    super(message);
-    this.name = "ForbiddenError";
-  }
-}
+import { AuthRequiredError, ForbiddenError } from "@/lib/http/errors";
 
 function readCookieValue(cookieHeader: string | null, key: string): string | null {
   if (!cookieHeader) {
@@ -51,12 +38,17 @@ async function resolveUserFromToken(token: string | null): Promise<AuthUser | nu
     return null;
   }
 
-  const user = await findAuthUserById(session.userId);
+  const user = await findAuthUserById(session.uid);
   if (!user) {
     return null;
   }
 
   if (user.status !== UserStatus.ACTIVE) {
+    return null;
+  }
+
+  // Revoca lato server: un token emesso prima dell'ultimo incremento non vale più (T-501).
+  if (user.sessionVersion !== session.ver) {
     return null;
   }
 

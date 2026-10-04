@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
-import { createSessionToken } from "@/lib/auth/session";
-import {
-  getSessionMaxAgeSeconds,
-  isAuthEnabled,
-  SESSION_COOKIE_NAME,
-  shouldUseSecureCookies,
-} from "@/lib/auth/config";
+import { isAuthEnabled } from "@/lib/auth/config";
 import { verifyLoginCredentials } from "@/lib/auth/credentials";
+import { setSessionCookie } from "@/lib/auth/session-cookie";
+import { withApiErrors } from "@/lib/http/errors";
 
-export async function POST(request: Request) {
+export const POST = withApiErrors(async (request: Request) => {
   if (!isAuthEnabled()) {
     return NextResponse.json({ success: true, authEnabled: false });
   }
@@ -30,27 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Credenziali non valide" }, { status: 401 });
   }
 
-  const token = await createSessionToken({
-    userId: result.user.id,
-    username: result.user.username,
-    role: result.user.role,
-    status: result.user.status,
-    isRootAdmin: result.user.isRootAdmin,
-    themeMode: result.user.themeMode,
-    fontScaleMode: result.user.fontScaleMode,
-    colorVisionMode: result.user.colorVisionMode,
-  });
-
   const response = NextResponse.json({ success: true });
-  response.cookies.set({
-    name: SESSION_COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    sameSite: "lax",
-    secure: shouldUseSecureCookies(),
-    maxAge: getSessionMaxAgeSeconds(),
-    path: "/",
-  });
-
+  await setSessionCookie(response, result.user);
   return response;
-}
+});

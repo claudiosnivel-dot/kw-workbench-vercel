@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
@@ -68,6 +69,7 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
         <p>
           <span className="font-medium">Username attivo:</span> {username}
         </p>
+        <LogoutEverywhereButton />
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -134,5 +136,36 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
       {error && <p className="text-sm text-red-700">{error}</p>}
       {success && <p className="text-sm text-green-700">{success}</p>}
     </section>
+  );
+}
+
+/** «Esci da tutti i dispositivi»: revoca ogni token dell'utente (session_version + 1), compreso questo. */
+function LogoutEverywhereButton() {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const logoutEverywhere = async () => {
+    setPending(true);
+    setFailure(null);
+    const response = await fetch("/api/auth/logout-all", { method: "POST" });
+    if (!response.ok) {
+      const payload = await readJsonSafe<ApiErrorPayload>(response);
+      setFailure(buildApiErrorMessage(response, payload, "Impossibile chiudere le sessioni"));
+      setPending(false);
+      return;
+    }
+    router.push("/login");
+    router.refresh();
+  };
+
+  return (
+    <div className="mt-3 border-t border-slate-200 pt-3">
+      <p className="text-slate-600">Chiude la sessione su ogni dispositivo in cui hai effettuato l&apos;accesso, compreso questo.</p>
+      <button className="btn btn-secondary mt-2" type="button" onClick={logoutEverywhere} disabled={pending}>
+        {pending ? "Uscita in corso..." : "Esci da tutti i dispositivi"}
+      </button>
+      {failure && <p className="mt-2 text-red-700">{failure}</p>}
+    </div>
   );
 }

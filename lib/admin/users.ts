@@ -1,15 +1,32 @@
 import { Prisma, UserRole, UserStatus } from "@/lib/generated/prisma/client";
 import { type AuthUser, registerUser, updateUserAdminFields, validatePassword, validateUsername } from "@/lib/auth/credentials";
+import { AppError } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma";
 
-export class AdminActionError extends Error {
-  status: number;
-
-  constructor(message: string, status = 400) {
-    super(message);
+/** Errore delle azioni admin: status e code espliciti, messaggio pubblico (T-503). */
+export class AdminActionError extends AppError {
+  constructor(message: string, status: number, code: string) {
+    super(status, code, message);
     this.name = "AdminActionError";
-    this.status = status;
   }
+}
+
+/** Ruolo da query o body (case-insensitive); undefined se assente o sconosciuto. */
+export function parseUserRole(value: string | null): UserRole | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim().toUpperCase();
+  if (normalized === UserRole.ADMIN) return UserRole.ADMIN;
+  if (normalized === UserRole.SUBSCRIBER) return UserRole.SUBSCRIBER;
+  return undefined;
+}
+
+/** Stato da query o body (case-insensitive); undefined se assente o sconosciuto. */
+export function parseUserStatus(value: string | null): UserStatus | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim().toUpperCase();
+  if (normalized === UserStatus.ACTIVE) return UserStatus.ACTIVE;
+  if (normalized === UserStatus.SUSPENDED) return UserStatus.SUSPENDED;
+  return undefined;
 }
 
 export type AdminUserRecord = {
@@ -25,7 +42,8 @@ export type AdminUserRecord = {
 
 export type AdminUsersTotals = {
   totalUsers: number;
-  totalAdmins: number;
+  /** null per l'admin non root: gli admin sono fuori dal suo perimetro (CWE-200). */
+  totalAdmins: number | null;
   totalSubscribers: number;
   totalActive: number;
   totalSuspended: number;
@@ -55,6 +73,15 @@ function toAdminUserRecord(row: AdminUserRow): AdminUserRecord {
   };
 }
 
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
+const MAX_SEARCH_TEXT_LENGTH = 100;
+const SELF_ACTION_MESSAGE = "Non puoi modificare o eliminare il tuo account dalla gestione utenti.";
+
+function positiveInt(value: number | undefined, fallback: number): number {
+  return Number.isFinite(value) && (value as number) >= 1 ? Math.floor(value as number) : fallback;
+}
+
 function getManagedRoleScope(actor: AuthUser): UserRole | undefined {
   if (actor.isRootAdmin) {
     return undefined;
@@ -70,7 +97,7 @@ function buildListWhere(actor: AuthUser, input: {
 }): Prisma.UserWhereInput {
   const where: Prisma.UserWhereInput = {};
 
-  const searchText = String(input.searchText ?? "").trim();
+  const searchText = String(input.searchText ?? "").trim().slice(0, MAX_SEARCH_TEXT_LENGTH);
   if (searchText) {
     where.username = {
       contains: searchText,
@@ -98,12 +125,27 @@ function assertCanManageTarget(actor: AuthUser, target: {
   is_root_admin: boolean;
 }) {
   if (target.is_root_admin) {
-    throw new AdminActionError("Il root admin non puo essere modificato", 403);
+    throw new AdminActionError("Il root admin non puo essere modificato", 403, "FORBIDDEN");
   }
 
   if (!actor.isRootAdmin && target.role === UserRole.ADMIN) {
-    throw new AdminActionError("Operazione non consentita su un utente admin", 403);
+    throw new AdminActionError("Operazione non consentita su un utente admin", 403, "FORBIDDEN");
   }
+}
+
+/** Bersaglio di un'azione admin: mai se stessi (400), deve esistere (404) ed essere nel perimetro (403). */
+async function findManageableTarget(actor: AuthUser, targetUserId: string) {
+  if (actor.id === targetUserId) {
+    throw new AdminActionError(SELF_ACTION_MESSAGE, 400, "SELF_ACTION_FORBIDDEN");
+  }
+
+  const target = await findTargetUser(targetUserId);
+  if (!target) {
+    throw new AdminActionError("Utente non trovato", 404, "NOT_FOUND");
+  }
+
+  assertCanManageTarget(actor, target);
+  return target;
 }
 
 async function findTargetUser(targetUserId: string) {
@@ -128,56 +170,45 @@ export async function listAdminUsers(
     searchText?: string;
     role?: UserRole;
     status?: UserStatus;
+    page?: number;
+    pageSize?: number;
   }
-): Promise<{ users: AdminUserRecord[]; totals: AdminUsersTotals }> {
+): Promise<{ users: AdminUserRecord[]; totals: AdminUsersTotals; page: number; pageSize: number; total: number }> {
   const where = buildListWhere(actor, input);
+  const page = positiveInt(input.page, 1);
+  const pageSize = Math.min(MAX_PAGE_SIZE, positiveInt(input.pageSize, DEFAULT_PAGE_SIZE));
 
-  const users = await prisma.user.findMany({
-    where,
-    orderBy: [{ is_root_admin: "desc" }, { created_at: "desc" }],
-    select: {
-      id: true,
-      username: true,
-      role: true,
-      status: true,
-      is_root_admin: true,
-      created_at: true,
-      updated_at: true,
-      last_login_at: true,
-    },
-    take: 500,
-  });
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      // id come ultimo criterio: ordinamento totale, nessun utente ripetuto o saltato fra le pagine.
+      orderBy: [{ is_root_admin: "desc" }, { created_at: "desc" }, { id: "desc" }],
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        status: true,
+        is_root_admin: true,
+        created_at: true,
+        updated_at: true,
+        last_login_at: true,
+      },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.user.count({ where }),
+  ]);
 
-  const baseWhere: Prisma.UserWhereInput = getManagedRoleScope(actor)
-    ? { role: UserRole.SUBSCRIBER }
-    : {};
+  // Totali nel perimetro gestibile: per l'admin non root solo i sottoscrittori.
+  const managedRoleScope = getManagedRoleScope(actor);
+  const baseWhere: Prisma.UserWhereInput = managedRoleScope ? { role: managedRoleScope } : {};
 
   const [totalUsers, totalAdmins, totalSubscribers, totalActive, totalSuspended] = await Promise.all([
     prisma.user.count({ where: baseWhere }),
-    prisma.user.count({
-      where: {
-        ...baseWhere,
-        role: UserRole.ADMIN,
-      },
-    }),
-    prisma.user.count({
-      where: {
-        ...baseWhere,
-        role: UserRole.SUBSCRIBER,
-      },
-    }),
-    prisma.user.count({
-      where: {
-        ...baseWhere,
-        status: UserStatus.ACTIVE,
-      },
-    }),
-    prisma.user.count({
-      where: {
-        ...baseWhere,
-        status: UserStatus.SUSPENDED,
-      },
-    }),
+    managedRoleScope ? Promise.resolve(null) : prisma.user.count({ where: { role: UserRole.ADMIN } }),
+    prisma.user.count({ where: { ...baseWhere, role: UserRole.SUBSCRIBER } }),
+    prisma.user.count({ where: { ...baseWhere, status: UserStatus.ACTIVE } }),
+    prisma.user.count({ where: { ...baseWhere, status: UserStatus.SUSPENDED } }),
   ]);
 
   return {
@@ -189,6 +220,9 @@ export async function listAdminUsers(
       totalActive,
       totalSuspended,
     },
+    page,
+    pageSize,
+    total,
   };
 }
 
@@ -202,7 +236,7 @@ export async function createUserFromAdmin(
 ): Promise<AdminUserRecord> {
   const role = input.role ?? UserRole.SUBSCRIBER;
   if (role === UserRole.ADMIN && !actor.isRootAdmin) {
-    throw new AdminActionError("Solo il root admin puo creare altri admin", 403);
+    throw new AdminActionError("Solo il root admin puo creare altri admin", 403, "FORBIDDEN");
   }
 
   const username = validateUsername(input.username);
@@ -212,7 +246,7 @@ export async function createUserFromAdmin(
   const row = await findTargetUser(created.id);
 
   if (!row) {
-    throw new AdminActionError("Utente creato ma non trovato", 500);
+    throw new AdminActionError("Utente creato ma non trovato", 500, "INTERNAL_ERROR");
   }
 
   return toAdminUserRecord(row as AdminUserRow);
@@ -227,25 +261,10 @@ export async function updateUserFromAdmin(
     newPassword?: string;
   }
 ): Promise<AdminUserRecord> {
-  const target = await findTargetUser(input.targetUserId);
-  if (!target) {
-    throw new AdminActionError("Utente non trovato", 404);
-  }
-
-  assertCanManageTarget(actor, target);
+  const target = await findManageableTarget(actor, input.targetUserId);
 
   if (input.role === UserRole.ADMIN && !actor.isRootAdmin) {
-    throw new AdminActionError("Solo il root admin puo promuovere ad admin", 403);
-  }
-
-  if (actor.id === target.id) {
-    if (input.status === UserStatus.SUSPENDED) {
-      throw new AdminActionError("Non puoi sospendere il tuo account", 400);
-    }
-
-    if (input.role && input.role !== UserRole.ADMIN) {
-      throw new AdminActionError("Non puoi rimuovere il tuo ruolo admin", 400);
-    }
+    throw new AdminActionError("Solo il root admin puo promuovere ad admin", 403, "FORBIDDEN");
   }
 
   const updatePayload: {
@@ -267,7 +286,7 @@ export async function updateUserFromAdmin(
   }
 
   if (!updatePayload.role && !updatePayload.status && !updatePayload.password) {
-    throw new AdminActionError("Nessuna modifica da salvare", 400);
+    throw new AdminActionError("Nessuna modifica da salvare", 400, "VALIDATION_ERROR");
   }
 
   const updated = await updateUserAdminFields({
@@ -279,23 +298,13 @@ export async function updateUserFromAdmin(
 
   const row = await findTargetUser(updated.id);
   if (!row) {
-    throw new AdminActionError("Utente aggiornato ma non trovato", 500);
+    throw new AdminActionError("Utente aggiornato ma non trovato", 500, "INTERNAL_ERROR");
   }
 
   return toAdminUserRecord(row as AdminUserRow);
 }
 
 export async function deleteUserFromAdmin(actor: AuthUser, targetUserId: string): Promise<void> {
-  const target = await findTargetUser(targetUserId);
-  if (!target) {
-    throw new AdminActionError("Utente non trovato", 404);
-  }
-
-  assertCanManageTarget(actor, target);
-
-  if (actor.id === target.id) {
-    throw new AdminActionError("Non puoi eliminare il tuo account", 400);
-  }
-
+  const target = await findManageableTarget(actor, targetUserId);
   await prisma.user.delete({ where: { id: target.id } });
 }

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { OnboardingReviewExportStep } from "@/components/onboarding-review-export-step";
-import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { getOnboardingStateForUser } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingReviewExportPage() {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
   const state = await getOnboardingStateForUser(user.id);
 
   if (state.status === "COMPLETED") {

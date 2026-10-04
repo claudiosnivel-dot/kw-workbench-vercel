@@ -1,3 +1,4 @@
+import { AppError } from "@/lib/http/errors";
 import { ExportRow, ExportScope, getExportRows } from "@/lib/modules/export";
 import { ResultsFilters } from "@/lib/modules/results-filters";
 import { getDecryptedGoogleSheetsRefreshToken } from "@/lib/integrations/google-sheets";
@@ -8,13 +9,11 @@ const GOOGLE_SHEETS_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 const MAX_SHEET_TITLE_LENGTH = 100;
 const MAX_SPREADSHEET_TITLE_LENGTH = 120;
 
-export class GoogleSheetsExportError extends Error {
-  status: number;
-
+/** Errore dell'export verso Google Sheets: status e messaggio pubblico nel formato di T-503. */
+export class GoogleSheetsExportError extends AppError {
   constructor(message: string, status = 400) {
-    super(message);
+    super(status, "GOOGLE_SHEETS_EXPORT_ERROR", message);
     this.name = "GoogleSheetsExportError";
-    this.status = status;
   }
 }
 

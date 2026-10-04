@@ -8,6 +8,10 @@ import {
   pathToStep,
 } from "@/lib/onboarding/constants";
 
+// Larghezze della barra come classi statiche (step 0…7 su 7): con la CSP di T-505 un attributo
+// style inline verrebbe bloccato da style-src, che ammette solo i fogli dell'app e i nonce.
+const PROGRESS_WIDTH_CLASSES = ["w-0", "w-1/7", "w-2/7", "w-3/7", "w-4/7", "w-5/7", "w-6/7", "w-full"];
+
 export function OnboardingProgressHeader() {
   const pathname = usePathname();
   const [skipping, setSkipping] = useState(false);
@@ -64,8 +68,7 @@ export function OnboardingProgressHeader() {
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full border border-[var(--surface-border)] bg-[var(--surface-muted)]">
           <div
-            className="h-full rounded-full bg-[var(--brand-600)] transition-all"
-            style={{ width: `${progressPercent}%` }}
+            className={`h-full rounded-full bg-[var(--brand-600)] transition-all ${PROGRESS_WIDTH_CLASSES[meta.index] ?? "w-full"}`}
           />
         </div>
       </div>

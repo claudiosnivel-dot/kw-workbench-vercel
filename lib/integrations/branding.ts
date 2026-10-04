@@ -1,4 +1,6 @@
+import { ValidationError } from "@/lib/http/errors";
 import { deleteSettingValue, getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
+import { prisma } from "@/lib/prisma";
 
 const KEYS = {
   appName: "APP_BRAND_NAME",
@@ -8,6 +10,14 @@ const KEYS = {
 } as const;
 
 const FALLBACK_APP_NAME = "Seo God Mode";
+const MAX_APP_NAME_LENGTH = 80;
+const MAX_LOGO_URL_LENGTH = 2048;
+// Il logo inline finisce nell'HTML di ogni pagina (TopNav nel layout): al massimo 100 KB decodificati.
+const MAX_INLINE_LOGO_BYTES = 102400;
+const INLINE_LOGO_PATTERN = /^data:image\/(?:png|jpeg|webp|svg\+xml);base64,([A-Za-z0-9+/]*={0,2})$/;
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
+
+type LogoField = "logoUrl" | "logoUrlDark" | "logoUrlLight";
 
 export type BrandingSnapshot = {
   appName: string;
@@ -23,30 +33,44 @@ function clean(value: string | null | undefined): string | undefined {
 
 function normalizeAppName(value: string | null | undefined): string {
   const normalized = clean(value);
-  if (!normalized) {
+  if (!normalized || normalized.length > MAX_APP_NAME_LENGTH || CONTROL_CHARACTERS.test(normalized)) {
     return FALLBACK_APP_NAME;
   }
 
-  return normalized.slice(0, 80);
+  return normalized;
 }
 
+function decodedBase64Length(base64: string): number {
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  return Math.floor((base64.length * 3) / 4) - padding;
+}
+
+/**
+ * Logo ammesso o null: URL assoluti https con host, percorsi locali «/x» senza backslash (mai «//» né «/\»),
+ * data URL base64 png, jpeg, webp o svg fino a 100 KB decodificati. Rifiuta http:, javascript: e altri data:.
+ */
 function normalizeLogoUrl(value: string | null | undefined): string | undefined {
   const normalized = clean(value);
   if (!normalized) {
     return undefined;
   }
 
-  if (normalized.startsWith("data:image/")) {
-    return normalized;
+  if (normalized.startsWith("data:")) {
+    const match = INLINE_LOGO_PATTERN.exec(normalized);
+    return match && decodedBase64Length(match[1]) <= MAX_INLINE_LOGO_BYTES ? normalized : undefined;
+  }
+
+  if (normalized.length > MAX_LOGO_URL_LENGTH) {
+    return undefined;
   }
 
   if (normalized.startsWith("/")) {
-    return normalized;
+    return /^\/[^/\\]/.test(normalized) && !normalized.includes("\\") ? normalized : undefined;
   }
 
   try {
     const parsed = new URL(normalized);
-    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+    if (parsed.protocol === "https:" && parsed.hostname) {
       return parsed.toString();
     }
   } catch {
@@ -57,6 +81,7 @@ function normalizeLogoUrl(value: string | null | undefined): string | undefined 
 }
 
 export async function getBrandingSnapshot(): Promise<BrandingSnapshot> {
+  // I valori salvati non conformi (es. http: di prima di T-506) si ignorano: nome e logo predefiniti.
   try {
     const values = await getManySettingValues(Object.values(KEYS));
 
@@ -76,23 +101,35 @@ export async function getBrandingSnapshot(): Promise<BrandingSnapshot> {
   }
 }
 
-function buildLogoWrite(key: string, value: string | null | undefined): Promise<unknown> {
-  const rawLogoValue = clean(value ?? "");
-
-  if (!rawLogoValue) {
-    return deleteSettingValue(key);
+/** Valore da salvare per un campo (null = chiave da cancellare); ValidationError con il nome del campo. */
+function validatedAppName(value: string): string | null {
+  const normalized = clean(value);
+  if (!normalized) {
+    return null;
   }
 
-  const normalizedLogoUrl = normalizeLogoUrl(rawLogoValue);
-  if (!normalizedLogoUrl) {
-    throw new Error("Logo non valido. Inserisci un URL http/https, un percorso locale (/logo.svg) o un data URL immagine.");
+  if (normalized.length > MAX_APP_NAME_LENGTH || CONTROL_CHARACTERS.test(normalized)) {
+    throw new ValidationError(
+      `appName non valido: usa da 1 a ${MAX_APP_NAME_LENGTH} caratteri senza caratteri di controllo.`
+    );
   }
 
-  return upsertSettingValue({
-    key,
-    value: normalizedLogoUrl,
-    isSecret: false,
-  });
+  return normalized;
+}
+
+function validatedLogo(field: LogoField, value: string | null): string | null {
+  if (!clean(value)) {
+    return null;
+  }
+
+  const normalized = normalizeLogoUrl(value);
+  if (!normalized) {
+    throw new ValidationError(
+      `${field} non valido: usa un URL https, un percorso locale (/logo.svg) o un'immagine png, jpeg, webp o svg fino a 100 KB.`
+    );
+  }
+
+  return normalized;
 }
 
 export async function updateBrandingSettings(input: {
@@ -101,38 +138,25 @@ export async function updateBrandingSettings(input: {
   logoUrlDark?: string | null;
   logoUrlLight?: string | null;
 }): Promise<BrandingSnapshot> {
-  const writes: Promise<unknown>[] = [];
+  // Prima si valida tutto, poi si scrive in un'unica transazione: un campo invalido non lascia stati parziali.
+  const changes = new Map<string, string | null>();
 
   if (typeof input.appName === "string") {
-    const normalizedName = clean(input.appName);
+    changes.set(KEYS.appName, validatedAppName(input.appName));
+  }
 
-    if (!normalizedName) {
-      writes.push(deleteSettingValue(KEYS.appName));
-    } else {
-      writes.push(
-        upsertSettingValue({
-          key: KEYS.appName,
-          value: normalizedName.slice(0, 80),
-          isSecret: false,
-        })
-      );
+  for (const field of ["logoUrl", "logoUrlDark", "logoUrlLight"] as const) {
+    if (input[field] !== undefined) {
+      changes.set(KEYS[field], validatedLogo(field, input[field]));
     }
   }
 
-  if (input.logoUrl !== undefined) {
-    writes.push(buildLogoWrite(KEYS.logoUrl, input.logoUrl));
-  }
-
-  if (input.logoUrlDark !== undefined) {
-    writes.push(buildLogoWrite(KEYS.logoUrlDark, input.logoUrlDark));
-  }
-
-  if (input.logoUrlLight !== undefined) {
-    writes.push(buildLogoWrite(KEYS.logoUrlLight, input.logoUrlLight));
-  }
-
-  if (writes.length > 0) {
-    await Promise.all(writes);
+  if (changes.size > 0) {
+    await prisma.$transaction(
+      [...changes].map(([key, value]) =>
+        value === null ? deleteSettingValue(key) : upsertSettingValue({ key, value, isSecret: false })
+      )
+    );
   }
 
   return getBrandingSnapshot();

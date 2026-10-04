@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RunExtractionButton } from "@/components/run-extraction-button";
-import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +36,7 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<SearchParams>;
 }) {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
   const project = await prisma.project.findFirst({

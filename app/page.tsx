@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { ResumeOnboardingButton } from "@/components/resume-onboarding-button";
-import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 import { getOnboardingStateForUser, shouldRedirectUserToOnboarding } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
 
@@ -24,7 +24,7 @@ function jobStatusTone(value: string): string {
 }
 
 export default async function DashboardPage() {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
   const onboardingState = await getOnboardingStateForUser(user.id);
 
   if (shouldRedirectUserToOnboarding(onboardingState.status)) {

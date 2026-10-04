@@ -22,23 +22,14 @@ export async function createUserWithSession(
   const user = await prisma.user.create({
     data: {
       username: options.username ?? `test-user-${userCounter}`,
-      password_hash: hashPassword(options.password ?? TEST_USER_PASSWORD),
+      password_hash: await hashPassword(options.password ?? TEST_USER_PASSWORD),
       role: options.role ?? UserRole.SUBSCRIBER,
       status: options.status ?? UserStatus.ACTIVE,
       is_root_admin: options.isRootAdmin ?? false,
     },
   });
 
-  const token = await createSessionToken({
-    userId: user.id,
-    username: user.username,
-    role: user.role,
-    status: user.status,
-    isRootAdmin: user.is_root_admin,
-    themeMode: user.theme_mode,
-    fontScaleMode: user.font_scale_mode,
-    colorVisionMode: user.color_vision_mode,
-  });
+  const token = await createSessionToken({ userId: user.id, sessionVersion: user.session_version });
 
   return { user, cookie: `${SESSION_COOKIE_NAME}=${token}` };
 }

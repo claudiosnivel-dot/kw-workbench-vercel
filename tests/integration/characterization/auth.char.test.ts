@@ -129,8 +129,9 @@ describe("caratterizzazione: registrazione e logout", () => {
     ]);
 
     const duplicate = await callRoute(register, { method: "POST", url: "/api/auth/register", body });
-    expect(duplicate.status).toBe(400);
-    expect(await duplicate.json()).toEqual({ error: "Username gia in uso" });
+    // impacted-by: T-503 (aggiornata da T-503: username già in uso è un ConflictError, 409 CONFLICT)
+    expect(duplicate.status).toBe(409);
+    expect(await duplicate.json()).toMatchObject({ error: "Username gia in uso", code: "CONFLICT" });
 
     const out = await callRoute(logout, { method: "POST", url: "/api/auth/logout" });
     const cleared = out.headers.get("set-cookie") ?? "";
@@ -151,7 +152,8 @@ describe("caratterizzazione: middleware e sessione", () => {
 
     const api = await middleware(middlewareRequest("/api/projects"));
     expect(api.status).toBe(401);
-    expect(await api.json()).toEqual({ error: "Unauthorized" });
+    // impacted-by: T-502 (aggiornata da T-502: il 401 del proxy porta code AUTH_REQUIRED e il messaggio italiano)
+    expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED" });
 
     const anonymous = await callRoute(session, { url: "/api/auth/session" });
     expect(anonymous.status).toBe(401);

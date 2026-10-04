@@ -2,13 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { ProjectForm } from "@/components/project-form";
-import { requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProjectSettingsPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
   const { id } = await params;
 
   const project = await prisma.project.findFirst({

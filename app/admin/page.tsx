@@ -3,7 +3,8 @@ import { AdminUsersDashboard } from "@/components/admin-users-dashboard";
 import { BrandingSettingsCard } from "@/components/branding-settings-card";
 import { GoogleAdsIntegrationCard } from "@/components/google-ads-integration-card";
 import { GoogleSheetsApiConfigCard } from "@/components/google-sheets-api-config-card";
-import { isAdminUser, requireAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { isAdminUser } from "@/lib/auth/current-user";
+import { requirePageUser } from "@/lib/auth/page-guard";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import { getGoogleAdsCredentialSnapshot } from "@/lib/integrations/google-ads";
 import { getGoogleAdsApiConfigSnapshot } from "@/lib/integrations/google-ads-config";
@@ -12,7 +13,7 @@ import { getGoogleSheetsApiConfigSnapshot } from "@/lib/integrations/google-shee
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const user = await requireAuthenticatedUserFromCookies();
+  const user = await requirePageUser();
 
   if (!isAdminUser(user)) {
     redirect("/");
@@ -42,6 +43,7 @@ export default async function AdminPage() {
           logoUrlDark: branding.logoUrlDark,
           logoUrlLight: branding.logoUrlLight,
         }}
+        canEdit={user.isRootAdmin}
       />
 
       {user.isRootAdmin && googleSheetsConfig && <GoogleSheetsApiConfigCard initial={googleSheetsConfig} />}

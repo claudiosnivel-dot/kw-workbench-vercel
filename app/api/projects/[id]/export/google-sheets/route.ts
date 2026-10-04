@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AuthRequiredError, requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { withApiErrors } from "@/lib/http/errors";
 import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import { ExportScope } from "@/lib/modules/export";
-import { GoogleSheetsExportError, exportProjectToGoogleSheets } from "@/lib/modules/google-sheets-export";
+import { exportProjectToGoogleSheets } from "@/lib/modules/google-sheets-export";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -46,87 +47,71 @@ function parseBodyFilters(input: unknown): Record<string, string | string[] | un
   return out;
 }
 
-function toResponseError(error: unknown) {
-  if (error instanceof AuthRequiredError) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const POST = withApiErrors(async (request: NextRequest, context: RouteContext) => {
+  const user = await requireAuthenticatedUserFromRequest(request);
+  const { id } = await context.params;
 
-  if (error instanceof GoogleSheetsExportError) {
-    return NextResponse.json({ error: error.message }, { status: error.status });
-  }
-
-  return NextResponse.json({ error: error instanceof Error ? error.message : "Errore interno" }, { status: 500 });
-}
-
-export async function POST(request: NextRequest, context: RouteContext) {
+  let payload: ExportGoogleSheetsPayload;
   try {
-    const user = await requireAuthenticatedUserFromRequest(request);
-    const { id } = await context.params;
+    payload = (await request.json()) as ExportGoogleSheetsPayload;
+  } catch {
+    return NextResponse.json({ error: "Body JSON non valido" }, { status: 400 });
+  }
 
-    let payload: ExportGoogleSheetsPayload;
-    try {
-      payload = (await request.json()) as ExportGoogleSheetsPayload;
-    } catch {
-      return NextResponse.json({ error: "Body JSON non valido" }, { status: 400 });
-    }
+  const fileName = String(payload.fileName ?? "").trim();
+  const scope = String(payload.scope ?? "non-excluded") as ExportScope;
+  const rawSubprojectId = String(payload.subprojectId ?? "").trim();
+  const subprojectId = rawSubprojectId || null;
 
-    const fileName = String(payload.fileName ?? "").trim();
-    const scope = String(payload.scope ?? "non-excluded") as ExportScope;
-    const rawSubprojectId = String(payload.subprojectId ?? "").trim();
-    const subprojectId = rawSubprojectId || null;
+  if (!fileName) {
+    return NextResponse.json({ error: "Nome file obbligatorio" }, { status: 400 });
+  }
 
-    if (!fileName) {
-      return NextResponse.json({ error: "Nome file obbligatorio" }, { status: 400 });
-    }
+  if (!VALID_SCOPES.has(scope)) {
+    return NextResponse.json({ error: "Scope non valido" }, { status: 400 });
+  }
 
-    if (!VALID_SCOPES.has(scope)) {
-      return NextResponse.json({ error: "Scope non valido" }, { status: 400 });
-    }
+  const project = await prisma.project.findFirst({
+    where: {
+      id,
+      owner_user_id: user.id,
+    },
+    select: { id: true },
+  });
 
-    const project = await prisma.project.findFirst({
+  if (!project) {
+    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+  }
+
+  if (subprojectId) {
+    const subproject = await prisma.subproject.findFirst({
       where: {
-        id,
-        owner_user_id: user.id,
+        id: subprojectId,
+        project_id: id,
+        project: {
+          owner_user_id: user.id,
+        },
       },
       select: { id: true },
     });
 
-    if (!project) {
-      return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    if (!subproject) {
+      return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
     }
-
-    if (subprojectId) {
-      const subproject = await prisma.subproject.findFirst({
-        where: {
-          id: subprojectId,
-          project_id: id,
-          project: {
-            owner_user_id: user.id,
-          },
-        },
-        select: { id: true },
-      });
-
-      if (!subproject) {
-        return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
-      }
-    }
-
-    const filters = parseResultsFilters(parseBodyFilters(payload.filters));
-
-    const output = await exportProjectToGoogleSheets({
-      userId: user.id,
-      projectId: id,
-      fileName,
-      scope,
-      subprojectId,
-      filters,
-    });
-
-    await markOnboardingExportCompleted(user.id);
-
-    return NextResponse.json({ data: output });
-  } catch (error) {
-    return toResponseError(error);
   }
-}
+
+  const filters = parseResultsFilters(parseBodyFilters(payload.filters));
+
+  const output = await exportProjectToGoogleSheets({
+    userId: user.id,
+    projectId: id,
+    fileName,
+    scope,
+    subprojectId,
+    filters,
+  });
+
+  await markOnboardingExportCompleted(user.id);
+
+  return NextResponse.json({ data: output });
+});

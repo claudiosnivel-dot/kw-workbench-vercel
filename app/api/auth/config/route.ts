@@ -5,20 +5,16 @@ import {
   verifyUserPassword,
 } from "@/lib/auth/credentials";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import {
-  getSessionMaxAgeSeconds,
-  SESSION_COOKIE_NAME,
-  shouldUseSecureCookies,
-} from "@/lib/auth/config";
-import { createSessionToken } from "@/lib/auth/session";
+import { setSessionCookie } from "@/lib/auth/session-cookie";
+import { withApiErrors } from "@/lib/http/errors";
 
-export async function GET(request: NextRequest) {
+export const GET = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);
   const snapshot = await getAuthConfigSnapshot(user.id);
   return NextResponse.json({ data: snapshot });
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);
 
   const payload = (await request.json()) as {
@@ -50,42 +46,24 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Nuova password e conferma non coincidono" }, { status: 400 });
   }
 
-  try {
-    const updatedUser = await updateAuthCredentials({
-      userId: user.id,
-      username: username || undefined,
-      password: newPassword || undefined,
-    });
+  // Errori di validazione (400) e username già in uso (409) arrivano come AppError a withApiErrors.
+  const updatedUser = await updateAuthCredentials({
+    userId: user.id,
+    username: username || undefined,
+    password: newPassword || undefined,
+  });
 
-    const token = await createSessionToken({
-      userId: updatedUser.id,
+  const response = NextResponse.json({
+    data: {
       username: updatedUser.username,
-      role: updatedUser.role,
-      status: updatedUser.status,
-      isRootAdmin: updatedUser.isRootAdmin,
-      themeMode: updatedUser.themeMode,
-      fontScaleMode: updatedUser.fontScaleMode,
-      colorVisionMode: updatedUser.colorVisionMode,
-    });
+    },
+  });
 
-    const response = NextResponse.json({
-      data: {
-        username: updatedUser.username,
-      },
-    });
-
-    response.cookies.set({
-      name: SESSION_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureCookies(),
-      maxAge: getSessionMaxAgeSeconds(),
-      path: "/",
-    });
-
-    return response;
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Errore durante il salvataggio" }, { status: 400 });
+  // Il cambio password ha incrementato session_version: solo questo dispositivo riceve il token nuovo.
+  // Lo username non è nel token, quindi cambiarlo non riemette il cookie.
+  if (newPassword) {
+    await setSessionCookie(response, updatedUser);
   }
-}
+
+  return response;
+});

@@ -133,6 +133,7 @@ model User {
   theme_mode        ThemeMode         @default(DARK)
   font_scale_mode   FontScaleMode     @default(NORMAL)
   color_vision_mode ColorVisionMode   @default(NONE)
+  session_version   Int               @default(0)
   created_at        DateTime          @default(now())
   updated_at        DateTime          @updatedAt
   projects          Project[]

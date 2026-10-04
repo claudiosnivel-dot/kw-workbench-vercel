@@ -5,6 +5,7 @@ import {
   type OnboardingStepKey,
   stepToPath,
 } from "@/lib/onboarding/constants";
+import { ValidationError } from "@/lib/http/errors";
 import type { OnboardingProjectSnapshot, OnboardingSubprojectSnapshot } from "@/lib/onboarding/types";
 import { prisma } from "@/lib/prisma";
 
@@ -322,7 +323,7 @@ export async function applyOnboardingChoice(userId: string, mode: "resume" | "re
 async function validateActiveProjectId(userId: string, projectId: string): Promise<string> {
   const owned = await findOwnedProject(userId, projectId);
   if (!owned) {
-    throw new Error("Progetto onboarding non valido");
+    throw new ValidationError("Progetto onboarding non valido");
   }
 
   return owned.id;
@@ -331,7 +332,7 @@ async function validateActiveProjectId(userId: string, projectId: string): Promi
 async function validateActiveSubprojectId(userId: string, subprojectId: string, projectId: string | null): Promise<{ id: string; project_id: string }> {
   const owned = await findOwnedSubproject(userId, subprojectId, projectId ?? undefined);
   if (!owned) {
-    throw new Error("Sezione onboarding non valida");
+    throw new ValidationError("Sezione onboarding non valida");
   }
 
   return { id: owned.id, project_id: owned.project_id };

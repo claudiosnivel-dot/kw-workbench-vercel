@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { withApiErrors } from "@/lib/http/errors";
 import { parseProjectDefaultsPayload } from "@/lib/modules/project-settings";
 import { invalidSettingsResponse } from "@/lib/modules/project-settings-response";
 import { prisma } from "@/lib/prisma";
@@ -8,56 +9,51 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(request: Request, context: RouteContext) {
-  try {
-    const user = await requireAuthenticatedUserFromRequest(request);
-    const { id } = await context.params;
+export const GET = withApiErrors(async (request: Request, context: RouteContext) => {
+  const user = await requireAuthenticatedUserFromRequest(request);
+  const { id } = await context.params;
 
-    const project = await prisma.project.findFirst({
-      where: {
-        id,
-        owner_user_id: user.id,
-      },
-      include: {
-        subprojects: {
-          orderBy: [{ position: "asc" }, { created_at: "asc" }],
-          include: {
-            _count: {
-              select: {
-                seeds: true,
-                keyword_candidates: true,
-                jobs: true,
-              },
-            },
-            jobs: {
-              orderBy: { created_at: "desc" },
-              take: 1,
+  const project = await prisma.project.findFirst({
+    where: {
+      id,
+      owner_user_id: user.id,
+    },
+    include: {
+      subprojects: {
+        orderBy: [{ position: "asc" }, { created_at: "asc" }],
+        include: {
+          _count: {
+            select: {
+              seeds: true,
+              keyword_candidates: true,
+              jobs: true,
             },
           },
-        },
-        _count: {
-          select: {
-            subprojects: true,
-            keyword_candidates: true,
-            seeds: true,
-            jobs: true,
+          jobs: {
+            orderBy: { created_at: "desc" },
+            take: 1,
           },
         },
       },
-    });
+      _count: {
+        select: {
+          subprojects: true,
+          keyword_candidates: true,
+          seeds: true,
+          jobs: true,
+        },
+      },
+    },
+  });
 
-    if (!project) {
-      return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
-    }
-
-    return NextResponse.json({ data: project });
-  } catch (error) {
-    console.error("GET /api/projects/[id] failed", error);
-    return NextResponse.json({ error: "Errore interno durante il caricamento del progetto" }, { status: 500 });
+  if (!project) {
+    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
   }
-}
 
-export async function PATCH(request: Request, context: RouteContext) {
+  return NextResponse.json({ data: project });
+});
+
+export const PATCH = withApiErrors(async (request: Request, context: RouteContext) => {
   try {
     const user = await requireAuthenticatedUserFromRequest(request);
     const { id } = await context.params;
@@ -103,33 +99,27 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (invalid) {
       return invalid;
     }
-    console.error("PATCH /api/projects/[id] failed", error);
-    return NextResponse.json({ error: "Errore interno durante il salvataggio del progetto" }, { status: 500 });
+    throw error;
   }
-}
+});
 
-export async function DELETE(request: Request, context: RouteContext) {
-  try {
-    const user = await requireAuthenticatedUserFromRequest(request);
-    const { id } = await context.params;
+export const DELETE = withApiErrors(async (request: Request, context: RouteContext) => {
+  const user = await requireAuthenticatedUserFromRequest(request);
+  const { id } = await context.params;
 
-    const project = await prisma.project.findFirst({
-      where: {
-        id,
-        owner_user_id: user.id,
-      },
-      select: { id: true },
-    });
+  const project = await prisma.project.findFirst({
+    where: {
+      id,
+      owner_user_id: user.id,
+    },
+    select: { id: true },
+  });
 
-    if (!project) {
-      return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
-    }
-
-    await prisma.project.delete({ where: { id } });
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("DELETE /api/projects/[id] failed", error);
-    return NextResponse.json({ error: "Errore interno durante l'eliminazione del progetto" }, { status: 500 });
+  if (!project) {
+    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
   }
-}
+
+  await prisma.project.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
+});

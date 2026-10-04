@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { withApiErrors } from "@/lib/http/errors";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { runJobResponse } from "@/lib/modules/jobs/run-response";
 import { prisma } from "@/lib/prisma";
@@ -24,7 +25,7 @@ async function readRunPayload(request: Request): Promise<RunPayload> {
   }
 }
 
-export async function POST(request: Request, context: RouteContext) {
+export const POST = withApiErrors(async (request: Request, context: RouteContext) => {
   const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await context.params;
   const payload = await readRunPayload(request);
@@ -63,5 +64,5 @@ export async function POST(request: Request, context: RouteContext) {
   const completed = await runJobById(job.id);
 
   return runJobResponse(completed, { data: completed, meta: { subprojectId: targetSubproject.id } });
-}
+});
 

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthEnabled } from "@/lib/auth/config";
 import { getOptionalAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { withApiErrors } from "@/lib/http/errors";
 
-export async function GET(request: NextRequest) {
+export const GET = withApiErrors(async (request: NextRequest) => {
   const user = await getOptionalAuthenticatedUserFromRequest(request);
 
   if (!isAuthEnabled()) {
@@ -40,4 +41,4 @@ export async function GET(request: NextRequest) {
     fontScaleMode: user.fontScaleMode,
     colorVisionMode: user.colorVisionMode,
   });
-}
+});

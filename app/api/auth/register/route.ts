@@ -1,16 +1,11 @@
 import { UserRole } from "@/lib/generated/prisma/enums";
 import { NextResponse } from "next/server";
-import {
-  getSessionMaxAgeSeconds,
-  isAuthEnabled,
-  isPublicSignupEnabled,
-  SESSION_COOKIE_NAME,
-  shouldUseSecureCookies,
-} from "@/lib/auth/config";
+import { isAuthEnabled, isPublicSignupEnabled } from "@/lib/auth/config";
 import { registerUser } from "@/lib/auth/credentials";
-import { createSessionToken } from "@/lib/auth/session";
+import { setSessionCookie } from "@/lib/auth/session-cookie";
+import { withApiErrors } from "@/lib/http/errors";
 
-export async function POST(request: Request) {
+export const POST = withApiErrors(async (request: Request) => {
   if (!isAuthEnabled()) {
     return NextResponse.json({ error: "Registrazione non disponibile con autenticazione disabilitata" }, { status: 400 });
   }
@@ -37,32 +32,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Password e conferma non coincidono" }, { status: 400 });
   }
 
-  try {
-    const user = await registerUser({ username, password, role: UserRole.SUBSCRIBER });
-    const token = await createSessionToken({
-      userId: user.id,
-      username: user.username,
-      role: user.role,
-      status: user.status,
-      isRootAdmin: user.isRootAdmin,
-      themeMode: user.themeMode,
-      fontScaleMode: user.fontScaleMode,
-      colorVisionMode: user.colorVisionMode,
-    });
-
-    const response = NextResponse.json({ success: true });
-    response.cookies.set({
-      name: SESSION_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureCookies(),
-      maxAge: getSessionMaxAgeSeconds(),
-      path: "/",
-    });
-
-    return response;
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Registrazione non riuscita" }, { status: 400 });
-  }
-}
+  // Username non valido (400) o già in uso (409): AppError gestiti da withApiErrors, mai error.message grezzo.
+  const user = await registerUser({ username, password, role: UserRole.SUBSCRIBER });
+  const response = NextResponse.json({ success: true });
+  await setSessionCookie(response, user);
+  return response;
+});

@@ -1,16 +1,9 @@
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME, shouldUseSecureCookies } from "@/lib/auth/config";
+import { clearSessionCookie } from "@/lib/auth/session-cookie";
+import { withApiErrors } from "@/lib/http/errors";
 
-export async function POST() {
+export const POST = withApiErrors(async () => {
   const response = NextResponse.json({ success: true });
-  response.cookies.set({
-    name: SESSION_COOKIE_NAME,
-    value: "",
-    httpOnly: true,
-    sameSite: "lax",
-    secure: shouldUseSecureCookies(),
-    maxAge: 0,
-    path: "/",
-  });
+  clearSessionCookie(response);
   return response;
-}
+});

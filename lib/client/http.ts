@@ -1,6 +1,9 @@
+import { AUTH_REQUIRED_CODE, AUTH_REQUIRED_MESSAGE } from "@/lib/http/auth-required";
+
 export type ApiErrorPayload = {
   error?: string;
   message?: string;
+  code?: string;
 };
 
 export async function readJsonSafe<T>(response: Response): Promise<T | null> {
@@ -21,13 +24,16 @@ export function buildApiErrorMessage(
   payload: ApiErrorPayload | null,
   fallback: string
 ): string {
+  // Sessione assente o scaduta: il messaggio italiano vince anche su un body "Unauthorized" (T-502).
+  // Restano i 401 con un messaggio proprio (credenziali errate al login, password attuale errata).
   const payloadError = payload?.error?.trim() || payload?.message?.trim();
-  if (payloadError) {
-    return payloadError;
+  const genericUnauthorized = response.status === 401 && (!payloadError || payloadError === "Unauthorized");
+  if (payload?.code === AUTH_REQUIRED_CODE || genericUnauthorized) {
+    return AUTH_REQUIRED_MESSAGE;
   }
 
-  if (response.status === 401) {
-    return "Sessione non valida o scaduta. Effettua di nuovo il login.";
+  if (payloadError) {
+    return payloadError;
   }
 
   if (response.status === 403) {

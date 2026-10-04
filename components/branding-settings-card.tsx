@@ -15,11 +15,14 @@ type BrandingResponse = ApiErrorPayload & {
   data?: BrandingSnapshot;
 };
 
-const MAX_LOGO_SIZE_BYTES = 350 * 1024;
+// Allineati al server (T-506): al massimo 100 KB e solo i tipi ammessi per i logo inline.
+const MAX_LOGO_SIZE_BYTES = 100 * 1024;
+const ALLOWED_LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+const LOGO_ACCEPT = ALLOWED_LOGO_TYPES.join(",");
 
 type LogoTarget = "dark" | "light";
 
-export function BrandingSettingsCard({ initial }: { initial: BrandingSnapshot }) {
+export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSnapshot; canEdit: boolean }) {
   const router = useRouter();
 
   const [appName, setAppName] = useState(initial.appName);
@@ -47,13 +50,13 @@ export function BrandingSettingsCard({ initial }: { initial: BrandingSnapshot })
     setError(null);
     setSuccess(null);
 
-    if (!file.type.startsWith("image/")) {
-      setError("File non supportato. Carica un'immagine (PNG, JPG, SVG, WEBP).");
+    if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
+      setError("File non supportato. Carica un'immagine PNG, JPG, SVG o WEBP.");
       return;
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setError("Logo troppo grande. Usa un file massimo da 350KB.");
+      setError("Logo troppo grande. Usa un file massimo da 100 KB.");
       return;
     }
 
@@ -137,8 +140,12 @@ export function BrandingSettingsCard({ initial }: { initial: BrandingSnapshot })
         </p>
       </div>
 
+      {!canEdit && (
+        <p className="text-sm text-slate-600">Il branding è globale: solo il root admin può modificarlo.</p>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-5">
+        <fieldset className="min-w-0 space-y-5" disabled={!canEdit}>
           <div>
             <label className="label" htmlFor="appName">
               Nome applicazione
@@ -165,7 +172,7 @@ export function BrandingSettingsCard({ initial }: { initial: BrandingSnapshot })
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <label className="btn-secondary w-full cursor-pointer text-center sm:w-auto">
                 Carica logo dark
-                <input type="file" accept="image/*" className="hidden" onChange={onFileSelect("dark")} />
+                <input type="file" accept={LOGO_ACCEPT} className="hidden" onChange={onFileSelect("dark")} />
               </label>
               <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => clearThemeLogo("dark")}>
                 Rimuovi logo dark
@@ -185,7 +192,7 @@ export function BrandingSettingsCard({ initial }: { initial: BrandingSnapshot })
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <label className="btn-secondary w-full cursor-pointer text-center sm:w-auto">
                 Carica logo light
-                <input type="file" accept="image/*" className="hidden" onChange={onFileSelect("light")} />
+                <input type="file" accept={LOGO_ACCEPT} className="hidden" onChange={onFileSelect("light")} />
               </label>
               <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => clearThemeLogo("light")}>
                 Rimuovi logo light
@@ -194,13 +201,13 @@ export function BrandingSettingsCard({ initial }: { initial: BrandingSnapshot })
           </div>
 
           <p className="text-xs text-slate-500">
-            Formati supportati: URL `https://`, percorso `/logo.svg` o immagine caricata. Logo legacy tecnico: {legacyLogoUrl ? "presente" : "assente"}.
+            Formati supportati: URL `https://`, percorso `/logo.svg` o immagine PNG, JPG, SVG o WEBP fino a 100 KB. Logo legacy tecnico: {legacyLogoUrl ? "presente" : "assente"}.
           </p>
 
           <button className="btn-primary w-full sm:w-auto" type="button" onClick={save} disabled={saving}>
             {saving ? "Salvataggio branding..." : "Salva branding"}
           </button>
-        </div>
+        </fieldset>
 
         <div className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Anteprima navbar</p>
