@@ -30,11 +30,6 @@ const KNOWN_PLACEHOLDERS = new Set([
   "replace-with-a-long-random-session-secret",
   "replace-with-a-long-random-encryption-key",
 ]);
-// Valori di sviluppo e test, mai accettati in produzione (vedi checkSecret).
-const NON_PRODUCTION_FALLBACK = {
-  APP_SESSION_SECRET: "change-this-session-secret",
-  APP_ENCRYPTION_KEY: "change-this-encryption-key",
-} as const;
 
 const optional = z.string().optional();
 
@@ -91,8 +86,9 @@ export type Env = {
   authEnabled: boolean;
   authUsername: string;
   authPassword: string | undefined;
-  sessionSecret: string;
-  encryptionKey: string;
+  // Senza default: assenti fuori produzione, l'errore arriva al primo uso (lib/auth/config.ts).
+  sessionSecret: string | undefined;
+  encryptionKey: string | undefined;
   sessionMaxAgeSeconds: number;
 };
 
@@ -181,8 +177,8 @@ export function parseEnv(source: EnvSource): Env {
     authEnabled: isAuthEnabledValue(raw.APP_AUTH_ENABLED),
     authUsername: raw.APP_AUTH_USERNAME ?? "admin",
     authPassword: present(raw.APP_AUTH_PASSWORD),
-    sessionSecret: present(raw.APP_SESSION_SECRET) ?? NON_PRODUCTION_FALLBACK.APP_SESSION_SECRET,
-    encryptionKey: present(raw.APP_ENCRYPTION_KEY) ?? NON_PRODUCTION_FALLBACK.APP_ENCRYPTION_KEY,
+    sessionSecret: present(raw.APP_SESSION_SECRET),
+    encryptionKey: present(raw.APP_ENCRYPTION_KEY),
     sessionMaxAgeSeconds: getIntEnv("APP_SESSION_MAX_AGE_SECONDS", raw),
   };
 }

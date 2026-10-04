@@ -18,9 +18,9 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `APP_AUTH_USERNAME` | facolt. (default `admin`) | facolt. | facolt. | no | Vercel / locale |
 | `APP_AUTH_PASSWORD` | obbl. solo per il bootstrap del primo utente (tabella `users` vuota): almeno 12 caratteri, diversa da `changeme` | come Production, sul DB di staging | facolt. (default `changeme`) | sì | Vercel (Sensitive) / locale |
 | `APP_PUBLIC_SIGNUP_ENABLED` | facolt. (default `true`) | facolt. | facolt. | no | Vercel / locale |
-| `APP_SESSION_SECRET` | obbl.: almeno 32 caratteri, non un segnaposto | obbl., diversa da Production | facolt. (default di sviluppo) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
+| `APP_SESSION_SECRET` | obbl.: almeno 32 caratteri, non un segnaposto | obbl., diversa da Production | obbl. (nessun default; fuori produzione sono ammessi i segnaposto di `.env.example`) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
 | `APP_SESSION_MAX_AGE_SECONDS` | facolt. (intero 60…31536000, default 604800) | facolt. | facolt. | no | Vercel / locale |
-| `APP_ENCRYPTION_KEY` | obbl.: almeno 32 caratteri, non un segnaposto; se cambia, le credenziali Google cifrate a DB non si leggono più | obbl., diversa da Production | facolt. (default di sviluppo) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
+| `APP_ENCRYPTION_KEY` | obbl.: almeno 32 caratteri, non un segnaposto; se cambia, le credenziali Google cifrate a DB non si leggono più | obbl., diversa da Production | obbl. (nessun default; fuori produzione sono ammessi i segnaposto di `.env.example`) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
 | `APP_COOKIE_SECURE` | facolt. (`auto`: secure in produzione) | facolt. | facolt. | no | Vercel / locale |
 | `APP_BRAND_NAME` | facolt. | facolt. | facolt. | no | Vercel / locale |
 | `APP_BRAND_LOGO_URL` | facolt. | facolt. | facolt. | no | Vercel / locale |

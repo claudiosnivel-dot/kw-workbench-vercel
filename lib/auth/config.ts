@@ -5,6 +5,14 @@ export const SESSION_COOKIE_NAME = "kwb_session";
 const DEVELOPMENT_BOOTSTRAP_PASSWORD = "changeme";
 const MIN_BOOTSTRAP_PASSWORD_LENGTH = 12;
 
+/** Segreti senza valore di default, in nessun ambiente: in produzione li impone già parseEnv. */
+function requireSecret(name: "APP_SESSION_SECRET" | "APP_ENCRYPTION_KEY", value: string | undefined): string {
+  if (!value) {
+    throw new Error(`${name} non impostata: non ha un valore di default, va impostata anche fuori produzione`);
+  }
+  return value;
+}
+
 export function isAuthEnabled(): boolean {
   return getEnv().authEnabled;
 }
@@ -40,7 +48,7 @@ export function isPublicSignupEnabled(): boolean {
 }
 
 export function getSessionSecret(): string {
-  return getEnv().sessionSecret;
+  return requireSecret("APP_SESSION_SECRET", getEnv().sessionSecret);
 }
 
 export function getSessionMaxAgeSeconds(): number {
@@ -48,7 +56,7 @@ export function getSessionMaxAgeSeconds(): number {
 }
 
 export function getEncryptionKeyMaterial(): string {
-  return getEnv().encryptionKey;
+  return requireSecret("APP_ENCRYPTION_KEY", getEnv().encryptionKey);
 }
 
 export function shouldUseSecureCookies(): boolean {
