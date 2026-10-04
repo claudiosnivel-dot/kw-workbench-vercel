@@ -1,5 +1,6 @@
 import { JobStatus } from "@/lib/generated/prisma/enums";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
+import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 
 export async function enqueueExtractionJob(projectId: string, subprojectId: string) {
@@ -45,6 +46,8 @@ export async function runJobById(jobId: string) {
       },
     });
   } catch (error) {
+    // Stack completo solo nel log, correlabile con l'evento di Sentry; nel DB resta il messaggio (T-602).
+    logger.error("job_failed", { jobId: job.id, projectId: job.project_id, subprojectId: job.subproject_id, error });
     return prisma.job.update({
       where: { id: job.id },
       data: {

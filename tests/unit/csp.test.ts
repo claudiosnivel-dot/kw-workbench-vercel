@@ -33,4 +33,13 @@ describe("buildCsp", () => {
     expect(directive(csp, "img-src")).toEqual(["'self'", "blob:", "data:", "https:"]);
     expect(directive(csp, "style-src")).toEqual(["'self'", "'nonce-abc'"]);
   });
+
+  it("con il DSN di Sentry connect-src ammette l'host di ingest e senza DSN solo self (T-601)", () => {
+    expect(directive(buildCsp("abc", false), "connect-src")).toEqual(["'self'"]);
+    expect(directive(buildCsp("abc", false, "https://chiave@o1.ingest.de.sentry.io/2"), "connect-src")).toEqual([
+      "'self'",
+      "https://o1.ingest.de.sentry.io",
+    ]);
+    expect(directive(buildCsp("abc", false, "non-un-url"), "connect-src")).toEqual(["'self'"]);
+  });
 });

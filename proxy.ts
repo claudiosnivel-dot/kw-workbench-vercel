@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthEnabled, SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { verifySessionToken } from "@/lib/auth/session";
 import { authRequiredResponse } from "@/lib/http/auth-required";
+import { getRequestId, REQUEST_ID_HEADER } from "@/lib/observability/request-id";
 import { buildCsp } from "@/lib/security/csp";
 
 const PUBLIC_PATHS = new Set([
@@ -12,6 +13,8 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/logout",
   "/api/auth/session",
   "/api/auth/session-ended",
+  // Health check per il monitoraggio esterno (T-603): solo il percorso esatto, nessun prefisso.
+  "/api/health",
 ]);
 
 // File di public serviti senza login: un solo segmento (es. /robots.txt) con estensione ammessa.
@@ -44,17 +47,19 @@ function isPageRequest(request: NextRequest): boolean {
 }
 
 /**
- * Inoltra la richiesta. Per le pagine genera un nonce nuovo e mette la CSP sulla richiesta inoltrata
- * (Next.js ne estrae il nonce e lo applica ai propri script) e sulla risposta (T-505).
+ * Inoltra la richiesta con il suo x-request-id (T-602). Per le pagine genera un nonce nuovo e mette la CSP
+ * sulla richiesta inoltrata (Next.js ne estrae il nonce e lo applica ai propri script) e sulla risposta (T-505).
  */
-function forward(request: NextRequest): NextResponse {
+function forward(request: NextRequest, requestId: string): NextResponse {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(REQUEST_ID_HEADER, requestId);
+
   if (!isPageRequest(request)) {
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   const nonce = btoa(crypto.randomUUID());
-  const csp = buildCsp(nonce, process.env.NODE_ENV === "development");
-  const requestHeaders = new Headers(request.headers);
+  const csp = buildCsp(nonce, process.env.NODE_ENV === "development", process.env.NEXT_PUBLIC_SENTRY_DSN);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
 
@@ -63,30 +68,38 @@ function forward(request: NextRequest): NextResponse {
   return response;
 }
 
-export async function proxy(request: NextRequest) {
+async function route(request: NextRequest, requestId: string): Promise<Response> {
   if (!isAuthEnabled()) {
-    return forward(request);
+    return forward(request, requestId);
   }
 
   const { pathname } = request.nextUrl;
   if (isPublicPath(pathname)) {
-    return forward(request);
+    return forward(request, requestId);
   }
 
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = await verifySessionToken(token);
 
   if (session) {
-    return forward(request);
+    return forward(request, requestId);
   }
 
   if (pathname.startsWith("/api/")) {
-    return authRequiredResponse();
+    return authRequiredResponse({ requestId });
   }
 
   const loginUrl = new URL("/login", request.url);
   loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
   return NextResponse.redirect(loginUrl);
+}
+
+/** Ogni risposta del proxy porta l'x-request-id assegnato alla richiesta (T-602). */
+export async function proxy(request: NextRequest) {
+  const requestId = getRequestId(request);
+  const response = await route(request, requestId);
+  response.headers.set(REQUEST_ID_HEADER, requestId);
+  return response;
 }
 
 export const config = {

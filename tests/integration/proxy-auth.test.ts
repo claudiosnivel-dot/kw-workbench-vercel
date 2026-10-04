@@ -43,7 +43,8 @@ describe("middleware con cookie di sessione malformato", () => {
     const api = await proxy(middlewareRequest("/api/projects", MALFORMED_COOKIE));
     expect(api.status).toBe(401);
     // impacted-by: T-502 (il 401 del proxy usa la risposta condivisa con code AUTH_REQUIRED)
-    expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED" });
+    // impacted-by: T-602 (il 401 del proxy porta anche il requestId assegnato alla richiesta)
+    expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED", requestId: expect.any(String) });
   });
 });
 
@@ -53,7 +54,8 @@ describe("proxy senza sessione (Next 16)", () => {
     const api = await proxy(new NextRequest(new URL("/api/projects", "http://localhost:3000")));
     expect(api.status).toBe(401);
     // impacted-by: T-502 (il 401 del proxy usa la risposta condivisa con code AUTH_REQUIRED)
-    expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED" });
+    // impacted-by: T-602 (il 401 del proxy porta anche il requestId assegnato alla richiesta)
+    expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED", requestId: expect.any(String) });
 
     const page = await proxy(new NextRequest(new URL("/projects/abc?tab=x", "http://localhost:3000")));
     expect(page.status).toBe(307);

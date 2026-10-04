@@ -5,6 +5,7 @@ import {
   AutocompleteSuggestion,
   SuggestionRequest,
 } from "@/lib/modules/providers/autocomplete/types";
+import { logger } from "@/lib/observability/logger";
 import {
   decodeResponseText,
   normalizeDisplayText,
@@ -124,7 +125,7 @@ export class GoogleDirectAutocompleteProvider implements AutocompleteProviderCli
         return suggestions;
       } catch (error) {
         if (attempt >= maxRetries || !isTransientFailure(error)) {
-          console.warn("GoogleDirectAutocompleteProvider: query non riuscita", {
+          logger.warn("autocomplete_query_failed", {
             query,
             languageCode: input.languageCode,
             countryCode: input.countryCode,

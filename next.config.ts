@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 // Header di sicurezza su tutte le risposte (T-505), come mappa nome → valore. La Content-Security-Policy
@@ -26,4 +27,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry (T-601): SENTRY_AUTH_TOKEN serve solo in build per caricare le source map (senza token il caricamento
+// si salta e la build prosegue); niente telemetria dell'SDK verso Sentry.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  telemetry: false,
+  suppressOnRouterTransitionStartWarning: true,
+});

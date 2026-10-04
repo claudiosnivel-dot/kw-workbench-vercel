@@ -8,13 +8,16 @@
  *   non prevista (Prisma, host del DB, stack).
  * - code: codice stabile (VALIDATION_ERROR, INVALID_JSON, AUTH_REQUIRED, FORBIDDEN, NOT_FOUND,
  *   CONFLICT, INTERNAL_ERROR o un code esplicito di un AppError).
- * - requestId: x-request-id della richiesta se conforme a ^[A-Za-z0-9-]{8,64}$, altrimenti un UUID.
+ * - requestId: x-request-id assegnato dal proxy (getRequestId, T-602): quello in ingresso se conforme a
+ *   ^[A-Za-z0-9-]{8,64}$, altrimenti un UUID.
  * Il client (lib/client/http.ts) continua a leggere error.
  */
 import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { AUTH_REQUIRED_CODE, AUTH_REQUIRED_MESSAGE, authRequiredResponse } from "@/lib/http/auth-required";
+import { logger } from "@/lib/observability/logger";
+import { getRequestId } from "@/lib/observability/request-id";
 
 export class AppError extends Error {
   readonly status: number;
@@ -63,28 +66,18 @@ export class ForbiddenError extends AppError {
   }
 }
 
-const REQUEST_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/;
-
-function resolveRequestId(request: Request): string {
-  const header = request.headers.get("x-request-id");
-  return header && REQUEST_ID_PATTERN.test(header) ? header : crypto.randomUUID();
-}
-
 function errorJson(status: number, code: string, error: string, requestId: string): Response {
   return NextResponse.json({ error, code, requestId }, { status });
 }
 
 function logInternalError(error: unknown, request: Request, requestId: string): void {
-  // Una sola riga per ogni 500: il requestId mostrato al client ritrova l'errore nei log (sostituita in T-602).
-  console.error(
-    JSON.stringify({
-      level: "error",
-      requestId,
-      method: request.method,
-      path: new URL(request.url).pathname,
-      stack: error instanceof Error ? (error.stack ?? `${error.name}: ${error.message}`) : String(error),
-    })
-  );
+  // Una sola riga per ogni 500: il requestId mostrato al client ritrova l'errore nei log (T-602).
+  logger.error("api_internal_error", {
+    requestId,
+    method: request.method,
+    path: new URL(request.url).pathname,
+    error,
+  });
 }
 
 function toErrorResponse(error: unknown, request: Request, requestId: string): Response {
@@ -122,7 +115,7 @@ export function withApiErrors<Req extends Request, Ctx>(
     } catch (error) {
       // redirect() e notFound() di Next lanciano errori interni che vanno lasciati passare.
       unstable_rethrow(error);
-      const requestId = resolveRequestId(request);
+      const requestId = getRequestId(request);
       const response = toErrorResponse(error, request, requestId);
       response.headers.set("x-request-id", requestId);
       return response;

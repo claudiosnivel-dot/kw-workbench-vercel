@@ -38,7 +38,12 @@ describe("bootstrap del primo utente in produzione", () => {
 
     // impacted-by: T-503 (l'errore di bootstrap diventa un 500 INTERNAL_ERROR di withApiErrors: il motivo
     // resta nel log del server e non arriva al client)
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    // impacted-by: T-602 (il motivo lo scrive il logger JSON su stdout, non console.error)
+    const written: string[] = [];
+    const stdoutWrite = vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array) => {
+      written.push(String(chunk));
+      return true;
+    });
     const weak = await callRoute(login, {
       method: "POST",
       url: "/api/auth/login",
@@ -49,8 +54,8 @@ describe("bootstrap del primo utente in produzione", () => {
     expect(weak.status).toBe(500);
     expect(weak.headers.get("set-cookie")).toBeNull();
     expect(weakText).not.toContain("APP_AUTH_PASSWORD");
-    expect(consoleError.mock.calls.flat().some((arg) => String(arg).includes("APP_AUTH_PASSWORD"))).toBe(true);
-    consoleError.mockRestore();
+    expect(written.some((chunk) => chunk.includes("APP_AUTH_PASSWORD"))).toBe(true);
+    stdoutWrite.mockRestore();
     expect(await prisma.user.count()).toBe(0);
 
     vi.stubEnv("APP_AUTH_PASSWORD", STRONG_PASSWORD);

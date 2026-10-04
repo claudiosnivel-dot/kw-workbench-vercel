@@ -42,7 +42,7 @@ export function sameDatabase(target, reference) {
   return reference.username === null || target.username === reference.username;
 }
 
-function parseProductionDbHost(value) {
+export function parseProductionDbHost(value) {
   const trimmed = (value ?? "").trim();
   if (!trimmed) {
     return null;

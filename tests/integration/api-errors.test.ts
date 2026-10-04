@@ -73,7 +73,12 @@ describe("errore imprevisto del DB", () => {
     vi.spyOn(prisma.user, "create").mockRejectedValueOnce(
       new Error("connect ECONNREFUSED db.example.supabase.co:5432 (prisma)")
     );
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    // impacted-by: T-602 (la riga di log del 500 la scrive il logger JSON su stdout, non console.error)
+    const written: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array) => {
+      written.push(String(chunk));
+      return true;
+    });
 
     const response = await callRoute(register, {
       method: "POST",
@@ -90,8 +95,14 @@ describe("errore imprevisto del DB", () => {
     expect(text.toLowerCase()).not.toContain("supabase");
     expect(text.toLowerCase()).not.toContain("prisma");
     expect(text).not.toMatch(/\bat\s+\S+\s+\(/);
-    expect(consoleError).toHaveBeenCalledTimes(1);
-    expect(consoleError.mock.calls[0].some((arg) => String(arg).includes("req-test-0001"))).toBe(true);
+    const errorLines = written
+      .join("")
+      .split("\n")
+      .filter((line) => line.startsWith("{"))
+      .map((line) => JSON.parse(line) as { level?: string; requestId?: string })
+      .filter((entry) => entry.level === "error");
+    expect(errorLines).toHaveLength(1);
+    expect(errorLines[0].requestId).toBe("req-test-0001");
   });
 });
 
