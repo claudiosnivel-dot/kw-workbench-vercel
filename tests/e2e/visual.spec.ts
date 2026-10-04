@@ -13,12 +13,14 @@ test.describe("baseline visive", () => {
   test.skip(process.platform !== "linux", "baseline visive generate e confrontate solo su Linux");
 
   // covers: AC-103-3
+  // covers: AC-405-1
   test("login", async ({ page }) => {
     await page.goto("/login");
     await expect(page).toHaveScreenshot("login.png", { fullPage: true });
   });
 
   // covers: AC-103-3
+  // covers: AC-405-1
   test("dashboard", async ({ page }) => {
     await login(page);
     await page.goto("/");
@@ -30,6 +32,7 @@ test.describe("baseline visive", () => {
   });
 
   // covers: AC-103-3
+  // covers: AC-405-1
   test("risultati", async ({ page }) => {
     await login(page);
     await page.goto(`/projects/${process.env.E2E_PROJECT_ID}/results`);

@@ -2,6 +2,9 @@
 // metriche MOCK. Ogni cambiamento di normalizzazione, classificazione, filtro brand, punteggio
 // e salvataggio cambia lo snapshot: il suo aggiornamento (T-306, T-702, T-705, T-707) passa da
 // gate umano con diff motivato.
+// Oracolo di non regressione degli upgrade di 04-stack-upgrade (snapshot invariati):
+// covers: AC-401-3
+// covers: AC-403-4
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";

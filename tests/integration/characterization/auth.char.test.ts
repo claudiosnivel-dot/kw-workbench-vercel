@@ -1,6 +1,9 @@
 // Caratterizzazione di T-104: fotografa login, registrazione, logout, sessione e middleware
 // così come sono oggi, difetti noti compresi. Le asserzioni marcate impacted-by cambiano
 // solo con il task indicato e passando da gate umano.
+// Oracolo di non regressione degli upgrade di 04-stack-upgrade (snapshot invariati):
+// covers: AC-401-3
+// covers: AC-403-4
 import { UserStatus } from "@/lib/generated/prisma/enums";
 import { NextRequest } from "next/server";
 import { isValidElement, type ReactElement, type ReactNode } from "react";

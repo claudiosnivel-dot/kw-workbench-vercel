@@ -19,7 +19,8 @@ test.describe("smoke di login", () => {
     await expect(page.getByRole("button", { name: "Esci" }).first()).toBeVisible();
   });
 
-  // covers: AC-401-4, AC-404-4
+  // covers: AC-401-4
+  // covers: AC-404-4
   test("dopo il login dell'utente seed la dashboard risponde 200", async ({ page }) => {
     await submitLogin(page, E2E_USER_PASSWORD);
     await page.waitForURL((url) => url.pathname === "/");
