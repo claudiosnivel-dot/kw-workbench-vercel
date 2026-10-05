@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { MetricsContext, KeywordMetric, MetricsProviderClient } from "@/lib/modules/providers/metrics/types";
+import { MetricsContext, KeywordMetric } from "@/lib/modules/providers/metrics/types";
 import { buildMissingMetrics } from "@/lib/modules/providers/metrics/types";
 import { getDecryptedGoogleAdsRefreshToken, getGoogleAdsCredentialRecord } from "@/lib/integrations/google-ads";
 import { getGoogleAdsApiConfig } from "@/lib/integrations/google-ads-config";
@@ -115,7 +115,7 @@ function findMetricByKeyword(
   return entry;
 }
 
-export class GoogleKeywordPlannerMetricsProvider implements MetricsProviderClient {
+export class GoogleKeywordPlannerMetricsProvider {
   readonly id = "GOOGLE_KEYWORD_PLANNER" as const;
 
   async enrichKeywords(keywords: string[], context: MetricsContext): Promise<Map<string, KeywordMetric>> {

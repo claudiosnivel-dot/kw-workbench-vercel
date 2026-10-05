@@ -61,6 +61,13 @@ enum MetricsStatus {
   failed
 }
 
+// Precisione del volume (T-901, D-17): exact per un numero, range per un intervallo di Keyword Planner
+// importato come punto medio.
+enum MetricsPrecision {
+  exact
+  range
+}
+
 // Sorgente del punteggio (T-707, D-18): metrics è dichiarato per primo, così l'ordinamento crescente
 // mette prima le keyword con metriche reali.
 enum ScoreSource {
@@ -257,6 +264,7 @@ model KeywordCandidate {
   competition                 Float?
   low_top_of_page_bid_micros  BigInt?
   high_top_of_page_bid_micros BigInt?
+  metrics_precision           MetricsPrecision?
   score                       Float?
   score_source                ScoreSource     @default(heuristic)
   metrics_updated_at          DateTime?

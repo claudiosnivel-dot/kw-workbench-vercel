@@ -20,12 +20,13 @@ vi.mock("@/lib/modules/providers/autocomplete/factory", () => ({
   }),
 }));
 
+// impacted-by: T-901 — il mock segue il contratto MetricsProvider (item con canonical, esito con la mappa).
 vi.mock("@/lib/modules/providers/metrics/factory", () => ({
   createMetricsProvider: () => ({
     id: "MOCK",
-    enrichKeywords: async (keywords: string[]) =>
-      new Map(
-        keywords.map((keyword) => [
+    enrichKeywords: async (items: { canonical: string }[]) => ({
+      metrics: new Map(
+        items.map(({ canonical: keyword }) => [
           keyword,
           {
             keyword,
@@ -36,6 +37,7 @@ vi.mock("@/lib/modules/providers/metrics/factory", () => ({
           },
         ])
       ),
+    }),
   }),
 }));
 
