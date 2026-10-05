@@ -100,10 +100,8 @@ export function SubprojectForm({
   submitLabel,
 }: SubprojectFormProps) {
   const router = useRouter();
-  const [values, setValues] = useState<SubprojectFormValues>({
-    ...defaultValues,
-    ...initialValues,
-  });
+  const initialFormValues: SubprojectFormValues = { ...defaultValues, ...initialValues };
+  const [values, setValues] = useState<SubprojectFormValues>(initialFormValues);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -184,6 +182,9 @@ export function SubprojectForm({
         return;
       }
 
+      if (mode === "create") {
+        setValues(initialFormValues);
+      }
       setMessage("Sezione salvata.");
       router.refresh();
     } catch (submitError) {

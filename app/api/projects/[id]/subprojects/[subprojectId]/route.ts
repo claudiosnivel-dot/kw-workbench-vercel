@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import { parseSubprojectPayload } from "@/lib/modules/project-settings";
+import { deleteSection, guardSectionName } from "@/lib/modules/sections";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -62,9 +63,9 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   const payload = (await request.json()) as Record<string, unknown>;
   const parsed = parseSubprojectPayload(payload);
 
-  const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const updated = await guardSectionName(() => prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const result = await tx.subproject.update({
-      where: { id: subprojectId },
+      where: { id: subprojectId, project_id: id },
       data: {
         name: parsed.name,
         description: parsed.description,
@@ -100,7 +101,7 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
     }
 
     return result;
-  });
+  }));
 
   return NextResponse.json({ data: updated });
 });
@@ -124,43 +125,7 @@ export const DELETE = withApiErrors(async (request: Request, context: RouteConte
     return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
   }
 
-  const subprojectCount = await prisma.subproject.count({ where: { project_id: id } });
-  if (subprojectCount <= 1) {
-    return NextResponse.json(
-      { error: "Non puoi eliminare l'ultima sezione. Ogni progetto deve avere almeno una sezione." },
-      { status: 400 }
-    );
-  }
-
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const project = await tx.project.findUnique({
-      where: { id },
-      select: { default_subproject_id: true },
-    });
-
-    await tx.subproject.delete({ where: { id: subprojectId } });
-
-    const remaining = await tx.subproject.findMany({
-      where: { project_id: id },
-      orderBy: [{ position: "asc" }, { created_at: "asc" }],
-      select: { id: true },
-    });
-
-    for (let index = 0; index < remaining.length; index += 1) {
-      await tx.subproject.update({
-        where: { id: remaining[index].id },
-        data: { position: index },
-      });
-    }
-
-    if (project?.default_subproject_id === subprojectId) {
-      await tx.project.update({
-        where: { id },
-        data: { default_subproject_id: remaining[0]?.id ?? null },
-      });
-    }
-  });
+  await deleteSection(id, subprojectId);
 
   return NextResponse.json({ success: true });
 });
-

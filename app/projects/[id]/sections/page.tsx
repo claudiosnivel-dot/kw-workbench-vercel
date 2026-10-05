@@ -96,6 +96,7 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                       <SectionOrderButtons
                         projectId={project.id}
                         subprojectId={section.id}
+                        subprojectName={section.name}
                         disableUp={index === 0}
                         disableDown={index === project.subprojects.length - 1}
                       />

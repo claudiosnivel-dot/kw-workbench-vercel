@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import { parseSubprojectPayload } from "@/lib/modules/project-settings";
+import { guardSectionName } from "@/lib/modules/sections";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -65,7 +66,7 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
   const payload = (await request.json()) as Record<string, unknown>;
   const parsed = parseSubprojectPayload(payload);
 
-  const subproject = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const subproject = await guardSectionName(() => prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const positionCount = await tx.subproject.count({ where: { project_id: id } });
 
     const created = await tx.subproject.create({
@@ -106,7 +107,7 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
     }
 
     return created;
-  });
+  }));
 
   return NextResponse.json({ data: subproject }, { status: 201 });
 });

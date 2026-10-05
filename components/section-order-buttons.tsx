@@ -7,6 +7,7 @@ import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/clien
 type SectionOrderButtonsProps = {
   projectId: string;
   subprojectId: string;
+  subprojectName: string;
   disableUp?: boolean;
   disableDown?: boolean;
 };
@@ -14,6 +15,7 @@ type SectionOrderButtonsProps = {
 export function SectionOrderButtons({
   projectId,
   subprojectId,
+  subprojectName,
   disableUp = false,
   disableDown = false,
 }: SectionOrderButtonsProps) {
@@ -57,18 +59,20 @@ export function SectionOrderButtons({
           className="btn-secondary"
           onClick={() => move("up")}
           disabled={disableUp || loadingDirection !== null}
-          title="Sposta in alto"
+          aria-label={`Sposta in alto la sezione ${subprojectName}`}
+          title={`Sposta in alto la sezione ${subprojectName}`}
         >
-          ?
+          {"\u2191"}
         </button>
         <button
           type="button"
           className="btn-secondary"
           onClick={() => move("down")}
           disabled={disableDown || loadingDirection !== null}
-          title="Sposta in basso"
+          aria-label={`Sposta in basso la sezione ${subprojectName}`}
+          title={`Sposta in basso la sezione ${subprojectName}`}
         >
-          ?
+          {"\u2193"}
         </button>
       </div>
       {error && <p className="text-sm text-red-700">{error}</p>}
