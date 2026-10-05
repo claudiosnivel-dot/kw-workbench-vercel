@@ -58,7 +58,7 @@ sua conferma vanno registrate in `docs/blueprint/SESSION-STATE.md`.
   repo e fuori da Supabase**, in una cartella con accesso ristretto al solo proprietario (per esempio un
   disco cifrato o uno storage privato), mai come artifact della CI.
 
-### Frequenza e conservazione (PROPOSTA, da confermare dall'utente, D-31)
+### Frequenza e conservazione (DECISE dall'utente il 2026-10-05, D-31)
 
 - Backup logico **giornaliero** di produzione e, in più, uno subito prima di ogni deploy che contiene una
   migrazione.

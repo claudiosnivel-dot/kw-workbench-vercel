@@ -70,9 +70,10 @@ Configurazione decisa dall'utente il 2026-10-05, da attivare via API GitHub:
 
 **Stato al 2026-10-05: non attivabile.** Il repository è privato e l'account GitHub è sul piano Free:
 `gh api repos/claudiosnivel-dot/kw-workbench-vercel/branches/master/protection` e l'API dei ruleset
-rispondono `403 Upgrade to GitHub Pro or make this repository public to enable this feature`. Serve una
-decisione dell'utente (GitHub Pro, repository pubblico oppure rinuncia alla protezione). Comando da usare
-quando la funzione è disponibile, poi da rileggere con `gh api …/branches/master/protection`:
+rispondono `403 Upgrade to GitHub Pro or make this repository public to enable this feature`.
+**Decisione dell'utente (2026-10-05): rinuncia per ora.** Il merge su `master` resta legato a checkpoint
+e CI verdi (D-04); niente GitHub Pro né repository pubblico. Comando da usare se la funzione diventa
+disponibile, poi da rileggere con `gh api …/branches/master/protection`:
 
 ```bash
 gh api -X PUT repos/claudiosnivel-dot/kw-workbench-vercel/branches/master/protection --input - <<'JSON'
