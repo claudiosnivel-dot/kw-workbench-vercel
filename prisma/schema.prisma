@@ -61,6 +61,13 @@ enum MetricsStatus {
   failed
 }
 
+// Sorgente del punteggio (T-707, D-18): metrics è dichiarato per primo, così l'ordinamento crescente
+// mette prima le keyword con metriche reali.
+enum ScoreSource {
+  metrics
+  heuristic
+}
+
 enum JobType {
   extraction
 }
@@ -249,6 +256,7 @@ model KeywordCandidate {
   low_top_of_page_bid_micros  BigInt?
   high_top_of_page_bid_micros BigInt?
   score                       Float?
+  score_source                ScoreSource     @default(heuristic)
   metrics_updated_at          DateTime?
   created_at                  DateTime        @default(now())
   updated_at                  DateTime        @updatedAt

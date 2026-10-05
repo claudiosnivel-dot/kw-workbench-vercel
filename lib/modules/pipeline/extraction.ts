@@ -1,5 +1,12 @@
 import { MetricsProvider, Prisma } from "@/lib/generated/prisma/client";
-import type { BrandStatus, KeywordType, MetricsStatus, ReviewStatus, SearchIntent } from "@/lib/generated/prisma/enums";
+import type {
+  BrandStatus,
+  KeywordType,
+  MetricsStatus,
+  ReviewStatus,
+  ScoreSource,
+  SearchIntent,
+} from "@/lib/generated/prisma/enums";
 import { getIntEnv } from "@/lib/env";
 import { evaluateBrandStatus, prepareBlacklist } from "@/lib/modules/brand-filter";
 import { classifyKeyword } from "@/lib/modules/classification";
@@ -84,6 +91,7 @@ type CandidateRow = {
   low_top_of_page_bid_micros: bigint | null;
   high_top_of_page_bid_micros: bigint | null;
   score: number;
+  score_source: ScoreSource;
   metrics_updated_at: Date | null;
 };
 
@@ -107,7 +115,8 @@ function candidateValues(projectId: string, subprojectId: string, row: Candidate
     ${row.metrics_status}::"MetricsStatus", ${row.metrics_provider}::"MetricsProvider",
     ${row.avg_monthly_searches}::integer, ${row.competition}::double precision,
     ${row.low_top_of_page_bid_micros}::bigint, ${row.high_top_of_page_bid_micros}::bigint,
-    ${row.score}::double precision, ${row.metrics_updated_at}::timestamp(3), ${now}::timestamp(3), ${now}::timestamp(3)
+    ${row.score}::double precision, ${row.score_source}::"ScoreSource", ${row.metrics_updated_at}::timestamp(3),
+    ${now}::timestamp(3), ${now}::timestamp(3)
   )`;
 }
 
@@ -133,7 +142,7 @@ async function storeCandidates(
         "source_query", "brand_status", "brand_reason", "review_status", "selected_for_export", "keyword_type",
         "search_intent", "is_question", "is_local_intent", "is_tool_intent", "is_commercial_intent",
         "metrics_status", "metrics_provider", "avg_monthly_searches", "competition", "low_top_of_page_bid_micros",
-        "high_top_of_page_bid_micros", "score", "metrics_updated_at", "created_at", "updated_at"
+        "high_top_of_page_bid_micros", "score", "score_source", "metrics_updated_at", "created_at", "updated_at"
       )
       VALUES ${Prisma.join(part.map((row) => candidateValues(projectId, subprojectId, row, now)))}
       ON CONFLICT ("subproject_id", "canonical_keyword") DO UPDATE SET
@@ -156,6 +165,7 @@ async function storeCandidates(
         "low_top_of_page_bid_micros" = EXCLUDED."low_top_of_page_bid_micros",
         "high_top_of_page_bid_micros" = EXCLUDED."high_top_of_page_bid_micros",
         "score" = EXCLUDED."score",
+        "score_source" = EXCLUDED."score_source",
         "metrics_updated_at" = EXCLUDED."metrics_updated_at",
         "updated_at" = EXCLUDED."updated_at"
     `;
@@ -319,7 +329,8 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
       continue;
     }
 
-    const score = scoreKeyword({
+    const { score, score_source } = scoreKeyword({
+      raw_keyword: candidate.keyword,
       keyword: candidate.normalizedKeyword,
       brand_status: brand.brand_status,
       search_intent: classification.search_intent,
@@ -354,6 +365,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
       low_top_of_page_bid_micros: metric.low_top_of_page_bid_micros ?? null,
       high_top_of_page_bid_micros: metric.high_top_of_page_bid_micros ?? null,
       score,
+      score_source,
       metrics_updated_at: metric.metrics_status === "missing" ? null : now,
     });
   }

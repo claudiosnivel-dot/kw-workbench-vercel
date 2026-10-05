@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
+import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -64,7 +65,7 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
     prisma.keywordCandidate.count({ where }),
     prisma.keywordCandidate.findMany({
       where,
-      orderBy: [{ score: "desc" }, { keyword: "asc" }],
+      orderBy: RESULTS_ORDER_BY,
       skip: (page - 1) * pageSize,
       take: pageSize,
       select: {
@@ -93,6 +94,7 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
         low_top_of_page_bid_micros: true,
         high_top_of_page_bid_micros: true,
         score: true,
+        score_source: true,
         metrics_updated_at: true,
         created_at: true,
         updated_at: true,

@@ -31,6 +31,8 @@ const EXPORT_ROW_KEYS = [
   "low_top_of_page_bid_micros",
   "high_top_of_page_bid_micros",
   "score",
+  // impacted-by: T-707 (sorgente del punteggio dopo score)
+  "score_source",
 ];
 
 const FORMULA_KEYWORD = "=SUM(A1)";

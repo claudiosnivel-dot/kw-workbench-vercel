@@ -7,6 +7,7 @@ import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { isClassificationSupported } from "@/lib/modules/classification";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
+import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -156,7 +157,7 @@ export default async function ResultsPage({
 
   const rows = await prisma.keywordCandidate.findMany({
     where,
-    orderBy: [{ score: "desc" }, { keyword: "asc" }],
+    orderBy: RESULTS_ORDER_BY,
     skip: (page - 1) * pageSize,
     take: pageSize,
     select: {
