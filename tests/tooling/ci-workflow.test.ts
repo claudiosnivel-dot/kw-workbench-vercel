@@ -72,6 +72,17 @@ describe("CI GitHub Actions", () => {
     }
   });
 
+  // Fuori dal blueprint (decisione dell'utente del 2026-10-05): niente CI per i commit di sola documentazione,
+  // come l'Ignored Build Step di Vercel (T-605); docs/ENVIRONMENTS.md la fa girare perché env-check.test.ts lo legge.
+  it("non parte quando cambiano solo file sotto docs/, tranne ENVIRONMENTS.md", () => {
+    for (const event of ["push", "pull_request"]) {
+      expect(workflow.on[event]).toEqual({
+        branches: ["master"],
+        paths: ["**", "!docs/**", "docs/ENVIRONMENTS.md"],
+      });
+    }
+  });
+
   // covers: AC-110-4
   it("ha permessi di sola lettura e azioni fissate per SHA", () => {
     expect(workflow.permissions).toEqual({ contents: "read" });
