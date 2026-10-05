@@ -184,7 +184,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     });
 
     const classification = effective.auto_classification
-      ? classifyKeyword(candidate.keyword)
+      ? classifyKeyword(candidate.keyword, effective.language_code)
       : {
           keyword_type: "generic" as const,
           search_intent: "mixed" as const,

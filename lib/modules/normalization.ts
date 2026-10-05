@@ -60,6 +60,16 @@ export function canonicalizeKeyword(input: string, languageCode: string): string
   return languageCode === "en" ? canonical.replace(ENGLISH_ARTICLE, "") : canonical;
 }
 
+/** true se sequence compare come sottosequenza contigua di tokens (parole intere). */
+export function containsTokenSequence(tokens: string[], sequence: string[]): boolean {
+  for (let start = 0; start + sequence.length <= tokens.length; start += 1) {
+    if (sequence.every((token, offset) => tokens[start + offset] === token)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function keywordCleanlinessScore(keyword: string): number {
   const length = keyword.length;
   const hasRepeatingSymbols = /(.)\1{3,}/.test(keyword);

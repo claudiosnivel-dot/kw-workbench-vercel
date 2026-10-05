@@ -1,5 +1,5 @@
 import { BrandStatus } from "@/lib/generated/prisma/enums";
-import { canonicalizeKeyword } from "@/lib/modules/normalization";
+import { canonicalizeKeyword, containsTokenSequence } from "@/lib/modules/normalization";
 
 /*
  * Filtro brand (T-703): keyword e brand si confrontano come sequenze di parole intere sulla forma
@@ -24,15 +24,6 @@ function tokenize(input: string, languageCode: string): string[] {
   return canonicalizeKeyword(input, languageCode).split(/[\s-]+/).filter(Boolean);
 }
 
-function containsSequence(tokens: string[], sequence: string[]): boolean {
-  for (let start = 0; start + sequence.length <= tokens.length; start += 1) {
-    if (sequence.every((token, offset) => tokens[start + offset] === token)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 /** Converte una volta per run ogni brand in sequenza di token; brand vuoti ignorati. */
 export function prepareBlacklist(brands: string[], languageCode: string): PreparedBrand[] {
   return brands
@@ -49,7 +40,7 @@ export function evaluateBrandStatus(params: {
   const tokens = tokenize(params.keyword, params.languageCode);
 
   for (const entry of params.blacklist) {
-    if (containsSequence(tokens, entry.tokens)) {
+    if (containsTokenSequence(tokens, entry.tokens)) {
       return {
         brand_status: params.excludeBrands ? "excluded" : "review",
         brand_reason: `Matched blacklist brand: ${entry.brand}`,

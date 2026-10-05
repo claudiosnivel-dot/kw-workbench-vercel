@@ -5,6 +5,7 @@ import { PlannerDisabledNotice } from "@/components/planner-disabled-notice";
 import { ResultsTable } from "@/components/results-table";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
+import { isClassificationSupported } from "@/lib/modules/classification";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -96,6 +97,7 @@ export default async function ResultsPage({
             id: true,
             name: true,
             metrics_provider_override: true,
+            language_code_override: true,
           },
         },
       },
@@ -122,10 +124,17 @@ export default async function ResultsPage({
     notFound();
   }
 
+  const shownSections = selectedSubproject ? [selectedSubproject] : project.subprojects;
+
   // Avviso di T-304 se una delle sezioni mostrate usa il provider Keyword Planner spento.
-  const plannerDisabled = (selectedSubproject ? [selectedSubproject] : project.subprojects).some(
+  const plannerDisabled = shownSections.some(
     (section) => (section.metrics_provider_override ?? project.metrics_provider) === "GOOGLE_KEYWORD_PLANNER"
   );
+
+  // Nota di T-704 per ogni lingua effettiva delle sezioni mostrate senza lessico di classificazione.
+  const unclassifiedLanguages = Array.from(
+    new Set(shownSections.map((section) => section.language_code_override ?? project.language_code))
+  ).filter((languageCode) => !isClassificationSupported(languageCode));
 
   const filters = parseResultsFilters(resolvedSearchParams);
   const where = buildResultsWhere(project.id, filters, selectedSubproject?.id ?? null);
@@ -226,6 +235,11 @@ export default async function ResultsPage({
         </div>
 
         {plannerDisabled && <PlannerDisabledNotice />}
+        {unclassifiedLanguages.map((languageCode) => (
+          <p key={languageCode} className="text-sm text-slate-600">
+            Classificazione automatica non disponibile per la lingua {languageCode}
+          </p>
+        ))}
 
         <p className="text-sm text-slate-600">
           Mostrate {filteredCount} keyword su {scopeTotalCount}
