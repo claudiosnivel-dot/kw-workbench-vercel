@@ -178,7 +178,7 @@ export function serializeCsv(rows: ExportRow[], options: { dialect: CsvDialect }
   return Buffer.from(text, "utf8");
 }
 
-function buildScopeWhere(
+export function buildExportWhere(
   projectId: string,
   scope: ExportScope,
   filters: ResultsFilters,
@@ -243,22 +243,6 @@ export async function* iterateExportRows(
     }
     cursor = batch[batch.length - 1].id;
   }
-}
-
-/** Tutte le righe di uno scope in memoria: la usa ancora l'export Google Sheets. */
-export async function getExportRows(params: {
-  projectId: string;
-  subprojectId?: string | null;
-  scope: ExportScope;
-  filters: ResultsFilters;
-}): Promise<ExportRow[]> {
-  const rows: ExportRow[] = [];
-  for await (const row of iterateExportRows(
-    buildScopeWhere(params.projectId, params.scope, params.filters, params.subprojectId)
-  )) {
-    rows.push(row);
-  }
-  return rows;
 }
 
 type ExportParams = {
@@ -378,7 +362,7 @@ function xlsxStream(rows: AsyncIterable<ExportRow>, onError: (error: unknown) =>
  * con 200 apparentemente completo; il dettaglio finisce solo nel log.
  */
 export function streamExport(params: ExportParams): ReadableStream<Uint8Array> {
-  const rows = iterateExportRows(buildScopeWhere(params.projectId, params.scope, params.filters, params.subprojectId));
+  const rows = iterateExportRows(buildExportWhere(params.projectId, params.scope, params.filters, params.subprojectId));
   const onError = (error: unknown) =>
     logger.error("export_stream_failed", {
       projectId: params.projectId,
