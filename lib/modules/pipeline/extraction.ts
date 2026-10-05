@@ -23,6 +23,8 @@ type ExtractionSummary = {
   storedCandidates: number;
   partial?: boolean;
   failedQueries?: number;
+  truncated?: boolean;
+  skippedQueries?: number;
   metricsNotice?: "PROVIDER_DISABLED";
 };
 
@@ -65,7 +67,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
   const subproject = await prisma.subproject.findUnique({
     where: { id: subprojectId },
     include: {
-      seeds: true,
+      seeds: { orderBy: [{ created_at: "asc" }, { id: "asc" }] },
       project: true,
     },
   });
@@ -93,16 +95,15 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     orderBy: [{ project_id: "desc" }, { pattern: "asc" }],
   });
 
-  const queries = buildExpansionQueries({
+  const expansion = buildExpansionQueries({
     seeds,
     expandAlpha: effective.expand_alpha,
     expandNumeric: effective.expand_numeric,
     expandPatterns: effective.expand_patterns,
     patterns: patternRows.map((row) => row.pattern),
+    limit: getIntEnv("MAX_EXPANSION_QUERIES"),
   });
-
-  const queryLimit = getIntEnv("MAX_EXPANSION_QUERIES");
-  const selectedQueries = queries.slice(0, queryLimit);
+  const selectedQueries = expansion.queries;
 
   const autocomplete = createAutocompleteProvider(effective.autocomplete_provider);
   const rawSuggestions: RawKeywordCandidate[] = seeds.map((seed) => ({
@@ -268,6 +269,8 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     storedCandidates: preparedRows.length,
     partial: failedQueries > 0,
     failedQueries,
+    truncated: expansion.truncated,
+    skippedQueries: expansion.skippedQueries,
     ...(metricsProvider.disabledReason ? { metricsNotice: metricsProvider.disabledReason } : {}),
   };
 }
