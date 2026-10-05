@@ -59,6 +59,34 @@ export type ExportRow = {
   score_source: string;
 };
 
+/** Colonne dell'export nell'ordine di ExportRow: il Record impone tutte e sole le chiavi del tipo. */
+const EXPORT_COLUMN_SET: Record<keyof ExportRow, true> = {
+  subproject_name: true,
+  keyword: true,
+  normalized_keyword: true,
+  canonical_keyword: true,
+  source: true,
+  source_query: true,
+  brand_status: true,
+  review_status: true,
+  selected_for_export: true,
+  keyword_type: true,
+  search_intent: true,
+  is_question: true,
+  is_local_intent: true,
+  is_tool_intent: true,
+  is_commercial_intent: true,
+  metrics_status: true,
+  metrics_provider: true,
+  avg_monthly_searches: true,
+  competition: true,
+  low_top_of_page_bid_micros: true,
+  high_top_of_page_bid_micros: true,
+  score: true,
+  score_source: true,
+};
+const EXPORT_COLUMNS = Object.keys(EXPORT_COLUMN_SET) as (keyof ExportRow)[];
+
 function serialize(rows: ExportSourceRow[]): ExportRow[] {
   return rows.map((row) => ({
     subproject_name: row.subproject_name,
@@ -87,24 +115,62 @@ function serialize(rows: ExportSourceRow[]): ExportRow[] {
   }));
 }
 
-function rowsToCsv(rows: ExportRow[]): string {
-  if (rows.length === 0) {
-    return "";
+/**
+ * Dialetti CSV (T-804, D-23). excel-it (predefinito) si apre in Excel italiano: BOM UTF-8, separatore
+ * ';' e decimali con la virgola. rfc4180: nessun BOM, ',' e decimali con il punto. Entrambi chiudono
+ * ogni riga con CRLF e mettono ogni valore tra doppi apici, raddoppiando gli apici interni.
+ */
+export type CsvDialect = "excel-it" | "rfc4180";
+
+const CSV_DIALECTS: Record<CsvDialect, { bom: boolean; separator: string; decimal: string }> = {
+  "excel-it": { bom: true, separator: ";", decimal: "," },
+  rfc4180: { bom: false, separator: ",", decimal: "." },
+};
+
+export const CSV_DIALECT_DEFAULT: CsvDialect = "excel-it";
+
+export function isCsvDialect(value: string): value is CsvDialect {
+  return Object.hasOwn(CSV_DIALECTS, value);
+}
+
+const UTF8_BOM = "﻿";
+const CSV_EOL = "\r\n";
+
+// CWE-1236: un testo che inizia con uno di questi caratteri diventerebbe una formula nel foglio di calcolo.
+const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
+
+function csvCell(value: unknown, dialect: CsvDialect): string {
+  let text: string;
+  if (value == null) {
+    text = "";
+  } else if (typeof value === "number") {
+    text = String(value).replace(".", CSV_DIALECTS[dialect].decimal);
+  } else if (typeof value === "boolean") {
+    text = String(value);
+  } else {
+    text = String(value);
+    if (FORMULA_TRIGGER.test(text)) {
+      text = `'${text}`;
+    }
   }
 
-  const headers = Object.keys(rows[0]);
-  const lines = [headers.join(",")];
+  return `"${text.replace(/"/g, '""')}"`;
+}
 
-  for (const row of rows) {
-    const values = headers.map((header) => {
-      const value = (row as Record<string, unknown>)[header];
-      const escaped = String(value ?? "").replace(/"/g, '""');
-      return `"${escaped}"`;
-    });
-    lines.push(values.join(","));
-  }
+/** Inizio del file: BOM (solo excel-it) e riga di intestazione con le colonne di ExportRow. */
+function csvHead(dialect: CsvDialect): string {
+  const { bom, separator } = CSV_DIALECTS[dialect];
+  return `${bom ? UTF8_BOM : ""}${EXPORT_COLUMNS.join(separator)}${CSV_EOL}`;
+}
 
-  return lines.join("\n");
+function csvLine(row: ExportRow, dialect: CsvDialect): string {
+  const { separator } = CSV_DIALECTS[dialect];
+  return `${EXPORT_COLUMNS.map((column) => csvCell(row[column], dialect)).join(separator)}${CSV_EOL}`;
+}
+
+export function serializeCsv(rows: ExportRow[], options: { dialect: CsvDialect }): Buffer<ArrayBuffer> {
+  const text = csvHead(options.dialect) + rows.map((row) => csvLine(row, options.dialect)).join("");
+  return Buffer.from(text, "utf8");
 }
 
 /**
@@ -218,6 +284,7 @@ export async function generateExport(params: {
   format: ExportFormat;
   scope: ExportScope;
   filters: ResultsFilters;
+  csvDialect?: CsvDialect;
 }) {
   const payload = await getExportRows({
     projectId: params.projectId,
@@ -242,7 +309,7 @@ export async function generateExport(params: {
     return {
       contentType: "text/csv; charset=utf-8",
       filename: `${filenameBase}.csv`,
-      buffer: Buffer.from(rowsToCsv(payload), "utf8"),
+      buffer: serializeCsv(payload, { dialect: params.csvDialect ?? CSV_DIALECT_DEFAULT }),
     };
   }
 

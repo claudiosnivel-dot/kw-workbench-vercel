@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
-import { ExportFormat, ExportScope, generateExport } from "@/lib/modules/export";
+import { CSV_DIALECT_DEFAULT, ExportFormat, ExportScope, generateExport, isCsvDialect } from "@/lib/modules/export";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -21,6 +21,7 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   const { id } = await context.params;
   const format = (request.nextUrl.searchParams.get("format") ?? "csv") as ExportFormat;
   const scope = (request.nextUrl.searchParams.get("scope") ?? "non-excluded") as ExportScope;
+  const csvDialect = request.nextUrl.searchParams.get("csvDialect") ?? CSV_DIALECT_DEFAULT;
   const rawSubprojectId = request.nextUrl.searchParams.get("subprojectId");
   const subprojectId = rawSubprojectId ? rawSubprojectId.trim() : "";
 
@@ -30,6 +31,10 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
 
   if (!VALID_SCOPES.has(scope)) {
     return NextResponse.json({ error: "Scope non valido" }, { status: 400 });
+  }
+
+  if (!isCsvDialect(csvDialect)) {
+    return NextResponse.json({ error: "Dialetto CSV non valido: usa excel-it o rfc4180" }, { status: 400 });
   }
 
   const project = await prisma.project.findFirst({
@@ -69,6 +74,7 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
     format,
     scope,
     filters,
+    csvDialect,
   });
 
   await markOnboardingExportCompleted(user.id);
