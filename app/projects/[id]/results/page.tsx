@@ -277,6 +277,7 @@ export default async function ResultsPage({
 
       <section className="card space-y-3">
         <h2 className="text-lg font-semibold">Export</h2>
+        <p className="text-sm text-slate-600">Gli export usano la sezione e i filtri della vista corrente</p>
         <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap">
           <GoogleSheetsExportButton
             projectId={project.id}

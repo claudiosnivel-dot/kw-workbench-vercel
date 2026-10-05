@@ -34,7 +34,7 @@ const EXPECTED = {
   approved: 4, // approved e non excluded
   selected: 6, // selected_for_export
   review: 5, // review_status pending
-  "non-excluded": 10, // brand_status diverso da excluded, rifiutate comprese
+  "non-excluded": 9, // brand_status diverso da excluded e review_status diverso da rejected (impacted-by: T-807, prima 10)
   filtered: 6, // searchIntent=commercial
 } as const;
 
@@ -203,8 +203,8 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
       expect(response.status).toBe(200);
       expect(rows).toHaveLength(EXPECTED[scope]);
       if (scope === "non-excluded") {
-        // impacted-by: T-807
-        expect(rows.find((row) => row.keyword === REJECTED_ALLOWED_KEYWORD)?.review_status).toBe("rejected");
+        // impacted-by: T-807 (la rifiutata non è più esportata da non-excluded)
+        expect(rows.find((row) => row.keyword === REJECTED_ALLOWED_KEYWORD)).toBeUndefined();
       }
     }
   });

@@ -1,7 +1,7 @@
 import { PassThrough, Readable } from "node:stream";
 import ExcelJS from "exceljs";
 import type { Prisma } from "@/lib/generated/prisma/client";
-import { buildResultsWhere, type ResultsFilters } from "@/lib/modules/results-filters";
+import { buildResultsClauses, type ResultsFilters } from "@/lib/modules/results-filters";
 import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
@@ -178,39 +178,29 @@ export function serializeCsv(rows: ExportRow[], options: { dialect: CsvDialect }
   return Buffer.from(text, "utf8");
 }
 
+/**
+ * Regola di revisione di ogni scope (T-807, D-23). Rifiutate escluse da tutti gli scope tranne filtered,
+ * che applica solo i filtri della vista.
+ */
+const SCOPE_CLAUSES: Record<ExportScope, Prisma.KeywordCandidateWhereInput[]> = {
+  approved: [{ review_status: "approved" }, { brand_status: { not: "excluded" } }],
+  selected: [{ selected_for_export: true }, { review_status: { not: "rejected" } }],
+  review: [{ review_status: "pending" }],
+  "non-excluded": [{ brand_status: { not: "excluded" } }, { review_status: { not: "rejected" } }],
+  filtered: [],
+};
+
+/**
+ * Unica fonte del where di export (file e Google Sheets): la regola dello scope in AND con la vista
+ * corrente, cioè progetto verificato, sezione già verificata dalla route e filtri da parseResultsFilters.
+ */
 export function buildExportWhere(
   projectId: string,
   scope: ExportScope,
   filters: ResultsFilters,
   subprojectId?: string | null
 ): Prisma.KeywordCandidateWhereInput {
-  if (scope === "filtered") {
-    return buildResultsWhere(projectId, filters, subprojectId);
-  }
-
-  const andFilters: Prisma.KeywordCandidateWhereInput[] = [{ project_id: projectId }];
-
-  if (subprojectId) {
-    andFilters.push({ subproject_id: subprojectId });
-  }
-
-  if (scope === "approved") {
-    andFilters.push({ review_status: "approved" });
-  }
-
-  if (scope === "selected") {
-    andFilters.push({ selected_for_export: true });
-  }
-
-  if (scope === "review") {
-    andFilters.push({ review_status: "pending" });
-  }
-
-  if (scope === "non-excluded" || scope === "approved") {
-    andFilters.push({ brand_status: { not: "excluded" } });
-  }
-
-  return { AND: andFilters };
+  return { AND: [...buildResultsClauses(projectId, filters, subprojectId), ...SCOPE_CLAUSES[scope]] };
 }
 
 /** Righe lette da ogni findMany dell'export (T-805): in memoria resta un blocco, non l'intero set. */
