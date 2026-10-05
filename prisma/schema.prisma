@@ -188,6 +188,7 @@ model Project {
   jobs                  Job[]
   brand_blacklist       BrandBlacklist[]
   expansion_patterns    ExpansionPattern[]
+  metrics_provider_requests MetricsProviderRequest[]
   onboarding_active_for_users UserOnboardingProgress[] @relation("OnboardingActiveProject")
 
   @@index([owner_user_id])
@@ -384,6 +385,30 @@ model UserOnboardingProgress {
   @@index([active_project_id])
   @@index([active_subproject_id])
   @@map("user_onboarding_progress")
+}
+
+// Stato di una richiesta al fornitore di metriche (T-903): pending = prenotata, costo stimato.
+enum MetricsRequestStatus {
+  pending
+  completed
+  failed
+}
+
+/// Registro delle richieste al fornitore di metriche con licenza (T-903): tetti di spesa e limitatore tra istanze.
+model MetricsProviderRequest {
+  id                 String               @id @default(cuid())
+  created_at         DateTime             @default(now())
+  provider           MetricsProvider
+  project_id         String?
+  job_id             String?
+  keyword_count      Int
+  cost_usd           Decimal?             @db.Decimal(10, 4)
+  estimated_cost_usd Decimal              @db.Decimal(10, 4)
+  status             MetricsRequestStatus @default(pending)
+  project            Project?             @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  @@index([created_at])
+  @@map("metrics_provider_requests")
 }
 
 model AppSetting {

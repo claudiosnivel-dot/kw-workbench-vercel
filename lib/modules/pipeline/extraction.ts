@@ -154,7 +154,10 @@ function chunk<T>(items: T[], size: number): T[][] {
   return output;
 }
 
-export async function runExtractionPipeline(subprojectId: string): Promise<ExtractionSummary> {
+export async function runExtractionPipeline(
+  subprojectId: string,
+  options: { jobId?: string } = {}
+): Promise<ExtractionSummary> {
   const subproject = await prisma.subproject.findUnique({
     where: { id: subprojectId },
     include: {
@@ -256,7 +259,12 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
   const metricsProvider = createMetricsProvider(effective.metrics_provider);
   const metricsOutcome = await metricsProvider.enrichKeywords(
     deduped.map((item) => ({ displayKeyword: item.keyword, canonical: item.canonicalKeyword })),
-    { languageCode: effective.language_code, countryCode: effective.country_code }
+    {
+      languageCode: effective.language_code,
+      countryCode: effective.country_code,
+      projectId: subproject.project_id,
+      jobId: options.jobId,
+    }
   );
   const metrics = metricsOutcome.metrics;
 

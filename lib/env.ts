@@ -26,6 +26,18 @@ export const INT_ENV = {
 
 type IntEnvKey = keyof typeof INT_ENV;
 
+/**
+ * Importi in USD letti dall'ambiente (T-903): decimali >= 0. I tetti valgono 0 se assenti (nessuna spesa ammessa
+ * finché l'operatore non li imposta); il costo per richiesta stimato parte dal prezzo live verificato (D-30).
+ */
+export const USD_ENV = {
+  METRICS_MONTHLY_BUDGET_USD: { def: 0 },
+  METRICS_RUN_BUDGET_USD: { def: 0 },
+  METRICS_COST_PER_REQUEST_USD: { def: 0.09 },
+} as const;
+
+type UsdEnvKey = keyof typeof USD_ENV;
+
 /** Livelli del logger (T-602), dal più al meno verboso; LOG_LEVEL fissa il minimo (default info). */
 export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
@@ -88,6 +100,9 @@ const envSchema = z.object({
   DATAFORSEO_PASSWORD: optional,
   DATAFORSEO_TIMEOUT_MS: optional,
   DATAFORSEO_MAX_ATTEMPTS: optional,
+  METRICS_MONTHLY_BUDGET_USD: optional,
+  METRICS_RUN_BUDGET_USD: optional,
+  METRICS_COST_PER_REQUEST_USD: optional,
   GOOGLE_SHEETS_OAUTH_CLIENT_ID: optional,
   GOOGLE_SHEETS_OAUTH_CLIENT_SECRET: optional,
   GOOGLE_SHEETS_OAUTH_REDIRECT_URI: optional,
@@ -174,6 +189,18 @@ export function getIntEnv(name: IntEnvKey, source: EnvSource = process.env): num
   return envInt(name, def, min, max, source);
 }
 
+/** Importo in USD da env: assente o vuoto -> default; non decimale o negativo -> errore. */
+export function getUsdEnv(name: UsdEnvKey, source: EnvSource = process.env): number {
+  const raw = present(source[name])?.trim();
+  if (raw === undefined) {
+    return USD_ENV[name].def;
+  }
+  if (!/^\d+(\.\d+)?$/.test(raw)) {
+    throw new Error(`${name} deve essere un importo decimale maggiore o uguale a 0`);
+  }
+  return Number(raw);
+}
+
 const validatedSchema = envSchema.superRefine((raw, ctx) => {
   const isProduction = raw.NODE_ENV === "production";
 
@@ -204,6 +231,14 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
   const logLevel = present(raw.LOG_LEVEL)?.trim().toLowerCase();
   if (logLevel !== undefined && !isLogLevel(logLevel)) {
     ctx.addIssue({ code: "custom", path: ["LOG_LEVEL"], message: `deve essere uno tra ${LOG_LEVELS.join(", ")}` });
+  }
+
+  for (const name of Object.keys(USD_ENV) as UsdEnvKey[]) {
+    try {
+      getUsdEnv(name, raw);
+    } catch {
+      ctx.addIssue({ code: "custom", path: [name], message: "deve essere un importo decimale maggiore o uguale a 0" });
+    }
   }
 
   for (const name of Object.keys(INT_ENV) as IntEnvKey[]) {

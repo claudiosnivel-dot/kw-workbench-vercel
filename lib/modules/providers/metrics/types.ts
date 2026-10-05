@@ -19,6 +19,9 @@ export type KeywordMetric = {
 export type MetricsContext = {
   languageCode: string;
   countryCode: string;
+  /** Progetto e job dell'estrazione, per il registro delle richieste a pagamento (T-903). */
+  projectId?: string;
+  jobId?: string;
 };
 
 /** Una keyword da arricchire: la forma di visualizzazione (con accenti) e il canonical che indicizza il risultato. */
@@ -32,7 +35,9 @@ export type MetricsNotice =
   | "PROVIDER_DISABLED"
   | "PROVIDER_NOT_CONFIGURED"
   | "LOCATION_UNSUPPORTED"
-  | "LANGUAGE_UNSUPPORTED";
+  | "LANGUAGE_UNSUPPORTED"
+  | "METRICS_BUDGET_EXCEEDED"
+  | "RUN_BUDGET_EXCEEDED";
 
 export type MetricsOutcome = {
   metrics: Map<string, KeywordMetric>;

@@ -3,6 +3,12 @@ import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import { dataForSeoSkipReason } from "@/lib/modules/providers/metrics/dataforseo-keywords";
 import { toDataForSeoLanguageCode, toDataForSeoLocationCode } from "@/lib/modules/providers/metrics/dataforseo-targets";
 import {
+  type BudgetNotice,
+  recentProviderRequestTimes,
+  reserveProviderRequest,
+  settleProviderRequest,
+} from "@/lib/modules/providers/metrics/metrics-ledger";
+import {
   buildMissingMetrics,
   KeywordMetric,
   MetricsContext,
@@ -64,16 +70,22 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Attende finché l'invio non porta oltre 12 richieste in una finestra di 60 secondi, poi lo registra. */
+/**
+ * Attende finché l'invio non porta oltre 12 richieste in una finestra di 60 secondi, poi lo registra. Conta gli
+ * invii di questa istanza e le righe del registro degli ultimi 60 secondi (tutte le istanze, T-903), e usa il
+ * conteggio più alto.
+ */
 async function acquireSlot(): Promise<void> {
   for (;;) {
     const now = Date.now();
     sentAt = sentAt.filter((time) => now - time < LIMIT_WINDOW_MS);
-    if (sentAt.length < LIMIT_REQUESTS) {
+    const shared = await recentProviderRequestTimes("DATAFORSEO", new Date(now - LIMIT_WINDOW_MS));
+    const window = shared.length > sentAt.length ? shared : sentAt;
+    if (window.length < LIMIT_REQUESTS) {
       sentAt.push(now);
       return;
     }
-    await sleep(sentAt[0] + LIMIT_WINDOW_MS - now);
+    await sleep(Math.max(1, window[window.length - LIMIT_REQUESTS] + LIMIT_WINDOW_MS - now));
   }
 }
 
@@ -133,7 +145,6 @@ async function postOnce(
   target: { location_code: number; language_code: string },
   authorization: string
 ): Promise<AttemptResult> {
-  await acquireSlot();
   let response: Response;
   try {
     response = await fetch(DATAFORSEO_SEARCH_VOLUME_URL, {
@@ -157,20 +168,40 @@ async function postOnce(
   };
 }
 
+/** Estrazione corrente: le sue richieste prenotate contano per il tetto per estrazione (T-903). */
+type RunLedger = { projectId?: string; jobId?: string; requestIds: string[] };
+
+type BatchOutcome = { attempt?: AttemptResult; attempts: number; costUsd: number; blocked?: BudgetNotice };
+
 /**
  * Invia un lotto con al massimo DATAFORSEO_MAX_ATTEMPTS tentativi: si ripete solo su 429, 5xx, timeout e codici
- * interni ripetibili, con backoff esponenziale e jitter. I log riportano status, id del task e costo, mai le
- * credenziali (CWE-532).
+ * interni ripetibili, con backoff esponenziale e jitter. Ogni tentativo passa dal limitatore e dalla prenotazione
+ * sui tetti di spesa (T-903): oltre un tetto non parte e il lotto resta senza volumi. I log riportano status, id
+ * del task e costo, mai le credenziali (CWE-532).
  */
 async function sendBatch(
   keywords: string[],
   target: { location_code: number; language_code: string },
-  authorization: string
-): Promise<{ attempt: AttemptResult; attempts: number; costUsd: number }> {
+  authorization: string,
+  run: RunLedger
+): Promise<BatchOutcome> {
   const maxAttempts = getIntEnv("DATAFORSEO_MAX_ATTEMPTS");
   let costUsd = 0;
   for (let attempts = 1; ; attempts += 1) {
+    await acquireSlot();
+    const reservation = await reserveProviderRequest({
+      provider: "DATAFORSEO",
+      projectId: run.projectId,
+      jobId: run.jobId,
+      keywordCount: keywords.length,
+      runRequestIds: run.requestIds,
+    });
+    if (!reservation.ok) {
+      return { attempts: attempts - 1, costUsd, blocked: reservation.notice };
+    }
+    run.requestIds.push(reservation.id);
     const attempt = await postOnce(keywords, target, authorization);
+    await settleProviderRequest(reservation.id, attempt.costUsd, attempt.status === STATUS_OK);
     costUsd += attempt.costUsd;
     logger.info("dataforseo_request", {
       status: attempt.status,
@@ -223,6 +254,8 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
 
     const authorization = `Basic ${Buffer.from(`${credentials.login}:${credentials.password}`).toString("base64")}`;
     const target = { location_code: locationCode, language_code: languageCode };
+    const run: RunLedger = { projectId: context.projectId, jobId: context.jobId, requestIds: [] };
+    let notice: BudgetNotice | undefined;
     let costUsd = 0;
     let requests = 0;
     let spellCorrected = 0;
@@ -232,10 +265,17 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
       const sent = await sendBatch(
         batch.map((item) => item.displayKeyword),
         target,
-        authorization
+        authorization,
+        run
       );
       requests += sent.attempts;
       costUsd += sent.costUsd;
+
+      if (!sent.attempt || sent.blocked) {
+        // Tetto di spesa raggiunto: questo lotto e i successivi restano senza volumi.
+        notice = sent.blocked;
+        break;
+      }
 
       if (sent.attempt.status !== STATUS_OK) {
         // Lotto non riuscito: nessuna metrica inventata, gli altri lotti proseguono.
@@ -265,6 +305,7 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
 
     return {
       metrics,
+      ...(notice ? { notice } : {}),
       costUsd: Math.round(costUsd * 10_000) / 10_000,
       requests,
       spellCorrected,

@@ -5,6 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DataForSeoMetricsProvider, resetDataForSeoLimiterForTests } from "@/lib/modules/providers/metrics/dataforseo";
 import type { MetricsItem } from "@/lib/modules/providers/metrics/types";
 
+// impacted-by: T-903 — registro e tetti di spesa sono nel DB: qui una prenotazione sempre accettata, senza DB.
+vi.mock("@/lib/modules/providers/metrics/metrics-ledger", () => ({
+  reserveProviderRequest: vi.fn(async () => ({ ok: true, id: "request" })),
+  settleProviderRequest: vi.fn(async () => {}),
+  recentProviderRequestTimes: vi.fn(async () => []),
+}));
+
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 12;
 

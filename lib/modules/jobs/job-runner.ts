@@ -57,7 +57,7 @@ export async function runJobById(jobId: string) {
   }
 
   try {
-    const summary = await runExtractionPipeline(job.subproject_id);
+    const summary = await runExtractionPipeline(job.subproject_id, { jobId: job.id });
     // await: un errore dell'aggiornamento finale passa dal catch e il job termina failed.
     const completed = await prisma.job.update({
       where: { id: job.id },

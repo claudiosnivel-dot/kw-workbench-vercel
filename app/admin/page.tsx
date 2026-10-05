@@ -3,12 +3,14 @@ import { AdminUsersDashboard } from "@/components/admin-users-dashboard";
 import { BrandingSettingsCard } from "@/components/branding-settings-card";
 import { GoogleAdsIntegrationCard } from "@/components/google-ads-integration-card";
 import { GoogleSheetsApiConfigCard } from "@/components/google-sheets-api-config-card";
+import { MetricsSpendCard } from "@/components/metrics-spend-card";
 import { isAdminUser } from "@/lib/auth/current-user";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import { getGoogleAdsCredentialSnapshot } from "@/lib/integrations/google-ads";
 import { getGoogleAdsApiConfigSnapshot } from "@/lib/integrations/google-ads-config";
 import { getGoogleSheetsApiConfigSnapshot } from "@/lib/integrations/google-sheets-config";
+import { getMetricsSpend } from "@/lib/modules/providers/metrics/metrics-ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -19,12 +21,13 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const [branding, keywordPlannerData, googleSheetsConfig] = await Promise.all([
+  const [branding, keywordPlannerData, googleSheetsConfig, metricsSpend] = await Promise.all([
     getBrandingSnapshot(),
     user.isRootAdmin
       ? Promise.all([getGoogleAdsCredentialSnapshot(), getGoogleAdsApiConfigSnapshot()])
       : Promise.resolve(null),
     user.isRootAdmin ? getGoogleSheetsApiConfigSnapshot() : Promise.resolve(null),
+    user.isRootAdmin ? getMetricsSpend() : Promise.resolve(null),
   ]);
 
   return (
@@ -47,6 +50,8 @@ export default async function AdminPage() {
       />
 
       {user.isRootAdmin && googleSheetsConfig && <GoogleSheetsApiConfigCard initial={googleSheetsConfig} />}
+
+      {user.isRootAdmin && metricsSpend && <MetricsSpendCard spend={metricsSpend} />}
 
       {user.isRootAdmin && keywordPlannerData && (
         <GoogleAdsIntegrationCard

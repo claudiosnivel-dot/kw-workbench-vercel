@@ -5,6 +5,13 @@ import { DataForSeoMetricsProvider } from "@/lib/modules/providers/metrics/dataf
 import { toMetricsResult, type MetricsItem } from "@/lib/modules/providers/metrics/types";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 
+// impacted-by: T-903 — registro e tetti di spesa sono nel DB: qui una prenotazione sempre accettata, senza DB.
+vi.mock("@/lib/modules/providers/metrics/metrics-ledger", () => ({
+  reserveProviderRequest: vi.fn(async () => ({ ok: true, id: "request" })),
+  settleProviderRequest: vi.fn(async () => {}),
+  recentProviderRequestTimes: vi.fn(async () => []),
+}));
+
 type TaskBody = { keywords: string[]; location_code: number; language_code: string; search_partners: boolean };
 
 const ENDPOINT = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live";

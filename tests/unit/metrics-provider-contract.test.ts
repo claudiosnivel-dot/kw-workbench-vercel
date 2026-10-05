@@ -94,7 +94,7 @@ describe("contratto MetricsProvider nella pipeline", () => {
     expect(enrichKeywords).toHaveBeenCalledTimes(1);
     const [items, context] = enrichKeywords.mock.calls[0] as unknown as [MetricsItem[], unknown];
     expect(items).toEqual([{ displayKeyword: "Caffè Espresso", canonical: "caffe espresso" }]);
-    expect(context).toEqual({ languageCode: "it", countryCode: "IT" });
+    expect(context).toMatchObject({ languageCode: "it", countryCode: "IT", projectId: "project-1" });
     expect(boundValue("MetricsPrecision")).toBe("range");
   });
 });
