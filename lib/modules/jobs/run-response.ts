@@ -2,8 +2,8 @@ import type { Job } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
 
 /**
- * Risposta delle rotte run: job failed -> 500 senza error_message grezzo, che può contenere
- * dettagli interni (la sanificazione è T-706); altrimenti 200 con il body indicato.
+ * Risposta delle rotte run: job failed -> 500 con un messaggio fisso, il codice JOB_FAILED e il jobId
+ * (il messaggio pubblico di T-706 resta in jobs.error_message); altrimenti 200 con il body indicato.
  */
 export function runJobResponse(job: Job | null, body: Record<string, unknown>): NextResponse {
   if (job?.status === "failed") {

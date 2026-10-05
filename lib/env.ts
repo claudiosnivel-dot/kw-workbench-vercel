@@ -9,6 +9,8 @@ export type EnvSource = Record<string, string | undefined>;
 export const INT_ENV = {
   APP_SESSION_MAX_AGE_SECONDS: { def: 604_800, min: 60, max: 31_536_000 },
   MAX_EXPANSION_QUERIES: { def: 250, min: 50, max: 5_000 },
+  // Timeout della transazione finale dell'estrazione (T-706): il default di Prisma (5 s) non basta su un DB remoto.
+  EXTRACTION_TX_TIMEOUT_MS: { def: 60_000, min: 5_000, max: 300_000 },
   AUTOCOMPLETE_CONCURRENCY: { def: 6, min: 1, max: 20 },
   AUTOCOMPLETE_RATE_LIMIT_MS: { def: 180, min: 50, max: 10_000 },
   AUTOCOMPLETE_CACHE_TTL_MS: { def: 300_000, min: 30_000, max: 86_400_000 },
@@ -60,6 +62,7 @@ const envSchema = z.object({
   PRISMA_CONNECTION_LIMIT: optional,
   PRISMA_POOL_TIMEOUT: optional,
   MAX_EXPANSION_QUERIES: optional,
+  EXTRACTION_TX_TIMEOUT_MS: optional,
   AUTOCOMPLETE_TIMEOUT_MS: optional,
   AUTOCOMPLETE_MAX_RETRIES: optional,
   AUTOCOMPLETE_RATE_LIMIT_MS: optional,

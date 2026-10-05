@@ -5,6 +5,7 @@ import { evaluateBrandStatus, prepareBlacklist } from "@/lib/modules/brand-filte
 import { classifyKeyword } from "@/lib/modules/classification";
 import { dedupeCandidates, RawKeywordCandidate } from "@/lib/modules/dedupe";
 import { buildExpansionQueries } from "@/lib/modules/expansion-engine";
+import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { createAutocompleteProvider } from "@/lib/modules/providers/autocomplete/factory";
 import { AutocompleteQueryFailedError } from "@/lib/modules/providers/autocomplete/types";
 import { createMetricsProvider } from "@/lib/modules/providers/metrics/factory";
@@ -16,6 +17,9 @@ import { prisma } from "@/lib/prisma";
 
 /** Quota di query di autocomplete fallite oltre la quale l'estrazione fallisce senza toccare i risultati. */
 export const AUTOCOMPLETE_FAILURE_THRESHOLD = 0.3;
+
+/** Attesa massima di una connessione per la transazione finale; il timeout arriva da EXTRACTION_TX_TIMEOUT_MS. */
+const EXTRACTION_TX_MAX_WAIT_MS = 10_000;
 
 type ExtractionSummary = {
   queries: number;
@@ -186,8 +190,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
 
   const seeds = parseSeedsFromRows(subproject.seeds);
   if (seeds.length === 0) {
-    await prisma.keywordCandidate.deleteMany({ where: { project_id: subproject.project_id, subproject_id: subproject.id } });
-    return { queries: 0, rawSuggestions: 0, dedupedCandidates: 0, storedCandidates: 0 };
+    throw new NoSeedsError(subproject.id);
   }
 
   const patternRows = await prisma.expansionPattern.findMany({
@@ -355,9 +358,12 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     });
   }
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    await storeCandidates(tx, subproject.project_id, subproject.id, preparedRows, now);
-  });
+  await prisma.$transaction(
+    async (tx: Prisma.TransactionClient) => {
+      await storeCandidates(tx, subproject.project_id, subproject.id, preparedRows, now);
+    },
+    { timeout: getIntEnv("EXTRACTION_TX_TIMEOUT_MS"), maxWait: EXTRACTION_TX_MAX_WAIT_MS }
+  );
 
   return {
     queries: selectedQueries.length,
