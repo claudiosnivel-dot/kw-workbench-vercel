@@ -37,6 +37,46 @@ type CandidateRow = Omit<KeywordCandidate, "id" | "project_id" | "subproject_id"
 
 const UPSERT_CHUNK_SIZE = 500;
 
+// SQL statico della scrittura dei risultati: nessun valore dentro questi frammenti, i dati entrano solo
+// come parametri legati (candidateValues e le interpolazioni di Prisma.sql in storeCandidates).
+const UPSERT_INSERT = Prisma.sql`
+  INSERT INTO "keyword_candidates" (
+    "id", "project_id", "subproject_id", "keyword", "normalized_keyword", "canonical_keyword", "source",
+    "source_query", "brand_status", "brand_reason", "review_status", "selected_for_export", "keyword_type",
+    "search_intent", "is_question", "is_local_intent", "is_tool_intent", "is_commercial_intent",
+    "metrics_status", "metrics_provider", "avg_monthly_searches", "competition", "low_top_of_page_bid_micros",
+    "high_top_of_page_bid_micros", "score", "score_source", "metrics_updated_at", "created_at", "updated_at"
+  )
+  VALUES`;
+
+// Colonne aggiornate per una keyword già presente: mai id, review_status, selected_for_export e created_at.
+const UPSERT_ON_CONFLICT = Prisma.sql`
+  ON CONFLICT ("subproject_id", "canonical_keyword") DO UPDATE SET
+    "keyword" = EXCLUDED."keyword",
+    "normalized_keyword" = EXCLUDED."normalized_keyword",
+    "source" = EXCLUDED."source",
+    "source_query" = EXCLUDED."source_query",
+    "brand_status" = EXCLUDED."brand_status",
+    "brand_reason" = EXCLUDED."brand_reason",
+    "keyword_type" = EXCLUDED."keyword_type",
+    "search_intent" = EXCLUDED."search_intent",
+    "is_question" = EXCLUDED."is_question",
+    "is_local_intent" = EXCLUDED."is_local_intent",
+    "is_tool_intent" = EXCLUDED."is_tool_intent",
+    "is_commercial_intent" = EXCLUDED."is_commercial_intent",
+    "metrics_status" = EXCLUDED."metrics_status",
+    "metrics_provider" = EXCLUDED."metrics_provider",
+    "avg_monthly_searches" = EXCLUDED."avg_monthly_searches",
+    "competition" = EXCLUDED."competition",
+    "low_top_of_page_bid_micros" = EXCLUDED."low_top_of_page_bid_micros",
+    "high_top_of_page_bid_micros" = EXCLUDED."high_top_of_page_bid_micros",
+    "score" = EXCLUDED."score",
+    "score_source" = EXCLUDED."score_source",
+    "metrics_updated_at" = EXCLUDED."metrics_updated_at",
+    "updated_at" = EXCLUDED."updated_at"`;
+
+const DELETE_CANDIDATES_WHERE = Prisma.sql`DELETE FROM "keyword_candidates" WHERE`;
+
 function candidateValues(projectId: string, subprojectId: string, row: CandidateRow, now: Date): Prisma.Sql {
   return Prisma.sql`(
     gen_random_uuid()::text, ${projectId}, ${subprojectId}, ${row.keyword}, ${row.normalized_keyword},
@@ -68,48 +108,14 @@ async function storeCandidates(
   now: Date
 ): Promise<void> {
   for (const part of chunk(rows, UPSERT_CHUNK_SIZE)) {
-    await tx.$executeRaw`
-      INSERT INTO "keyword_candidates" (
-        "id", "project_id", "subproject_id", "keyword", "normalized_keyword", "canonical_keyword", "source",
-        "source_query", "brand_status", "brand_reason", "review_status", "selected_for_export", "keyword_type",
-        "search_intent", "is_question", "is_local_intent", "is_tool_intent", "is_commercial_intent",
-        "metrics_status", "metrics_provider", "avg_monthly_searches", "competition", "low_top_of_page_bid_micros",
-        "high_top_of_page_bid_micros", "score", "score_source", "metrics_updated_at", "created_at", "updated_at"
-      )
-      VALUES ${Prisma.join(part.map((row) => candidateValues(projectId, subprojectId, row, now)))}
-      ON CONFLICT ("subproject_id", "canonical_keyword") DO UPDATE SET
-        "keyword" = EXCLUDED."keyword",
-        "normalized_keyword" = EXCLUDED."normalized_keyword",
-        "source" = EXCLUDED."source",
-        "source_query" = EXCLUDED."source_query",
-        "brand_status" = EXCLUDED."brand_status",
-        "brand_reason" = EXCLUDED."brand_reason",
-        "keyword_type" = EXCLUDED."keyword_type",
-        "search_intent" = EXCLUDED."search_intent",
-        "is_question" = EXCLUDED."is_question",
-        "is_local_intent" = EXCLUDED."is_local_intent",
-        "is_tool_intent" = EXCLUDED."is_tool_intent",
-        "is_commercial_intent" = EXCLUDED."is_commercial_intent",
-        "metrics_status" = EXCLUDED."metrics_status",
-        "metrics_provider" = EXCLUDED."metrics_provider",
-        "avg_monthly_searches" = EXCLUDED."avg_monthly_searches",
-        "competition" = EXCLUDED."competition",
-        "low_top_of_page_bid_micros" = EXCLUDED."low_top_of_page_bid_micros",
-        "high_top_of_page_bid_micros" = EXCLUDED."high_top_of_page_bid_micros",
-        "score" = EXCLUDED."score",
-        "score_source" = EXCLUDED."score_source",
-        "metrics_updated_at" = EXCLUDED."metrics_updated_at",
-        "updated_at" = EXCLUDED."updated_at"
-    `;
+    const values = Prisma.join(part.map((row) => candidateValues(projectId, subprojectId, row, now)));
+    await tx.$executeRaw`${UPSERT_INSERT} ${values} ${UPSERT_ON_CONFLICT}`;
   }
 
   // Un solo parametro array: un notIn di Prisma supererebbe il limite di parametri con decine di migliaia di keyword.
   const produced = rows.map((row) => row.canonical_keyword);
-  await tx.$executeRaw`
-    DELETE FROM "keyword_candidates"
-    WHERE "project_id" = ${projectId} AND "subproject_id" = ${subprojectId}
-      AND "canonical_keyword" <> ALL(${produced}::text[])
-  `;
+  await tx.$executeRaw`${DELETE_CANDIDATES_WHERE} "project_id" = ${projectId} AND "subproject_id" = ${subprojectId}
+    AND "canonical_keyword" <> ALL(${produced}::text[])`;
 }
 
 async function mapWithConcurrency<T, R>(
