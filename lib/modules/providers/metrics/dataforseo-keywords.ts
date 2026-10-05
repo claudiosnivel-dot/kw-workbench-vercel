@@ -1,0 +1,96 @@
+// Regole di DataForSEO sulle keyword dell'endpoint Google Ads search volume (T-902), applicate prima della
+// chiamata: una keyword non ammessa può far fallire l'intero lotto.
+//
+// Fonti (consultate il 2026-10-06):
+// - https://docs.dataforseo.com/v3/keywords_data/google_ads/search_volume/live/ : al massimo 80 caratteri e
+//   10 parole per keyword;
+// - https://dataforseo.com/help-center/using-symbols-in-keywords-when-setting-a-google-ads-task (aggiornato il
+//   18.02.2025): simboli non validi (, ! @ % ^ () = {} ; ~ ` <> ? \ | ―), caratteri Unicode di 4 byte non validi
+//   e la regex dei simboli UTF-8 non supportati, riportata qui sotto intera (399 intervalli, \x{...} scritto
+//   \u{...}).
+
+export const KEYWORD_MAX_CHARACTERS = 80;
+export const KEYWORD_MAX_WORDS = 10;
+
+const UNSUPPORTED_SYMBOL_RANGES = [
+  "\\u{0000}-\\u{001F}", "\\u{0021}", "\\u{0025}", "\\u{0028}-\\u{002A}", "\\u{002C}", "\\u{003B}-\\u{0040}",
+  "\\u{005C}", "\\u{005E}", "\\u{0060}", "\\u{007B}-\\u{009F}", "\\u{00A1}-\\u{00A2}", "\\u{00A4}-\\u{00A9}",
+  "\\u{00AB}-\\u{00B4}", "\\u{00B6}", "\\u{00B8}-\\u{00B9}", "\\u{00BB}-\\u{00BF}", "\\u{00D7}", "\\u{00F7}",
+  "\\u{0250}-\\u{0258}", "\\u{025A}-\\u{02AF}", "\\u{02C2}-\\u{02C5}", "\\u{02D2}-\\u{02DF}", "\\u{02E5}-\\u{02EB}",
+  "\\u{02ED}", "\\u{02EF}-\\u{02FF}", "\\u{0375}", "\\u{037E}", "\\u{0384}-\\u{0385}", "\\u{0387}", "\\u{03F6}",
+  "\\u{0482}", "\\u{0488}-\\u{0489}", "\\u{055A}-\\u{0560}", "\\u{0588}-\\u{058F}", "\\u{05BE}", "\\u{05C0}",
+  "\\u{05C3}", "\\u{05C6}", "\\u{05EF}", "\\u{05F3}-\\u{060F}", "\\u{061B}-\\u{061F}", "\\u{066A}-\\u{066D}",
+  "\\u{06D4}", "\\u{06DD}-\\u{06DE}", "\\u{06E9}", "\\u{06FD}-\\u{06FE}", "\\u{0700}-\\u{070F}",
+  "\\u{07F6}-\\u{07F9}", "\\u{07FD}-\\u{07FF}", "\\u{0830}-\\u{083E}", "\\u{085E}", "\\u{0870}-\\u{089F}",
+  "\\u{08B5}", "\\u{08BE}-\\u{08D3}", "\\u{08E2}", "\\u{0964}-\\u{0965}", "\\u{0970}", "\\u{09F2}-\\u{09FB}",
+  "\\u{09FD}-\\u{09FE}", "\\u{0A76}", "\\u{0AF0}-\\u{0AF1}", "\\u{0B55}", "\\u{0B70}", "\\u{0B72}-\\u{0B77}",
+  "\\u{0BF0}-\\u{0BFA}", "\\u{0C04}", "\\u{0C3C}", "\\u{0C5D}", "\\u{0C77}-\\u{0C7F}", "\\u{0C84}", "\\u{0CDD}",
+  "\\u{0D04}", "\\u{0D4F}", "\\u{0D58}-\\u{0D5E}", "\\u{0D70}-\\u{0D79}", "\\u{0D81}", "\\u{0DF4}", "\\u{0E3F}",
+  "\\u{0E4F}", "\\u{0E5A}-\\u{0E5B}", "\\u{0E86}", "\\u{0E89}", "\\u{0E8C}", "\\u{0E8E}-\\u{0E93}", "\\u{0E98}",
+  "\\u{0EA0}", "\\u{0EA8}-\\u{0EA9}", "\\u{0EAC}", "\\u{0EBA}", "\\u{0F01}-\\u{0F17}", "\\u{0F1A}-\\u{0F1F}",
+  "\\u{0F2A}-\\u{0F34}", "\\u{0F36}", "\\u{0F38}", "\\u{0F3A}-\\u{0F3D}", "\\u{0F85}", "\\u{0FBE}-\\u{0FC5}",
+  "\\u{0FC7}-\\u{0FDA}", "\\u{104A}-\\u{104F}", "\\u{109E}-\\u{109F}", "\\u{10FB}", "\\u{1360}-\\u{137C}",
+  "\\u{1390}-\\u{1399}", "\\u{1400}", "\\u{166D}-\\u{166E}", "\\u{169B}-\\u{169C}", "\\u{16EB}-\\u{16ED}",
+  "\\u{170D}", "\\u{1715}-\\u{171F}", "\\u{1735}-\\u{1736}", "\\u{17D4}-\\u{17D6}", "\\u{17D8}-\\u{17DB}",
+  "\\u{17F0}-\\u{180A}", "\\u{180E}-\\u{180F}", "\\u{1878}", "\\u{1940}-\\u{1945}", "\\u{19DA}-\\u{19FF}",
+  "\\u{1A1E}-\\u{1A1F}", "\\u{1AA0}-\\u{1AA6}", "\\u{1AA8}-\\u{1AAD}", "\\u{1ABE}-\\u{1ACE}", "\\u{1B4C}",
+  "\\u{1B5A}-\\u{1B6A}", "\\u{1B74}-\\u{1B7E}", "\\u{1BFC}-\\u{1BFF}", "\\u{1C3B}-\\u{1C3F}", "\\u{1C7E}-\\u{1C7F}",
+  "\\u{1C90}-\\u{1CC7}", "\\u{1CD3}", "\\u{1CFA}", "\\u{1DFA}", "\\u{1FBD}", "\\u{1FBF}-\\u{1FC1}",
+  "\\u{1FCD}-\\u{1FCF}", "\\u{1FDD}-\\u{1FDF}", "\\u{1FED}-\\u{1FEF}", "\\u{1FFD}-\\u{1FFE}", "\\u{200B}-\\u{2027}",
+  "\\u{202A}-\\u{202E}", "\\u{2030}-\\u{203E}", "\\u{2041}-\\u{2053}", "\\u{2055}-\\u{205E}", "\\u{2060}-\\u{2070}",
+  "\\u{2074}-\\u{207E}", "\\u{2080}-\\u{208E}", "\\u{20A0}-\\u{20AB}", "\\u{20AD}-\\u{20C0}", "\\u{20DD}-\\u{20E0}",
+  "\\u{20E2}-\\u{20E4}", "\\u{2100}-\\u{2101}", "\\u{2103}-\\u{2106}", "\\u{2108}-\\u{2109}", "\\u{2114}",
+  "\\u{2116}-\\u{2118}", "\\u{211E}-\\u{2123}", "\\u{2125}", "\\u{2127}", "\\u{2129}", "\\u{212E}",
+  "\\u{213A}-\\u{213B}", "\\u{2140}-\\u{2144}", "\\u{214A}-\\u{214D}", "\\u{214F}-\\u{2169}", "\\u{2170}-\\u{2179}",
+  "\\u{2189}-\\u{2BFF}", "\\u{2C2F}", "\\u{2C5F}", "\\u{2CE5}-\\u{2CEA}", "\\u{2CF9}-\\u{2CFF}", "\\u{2D70}",
+  "\\u{2E00}-\\u{2E2E}", "\\u{2E30}-\\u{2FFB}", "\\u{3001}-\\u{3004}", "\\u{3006}-\\u{3020}", "\\u{3030}",
+  "\\u{3036}-\\u{3037}", "\\u{303D}-\\u{303F}", "\\u{309B}-\\u{309C}", "\\u{30A0}", "\\u{30FD}-\\u{30FE}",
+  "\\u{312F}", "\\u{3190}-\\u{319F}", "\\u{31BB}-\\u{31E3}", "\\u{3200}-\\u{33FF}", "\\u{4DBF}-\\u{4DFF}",
+  "\\u{4E28}", "\\u{4EDD}", "\\u{4F00}", "\\u{4F03}", "\\u{4F39}", "\\u{4F56}", "\\u{4F92}", "\\u{4F94}",
+  "\\u{4F9A}", "\\u{4FC9}", "\\u{4FFF}", "\\u{5040}", "\\u{5042}", "\\u{5046}", "\\u{5094}", "\\u{50D8}",
+  "\\u{50F4}", "\\u{514A}", "\\u{5164}", "\\u{519D}", "\\u{51BE}", "\\u{51EC}", "\\u{529C}", "\\u{52AF}",
+  "\\u{5307}", "\\u{5324}", "\\u{53DD}", "\\u{548A}", "\\u{54FF}", "\\u{5759}", "\\u{5765}", "\\u{57AC}",
+  "\\u{57C7}-\\u{57C8}", "\\u{58B2}", "\\u{590B}", "\\u{595B}", "\\u{595D}", "\\u{5963}", "\\u{5CA6}", "\\u{5CF5}",
+  "\\u{5D42}", "\\u{5D53}", "\\u{5DD0}", "\\u{5F21}", "\\u{5F34}", "\\u{5F45}", "\\u{608A}", "\\u{60DE}",
+  "\\u{6111}", "\\u{6130}", "\\u{6198}", "\\u{6213}", "\\u{62A6}", "\\u{63F5}", "\\u{6460}", "\\u{649D}",
+  "\\u{661E}", "\\u{6624}", "\\u{662E}", "\\u{6659}", "\\u{6699}", "\\u{66A0}", "\\u{66B2}", "\\u{66BF}",
+  "\\u{66FA}-\\u{66FB}", "\\u{670E}", "\\u{6766}", "\\u{6801}", "\\u{6852}", "\\u{68C8}", "\\u{68CF}", "\\u{6998}",
+  "\\u{6A30}", "\\u{6A46}", "\\u{6A73}", "\\u{6A7E}", "\\u{6AE2}", "\\u{6AE4}", "\\u{6C6F}", "\\u{6C86}",
+  "\\u{6D96}", "\\u{6DCF}", "\\u{6DF2}", "\\u{6EBF}", "\\u{6FB5}", "\\u{7007}", "\\u{7104}", "\\u{710F}",
+  "\\u{7146}", "\\u{72B1}", "\\u{72BE}", "\\u{7324}", "\\u{73BD}", "\\u{73F5}", "\\u{7429}", "\\u{769C}",
+  "\\u{7821}", "\\u{7864}", "\\u{7994}", "\\u{799B}", "\\u{7AE7}", "\\u{7B9E}", "\\u{7D48}", "\\u{7E8A}",
+  "\\u{8362}", "\\u{837F}", "\\u{83F6}", "\\u{84DC}", "\\u{856B}", "\\u{8807}", "\\u{88F5}", "\\u{891C}",
+  "\\u{8A37}", "\\u{8AA7}", "\\u{8ABE}", "\\u{8ADF}", "\\u{8B53}", "\\u{8B7F}", "\\u{8CF0}", "\\u{8D12}",
+  "\\u{9067}", "\\u{91DA}", "\\u{91DE}", "\\u{91E4}", "\\u{91EE}", "\\u{9206}", "\\u{923C}", "\\u{924E}",
+  "\\u{9259}", "\\u{9288}", "\\u{92A7}", "\\u{92D3}", "\\u{92D5}", "\\u{92D7}", "\\u{92E0}", "\\u{92E7}",
+  "\\u{92FF}", "\\u{9302}", "\\u{931D}", "\\u{9325}", "\\u{93A4}", "\\u{93C6}", "\\u{93F8}", "\\u{9431}",
+  "\\u{9445}", "\\u{969D}", "\\u{96AF}", "\\u{9733}", "\\u{9743}", "\\u{974D}", "\\u{974F}", "\\u{9755}",
+  "\\u{9857}", "\\u{9927}", "\\u{9ADC}", "\\u{9B72}", "\\u{9B75}", "\\u{9B8F}", "\\u{9BB1}", "\\u{9BBB}",
+  "\\u{9C00}", "\\u{9E19}", "\\u{9FEB}-\\u{9FFF}", "\\u{A490}-\\u{A4C6}", "\\u{A4FE}-\\u{A4FF}",
+  "\\u{A60D}-\\u{A60F}", "\\u{A670}-\\u{A673}", "\\u{A67E}", "\\u{A6F2}-\\u{A716}", "\\u{A720}-\\u{A721}",
+  "\\u{A789}-\\u{A78A}", "\\u{A7AF}", "\\u{A7B8}-\\u{A7F6}", "\\u{A828}-\\u{A839}", "\\u{A874}-\\u{A877}",
+  "\\u{A8CE}-\\u{A8CF}", "\\u{A8F8}-\\u{A8FA}", "\\u{A8FC}", "\\u{A8FE}-\\u{A8FF}", "\\u{A92E}-\\u{A92F}",
+  "\\u{A95F}", "\\u{A9C1}-\\u{A9CD}", "\\u{A9DE}-\\u{A9DF}", "\\u{AA5C}-\\u{AA5F}", "\\u{AA77}-\\u{AA79}",
+  "\\u{AADE}-\\u{AADF}", "\\u{AAF0}-\\u{AAF1}", "\\u{AB5B}", "\\u{AB66}-\\u{AB6B}", "\\u{ABEB}",
+  "\\u{E000}-\\u{F8FF}", "\\u{FA0E}-\\u{FA0F}", "\\u{FA11}", "\\u{FA13}-\\u{FA15}", "\\u{FA1F}-\\u{FA21}",
+  "\\u{FA23}-\\u{FA24}", "\\u{FA27}-\\u{FA29}", "\\u{FB00}-\\u{FB06}", "\\u{FB29}", "\\u{FBB2}-\\u{FBC2}",
+  "\\u{FD3E}-\\u{FD4F}", "\\u{FDCF}", "\\u{FDFC}-\\u{FDFF}", "\\u{FE10}-\\u{FE19}", "\\u{FE30}-\\u{FE32}",
+  "\\u{FE35}-\\u{FE4C}", "\\u{FE50}-\\u{FE6B}", "\\u{FEFF}-\\u{FF05}", "\\u{FF07}-\\u{FF0A}", "\\u{FF0C}-\\u{FF0F}",
+  "\\u{FF1A}-\\u{FF20}", "\\u{FF3B}-\\u{FF3E}", "\\u{FF40}", "\\u{FF5B}-\\u{FFFF}",
+];
+
+// I caratteri oltre U+FFFF (4 byte in UTF-8, coppie surrogate in UTF-16: emoji e simili) non sono mai ammessi.
+const UNSUPPORTED_SYMBOL = new RegExp(`[${UNSUPPORTED_SYMBOL_RANGES.join("")}\\u{10000}-\\u{10FFFF}]`, "u");
+
+export type KeywordSkipReason = "too_long" | "too_many_words" | "invalid_symbols";
+
+/** Motivo per cui DataForSEO non accetterebbe la keyword, o null se si può inviare. */
+export function dataForSeoSkipReason(keyword: string): KeywordSkipReason | null {
+  if ([...keyword].length > KEYWORD_MAX_CHARACTERS) {
+    return "too_long";
+  }
+  if (keyword.trim().split(/\s+/).length > KEYWORD_MAX_WORDS) {
+    return "too_many_words";
+  }
+  return UNSUPPORTED_SYMBOL.test(keyword) ? "invalid_symbols" : null;
+}

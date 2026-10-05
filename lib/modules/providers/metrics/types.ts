@@ -28,13 +28,34 @@ export type MetricsItem = {
 };
 
 /** Motivo dell'assenza dei volumi, riportato dall'estrazione in result.metricsNotice del job. */
-export type MetricsNotice = "PROVIDER_DISABLED";
+export type MetricsNotice =
+  | "PROVIDER_DISABLED"
+  | "PROVIDER_NOT_CONFIGURED"
+  | "LOCATION_UNSUPPORTED"
+  | "LANGUAGE_UNSUPPORTED";
 
 export type MetricsOutcome = {
   metrics: Map<string, KeywordMetric>;
   notice?: MetricsNotice;
   costUsd?: number;
+  /** Richieste inviate al fornitore, tentativi compresi. */
+  requests?: number;
+  /** Risultati che il fornitore ha restituito per la forma corretta della keyword (campo spell). */
+  spellCorrected?: number;
+  /** Keyword escluse prima della chiamata, per motivo. */
+  skipped?: Record<string, number>;
 };
+
+/** Campi dell'esito che l'estrazione aggiunge al result del job (solo quelli presenti). */
+export function toMetricsResult(outcome: MetricsOutcome) {
+  return {
+    ...(outcome.notice ? { metricsNotice: outcome.notice } : {}),
+    ...(outcome.costUsd !== undefined ? { metricsCostUsd: outcome.costUsd } : {}),
+    ...(outcome.requests !== undefined ? { metricsRequests: outcome.requests } : {}),
+    ...(outcome.spellCorrected !== undefined ? { metricsSpellCorrected: outcome.spellCorrected } : {}),
+    ...(outcome.skipped !== undefined ? { metricsSkipped: outcome.skipped } : {}),
+  };
+}
 
 /** Contratto unico dei provider di metriche (T-901). */
 export interface MetricsProvider {

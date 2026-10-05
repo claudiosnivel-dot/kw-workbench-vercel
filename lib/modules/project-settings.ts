@@ -48,7 +48,7 @@ const INT4_MAX = 2_147_483_647;
 
 const SCORING_PROFILES = ["balanced", "conservative", "aggressive"] as const;
 const AUTOCOMPLETE_PROVIDERS = ["MOCK", "GOOGLE_DIRECT"] as const;
-const METRICS_PROVIDERS = ["NONE", "MOCK", "GOOGLE_KEYWORD_PLANNER"] as const;
+const METRICS_PROVIDERS = ["NONE", "MOCK", "GOOGLE_KEYWORD_PLANNER", "DATAFORSEO"] as const;
 const BOOLEAN_WORDS = new Map<string, boolean>([
   ["true", true],
   ["1", true],
@@ -177,8 +177,15 @@ function parseOrThrow<T>(schema: z.ZodType<T>, payload: unknown): T {
 
 type Actor = { isRootAdmin: boolean };
 
+// Provider che solo il root admin può scegliere: MOCK produce volumi finti, DATAFORSEO ha un costo per richiesta
+// (T-902, finché T-1605 non introduce il diritto di piano licensedMetrics).
+const ROOT_ONLY_METRICS_PROVIDERS = new Map<MetricsProvider, string>([
+  ["MOCK", "Il provider di metriche MOCK è riservato all'amministratore principale"],
+  ["DATAFORSEO", "Il provider di metriche DATAFORSEO è riservato all'amministratore principale"],
+]);
+
 /**
- * MOCK produce volumi finti: si sceglie solo come root admin (CWE-284); chi lo ha già lo conserva.
+ * MOCK e DATAFORSEO si scelgono solo come root admin (CWE-284); chi li ha già li conserva.
  * GOOGLE_KEYWORD_PLANNER sul progetto resta solo se c'era già (T-304, D-09).
  */
 function assertMetricsProviderAllowed(
@@ -187,8 +194,9 @@ function assertMetricsProviderAllowed(
   actor: Actor,
   options: { plannerAllowed: boolean }
 ): void {
-  if (value === "MOCK" && current !== "MOCK" && !actor.isRootAdmin) {
-    throw new AppError(403, "FORBIDDEN_FIELD", "Il provider di metriche MOCK è riservato all'amministratore principale");
+  const rootOnlyMessage = value ? ROOT_ONLY_METRICS_PROVIDERS.get(value) : undefined;
+  if (rootOnlyMessage && value !== current && !actor.isRootAdmin) {
+    throw new AppError(403, "FORBIDDEN_FIELD", rootOnlyMessage);
   }
   if (value === "GOOGLE_KEYWORD_PLANNER" && current !== "GOOGLE_KEYWORD_PLANNER" && !options.plannerAllowed) {
     throw new MetricsProviderUnavailableError();

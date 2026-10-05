@@ -50,6 +50,8 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `GOOGLE_ADS_API_VERSION` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
 | `GOOGLE_ADS_BATCH_SIZE` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
 | `GOOGLE_ADS_METRICS_FILE` | facolt. | facolt. | facolt. | no | Vercel / locale |
+| `DATAFORSEO_LOGIN` | facolt. (login dell'account API DataForSEO, D-30; senza login o password il provider DATAFORSEO non chiama il fornitore e dichiara `PROVIDER_NOT_CONFIGURED`) | facolt. (come Production: stesse variabili) | facolt. (di norma vuota) | no | Vercel / locale |
+| `DATAFORSEO_PASSWORD` | facolt. (password dell'account API DataForSEO; mai in DB né nei log) | facolt. | facolt. (di norma vuota) | sì | Vercel (Sensitive) / locale |
 | `GOOGLE_SHEETS_OAUTH_CLIENT_ID` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
 | `GOOGLE_SHEETS_OAUTH_CLIENT_SECRET` | facolt. | facolt. | facolt. | sì | Vercel / locale / dashboard admin |
 | `GOOGLE_SHEETS_OAUTH_REDIRECT_URI` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |

@@ -8,7 +8,7 @@ import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { createAutocompleteProvider } from "@/lib/modules/providers/autocomplete/factory";
 import { AutocompleteQueryFailedError } from "@/lib/modules/providers/autocomplete/types";
 import { createMetricsProvider } from "@/lib/modules/providers/metrics/factory";
-import type { MetricsNotice } from "@/lib/modules/providers/metrics/types";
+import { toMetricsResult } from "@/lib/modules/providers/metrics/types";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
 import { scoreKeyword } from "@/lib/modules/scoring";
 import { parseSeedsFromRows } from "@/lib/modules/seed-parser";
@@ -29,8 +29,7 @@ type ExtractionSummary = {
   failedQueries?: number;
   truncated?: boolean;
   skippedQueries?: number;
-  metricsNotice?: MetricsNotice;
-};
+} & ReturnType<typeof toMetricsResult>;
 
 /** Riga di keyword_candidates preparata dalla pipeline; id, project_id, subproject_id e date li mette la scrittura. */
 type CandidateRow = Omit<KeywordCandidate, "id" | "project_id" | "subproject_id" | "created_at" | "updated_at">;
@@ -360,6 +359,6 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     failedQueries,
     truncated: expansion.truncated,
     skippedQueries: expansion.skippedQueries,
-    ...(metricsOutcome.notice ? { metricsNotice: metricsOutcome.notice } : {}),
+    ...toMetricsResult(metricsOutcome),
   };
 }

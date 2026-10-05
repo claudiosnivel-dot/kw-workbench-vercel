@@ -80,6 +80,9 @@ const envSchema = z.object({
   GOOGLE_ADS_API_VERSION: optional,
   GOOGLE_ADS_BATCH_SIZE: optional,
   GOOGLE_ADS_METRICS_FILE: optional,
+  // Fornitore di metriche con licenza (T-902, D-30): credenziali dell'account API, mai in DB né nei log.
+  DATAFORSEO_LOGIN: optional,
+  DATAFORSEO_PASSWORD: optional,
   GOOGLE_SHEETS_OAUTH_CLIENT_ID: optional,
   GOOGLE_SHEETS_OAUTH_CLIENT_SECRET: optional,
   GOOGLE_SHEETS_OAUTH_REDIRECT_URI: optional,
@@ -229,6 +232,13 @@ export function parseEnv(source: EnvSource): Env {
     encryptionKey: present(raw.APP_ENCRYPTION_KEY),
     sessionMaxAgeSeconds: getIntEnv("APP_SESSION_MAX_AGE_SECONDS", raw),
   };
+}
+
+/** Credenziali DataForSEO dall'ambiente; null se una delle due manca (provider non configurato). */
+export function getDataForSeoCredentials(source: EnvSource = process.env): { login: string; password: string } | null {
+  const login = present(source.DATAFORSEO_LOGIN)?.trim();
+  const password = present(source.DATAFORSEO_PASSWORD);
+  return login && password ? { login, password } : null;
 }
 
 let cachedEnv: Env | undefined;
