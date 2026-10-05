@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 import { normalizeDisplayText } from "@/lib/text/encoding";
@@ -24,9 +24,16 @@ type CandidateRow = {
 type ResultsTableProps = {
   projectId: string;
   rows: CandidateRow[];
+  /** Righe del set filtrato della vista (tutte le pagine). */
+  filteredCount: number;
+  /** Filtri della vista, inviati alla PATCH quando la selezione copre l'intero set filtrato. */
+  filters: Record<string, string>;
   activeSubprojectId?: string | null;
   showSubprojectColumn?: boolean;
 };
+
+/** Selezione legata alle righe ricevute: quando cambiano (pagina, filtri, vista) non vale più. */
+type Selection = { rowsKey: string; ids: string[]; allFiltered: boolean };
 
 const ACTIONS = [
   { value: "approve", label: "Approva" },
@@ -59,28 +66,35 @@ function brandTone(value: string): string {
 export function ResultsTable({
   projectId,
   rows,
+  filteredCount,
+  filters,
   activeSubprojectId = null,
   showSubprojectColumn = false,
 }: ResultsTableProps) {
   const router = useRouter();
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const rowsKey = [activeSubprojectId ?? "", JSON.stringify(filters), ...rows.map((row) => row.id)].join("|");
+  const [selection, setSelection] = useState<Selection>({ rowsKey, ids: [], allFiltered: false });
   const [action, setAction] = useState<(typeof ACTIONS)[number]["value"]>("approve");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const allIds = useMemo(() => rows.map((row) => row.id), [rows]);
+  const current = selection.rowsKey === rowsKey ? selection : { rowsKey, ids: [], allFiltered: false };
+  const selectedIds = current.ids;
   const isAllSelected = rows.length > 0 && selectedIds.length === rows.length;
+  const selectedCount = current.allFiltered ? filteredCount : selectedIds.length;
+
+  const select = (ids: string[], allFiltered = false) => setSelection({ rowsKey, ids, allFiltered });
 
   const toggle = (id: string) => {
-    setSelectedIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+    select(selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id]);
   };
 
   const toggleAll = () => {
-    setSelectedIds(isAllSelected ? [] : allIds);
+    select(isAllSelected ? [] : rows.map((row) => row.id));
   };
 
   const runBulkAction = async () => {
-    if (selectedIds.length === 0) {
+    if (selectedCount === 0) {
       return;
     }
 
@@ -91,11 +105,11 @@ export function ResultsTable({
       const response = await fetch(`/api/projects/${projectId}/results`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action,
-          ids: selectedIds,
-          subprojectId: activeSubprojectId,
-        }),
+        body: JSON.stringify(
+          current.allFiltered
+            ? { action, filters, subprojectId: activeSubprojectId }
+            : { action, ids: selectedIds, subprojectId: activeSubprojectId }
+        ),
       });
 
       const payload = await readJsonSafe<ApiErrorPayload>(response);
@@ -103,7 +117,7 @@ export function ResultsTable({
         throw new Error(buildApiErrorMessage(response, payload, "Azione massiva non riuscita"));
       }
 
-      setSelectedIds([]);
+      select([]);
       router.refresh();
     } catch (bulkError) {
       setError(bulkError instanceof Error ? bulkError.message : "Errore imprevisto");
@@ -122,11 +136,31 @@ export function ResultsTable({
             </option>
           ))}
         </select>
-        <button className="btn-primary w-full sm:w-auto" type="button" onClick={runBulkAction} disabled={loading || selectedIds.length === 0}>
-          {loading ? "Applicazione..." : `Applica a ${selectedIds.length} selezionate`}
+        <button className="btn-primary w-full sm:w-auto" type="button" onClick={runBulkAction} disabled={loading || selectedCount === 0}>
+          {loading ? "Applicazione..." : `Applica a ${selectedCount} selezionate`}
         </button>
         <p className="text-xs text-slate-500 sm:ml-auto">Azioni massive: approva, rifiuta, review, seleziona, deseleziona.</p>
       </div>
+
+      {isAllSelected && filteredCount > rows.length && (
+        <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm sm:flex-row sm:items-center">
+          {current.allFiltered ? (
+            <>
+              <p>Selezionate tutte le {filteredCount} keyword filtrate.</p>
+              <button className="btn-secondary w-full sm:w-auto" type="button" onClick={() => select(selectedIds)}>
+                Solo le {rows.length} di questa pagina
+              </button>
+            </>
+          ) : (
+            <>
+              <p>Selezionate le {rows.length} keyword di questa pagina.</p>
+              <button className="btn-secondary w-full sm:w-auto" type="button" onClick={() => select(selectedIds, true)}>
+                Seleziona tutte le {filteredCount} keyword filtrate
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-700">{error}</p>}
 

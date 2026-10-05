@@ -34,7 +34,7 @@ const EXPECTED = {
   approved: 4, // approved e non excluded
   selected: 6, // selected_for_export
   review: 5, // review_status pending
-  "non-excluded": 10, // brand_status diverso da excluded, rifiutate comprese
+  "non-excluded": 9, // brand_status diverso da excluded e review_status diverso da rejected (impacted-by: T-807, prima 10)
   filtered: 6, // searchIntent=commercial
 } as const;
 
@@ -134,7 +134,8 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
   });
 
   // covers: AC-107-1
-  it("CSV non-excluded: header HTTP, byte senza BOM, virgola, LF e virgolette su ogni valore", async () => {
+  // Aggiornato da T-804 (impacted-by): dialetto excel-it predefinito con BOM, ';', CRLF e formule neutralizzate.
+  it("CSV non-excluded: header HTTP, BOM, punto e virgola, CRLF e virgolette su ogni valore", async () => {
     const response = await callRoute(exportProject, {
       url: exportUrl(projectId, "format=csv&scope=non-excluded"),
       cookie,
@@ -142,7 +143,7 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
     });
     const bytes = new Uint8Array(await response.arrayBuffer());
     const text = new TextDecoder().decode(bytes);
-    const lines = text.split("\n");
+    const lines = text.replace(/\r\n$/, "").split("\r\n");
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("text/csv; charset=utf-8");
@@ -150,16 +151,16 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
     expect(response.headers.get("content-disposition")).toMatch(
       new RegExp(`filename="seo-god-mode-${projectId}-project-non-excluded-\\d{4}-\\d{2}-\\d{2}\\.csv"`)
     );
-    expect(Array.from(bytes.slice(0, 3))).not.toEqual([0xef, 0xbb, 0xbf]); // impacted-by: T-804
-    expect(text).not.toContain("\r");
-    expect(lines[0]).toBe(HEADERS.join(","));
+    expect(Array.from(bytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf]); // impacted-by: T-804
+    expect(text.endsWith("\r\n")).toBe(true); // impacted-by: T-804
+    expect(lines[0]).toBe(HEADERS.join(";")); // impacted-by: T-804
     expect(lines).toHaveLength(EXPECTED["non-excluded"] + 1);
     for (const line of lines.slice(1)) {
-      expect(line).toMatch(/^"(?:[^"]|"")*"(?:,"(?:[^"]|"")*")*$/);
-      expect(line.split('","')).toHaveLength(HEADERS.length);
+      expect(line).toMatch(/^"(?:[^"]|"")*"(?:;"(?:[^"]|"")*")*$/); // impacted-by: T-804
+      expect(line.split('";"')).toHaveLength(HEADERS.length);
     }
     // impacted-by: T-804
-    expect(text).toContain(`"${FORMULA_KEYWORD}"`);
+    expect(text).toContain(`"'${FORMULA_KEYWORD}"`);
   });
 
   // covers: AC-107-2
@@ -202,8 +203,8 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
       expect(response.status).toBe(200);
       expect(rows).toHaveLength(EXPECTED[scope]);
       if (scope === "non-excluded") {
-        // impacted-by: T-807
-        expect(rows.find((row) => row.keyword === REJECTED_ALLOWED_KEYWORD)?.review_status).toBe("rejected");
+        // impacted-by: T-807 (la rifiutata non è più esportata da non-excluded)
+        expect(rows.find((row) => row.keyword === REJECTED_ALLOWED_KEYWORD)).toBeUndefined();
       }
     }
   });
@@ -211,7 +212,8 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
 
 describe("caratterizzazione: export vuoto e onboarding", () => {
   // covers: AC-107-4
-  it("CSV approved senza candidate: 0 byte senza intestazione e onboarding completato", async () => {
+  // Aggiornato da T-804 (impacted-by): con 0 righe il file ha BOM e la sola intestazione.
+  it("CSV approved senza candidate: BOM e sola intestazione, onboarding completato", async () => {
     const { owner, projectId: emptyProjectId } = await createOwnerProject("IN_PROGRESS");
 
     const response = await callRoute(exportProject, {
@@ -220,9 +222,11 @@ describe("caratterizzazione: export vuoto e onboarding", () => {
       params: { id: emptyProjectId },
     });
 
+    const bytes = new Uint8Array(await response.arrayBuffer());
     expect(response.status).toBe(200);
     // impacted-by: T-804
-    expect((await response.arrayBuffer()).byteLength).toBe(0);
+    expect(Array.from(bytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf]);
+    expect(new TextDecoder().decode(bytes)).toBe(`${HEADERS.join(";")}\r\n`);
     const progress = await prisma.userOnboardingProgress.findUniqueOrThrow({ where: { user_id: owner.user.id } });
     // impacted-by: T-1003
     expect(progress.status).toBe("COMPLETED");

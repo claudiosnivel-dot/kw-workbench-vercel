@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DeleteProjectButton } from "@/components/delete-project-button";
+import { PaginationLinks } from "@/components/pagination-links";
 import { ResumeOnboardingButton } from "@/components/resume-onboarding-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { listDashboardProjects } from "@/lib/modules/dashboard";
+import { resultsHref } from "@/lib/modules/results-view";
 import { getOnboardingStateForUser, shouldRedirectUserToOnboarding } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
 
@@ -23,29 +26,22 @@ function jobStatusTone(value: string): string {
   return "border-slate-500/40 bg-slate-700/25 text-slate-200";
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await requirePageUser();
+  const { page: rawPage } = await searchParams;
   const onboardingState = await getOnboardingStateForUser(user.id);
 
   if (shouldRedirectUserToOnboarding(onboardingState.status)) {
     redirect("/onboarding");
   }
 
-  const [projects, recentJobs, totalProjects, totalKeywords, totalSubprojects] = await Promise.all([
-    prisma.project.findMany({
-      where: { owner_user_id: user.id },
-      orderBy: { updated_at: "desc" },
-      include: {
-        _count: {
-          select: {
-            subprojects: true,
-            keyword_candidates: true,
-            seeds: true,
-          },
-        },
-      },
-      take: 20,
-    }),
+  const [dashboard, recentJobs, totalKeywords, totalSubprojects] = await Promise.all([
+    // Tutti i progetti raggiungibili: pagine da 20 in ordine di ultima attività (T-810).
+    listDashboardProjects(user.id, Array.isArray(rawPage) ? rawPage[0] : rawPage),
     prisma.job.findMany({
       where: {
         project: {
@@ -63,7 +59,6 @@ export default async function DashboardPage() {
       },
       take: 15,
     }),
-    prisma.project.count({ where: { owner_user_id: user.id } }),
     prisma.keywordCandidate.count({
       where: {
         project: {
@@ -79,6 +74,7 @@ export default async function DashboardPage() {
       },
     }),
   ]);
+  const { items: projects, total: totalProjects, page, totalPages } = dashboard;
 
   return (
     <div className="space-y-6">
@@ -163,13 +159,13 @@ export default async function DashboardPage() {
                   <td className="px-3 py-3">{project._count.subprojects}</td>
                   <td className="px-3 py-3">{project._count.seeds}</td>
                   <td className="px-3 py-3">{project._count.keyword_candidates}</td>
-                  <td className="px-3 py-3">{formatDate(project.updated_at)}</td>
+                  <td className="px-3 py-3">{formatDate(project.last_activity_at)}</td>
                   <td className="px-3 py-3">
                     <div className="flex flex-wrap gap-2">
                       <Link className="btn-secondary" href={`/projects/${project.id}`}>
                         Apri
                       </Link>
-                      <Link className="btn-secondary" href={`/projects/${project.id}/results`}>
+                      <Link className="btn-secondary" href={resultsHref(project.id, { view: "all" })}>
                         Risultati
                       </Link>
                       <DeleteProjectButton
@@ -187,6 +183,16 @@ export default async function DashboardPage() {
             </tbody>
           </table>
           {projects.length === 0 && <p className="px-3 py-6 text-sm text-slate-500">Nessun progetto al momento.</p>}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-slate-600">
+            Pagina {page} di {totalPages}
+          </p>
+          <PaginationLinks
+            previousHref={page > 1 ? `/?page=${page - 1}` : null}
+            nextHref={page < totalPages ? `/?page=${page + 1}` : null}
+          />
         </div>
       </section>
 

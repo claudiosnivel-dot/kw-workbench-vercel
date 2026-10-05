@@ -3,12 +3,6 @@
   "entries": [
     {
       "type": "files",
-      "file": "components/set-default-section-button.tsx",
-      "symbol": "components/set-default-section-button.tsx",
-      "note": "D-21: va collegato in T-802, non rimosso"
-    },
-    {
-      "type": "files",
       "file": "lib/modules/providers/metrics/google-keyword-planner.ts",
       "symbol": "lib/modules/providers/metrics/google-keyword-planner.ts",
       "note": "T-304: provider disattivato (D-09), accettato dall'utente il 2026-10-04 fino alla rimozione in T-901"

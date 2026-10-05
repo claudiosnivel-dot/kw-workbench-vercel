@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
-import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
-import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
+import { applyBulkAction, parseBulkActionPayload } from "@/lib/modules/results-bulk";
+import { parseResultsFilters } from "@/lib/modules/results-filters";
+import { parsePagingParams } from "@/lib/modules/results-paging";
+import { loadResultsPage } from "@/lib/modules/results-query";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -57,57 +59,16 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   }
 
   const filters = parseResultsFilters(request.nextUrl.searchParams);
-  const where = buildResultsWhere(id, filters, subprojectId || null);
-  const page = Math.max(1, Number(request.nextUrl.searchParams.get("page") ?? 1));
-  const pageSize = Math.min(500, Math.max(20, Number(request.nextUrl.searchParams.get("pageSize") ?? 100)));
+  const { page: requestedPage, pageSize } = parsePagingParams(request.nextUrl.searchParams);
+  const result = await loadResultsPage({
+    projectId: id,
+    subprojectId: subprojectId || null,
+    filters,
+    page: requestedPage,
+    pageSize,
+  });
 
-  const [total, rows] = await Promise.all([
-    prisma.keywordCandidate.count({ where }),
-    prisma.keywordCandidate.findMany({
-      where,
-      orderBy: RESULTS_ORDER_BY,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      select: {
-        id: true,
-        project_id: true,
-        subproject_id: true,
-        keyword: true,
-        normalized_keyword: true,
-        canonical_keyword: true,
-        source: true,
-        source_query: true,
-        brand_status: true,
-        brand_reason: true,
-        review_status: true,
-        selected_for_export: true,
-        keyword_type: true,
-        search_intent: true,
-        is_question: true,
-        is_local_intent: true,
-        is_tool_intent: true,
-        is_commercial_intent: true,
-        metrics_status: true,
-        metrics_provider: true,
-        avg_monthly_searches: true,
-        competition: true,
-        low_top_of_page_bid_micros: true,
-        high_top_of_page_bid_micros: true,
-        score: true,
-        score_source: true,
-        metrics_updated_at: true,
-        created_at: true,
-        updated_at: true,
-        subproject: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    }),
-  ]);
-
-  const serialized = rows.map((row) => ({
+  const serialized = result.rows.map((row) => ({
     ...row,
     subproject_name: row.subproject.name,
     low_top_of_page_bid_micros:
@@ -119,10 +80,10 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   return NextResponse.json({
     data: serialized,
     meta: {
-      page,
+      page: result.page,
       pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      total: result.filteredCount,
+      totalPages: result.totalPages,
     },
   });
 });
@@ -143,18 +104,9 @@ export const PATCH = withApiErrors(async (request: NextRequest, context: RouteCo
     return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
   }
 
-  const payload = (await request.json()) as {
-    action?: string;
-    ids?: string[];
-    subprojectId?: string;
-  };
+  const payload = parseBulkActionPayload(await request.json());
 
-  const ids = Array.isArray(payload.ids) ? payload.ids.filter(Boolean) : [];
-  if (!payload.action || ids.length === 0) {
-    return NextResponse.json({ error: "Azione o ID mancanti" }, { status: 400 });
-  }
-
-  const scopedSubprojectId = payload.subprojectId?.trim() || null;
+  const scopedSubprojectId = payload.subprojectId || null;
   if (scopedSubprojectId) {
     const subproject = await ensureOwnedSubproject({
       projectId: id,
@@ -167,33 +119,8 @@ export const PATCH = withApiErrors(async (request: NextRequest, context: RouteCo
     }
   }
 
-  const where: {
-    project_id: string;
-    subproject_id?: string;
-    id: { in: string[] };
-  } = {
-    project_id: id,
-    id: { in: ids },
-  };
+  const updated = await applyBulkAction(id, payload);
 
-  if (scopedSubprojectId) {
-    where.subproject_id = scopedSubprojectId;
-  }
-
-  if (payload.action === "approve") {
-    await prisma.keywordCandidate.updateMany({ where, data: { review_status: "approved" } });
-  } else if (payload.action === "reject") {
-    await prisma.keywordCandidate.updateMany({ where, data: { review_status: "rejected" } });
-  } else if (payload.action === "select") {
-    await prisma.keywordCandidate.updateMany({ where, data: { selected_for_export: true } });
-  } else if (payload.action === "unselect") {
-    await prisma.keywordCandidate.updateMany({ where, data: { selected_for_export: false } });
-  } else if (payload.action === "mark-review") {
-    await prisma.keywordCandidate.updateMany({ where, data: { review_status: "pending" } });
-  } else {
-    return NextResponse.json({ error: "Azione non supportata" }, { status: 400 });
-  }
-
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, updated });
 });
 

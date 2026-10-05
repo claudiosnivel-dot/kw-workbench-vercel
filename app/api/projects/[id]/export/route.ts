@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
-import { ExportFormat, ExportScope, generateExport } from "@/lib/modules/export";
+import {
+  CSV_DIALECT_DEFAULT,
+  ExportFormat,
+  ExportScope,
+  exportFileInfo,
+  isCsvDialect,
+  streamExport,
+} from "@/lib/modules/export";
+import { logger } from "@/lib/observability/logger";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -21,6 +29,7 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   const { id } = await context.params;
   const format = (request.nextUrl.searchParams.get("format") ?? "csv") as ExportFormat;
   const scope = (request.nextUrl.searchParams.get("scope") ?? "non-excluded") as ExportScope;
+  const csvDialect = request.nextUrl.searchParams.get("csvDialect") ?? CSV_DIALECT_DEFAULT;
   const rawSubprojectId = request.nextUrl.searchParams.get("subprojectId");
   const subprojectId = rawSubprojectId ? rawSubprojectId.trim() : "";
 
@@ -30,6 +39,10 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
 
   if (!VALID_SCOPES.has(scope)) {
     return NextResponse.json({ error: "Scope non valido" }, { status: 400 });
+  }
+
+  if (!isCsvDialect(csvDialect)) {
+    return NextResponse.json({ error: "Dialetto CSV non valido: usa excel-it o rfc4180" }, { status: 400 });
   }
 
   const project = await prisma.project.findFirst({
@@ -63,23 +76,24 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
 
   const filters = parseResultsFilters(request.nextUrl.searchParams);
 
-  const output = await generateExport({
-    projectId: id,
-    subprojectId: subprojectId || null,
-    format,
-    scope,
-    filters,
-  });
+  // Autenticazione, progetto e sezione sono verificati sopra: solo ora si apre lo stream (T-805).
+  const params = { projectId: id, subprojectId: subprojectId || null, format, scope, filters, csvDialect };
+  const { contentType, filename } = exportFileInfo(params);
+  const stream = streamExport(params);
 
-  await markOnboardingExportCompleted(user.id);
+  // L'avanzamento dell'onboarding non deve far fallire un export valido.
+  try {
+    await markOnboardingExportCompleted(user.id);
+  } catch (error) {
+    logger.error("onboarding_export_mark_failed", { userId: user.id, projectId: id, error });
+  }
 
-  return new NextResponse(output.buffer, {
+  return new Response(stream, {
     status: 200,
     headers: {
-      "Content-Type": output.contentType,
-      "Content-Disposition": `attachment; filename="${output.filename}"`,
+      "Content-Type": contentType,
+      "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "no-store",
     },
   });
 });
-

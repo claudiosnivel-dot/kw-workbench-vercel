@@ -1,11 +1,18 @@
+import type { Prisma } from "@/lib/generated/prisma/client";
 import { AppError } from "@/lib/http/errors";
-import { ExportRow, ExportScope, getExportRows } from "@/lib/modules/export";
+import { buildExportWhere, EXPORT_COLUMNS, ExportScope, iterateExportRows } from "@/lib/modules/export";
 import { ResultsFilters } from "@/lib/modules/results-filters";
 import { getDecryptedGoogleSheetsRefreshToken } from "@/lib/integrations/google-sheets";
 import { getGoogleSheetsApiConfig } from "@/lib/integrations/google-sheets-config";
+import { prisma } from "@/lib/prisma";
 
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const GOOGLE_SHEETS_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
+const GOOGLE_DRIVE_FILES = "https://www.googleapis.com/drive/v3/files";
+const GOOGLE_REQUEST_TIMEOUT_MS = 30_000;
+// Righe di dati per richiesta di scrittura (D-23): con l'intero set in una richiesta Google risponde 400.
+const SHEETS_ROWS_PER_WRITE = 5000;
+const INCOMPLETE_PREFIX = "[INCOMPLETO] ";
 const MAX_SHEET_TITLE_LENGTH = 100;
 const MAX_SPREADSHEET_TITLE_LENGTH = 120;
 
@@ -18,10 +25,12 @@ export class GoogleSheetsExportError extends AppError {
 }
 
 type SheetsGroup = {
-  sectionName: string;
+  subprojectId: string;
   sheetTitle: string;
-  rows: ExportRow[];
+  rowCount: number;
 };
+
+type SheetCell = string | number | boolean;
 
 type GoogleSheetsCreateResponse = {
   spreadsheetId: string;
@@ -34,32 +43,6 @@ type GoogleTokenResponse = {
   error?: string;
   error_description?: string;
 };
-
-const EXPORT_COLUMNS: Array<keyof ExportRow> = [
-  "subproject_name",
-  "keyword",
-  "normalized_keyword",
-  "canonical_keyword",
-  "source",
-  "source_query",
-  "brand_status",
-  "review_status",
-  "selected_for_export",
-  "keyword_type",
-  "search_intent",
-  "is_question",
-  "is_local_intent",
-  "is_tool_intent",
-  "is_commercial_intent",
-  "metrics_status",
-  "metrics_provider",
-  "avg_monthly_searches",
-  "competition",
-  "low_top_of_page_bid_micros",
-  "high_top_of_page_bid_micros",
-  "score",
-  "score_source",
-];
 
 function sanitizeSpreadsheetTitle(input: string): string {
   const cleaned = String(input ?? "")
@@ -94,17 +77,19 @@ function sanitizeSheetTitle(input: string): string {
   return fallback.slice(0, MAX_SHEET_TITLE_LENGTH).trim() || "Sezione";
 }
 
+/** Titoli univoci senza distinguere maiuscole e minuscole, come li confronta Google ('Generale' = 'generale'). */
 function uniqueSheetTitles(rawTitles: string[]): string[] {
   const used = new Set<string>();
   const counters = new Map<string, number>();
 
   return rawTitles.map((rawTitle) => {
     const normalized = sanitizeSheetTitle(rawTitle);
-    const currentCounter = (counters.get(normalized) ?? 0) + 1;
-    counters.set(normalized, currentCounter);
+    const key = normalized.toLowerCase();
+    const currentCounter = (counters.get(key) ?? 0) + 1;
+    counters.set(key, currentCounter);
 
-    if (currentCounter === 1 && !used.has(normalized)) {
-      used.add(normalized);
+    if (currentCounter === 1 && !used.has(key)) {
+      used.add(key);
       return normalized;
     }
 
@@ -115,9 +100,9 @@ function uniqueSheetTitles(rawTitles: string[]): string[] {
       const trimmedBase = normalized.slice(0, maxBaseLength).trim() || "Sezione";
       const candidate = `${trimmedBase}${suffix}`;
 
-      if (!used.has(candidate)) {
-        used.add(candidate);
-        counters.set(normalized, suffixCounter);
+      if (!used.has(candidate.toLowerCase())) {
+        used.add(candidate.toLowerCase());
+        counters.set(key, suffixCounter);
         return candidate;
       }
 
@@ -130,7 +115,7 @@ function escapeRangeSheetTitle(sheetTitle: string): string {
   return `'${sheetTitle.replace(/'/g, "''")}'`;
 }
 
-function normalizeCellValue(value: unknown): string | number | boolean {
+function normalizeCellValue(value: unknown): SheetCell {
   if (value === null || value === undefined) {
     return "";
   }
@@ -142,26 +127,35 @@ function normalizeCellValue(value: unknown): string | number | boolean {
   return String(value);
 }
 
-function buildGroupedSheets(rows: ExportRow[]): SheetsGroup[] {
-  const grouped = new Map<string, ExportRow[]>();
-
-  for (const row of rows) {
-    const sectionName = String(row.subproject_name ?? "").trim() || "Sezione";
-    if (!grouped.has(sectionName)) {
-      grouped.set(sectionName, []);
-    }
-
-    grouped.get(sectionName)!.push(row);
+/** Un foglio per ogni sezione con righe da esportare, in ordine di position della sezione e poi di nome. */
+async function buildGroupedSheets(projectId: string, where: Prisma.KeywordCandidateWhereInput): Promise<SheetsGroup[]> {
+  const counts = await prisma.keywordCandidate.groupBy({ by: ["subproject_id"], where, _count: { _all: true } });
+  if (counts.length === 0) {
+    return [];
   }
 
-  const entries = Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b, "it", { sensitivity: "base" }));
-  const titles = uniqueSheetTitles(entries.map(([sectionName]) => sectionName));
+  const rowCounts = new Map(counts.map((item) => [item.subproject_id, item._count._all]));
+  const sections = await prisma.subproject.findMany({
+    where: { project_id: projectId, id: { in: [...rowCounts.keys()] } },
+    orderBy: [{ position: "asc" }, { name: "asc" }],
+    select: { id: true, name: true },
+  });
+  const titles = uniqueSheetTitles(sections.map((section) => section.name.trim() || "Sezione"));
 
-  return entries.map(([sectionName, groupRows], index) => ({
-    sectionName,
+  return sections.map((section, index) => ({
+    subprojectId: section.id,
     sheetTitle: titles[index],
-    rows: groupRows,
+    rowCount: rowCounts.get(section.id) ?? 0,
   }));
+}
+
+/** Ogni chiamata a Google ha un timeout di 30 s; rete o timeout diventano un errore pubblico senza dettagli. */
+async function googleFetch(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, cache: "no-store", signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS) });
+  } catch {
+    throw new GoogleSheetsExportError("Google non ha risposto entro 30 secondi o non è raggiungibile.", 502);
+  }
 }
 
 async function refreshUserAccessToken(userId: string): Promise<string> {
@@ -175,7 +169,7 @@ async function refreshUserAccessToken(userId: string): Promise<string> {
     throw new GoogleSheetsExportError("Configurazione OAuth Google Sheets mancante. Contatta l'admin principale.", 400);
   }
 
-  const tokenResponse = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+  const tokenResponse = await googleFetch(GOOGLE_TOKEN_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -186,7 +180,6 @@ async function refreshUserAccessToken(userId: string): Promise<string> {
       client_id: config.clientId,
       client_secret: config.clientSecret,
     }),
-    cache: "no-store",
   });
 
   const tokenPayload = (await tokenResponse.json()) as GoogleTokenResponse;
@@ -200,8 +193,8 @@ async function refreshUserAccessToken(userId: string): Promise<string> {
   return tokenPayload.access_token;
 }
 
-async function createSpreadsheet(accessToken: string, title: string, sheetTitles: string[]): Promise<GoogleSheetsCreateResponse> {
-  const response = await fetch(GOOGLE_SHEETS_BASE, {
+async function createSpreadsheet(accessToken: string, title: string, groups: SheetsGroup[]): Promise<GoogleSheetsCreateResponse> {
+  const response = await googleFetch(GOOGLE_SHEETS_BASE, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -209,11 +202,14 @@ async function createSpreadsheet(accessToken: string, title: string, sheetTitles
     },
     body: JSON.stringify({
       properties: { title },
-      sheets: sheetTitles.map((sheetTitle) => ({
-        properties: { title: sheetTitle },
+      // Griglia dimensionata sulle righe da scrivere: le scritture successive alla prima partono oltre la riga 1000.
+      sheets: groups.map((group) => ({
+        properties: {
+          title: group.sheetTitle,
+          gridProperties: { rowCount: group.rowCount + 1, columnCount: EXPORT_COLUMNS.length },
+        },
       })),
     }),
-    cache: "no-store",
   });
 
   const payloadText = await response.text();
@@ -231,21 +227,8 @@ async function createSpreadsheet(accessToken: string, title: string, sheetTitles
   }
 }
 
-async function writeSheetValues(accessToken: string, spreadsheetId: string, groups: SheetsGroup[]) {
-  const valuesData = groups.map((group) => {
-    const headerRow = EXPORT_COLUMNS.map((column) => String(column));
-    const dataRows = group.rows.map((row) =>
-      EXPORT_COLUMNS.map((column) => normalizeCellValue(row[column]))
-    );
-
-    return {
-      range: `${escapeRangeSheetTitle(group.sheetTitle)}!A1`,
-      majorDimension: "ROWS",
-      values: [headerRow, ...dataRows],
-    };
-  });
-
-  const response = await fetch(`${GOOGLE_SHEETS_BASE}/${spreadsheetId}/values:batchUpdate`, {
+async function writeValues(accessToken: string, spreadsheetId: string, range: string, values: SheetCell[][]) {
+  const response = await googleFetch(`${GOOGLE_SHEETS_BASE}/${spreadsheetId}/values:batchUpdate`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -253,9 +236,8 @@ async function writeSheetValues(accessToken: string, spreadsheetId: string, grou
     },
     body: JSON.stringify({
       valueInputOption: "RAW",
-      data: valuesData,
+      data: [{ range, majorDimension: "ROWS", values }],
     }),
-    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -266,6 +248,74 @@ async function writeSheetValues(accessToken: string, spreadsheetId: string, grou
   }
 }
 
+/** Scrive le righe della sezione nel suo foglio in richieste da SHEETS_ROWS_PER_WRITE righe; l'intestazione solo nella prima. */
+async function writeSheet(
+  accessToken: string,
+  spreadsheetId: string,
+  group: SheetsGroup,
+  where: Prisma.KeywordCandidateWhereInput
+): Promise<number> {
+  let pending: SheetCell[][] = [EXPORT_COLUMNS.map(String)];
+  let pendingRows = 0;
+  let nextRow = 1;
+  let written = 0;
+
+  const flush = async () => {
+    await writeValues(accessToken, spreadsheetId, `${escapeRangeSheetTitle(group.sheetTitle)}!A${nextRow}`, pending);
+    nextRow += pending.length;
+    written += pendingRows;
+    pending = [];
+    pendingRows = 0;
+  };
+
+  for await (const row of iterateExportRows({ AND: [where, { subproject_id: group.subprojectId }] })) {
+    pending.push(EXPORT_COLUMNS.map((column) => normalizeCellValue(row[column])));
+    pendingRows += 1;
+    if (pendingRows === SHEETS_ROWS_PER_WRITE) {
+      await flush();
+    }
+  }
+
+  if (pendingRows > 0) {
+    await flush();
+  }
+  return written;
+}
+
+/**
+ * File creato ma scrittura fallita: si elimina da Drive. Con lo scope attuale (spreadsheets, vedi T-907)
+ * Drive risponde 403 o 404: il file resta, si rinomina con il prefisso «[INCOMPLETO] » e se ne restituisce
+ * l'URL. Restituisce null se il file è stato eliminato.
+ */
+async function discardIncompleteSpreadsheet(
+  accessToken: string,
+  spreadsheet: { id: string; url: string; title: string }
+): Promise<string | null> {
+  const headers = { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
+  const deleted = await googleFetch(`${GOOGLE_DRIVE_FILES}/${spreadsheet.id}`, { method: "DELETE", headers }).catch(
+    () => null
+  );
+  if (deleted?.ok) {
+    return null;
+  }
+
+  await googleFetch(`${GOOGLE_SHEETS_BASE}/${spreadsheet.id}:batchUpdate`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      requests: [
+        {
+          updateSpreadsheetProperties: {
+            properties: { title: sanitizeSpreadsheetTitle(`${INCOMPLETE_PREFIX}${spreadsheet.title}`) },
+            fields: "title",
+          },
+        },
+      ],
+    }),
+  }).catch(() => null);
+  return spreadsheet.url;
+}
+
 export async function exportProjectToGoogleSheets(params: {
   userId: string;
   projectId: string;
@@ -274,35 +324,49 @@ export async function exportProjectToGoogleSheets(params: {
   fileName: string;
   subprojectId?: string | null;
 }) {
-  const rows = await getExportRows({
-    projectId: params.projectId,
-    subprojectId: params.subprojectId ?? null,
-    scope: params.scope,
-    filters: params.filters,
-  });
+  const where = buildExportWhere(params.projectId, params.scope, params.filters, params.subprojectId ?? null);
+  const groups = await buildGroupedSheets(params.projectId, where);
 
-  if (rows.length === 0) {
+  if (groups.length === 0) {
     throw new GoogleSheetsExportError("Nessuna keyword da esportare con i filtri e scope selezionati.", 400);
   }
 
-  const groupedSheets = buildGroupedSheets(rows);
   const accessToken = await refreshUserAccessToken(params.userId);
-  const spreadsheet = await createSpreadsheet(
-    accessToken,
-    sanitizeSpreadsheetTitle(params.fileName),
-    groupedSheets.map((group) => group.sheetTitle)
-  );
+  const title = sanitizeSpreadsheetTitle(params.fileName);
+  const spreadsheet = await createSpreadsheet(accessToken, title, groups);
 
   if (!spreadsheet.spreadsheetId) {
     throw new GoogleSheetsExportError("Google Sheets non ha restituito uno spreadsheetId valido.", 502);
   }
 
-  await writeSheetValues(accessToken, spreadsheet.spreadsheetId, groupedSheets);
+  const spreadsheetUrl =
+    spreadsheet.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${spreadsheet.spreadsheetId}/edit`;
+  let exportedRows = 0;
+  try {
+    for (const group of groups) {
+      exportedRows += await writeSheet(accessToken, spreadsheet.spreadsheetId, group, where);
+    }
+  } catch (error) {
+    const leftUrl = await discardIncompleteSpreadsheet(accessToken, {
+      id: spreadsheet.spreadsheetId,
+      url: spreadsheetUrl,
+      title,
+    });
+    if (!(error instanceof GoogleSheetsExportError)) {
+      throw error;
+    }
+    throw new GoogleSheetsExportError(
+      leftUrl
+        ? `${error.message} Il file incompleto è rimasto su Google Drive con il prefisso «${INCOMPLETE_PREFIX.trim()}»: ${leftUrl}`
+        : `${error.message} Il file incompleto è stato eliminato.`,
+      error.status
+    );
+  }
 
   return {
     spreadsheetId: spreadsheet.spreadsheetId,
-    spreadsheetUrl: spreadsheet.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${spreadsheet.spreadsheetId}/edit`,
-    sheetCount: groupedSheets.length,
-    exportedRows: rows.length,
+    spreadsheetUrl,
+    sheetCount: groups.length,
+    exportedRows,
   };
 }

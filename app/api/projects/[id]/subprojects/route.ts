@@ -2,7 +2,9 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
-import { parseSubprojectPayload } from "@/lib/modules/project-settings";
+import { touchProjectActivity } from "@/lib/modules/project-activity";
+import { parseSubprojectCreate } from "@/lib/modules/project-settings";
+import { guardSectionName } from "@/lib/modules/sections";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -62,30 +64,13 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
     return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
   }
 
-  const payload = (await request.json()) as Record<string, unknown>;
-  const parsed = parseSubprojectPayload(payload);
+  const parsed = parseSubprojectCreate(await request.json(), user);
 
-  const subproject = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const subproject = await guardSectionName(() => prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const positionCount = await tx.subproject.count({ where: { project_id: id } });
 
     const created = await tx.subproject.create({
-      data: {
-        project_id: id,
-        name: parsed.name,
-        description: parsed.description,
-        position: positionCount,
-        language_code_override: parsed.language_code_override,
-        country_code_override: parsed.country_code_override,
-        autocomplete_provider_override: user.isRootAdmin ? parsed.autocomplete_provider_override : null,
-        metrics_provider_override: parsed.metrics_provider_override,
-        min_volume_override: parsed.min_volume_override,
-        exclude_brands_override: parsed.exclude_brands_override,
-        expand_alpha_override: parsed.expand_alpha_override,
-        expand_numeric_override: parsed.expand_numeric_override,
-        expand_patterns_override: parsed.expand_patterns_override,
-        auto_classification_override: parsed.auto_classification_override,
-        scoring_profile_override: parsed.scoring_profile_override,
-      },
+      data: { project_id: id, position: positionCount, ...parsed.data },
     });
 
     if (!project.default_subproject_id) {
@@ -105,8 +90,9 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
       });
     }
 
+    await touchProjectActivity(tx, id);
     return created;
-  });
+  }));
 
   return NextResponse.json({ data: subproject }, { status: 201 });
 });

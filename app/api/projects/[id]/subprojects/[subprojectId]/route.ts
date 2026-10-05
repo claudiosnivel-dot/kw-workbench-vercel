@@ -2,7 +2,9 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
-import { parseSubprojectPayload } from "@/lib/modules/project-settings";
+import { touchProjectActivity } from "@/lib/modules/project-activity";
+import { parseSubprojectPatch } from "@/lib/modules/project-settings";
+import { deleteSection, guardSectionName } from "@/lib/modules/sections";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -52,55 +54,44 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
         owner_user_id: user.id,
       },
     },
-    select: { id: true },
+    select: { id: true, metrics_provider_override: true },
   });
 
   if (!existing) {
     return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
   }
 
-  const payload = (await request.json()) as Record<string, unknown>;
-  const parsed = parseSubprojectPayload(payload);
+  // Aggiornamento parziale (T-809): seeds assente lascia le seed, seeds vuoto le cancella.
+  const parsed = parseSubprojectPatch(await request.json(), user, existing);
 
-  const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const updated = await guardSectionName(() => prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const result = await tx.subproject.update({
-      where: { id: subprojectId },
-      data: {
-        name: parsed.name,
-        description: parsed.description,
-        language_code_override: parsed.language_code_override,
-        country_code_override: parsed.country_code_override,
-        autocomplete_provider_override: user.isRootAdmin ? parsed.autocomplete_provider_override : null,
-        metrics_provider_override: parsed.metrics_provider_override,
-        min_volume_override: parsed.min_volume_override,
-        exclude_brands_override: parsed.exclude_brands_override,
-        expand_alpha_override: parsed.expand_alpha_override,
-        expand_numeric_override: parsed.expand_numeric_override,
-        expand_patterns_override: parsed.expand_patterns_override,
-        auto_classification_override: parsed.auto_classification_override,
-        scoring_profile_override: parsed.scoring_profile_override,
-      },
+      where: { id: subprojectId, project_id: id },
+      data: parsed.data,
     });
 
-    await tx.seed.deleteMany({
-      where: {
-        project_id: id,
-        subproject_id: subprojectId,
-      },
-    });
-
-    if (parsed.seeds.length > 0) {
-      await tx.seed.createMany({
-        data: parsed.seeds.map((keyword) => ({
+    if (parsed.seeds !== undefined) {
+      await tx.seed.deleteMany({
+        where: {
           project_id: id,
           subproject_id: subprojectId,
-          keyword,
-        })),
+        },
       });
+
+      if (parsed.seeds.length > 0) {
+        await tx.seed.createMany({
+          data: parsed.seeds.map((keyword) => ({
+            project_id: id,
+            subproject_id: subprojectId,
+            keyword,
+          })),
+        });
+      }
     }
 
+    await touchProjectActivity(tx, id);
     return result;
-  });
+  }));
 
   return NextResponse.json({ data: updated });
 });
@@ -124,43 +115,7 @@ export const DELETE = withApiErrors(async (request: Request, context: RouteConte
     return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
   }
 
-  const subprojectCount = await prisma.subproject.count({ where: { project_id: id } });
-  if (subprojectCount <= 1) {
-    return NextResponse.json(
-      { error: "Non puoi eliminare l'ultima sezione. Ogni progetto deve avere almeno una sezione." },
-      { status: 400 }
-    );
-  }
-
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const project = await tx.project.findUnique({
-      where: { id },
-      select: { default_subproject_id: true },
-    });
-
-    await tx.subproject.delete({ where: { id: subprojectId } });
-
-    const remaining = await tx.subproject.findMany({
-      where: { project_id: id },
-      orderBy: [{ position: "asc" }, { created_at: "asc" }],
-      select: { id: true },
-    });
-
-    for (let index = 0; index < remaining.length; index += 1) {
-      await tx.subproject.update({
-        where: { id: remaining[index].id },
-        data: { position: index },
-      });
-    }
-
-    if (project?.default_subproject_id === subprojectId) {
-      await tx.project.update({
-        where: { id },
-        data: { default_subproject_id: remaining[0]?.id ?? null },
-      });
-    }
-  });
+  await deleteSection(id, subprojectId);
 
   return NextResponse.json({ success: true });
 });
-

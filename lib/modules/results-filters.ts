@@ -94,6 +94,15 @@ export function buildResultsWhere(
   filters: ResultsFilters,
   subprojectId?: string | null
 ): Prisma.KeywordCandidateWhereInput {
+  return { AND: buildResultsClauses(projectId, filters, subprojectId) };
+}
+
+/** Clausole in AND della vista (progetto, sezione e filtri): la prima è sempre project_id. */
+export function buildResultsClauses(
+  projectId: string,
+  filters: ResultsFilters,
+  subprojectId?: string | null
+): Prisma.KeywordCandidateWhereInput[] {
   const andFilters: Prisma.KeywordCandidateWhereInput[] = [{ project_id: projectId }];
 
   if (subprojectId) {
@@ -149,5 +158,5 @@ export function buildResultsWhere(
     andFilters.push({ is_commercial_intent: true });
   }
 
-  return { AND: andFilters };
+  return andFilters;
 }

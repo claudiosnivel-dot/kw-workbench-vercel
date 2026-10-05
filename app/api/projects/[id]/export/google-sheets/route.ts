@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { withApiErrors } from "@/lib/http/errors";
+import { AppError, withApiErrors } from "@/lib/http/errors";
 import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import { ExportScope } from "@/lib/modules/export";
-import { exportProjectToGoogleSheets } from "@/lib/modules/google-sheets-export";
+import { exportProjectToGoogleSheets, GoogleSheetsExportError } from "@/lib/modules/google-sheets-export";
+import { logger } from "@/lib/observability/logger";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -11,6 +12,7 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const VALID_SCOPES = new Set<ExportScope>(["approved", "selected", "review", "non-excluded", "filtered"]);
+const INTERNAL_EXPORT_ERROR = "Errore interno durante l'export su Google Sheets";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -102,14 +104,24 @@ export const POST = withApiErrors(async (request: NextRequest, context: RouteCon
 
   const filters = parseResultsFilters(parseBodyFilters(payload.filters));
 
-  const output = await exportProjectToGoogleSheets({
-    userId: user.id,
-    projectId: id,
-    fileName,
-    scope,
-    subprojectId,
-    filters,
-  });
+  let output: Awaited<ReturnType<typeof exportProjectToGoogleSheets>>;
+  try {
+    output = await exportProjectToGoogleSheets({
+      userId: user.id,
+      projectId: id,
+      fileName,
+      scope,
+      subprojectId,
+      filters,
+    });
+  } catch (error) {
+    // GoogleSheetsExportError porta status e messaggio pubblici; ogni altra eccezione resta nei log (CWE-209).
+    if (error instanceof GoogleSheetsExportError) {
+      throw error;
+    }
+    logger.error("google_sheets_export_failed", { projectId: id, subprojectId, error });
+    throw new AppError(500, "INTERNAL_ERROR", INTERNAL_EXPORT_ERROR);
+  }
 
   await markOnboardingExportCompleted(user.id);
 

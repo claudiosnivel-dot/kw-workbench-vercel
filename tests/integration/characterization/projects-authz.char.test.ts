@@ -204,7 +204,8 @@ describe("caratterizzazione: azioni sui risultati", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ success: true });
+    // impacted-by: T-803 (la risposta dichiara le righe aggiornate: 0 fuori dal progetto di A)
+    expect(await response.json()).toEqual({ success: true, updated: 0 });
     const rows = await prisma.keywordCandidate.findMany({ where: { id: { in: candidatesB } } });
     expect(rows.map((row) => row.review_status)).toEqual(["pending", "pending"]);
   });
