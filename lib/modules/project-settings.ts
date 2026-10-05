@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { isSupportedCountryCode, isSupportedLanguageCode } from "@/lib/constants/locale-options";
+import {
+  isSupportedCountryCode,
+  isSupportedLanguageCode,
+  normalizeCountryCode,
+  normalizeLanguageCode,
+} from "@/lib/constants/locale-options";
 import { AutocompleteProvider, MetricsProvider } from "@/lib/generated/prisma/enums";
 import { AppError, ValidationError } from "@/lib/http/errors";
 import { splitLines } from "@/lib/utils";
@@ -67,8 +72,17 @@ const nameField = z
   .trim()
   .min(1, `da 1 a ${NAME_MAX_LENGTH} caratteri`)
   .max(NAME_MAX_LENGTH, `da 1 a ${NAME_MAX_LENGTH} caratteri`);
-const languageField = z.string().trim().toLowerCase().refine(isSupportedLanguageCode, "lingua non supportata");
-const countryField = z.string().trim().toUpperCase().refine(isSupportedCountryCode, "paese non supportato");
+// Solo i valori di lib/constants/locale-options.ts, salvati nella forma normalizzata.
+const languageField = z
+  .string()
+  .trim()
+  .refine(isSupportedLanguageCode, "lingua non supportata")
+  .transform((code) => normalizeLanguageCode(code));
+const countryField = z
+  .string()
+  .trim()
+  .refine(isSupportedCountryCode, "paese non supportato")
+  .transform((code) => normalizeCountryCode(code));
 const minVolumeField = z
   .union([z.number(), z.string().trim()])
   .transform(Number)
