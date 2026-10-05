@@ -27,7 +27,7 @@
 | `06-observability-ops.md` | `observability-ops` | T-601…T-605 | Error tracking, log strutturati, health check, backup e ripristino, pipeline di rilascio |
 | `07-extraction-fixes.md` | `extraction-fixes` | T-701…T-707 | Budget query equo, normalizzazione multilingua, filtro brand, classificazione, re-run che conserva la revisione, job robusti, punteggio |
 | `08-results-export.md` | `results-export` | T-801…T-810 | Paginazione, sezione mostrata = esportata, azioni massive sui filtrati, CSV per Excel IT, export in streaming, Sheets, sezioni, validazione input, dashboard |
-| `09-google-integrations.md` | `google-integrations` | T-901…T-908 | Volumi di ricerca: dismissione dell'API Google Ads, fornitore con licenza (DataForSEO) con tetto di spesa, export/import CSV di Keyword Planner (CLI e interfaccia); OAuth e scope minimo di Google Sheets |
+| `09-google-integrations.md` | `google-integrations` | T-901…T-910 | Volumi di ricerca: dismissione dell'API Google Ads, fornitore con licenza (DataForSEO) con tetto di spesa, export/import CSV di Keyword Planner (CLI e interfaccia); OAuth e scope minimo di Google Sheets |
 | `10-onboarding.md` | `onboarding` | T-1001…T-1004 | Creazione idempotente, ricomincia/indietro, precondizioni dei passi, lettura leggera dello stato |
 | `11-cleanup.md` | `cleanup` | T-1101…T-1105 | Codice morto (human-gated), duplicazioni, schema e indici, accessibilità, prestazioni per richiesta |
 | `12-background-jobs.md` | `background-jobs` | T-1201…T-1205 | Estrazione in background ripartibile, continuazione firmata, API 202/stato/annulla, barra di avanzamento |
