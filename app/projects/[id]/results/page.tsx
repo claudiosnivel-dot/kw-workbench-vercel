@@ -6,8 +6,9 @@ import { ResultsTable } from "@/components/results-table";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { isClassificationSupported } from "@/lib/modules/classification";
-import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
-import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
+import { parseResultsFilters } from "@/lib/modules/results-filters";
+import { parsePagingParams, withPaging } from "@/lib/modules/results-paging";
+import { loadResultsPage } from "@/lib/modules/results-query";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -25,15 +26,6 @@ function getValue(searchParams: SearchParams, key: string): string {
 function checked(searchParams: SearchParams, key: string): boolean {
   const value = getValue(searchParams, key);
   return ["1", "true", "on", "yes"].includes(value.toLowerCase());
-}
-
-function parsePositiveInt(raw: string, fallback: number): number {
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-
-  return Math.max(1, Math.trunc(parsed));
 }
 
 function toQueryParams(searchParams: SearchParams): URLSearchParams {
@@ -138,53 +130,20 @@ export default async function ResultsPage({
   ).filter((languageCode) => !isClassificationSupported(languageCode));
 
   const filters = parseResultsFilters(resolvedSearchParams);
-  const where = buildResultsWhere(project.id, filters, selectedSubproject?.id ?? null);
-
-  const requestedPage = parsePositiveInt(getValue(resolvedSearchParams, "page"), 1);
-  const requestedPageSize = parsePositiveInt(getValue(resolvedSearchParams, "pageSize"), 100);
-  const pageSize = Math.min(250, Math.max(50, requestedPageSize));
-
-  const [filteredCount, projectTotalCount, scopeTotalCount] = await Promise.all([
-    prisma.keywordCandidate.count({ where }),
-    prisma.keywordCandidate.count({ where: { project_id: project.id } }),
-    prisma.keywordCandidate.count({
-      where: selectedSubproject ? { project_id: project.id, subproject_id: selectedSubproject.id } : { project_id: project.id },
-    }),
-  ]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
-  const page = Math.min(requestedPage, totalPages);
-
-  const rows = await prisma.keywordCandidate.findMany({
-    where,
-    orderBy: RESULTS_ORDER_BY,
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-    select: {
-      id: true,
-      subproject_id: true,
-      keyword: true,
-      source: true,
-      brand_status: true,
-      review_status: true,
-      selected_for_export: true,
-      keyword_type: true,
-      search_intent: true,
-      avg_monthly_searches: true,
-      competition: true,
-      score: true,
-      subproject: {
-        select: {
-          name: true,
-        },
-      },
-    },
+  const paging = parsePagingParams(resolvedSearchParams);
+  const pageSize = paging.pageSize;
+  const { rows, filteredCount, scopeTotalCount, page, totalPages, pageStart, pageEnd } = await loadResultsPage({
+    projectId: project.id,
+    subprojectId: selectedSubproject?.id ?? null,
+    filters,
+    page: paging.page,
+    pageSize,
   });
+
+  const currentParams = toQueryParams(resolvedSearchParams);
 
   const activeViewParams = toQueryParams(resolvedSearchParams);
   activeViewParams.set("view", "section");
-  activeViewParams.set("page", "1");
-  activeViewParams.set("pageSize", String(pageSize));
   if (selectedSubproject?.id) {
     activeViewParams.set("subprojectId", selectedSubproject.id);
   } else if (defaultSection?.id) {
@@ -193,20 +152,12 @@ export default async function ResultsPage({
 
   const allViewParams = toQueryParams(resolvedSearchParams);
   allViewParams.set("view", "all");
-  allViewParams.set("page", "1");
-  allViewParams.set("pageSize", String(pageSize));
   allViewParams.delete("subprojectId");
 
-  const pageStart = filteredCount === 0 ? 0 : (page - 1) * pageSize + 1;
-  const pageEnd = Math.min(filteredCount, page * pageSize);
-
-  const prevPageParams = toQueryParams(resolvedSearchParams);
-  prevPageParams.set("page", String(Math.max(1, page - 1)));
-  prevPageParams.set("pageSize", String(pageSize));
-
-  const nextPageParams = toQueryParams(resolvedSearchParams);
-  nextPageParams.set("page", String(Math.min(totalPages, page + 1)));
-  nextPageParams.set("pageSize", String(pageSize));
+  const sectionViewHref = buildPath(project.id, withPaging(activeViewParams, { page: 1, pageSize }));
+  const allViewHref = buildPath(project.id, withPaging(allViewParams, { page: 1, pageSize }));
+  const prevPageHref = buildPath(project.id, withPaging(currentParams, { page: Math.max(1, page - 1), pageSize }));
+  const nextPageHref = buildPath(project.id, withPaging(currentParams, { page: Math.min(totalPages, page + 1), pageSize }));
 
   return (
     <div className="space-y-6">
@@ -227,10 +178,10 @@ export default async function ResultsPage({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Link className={viewMode === "section" ? "btn-primary" : "btn-secondary"} href={buildPath(project.id, activeViewParams)}>
+          <Link className={viewMode === "section" ? "btn-primary" : "btn-secondary"} href={sectionViewHref}>
             Sezione attiva
           </Link>
-          <Link className={viewMode === "all" ? "btn-primary" : "btn-secondary"} href={buildPath(project.id, allViewParams)}>
+          <Link className={viewMode === "all" ? "btn-primary" : "btn-secondary"} href={allViewHref}>
             Tutto il progetto
           </Link>
         </div>
@@ -245,7 +196,7 @@ export default async function ResultsPage({
         <p className="text-sm text-slate-600">
           Mostrate {filteredCount} keyword su {scopeTotalCount}
           {selectedSubproject ? ` nella sezione ${selectedSubproject.name}.` : " nel progetto."}
-          {!selectedSubproject && ` Totale progetto: ${projectTotalCount}.`}
+          {!selectedSubproject && ` Totale progetto: ${scopeTotalCount}.`}
         </p>
 
         <form method="get" className="grid gap-3 md:grid-cols-4">
@@ -331,14 +282,14 @@ export default async function ResultsPage({
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             {page > 1 ? (
-              <Link className="btn-secondary w-full text-center sm:w-auto" href={buildPath(project.id, prevPageParams)}>
+              <Link className="btn-secondary w-full text-center sm:w-auto" href={prevPageHref}>
                 Pagina precedente
               </Link>
             ) : (
               <span className="btn-secondary w-full text-center opacity-60 sm:w-auto">Pagina precedente</span>
             )}
             {page < totalPages ? (
-              <Link className="btn-secondary w-full text-center sm:w-auto" href={buildPath(project.id, nextPageParams)}>
+              <Link className="btn-secondary w-full text-center sm:w-auto" href={nextPageHref}>
                 Pagina successiva
               </Link>
             ) : (

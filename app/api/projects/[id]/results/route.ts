@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
-import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
-import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
+import { parseResultsFilters } from "@/lib/modules/results-filters";
+import { parsePagingParams } from "@/lib/modules/results-paging";
+import { loadResultsPage } from "@/lib/modules/results-query";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -57,57 +58,16 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   }
 
   const filters = parseResultsFilters(request.nextUrl.searchParams);
-  const where = buildResultsWhere(id, filters, subprojectId || null);
-  const page = Math.max(1, Number(request.nextUrl.searchParams.get("page") ?? 1));
-  const pageSize = Math.min(500, Math.max(20, Number(request.nextUrl.searchParams.get("pageSize") ?? 100)));
+  const { page: requestedPage, pageSize } = parsePagingParams(request.nextUrl.searchParams);
+  const result = await loadResultsPage({
+    projectId: id,
+    subprojectId: subprojectId || null,
+    filters,
+    page: requestedPage,
+    pageSize,
+  });
 
-  const [total, rows] = await Promise.all([
-    prisma.keywordCandidate.count({ where }),
-    prisma.keywordCandidate.findMany({
-      where,
-      orderBy: RESULTS_ORDER_BY,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      select: {
-        id: true,
-        project_id: true,
-        subproject_id: true,
-        keyword: true,
-        normalized_keyword: true,
-        canonical_keyword: true,
-        source: true,
-        source_query: true,
-        brand_status: true,
-        brand_reason: true,
-        review_status: true,
-        selected_for_export: true,
-        keyword_type: true,
-        search_intent: true,
-        is_question: true,
-        is_local_intent: true,
-        is_tool_intent: true,
-        is_commercial_intent: true,
-        metrics_status: true,
-        metrics_provider: true,
-        avg_monthly_searches: true,
-        competition: true,
-        low_top_of_page_bid_micros: true,
-        high_top_of_page_bid_micros: true,
-        score: true,
-        score_source: true,
-        metrics_updated_at: true,
-        created_at: true,
-        updated_at: true,
-        subproject: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    }),
-  ]);
-
-  const serialized = rows.map((row) => ({
+  const serialized = result.rows.map((row) => ({
     ...row,
     subproject_name: row.subproject.name,
     low_top_of_page_bid_micros:
@@ -119,10 +79,10 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   return NextResponse.json({
     data: serialized,
     meta: {
-      page,
+      page: result.page,
       pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      total: result.filteredCount,
+      totalPages: result.totalPages,
     },
   });
 });
