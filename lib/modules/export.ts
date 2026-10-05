@@ -1,37 +1,42 @@
+import { PassThrough, Readable } from "node:stream";
 import ExcelJS from "exceljs";
-import { Prisma } from "@/lib/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
-import { buildResultsWhere, ResultsFilters } from "@/lib/modules/results-filters";
+import type { Prisma } from "@/lib/generated/prisma/client";
+import { buildResultsWhere, type ResultsFilters } from "@/lib/modules/results-filters";
 import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
+import { logger } from "@/lib/observability/logger";
+import { prisma } from "@/lib/prisma";
 
 export type ExportFormat = "csv" | "xlsx" | "json";
 export type ExportScope = "approved" | "selected" | "review" | "non-excluded" | "filtered";
 
-type ExportSourceRow = {
-  keyword: string;
-  normalized_keyword: string;
-  canonical_keyword: string;
-  source: string;
-  source_query: string;
-  brand_status: string;
-  review_status: string;
-  selected_for_export: boolean;
-  keyword_type: string;
-  search_intent: string;
-  is_question: boolean;
-  is_local_intent: boolean;
-  is_tool_intent: boolean;
-  is_commercial_intent: boolean;
-  metrics_status: string;
-  metrics_provider: string;
-  avg_monthly_searches: number | null;
-  competition: number | null;
-  low_top_of_page_bid_micros: bigint | null;
-  high_top_of_page_bid_micros: bigint | null;
-  score: number | null;
-  score_source: string;
-  subproject_name: string;
-};
+const EXPORT_ROW_SELECT = {
+  id: true,
+  keyword: true,
+  normalized_keyword: true,
+  canonical_keyword: true,
+  source: true,
+  source_query: true,
+  brand_status: true,
+  review_status: true,
+  selected_for_export: true,
+  keyword_type: true,
+  search_intent: true,
+  is_question: true,
+  is_local_intent: true,
+  is_tool_intent: true,
+  is_commercial_intent: true,
+  metrics_status: true,
+  metrics_provider: true,
+  avg_monthly_searches: true,
+  competition: true,
+  low_top_of_page_bid_micros: true,
+  high_top_of_page_bid_micros: true,
+  score: true,
+  score_source: true,
+  subproject: { select: { name: true } },
+} satisfies Prisma.KeywordCandidateSelect;
+
+type ExportSourceRow = Prisma.KeywordCandidateGetPayload<{ select: typeof EXPORT_ROW_SELECT }>;
 
 export type ExportRow = {
   subproject_name: string;
@@ -85,11 +90,11 @@ const EXPORT_COLUMN_SET: Record<keyof ExportRow, true> = {
   score: true,
   score_source: true,
 };
-const EXPORT_COLUMNS = Object.keys(EXPORT_COLUMN_SET) as (keyof ExportRow)[];
+export const EXPORT_COLUMNS = Object.keys(EXPORT_COLUMN_SET) as (keyof ExportRow)[];
 
-function serialize(rows: ExportSourceRow[]): ExportRow[] {
-  return rows.map((row) => ({
-    subproject_name: row.subproject_name,
+function toExportRow(row: ExportSourceRow): ExportRow {
+  return {
+    subproject_name: row.subproject.name,
     keyword: row.keyword,
     normalized_keyword: row.normalized_keyword,
     canonical_keyword: row.canonical_keyword,
@@ -112,7 +117,7 @@ function serialize(rows: ExportSourceRow[]): ExportRow[] {
     high_top_of_page_bid_micros: row.high_top_of_page_bid_micros != null ? row.high_top_of_page_bid_micros.toString() : null,
     score: row.score,
     score_source: row.score_source,
-  }));
+  };
 }
 
 /**
@@ -173,26 +178,6 @@ export function serializeCsv(rows: ExportRow[], options: { dialect: CsvDialect }
   return Buffer.from(text, "utf8");
 }
 
-/**
- * Foglio "keywords" con exceljs: intestazione dalle chiavi di ExportRow e una riga per record. I valori
- * sono scritti come numeri, booleani o stringhe (mai come formula: un testo che inizia con = resta
- * testo); null resta una cella vuota. Con 0 righe il foglio è vuoto, come con il vecchio xlsx.
- */
-async function rowsToXlsx(rows: ExportRow[]): Promise<Buffer<ArrayBuffer>> {
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("keywords");
-
-  if (rows.length > 0) {
-    const headers = Object.keys(rows[0]) as (keyof ExportRow)[];
-    sheet.addRow(headers);
-    for (const row of rows) {
-      sheet.addRow(headers.map((header) => row[header]));
-    }
-  }
-
-  return Buffer.from(await workbook.xlsx.writeBuffer());
-}
-
 function buildScopeWhere(
   projectId: string,
   scope: ExportScope,
@@ -228,94 +213,184 @@ function buildScopeWhere(
   return { AND: andFilters };
 }
 
+/** Righe lette da ogni findMany dell'export (T-805): in memoria resta un blocco, non l'intero set. */
+const EXPORT_BATCH_SIZE = 1000;
+
+/**
+ * Righe di export lette a blocchi con paginazione a cursore (cursor su id, skip 1) nell'ordine
+ * RESULTS_ORDER_BY, che termina con id: nessuna riga saltata o ripetuta tra un blocco e l'altro.
+ */
+export async function* iterateExportRows(
+  where: Prisma.KeywordCandidateWhereInput,
+  batchSize = EXPORT_BATCH_SIZE
+): AsyncGenerator<ExportRow> {
+  let cursor: string | null = null;
+  while (true) {
+    const batch: ExportSourceRow[] = await prisma.keywordCandidate.findMany({
+      where,
+      orderBy: RESULTS_ORDER_BY,
+      take: batchSize,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      select: EXPORT_ROW_SELECT,
+    });
+
+    for (const row of batch) {
+      yield toExportRow(row);
+    }
+
+    if (batch.length < batchSize) {
+      return;
+    }
+    cursor = batch[batch.length - 1].id;
+  }
+}
+
+/** Tutte le righe di uno scope in memoria: la usa ancora l'export Google Sheets. */
 export async function getExportRows(params: {
   projectId: string;
   subprojectId?: string | null;
   scope: ExportScope;
   filters: ResultsFilters;
 }): Promise<ExportRow[]> {
-  const where = buildScopeWhere(params.projectId, params.scope, params.filters, params.subprojectId);
-
-  const rows = await prisma.keywordCandidate.findMany({
-    where,
-    orderBy: RESULTS_ORDER_BY,
-    select: {
-      keyword: true,
-      normalized_keyword: true,
-      canonical_keyword: true,
-      source: true,
-      source_query: true,
-      brand_status: true,
-      review_status: true,
-      selected_for_export: true,
-      keyword_type: true,
-      search_intent: true,
-      is_question: true,
-      is_local_intent: true,
-      is_tool_intent: true,
-      is_commercial_intent: true,
-      metrics_status: true,
-      metrics_provider: true,
-      avg_monthly_searches: true,
-      competition: true,
-      low_top_of_page_bid_micros: true,
-      high_top_of_page_bid_micros: true,
-      score: true,
-      score_source: true,
-      subproject: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  });
-
-  return serialize(
-    rows.map((row) => ({
-      ...row,
-      subproject_name: row.subproject.name,
-    }))
-  );
+  const rows: ExportRow[] = [];
+  for await (const row of iterateExportRows(
+    buildScopeWhere(params.projectId, params.scope, params.filters, params.subprojectId)
+  )) {
+    rows.push(row);
+  }
+  return rows;
 }
 
-export async function generateExport(params: {
+type ExportParams = {
   projectId: string;
   subprojectId?: string | null;
   format: ExportFormat;
   scope: ExportScope;
   filters: ResultsFilters;
   csvDialect?: CsvDialect;
-}) {
-  const payload = await getExportRows({
-    projectId: params.projectId,
-    subprojectId: params.subprojectId,
-    scope: params.scope,
-    filters: params.filters,
-  });
+};
 
+const CONTENT_TYPES: Record<ExportFormat, string> = {
+  csv: "text/csv; charset=utf-8",
+  json: "application/json",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+};
+
+/** Content-Type e nome del file, noti prima di aprire lo stream. */
+export function exportFileInfo(params: Pick<ExportParams, "projectId" | "subprojectId" | "format" | "scope">) {
   const date = new Date().toISOString().slice(0, 10);
   const filenameScope = params.subprojectId ? `subproject-${params.subprojectId}` : "project";
-  const filenameBase = `seo-god-mode-${params.projectId}-${filenameScope}-${params.scope}-${date}`;
-
-  if (params.format === "json") {
-    return {
-      contentType: "application/json",
-      filename: `${filenameBase}.json`,
-      buffer: Buffer.from(JSON.stringify(payload, null, 2), "utf8"),
-    };
-  }
-
-  if (params.format === "csv") {
-    return {
-      contentType: "text/csv; charset=utf-8",
-      filename: `${filenameBase}.csv`,
-      buffer: serializeCsv(payload, { dialect: params.csvDialect ?? CSV_DIALECT_DEFAULT }),
-    };
-  }
-
   return {
-    contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    filename: `${filenameBase}.xlsx`,
-    buffer: await rowsToXlsx(payload),
+    contentType: CONTENT_TYPES[params.format],
+    filename: `seo-god-mode-${params.projectId}-${filenameScope}-${params.scope}-${date}.${params.format}`,
   };
+}
+
+// Testo accumulato prima di consegnare un pezzo allo stream.
+const CHUNK_TARGET_LENGTH = 64 * 1024;
+
+async function* csvChunks(rows: AsyncIterable<ExportRow>, dialect: CsvDialect): AsyncGenerator<string> {
+  let chunk = csvHead(dialect);
+  for await (const row of rows) {
+    chunk += csvLine(row, dialect);
+    if (chunk.length >= CHUNK_TARGET_LENGTH) {
+      yield chunk;
+      chunk = "";
+    }
+  }
+  if (chunk) {
+    yield chunk;
+  }
+}
+
+/** Array JSON scritto a pezzi, con lo stesso testo di JSON.stringify(rows, null, 2). */
+async function* jsonChunks(rows: AsyncIterable<ExportRow>): AsyncGenerator<string> {
+  let chunk = "[";
+  let empty = true;
+  for await (const row of rows) {
+    chunk += `${empty ? "\n" : ",\n"}  ${JSON.stringify(row, null, 2).replace(/\n/g, "\n  ")}`;
+    empty = false;
+    if (chunk.length >= CHUNK_TARGET_LENGTH) {
+      yield chunk;
+      chunk = "";
+    }
+  }
+  yield `${chunk}${empty ? "]" : "\n]"}`;
+}
+
+/** Stream a richiesta: ogni lettura del client chiede il pezzo successivo (e quindi il blocco successivo). */
+function textStream(chunks: AsyncGenerator<string>, onError: (error: unknown) => void): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const { value, done } = await chunks.next();
+        if (done) {
+          controller.close();
+        } else {
+          controller.enqueue(encoder.encode(value));
+        }
+      } catch (error) {
+        onError(error);
+        controller.error(error);
+      }
+    },
+    async cancel() {
+      await chunks.return(undefined);
+    },
+  });
+}
+
+/**
+ * Foglio "keywords" scritto con il WorkbookWriter di exceljs su uno stream di passaggio, con commit di
+ * ogni riga. I valori sono numeri, booleani o stringhe (mai formule: un testo che inizia con = resta
+ * testo); null resta una cella vuota. Con 0 righe il foglio è vuoto (T-406).
+ */
+function xlsxStream(rows: AsyncIterable<ExportRow>, onError: (error: unknown) => void): ReadableStream<Uint8Array> {
+  const output = new PassThrough();
+  const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: output, useStyles: false, useSharedStrings: false });
+  const sheet = workbook.addWorksheet("keywords");
+
+  const write = async () => {
+    let empty = true;
+    for await (const row of rows) {
+      if (empty) {
+        sheet.addRow(EXPORT_COLUMNS).commit();
+        empty = false;
+      }
+      sheet.addRow(EXPORT_COLUMNS.map((column) => row[column])).commit();
+    }
+    sheet.commit();
+    await workbook.commit();
+  };
+
+  write().catch((error: unknown) => {
+    onError(error);
+    output.destroy(error instanceof Error ? error : new Error(String(error)));
+  });
+
+  return Readable.toWeb(output) as ReadableStream<Uint8Array>;
+}
+
+/**
+ * Export in streaming (T-805). La route verifica autenticazione, progetto e sezione prima di chiamarla.
+ * Un errore a metà (per esempio del DB) chiude lo stream con errore invece di consegnare un file troncato
+ * con 200 apparentemente completo; il dettaglio finisce solo nel log.
+ */
+export function streamExport(params: ExportParams): ReadableStream<Uint8Array> {
+  const rows = iterateExportRows(buildScopeWhere(params.projectId, params.scope, params.filters, params.subprojectId));
+  const onError = (error: unknown) =>
+    logger.error("export_stream_failed", {
+      projectId: params.projectId,
+      subprojectId: params.subprojectId ?? null,
+      format: params.format,
+      error,
+    });
+
+  if (params.format === "xlsx") {
+    return xlsxStream(rows, onError);
+  }
+
+  const chunks = params.format === "csv" ? csvChunks(rows, params.csvDialect ?? CSV_DIALECT_DEFAULT) : jsonChunks(rows);
+  return textStream(chunks, onError);
 }
