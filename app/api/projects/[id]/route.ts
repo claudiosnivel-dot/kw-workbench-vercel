@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
-import { parseProjectDefaultsPayload } from "@/lib/modules/project-settings";
+import { parseProjectPatch } from "@/lib/modules/project-settings";
 import { invalidSettingsResponse } from "@/lib/modules/project-settings-response";
 import { prisma } from "@/lib/prisma";
 
@@ -57,9 +57,9 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   try {
     const user = await requireAuthenticatedUserFromRequest(request);
     const { id } = await context.params;
-    const payload = (await request.json()) as Record<string, unknown>;
+    const payload: unknown = await request.json();
 
-    // Il provider salvato serve a parseProjectDefaultsPayload: GOOGLE_KEYWORD_PLANNER resta solo se c'era già.
+    // Il provider salvato serve a parseProjectPatch: GOOGLE_KEYWORD_PLANNER e MOCK restano se c'erano già.
     const project = await prisma.project.findFirst({
       where: {
         id,
@@ -72,26 +72,9 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
       return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
     }
 
-    const input = parseProjectDefaultsPayload(payload, project.metrics_provider);
-    const autocompleteProvider = user.isRootAdmin ? input.autocomplete_provider : "GOOGLE_DIRECT";
-
-    const updated = await prisma.project.update({
-      where: { id },
-      data: {
-        name: input.name,
-        language_code: input.language_code,
-        country_code: input.country_code,
-        autocomplete_provider: autocompleteProvider,
-        metrics_provider: input.metrics_provider,
-        min_volume: input.min_volume,
-        exclude_brands: input.exclude_brands,
-        expand_alpha: input.expand_alpha,
-        expand_numeric: input.expand_numeric,
-        expand_patterns: input.expand_patterns,
-        auto_classification: input.auto_classification,
-        scoring_profile: input.scoring_profile,
-      },
-    });
+    // Aggiornamento parziale (T-809): solo i campi inviati, validati da uno schema strict.
+    const data = parseProjectPatch(payload, user, project);
+    const updated = await prisma.project.update({ where: { id }, data });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
