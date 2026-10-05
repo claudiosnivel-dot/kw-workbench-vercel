@@ -11,7 +11,9 @@
 2. **Checkpoint Trueline verde** al confine del macrotask (igiene, sicurezza, regressioni, conformità).
 3. **Pull request** verso `master`: la CI (`.github/workflows/ci.yml`, T-110) esegue i job `checks`,
    `integration`, `e2e` e `build`.
-4. **CI verde** su tutti e quattro i job.
+4. **CI verde** su tutti e quattro i job. Una PR o un push che cambia solo file sotto `docs/` non avvia
+   la CI (filtro `paths` di `ci.yml`, decisione dell'utente del 2026-10-05) e non ha quindi check da
+   attendere; `docs/ENVIRONMENTS.md` la avvia comunque perché un test lo legge.
 5. **Merge su `master`**: Vercel builda con `npm run vercel-build` (T-202), applica migrazioni e seed al DB di
    produzione e pubblica il deploy su `titanseo.vercel.app`.
 6. **Controllo dopo il deploy**: `GET https://titanseo.vercel.app/api/health` deve rispondere 200 con

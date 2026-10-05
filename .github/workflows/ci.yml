@@ -2,11 +2,19 @@
 # Ogni azione è fissata allo SHA di commit completo; la versione è nel commento.
 name: CI
 
+# Niente CI per i commit di sola documentazione (docs/), come l'Ignored Build Step di Vercel (T-605):
+# basta un file fuori da docs/ per farla partire. docs/ENVIRONMENTS.md la fa partire comunque perché
+# tests/unit/env-check.test.ts lo legge. L'ordine dei pattern conta: l'ultimo che corrisponde decide.
 on:
   push:
     branches: [master]
+    paths: &code-paths
+      - "**"
+      - "!docs/**"
+      - "docs/ENVIRONMENTS.md"
   pull_request:
     branches: [master]
+    paths: *code-paths
 
 permissions:
   contents: read
