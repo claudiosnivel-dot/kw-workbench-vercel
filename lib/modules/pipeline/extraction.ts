@@ -1,4 +1,5 @@
 import { MetricsProvider, Prisma } from "@/lib/generated/prisma/client";
+import type { BrandStatus, KeywordType, MetricsStatus, ReviewStatus, SearchIntent } from "@/lib/generated/prisma/enums";
 import { getIntEnv } from "@/lib/env";
 import { evaluateBrandStatus, prepareBlacklist } from "@/lib/modules/brand-filter";
 import { classifyKeyword } from "@/lib/modules/classification";
@@ -55,12 +56,114 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
+/** Riga di keyword_candidates preparata dalla pipeline; project_id e subproject_id sono quelli del job. */
+type CandidateRow = {
+  keyword: string;
+  normalized_keyword: string;
+  canonical_keyword: string;
+  source: string;
+  source_query: string;
+  brand_status: BrandStatus;
+  brand_reason: string | null;
+  review_status: ReviewStatus;
+  selected_for_export: boolean;
+  keyword_type: KeywordType;
+  search_intent: SearchIntent;
+  is_question: boolean;
+  is_local_intent: boolean;
+  is_tool_intent: boolean;
+  is_commercial_intent: boolean;
+  metrics_status: MetricsStatus;
+  metrics_provider: MetricsProvider;
+  avg_monthly_searches: number | null;
+  competition: number | null;
+  low_top_of_page_bid_micros: bigint | null;
+  high_top_of_page_bid_micros: bigint | null;
+  score: number;
+  metrics_updated_at: Date | null;
+};
+
+const UPSERT_CHUNK_SIZE = 500;
+
 function chunk<T>(items: T[], size: number): T[][] {
   const output: T[][] = [];
   for (let index = 0; index < items.length; index += size) {
     output.push(items.slice(index, index + size));
   }
   return output;
+}
+
+function candidateValues(projectId: string, subprojectId: string, row: CandidateRow, now: Date): Prisma.Sql {
+  return Prisma.sql`(
+    gen_random_uuid()::text, ${projectId}, ${subprojectId}, ${row.keyword}, ${row.normalized_keyword},
+    ${row.canonical_keyword}, ${row.source}, ${row.source_query}, ${row.brand_status}::"BrandStatus",
+    ${row.brand_reason}, ${row.review_status}::"ReviewStatus", ${row.selected_for_export},
+    ${row.keyword_type}::"KeywordType", ${row.search_intent}::"SearchIntent", ${row.is_question},
+    ${row.is_local_intent}, ${row.is_tool_intent}, ${row.is_commercial_intent},
+    ${row.metrics_status}::"MetricsStatus", ${row.metrics_provider}::"MetricsProvider",
+    ${row.avg_monthly_searches}::integer, ${row.competition}::double precision,
+    ${row.low_top_of_page_bid_micros}::bigint, ${row.high_top_of_page_bid_micros}::bigint,
+    ${row.score}::double precision, ${row.metrics_updated_at}::timestamp(3), ${now}::timestamp(3), ${now}::timestamp(3)
+  )`;
+}
+
+/**
+ * Scrittura dei risultati secondo D-19 (T-705): le keyword ancora prodotte restano con lo stesso id,
+ * review_status e selected_for_export e ricevono metriche, punteggio e classificazione nuovi; le nuove
+ * entrano con i default; quelle non più prodotte vengono rimosse dalla sola sezione del job.
+ * L'upsert usa la chiave unica (subproject_id, canonical_keyword) a blocchi di UPSERT_CHUNK_SIZE righe
+ * e solo parametri di Prisma.sql. Caso limite: una keyword il cui canonical cambia per una nuova regola
+ * di normalizzazione (T-702) è trattata come nuova al primo re-run successivo.
+ */
+async function storeCandidates(
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  subprojectId: string,
+  rows: CandidateRow[],
+  now: Date
+): Promise<void> {
+  for (const part of chunk(rows, UPSERT_CHUNK_SIZE)) {
+    await tx.$executeRaw`
+      INSERT INTO "keyword_candidates" (
+        "id", "project_id", "subproject_id", "keyword", "normalized_keyword", "canonical_keyword", "source",
+        "source_query", "brand_status", "brand_reason", "review_status", "selected_for_export", "keyword_type",
+        "search_intent", "is_question", "is_local_intent", "is_tool_intent", "is_commercial_intent",
+        "metrics_status", "metrics_provider", "avg_monthly_searches", "competition", "low_top_of_page_bid_micros",
+        "high_top_of_page_bid_micros", "score", "metrics_updated_at", "created_at", "updated_at"
+      )
+      VALUES ${Prisma.join(part.map((row) => candidateValues(projectId, subprojectId, row, now)))}
+      ON CONFLICT ("subproject_id", "canonical_keyword") DO UPDATE SET
+        "keyword" = EXCLUDED."keyword",
+        "normalized_keyword" = EXCLUDED."normalized_keyword",
+        "source" = EXCLUDED."source",
+        "source_query" = EXCLUDED."source_query",
+        "brand_status" = EXCLUDED."brand_status",
+        "brand_reason" = EXCLUDED."brand_reason",
+        "keyword_type" = EXCLUDED."keyword_type",
+        "search_intent" = EXCLUDED."search_intent",
+        "is_question" = EXCLUDED."is_question",
+        "is_local_intent" = EXCLUDED."is_local_intent",
+        "is_tool_intent" = EXCLUDED."is_tool_intent",
+        "is_commercial_intent" = EXCLUDED."is_commercial_intent",
+        "metrics_status" = EXCLUDED."metrics_status",
+        "metrics_provider" = EXCLUDED."metrics_provider",
+        "avg_monthly_searches" = EXCLUDED."avg_monthly_searches",
+        "competition" = EXCLUDED."competition",
+        "low_top_of_page_bid_micros" = EXCLUDED."low_top_of_page_bid_micros",
+        "high_top_of_page_bid_micros" = EXCLUDED."high_top_of_page_bid_micros",
+        "score" = EXCLUDED."score",
+        "metrics_updated_at" = EXCLUDED."metrics_updated_at",
+        "updated_at" = EXCLUDED."updated_at"
+    `;
+  }
+
+  // Un solo parametro array: un notIn di Prisma supererebbe il limite di parametri con decine di migliaia di keyword.
+  const produced = rows.map((row) => row.canonical_keyword);
+  await tx.$executeRaw`
+    DELETE FROM "keyword_candidates"
+    WHERE "project_id" = ${projectId} AND "subproject_id" = ${subprojectId}
+      AND "canonical_keyword" <> ALL(${produced}::text[])
+  `;
 }
 
 export async function runExtractionPipeline(subprojectId: string): Promise<ExtractionSummary> {
@@ -173,7 +276,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
       : buildMissingMetrics([], effective.metrics_provider as MetricsProvider, "missing");
 
   const now = new Date();
-  const preparedRows: Prisma.KeywordCandidateCreateManyInput[] = [];
+  const preparedRows: CandidateRow[] = [];
 
   for (const candidate of deduped) {
     const brand = evaluateBrandStatus({
@@ -226,15 +329,13 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     });
 
     preparedRows.push({
-      project_id: subproject.project_id,
-      subproject_id: subproject.id,
       keyword: candidate.keyword,
       normalized_keyword: candidate.normalizedKeyword,
       canonical_keyword: candidate.canonicalKeyword,
       source: candidate.source,
       source_query: candidate.sourceQuery,
       brand_status: brand.brand_status,
-      brand_reason: brand.brand_reason,
+      brand_reason: brand.brand_reason ?? null,
       review_status: brand.brand_status === "excluded" ? "rejected" : "pending",
       selected_for_export: brand.brand_status !== "excluded",
       keyword_type: classification.keyword_type,
@@ -245,23 +346,17 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
       is_commercial_intent: classification.is_commercial_intent,
       metrics_status: metric.metrics_status,
       metrics_provider: metric.metrics_provider,
-      avg_monthly_searches: metric.avg_monthly_searches,
-      competition: metric.competition,
-      low_top_of_page_bid_micros: metric.low_top_of_page_bid_micros,
-      high_top_of_page_bid_micros: metric.high_top_of_page_bid_micros,
+      avg_monthly_searches: metric.avg_monthly_searches ?? null,
+      competition: metric.competition ?? null,
+      low_top_of_page_bid_micros: metric.low_top_of_page_bid_micros ?? null,
+      high_top_of_page_bid_micros: metric.high_top_of_page_bid_micros ?? null,
       score,
       metrics_updated_at: metric.metrics_status === "missing" ? null : now,
     });
   }
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    await tx.keywordCandidate.deleteMany({ where: { project_id: subproject.project_id, subproject_id: subproject.id } });
-
-    for (const part of chunk(preparedRows, 500)) {
-      if (part.length > 0) {
-        await tx.keywordCandidate.createMany({ data: part });
-      }
-    }
+    await storeCandidates(tx, subproject.project_id, subproject.id, preparedRows, now);
   });
 
   return {

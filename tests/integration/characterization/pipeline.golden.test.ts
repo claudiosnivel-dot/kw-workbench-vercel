@@ -132,7 +132,8 @@ describe("golden master della pipeline di estrazione", () => {
   });
 
   // covers: AC-106-3
-  it("la riesecuzione riproduce le stesse candidate e riporta a pending quelle approvate", async () => {
+  // Aggiornato da T-705 (impacted-by): la riesecuzione conserva la revisione (D-19) invece di riportarla a pending.
+  it("la riesecuzione riproduce le stesse candidate e conserva la revisione di quelle approvate", async () => {
     const subprojectId = await createSection(SEEDS);
     await runExtractionPipeline(subprojectId);
     const firstRun = await goldenRows(subprojectId);
@@ -146,11 +147,15 @@ describe("golden master della pipeline di estrazione", () => {
     await runExtractionPipeline(subprojectId);
 
     const secondRun = await goldenRows(subprojectId);
-    expect(secondRun).toEqual(firstRun);
+    expect(secondRun).toEqual(
+      firstRun.map((row) =>
+        row.canonical_keyword === approved?.canonical_keyword ? { ...row, review_status: "approved" } : row
+      )
+    );
     expect(secondRun).toHaveLength(firstRun.length);
     const rerun = secondRun.find((row) => row.canonical_keyword === approved?.canonical_keyword);
     // impacted-by: T-705
-    expect(rerun?.review_status).toBe("pending");
+    expect(rerun?.review_status).toBe("approved");
   });
 
   // covers: AC-106-4
