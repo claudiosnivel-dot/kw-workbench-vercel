@@ -5,8 +5,12 @@ import { shouldUseSecureCookies } from "@/lib/auth/config";
 
 export const GOOGLE_SHEETS_OAUTH_STATE_COOKIE = "kwb_google_sheets_oauth_state";
 
-/** Scope richiesto da connect e verificato dalla callback tra quelli concessi (permessi granulari). */
-export const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+/**
+ * Scope richiesto da connect e verificato dalla callback tra quelli concessi (permessi granulari). drive.file
+ * (Recommended, Non-sensitive) basta perché l'export crea solo file nuovi e scrive solo su quelli (T-907):
+ * https://developers.google.com/workspace/sheets/api/scopes
+ */
+export const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/drive.file";
 
 /** Codici ammessi nel parametro reason: mai testo di Google o di un'eccezione nell'URL (CWE-79). */
 export type GoogleSheetsOAuthReason =

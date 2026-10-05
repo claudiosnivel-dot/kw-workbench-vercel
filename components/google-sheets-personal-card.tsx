@@ -7,6 +7,7 @@ import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/clien
 type GoogleSheetsSnapshot = {
   connected: boolean;
   status: "connected" | "reauth_required" | "disconnected";
+  needsReconnect: boolean;
   connectedEmail?: string;
   scope?: string;
   tokenType?: string;
@@ -91,7 +92,14 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
         </p>
       </div>
 
-      {initial.status === "reauth_required" && (
+      {initial.connected && initial.needsReconnect && initial.status === "connected" && (
+        <p className="text-sm text-amber-700">
+          Il collegamento usa un permesso più ampio di quello che serve: ricollega Google Sheets per passare all&apos;accesso
+          ai soli file creati da questa app.
+        </p>
+      )}
+
+      {initial.connected && (initial.status === "reauth_required" || initial.needsReconnect) && (
         <a className="btn-primary w-full text-center sm:w-auto" href="/api/integrations/google-sheets/connect">
           Ricollega Google Sheets
         </a>

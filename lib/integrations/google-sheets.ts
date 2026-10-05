@@ -1,3 +1,4 @@
+import { GOOGLE_SHEETS_SCOPE, hasGrantedScope } from "@/lib/integrations/google-sheets-oauth";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret, encryptSecret } from "@/lib/security/encryption";
@@ -11,6 +12,8 @@ export type GoogleSheetsCredentialSnapshot = {
   connected: boolean;
   /** reauth_required: invalid_grant al rinnovo del token o credenziale illeggibile (T-906). */
   status: GoogleSheetsCredentialStatus;
+  /** Credenziale con uno scope precedente a drive.file (T-907): l'utente è invitato a ricollegarsi. */
+  needsReconnect: boolean;
   connectedEmail?: string;
   scope?: string;
   tokenType?: string;
@@ -39,7 +42,7 @@ function decryptRefreshToken(record: CredentialRecord): string | null {
 export async function getGoogleSheetsCredentialSnapshot(userId: string): Promise<GoogleSheetsCredentialSnapshot> {
   const record = await getGoogleSheetsCredentialRecord(userId);
   if (!record) {
-    return { connected: false, status: "disconnected" };
+    return { connected: false, status: "disconnected", needsReconnect: false };
   }
 
   // Una credenziale illeggibile non è assente: l'utente deve ricollegarsi.
@@ -47,6 +50,7 @@ export async function getGoogleSheetsCredentialSnapshot(userId: string): Promise
   return {
     connected: true,
     status: record.reauth_required_at || !readable ? "reauth_required" : "connected",
+    needsReconnect: !hasGrantedScope(record.scope ?? undefined, GOOGLE_SHEETS_SCOPE),
     connectedEmail: record.connected_email ?? undefined,
     scope: record.scope ?? undefined,
     tokenType: record.token_type ?? undefined,
