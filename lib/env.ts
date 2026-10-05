@@ -16,6 +16,9 @@ export const INT_ENV = {
   AUTOCOMPLETE_CACHE_TTL_MS: { def: 300_000, min: 30_000, max: 86_400_000 },
   AUTOCOMPLETE_MAX_RETRIES: { def: 2, min: 0, max: 5 },
   AUTOCOMPLETE_TIMEOUT_MS: { def: 4_500, min: 1_000, max: 30_000 },
+  // Provider DataForSEO (T-909): timeout di ogni richiesta e tentativi per lotto (il primo compreso).
+  DATAFORSEO_TIMEOUT_MS: { def: 30_000, min: 1_000, max: 120_000 },
+  DATAFORSEO_MAX_ATTEMPTS: { def: 3, min: 1, max: 6 },
   // Il default effettivo dipende da NODE_ENV (lib/prisma.ts): 3 in produzione, 1 altrove.
   PRISMA_CONNECTION_LIMIT: { def: 3, min: 1, max: 50 },
   PRISMA_POOL_TIMEOUT: { def: 15, min: 1, max: 120 },
@@ -83,6 +86,8 @@ const envSchema = z.object({
   // Fornitore di metriche con licenza (T-902, D-30): credenziali dell'account API, mai in DB né nei log.
   DATAFORSEO_LOGIN: optional,
   DATAFORSEO_PASSWORD: optional,
+  DATAFORSEO_TIMEOUT_MS: optional,
+  DATAFORSEO_MAX_ATTEMPTS: optional,
   GOOGLE_SHEETS_OAUTH_CLIENT_ID: optional,
   GOOGLE_SHEETS_OAUTH_CLIENT_SECRET: optional,
   GOOGLE_SHEETS_OAUTH_REDIRECT_URI: optional,

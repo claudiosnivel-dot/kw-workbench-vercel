@@ -1,4 +1,4 @@
-import { getDataForSeoCredentials } from "@/lib/env";
+import { getDataForSeoCredentials, getIntEnv } from "@/lib/env";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import { dataForSeoSkipReason } from "@/lib/modules/providers/metrics/dataforseo-keywords";
 import { toDataForSeoLanguageCode, toDataForSeoLocationCode } from "@/lib/modules/providers/metrics/dataforseo-targets";
@@ -19,6 +19,14 @@ export const DATAFORSEO_SEARCH_VOLUME_URL =
 export const DATAFORSEO_BATCH_SIZE = 1000;
 
 const STATUS_OK = 20000;
+// Limite documentato per account sugli endpoint live Google Ads: 12 richieste al minuto (T-909).
+const LIMIT_REQUESTS = 12;
+const LIMIT_WINDOW_MS = 60_000;
+const BACKOFF_BASE_MS = 1_000;
+// Codici interni di DataForSEO ripetibili (https://docs.dataforseo.com/v3/appendix/errors, 2026-10-06): 40202 limite
+// al minuto superato, 40209 troppe richieste simultanee, 5xxxx errori del server; gli altri 4xxxx no (credenziali,
+// credito, campi non validi).
+const RETRYABLE_TASK_CODES = new Set([40202, 40209]);
 const COMPETITION_LEVELS: Record<string, number> = { HIGH: 0.8, MEDIUM: 0.5, LOW: 0.2 };
 
 type SearchVolumeResult = {
@@ -37,18 +45,51 @@ type SearchVolumeResponse = {
   tasks?: { id?: string; status_code?: number; cost?: number; result?: SearchVolumeResult[] | null }[];
 };
 
-type BatchResponse = { results: SearchVolumeResult[]; costUsd: number };
+/** Esito di un tentativo: status HTTP se la risposta non è 2xx, altrimenti status_code del task. */
+type AttemptResult = {
+  status: number | "timeout" | "network";
+  taskId?: string;
+  costUsd: number;
+  results: SearchVolumeResult[];
+};
 
-/** Lotto non riuscito: le sue keyword restano senza volumi, gli altri lotti proseguono. */
-class DataForSeoBatchError extends Error {
-  constructor(
-    readonly status: number,
-    readonly taskId: string | undefined,
-    readonly costUsd: number
-  ) {
-    super(`DataForSEO: lotto non riuscito (status ${status})`);
-    this.name = "DataForSeoBatchError";
+// Istanti degli invii di questa istanza negli ultimi 60 secondi.
+let sentAt: number[] = [];
+
+export function resetDataForSeoLimiterForTests(): void {
+  sentAt = [];
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Attende finché l'invio non porta oltre 12 richieste in una finestra di 60 secondi, poi lo registra. */
+async function acquireSlot(): Promise<void> {
+  for (;;) {
+    const now = Date.now();
+    sentAt = sentAt.filter((time) => now - time < LIMIT_WINDOW_MS);
+    if (sentAt.length < LIMIT_REQUESTS) {
+      sentAt.push(now);
+      return;
+    }
+    await sleep(sentAt[0] + LIMIT_WINDOW_MS - now);
   }
+}
+
+function isRetryable(status: AttemptResult["status"]): boolean {
+  if (status === "timeout") {
+    return true;
+  }
+  if (status === "network") {
+    return false;
+  }
+  return (
+    status === 429 ||
+    (status >= 500 && status < 600) ||
+    RETRYABLE_TASK_CODES.has(status) ||
+    (status >= 50000 && status < 60000)
+  );
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -87,28 +128,63 @@ function toMetric(canonical: string, result: SearchVolumeResult): KeywordMetric 
   };
 }
 
-async function postBatch(
+async function postOnce(
   keywords: string[],
   target: { location_code: number; language_code: string },
   authorization: string
-): Promise<BatchResponse> {
-  const response = await fetch(DATAFORSEO_SEARCH_VOLUME_URL, {
-    method: "POST",
-    headers: { Authorization: authorization, "Content-Type": "application/json" },
-    // location_code sempre presente: senza, DataForSEO restituirebbe volumi mondiali.
-    body: JSON.stringify([{ keywords, ...target, search_partners: false }]),
-  });
+): Promise<AttemptResult> {
+  await acquireSlot();
+  let response: Response;
+  try {
+    response = await fetch(DATAFORSEO_SEARCH_VOLUME_URL, {
+      method: "POST",
+      headers: { Authorization: authorization, "Content-Type": "application/json" },
+      // location_code sempre presente: senza, DataForSEO restituirebbe volumi mondiali.
+      body: JSON.stringify([{ keywords, ...target, search_partners: false }]),
+      signal: AbortSignal.timeout(getIntEnv("DATAFORSEO_TIMEOUT_MS")),
+    });
+  } catch (error) {
+    const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+    return { status: timedOut ? "timeout" : "network", costUsd: 0, results: [] };
+  }
   const body = (await response.json().catch(() => ({}))) as SearchVolumeResponse;
   const task = body.tasks?.[0];
-  const costUsd = typeof body.cost === "number" ? body.cost : 0;
-  const status = !response.ok ? response.status : (task?.status_code ?? body.status_code ?? 0);
+  return {
+    status: !response.ok ? response.status : (task?.status_code ?? body.status_code ?? 0),
+    taskId: task?.id,
+    costUsd: typeof body.cost === "number" ? body.cost : 0,
+    results: task?.result ?? [],
+  };
+}
 
-  logger.info("dataforseo_request", { status, taskId: task?.id, costUsd, keywords: keywords.length });
-
-  if (status !== STATUS_OK) {
-    throw new DataForSeoBatchError(status, task?.id, costUsd);
+/**
+ * Invia un lotto con al massimo DATAFORSEO_MAX_ATTEMPTS tentativi: si ripete solo su 429, 5xx, timeout e codici
+ * interni ripetibili, con backoff esponenziale e jitter. I log riportano status, id del task e costo, mai le
+ * credenziali (CWE-532).
+ */
+async function sendBatch(
+  keywords: string[],
+  target: { location_code: number; language_code: string },
+  authorization: string
+): Promise<{ attempt: AttemptResult; attempts: number; costUsd: number }> {
+  const maxAttempts = getIntEnv("DATAFORSEO_MAX_ATTEMPTS");
+  let costUsd = 0;
+  for (let attempts = 1; ; attempts += 1) {
+    const attempt = await postOnce(keywords, target, authorization);
+    costUsd += attempt.costUsd;
+    logger.info("dataforseo_request", {
+      status: attempt.status,
+      taskId: attempt.taskId,
+      costUsd: attempt.costUsd,
+      keywords: keywords.length,
+      attempt: attempts,
+    });
+    if (attempt.status === STATUS_OK || attempts >= maxAttempts || !isRetryable(attempt.status)) {
+      return { attempt, attempts, costUsd };
+    }
+    const backoff = BACKOFF_BASE_MS * 2 ** (attempts - 1);
+    await sleep(backoff + Math.random() * backoff);
   }
-  return { results: task?.result ?? [], costUsd };
 }
 
 /** Provider con licenza DataForSEO (T-902, D-30): credenziali solo da env, nessuna chiamata senza location. */
@@ -153,32 +229,36 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
 
     for (const batch of chunk(accepted, DATAFORSEO_BATCH_SIZE)) {
       const requested = new Set(batch.map((item) => item.canonical));
-      requests += 1;
-      try {
-        const response = await postBatch(
-          batch.map((item) => item.displayKeyword),
-          target,
-          authorization
-        );
-        costUsd += response.costUsd;
-        for (const result of response.results) {
-          // Il risultato torna in minuscolo: si ricollega al canonical richiesto con la stessa regola di T-702.
-          const canonical = canonicalizeKeyword(result.keyword ?? "", context.languageCode);
-          const metric = requested.has(canonical) ? toMetric(canonical, result) : null;
-          if (metric) {
-            metrics.set(canonical, metric);
-          }
-          if (result.spell) {
-            spellCorrected += 1;
-          }
-        }
-      } catch (error) {
-        if (!(error instanceof DataForSeoBatchError)) {
-          throw error;
-        }
-        costUsd += error.costUsd;
+      const sent = await sendBatch(
+        batch.map((item) => item.displayKeyword),
+        target,
+        authorization
+      );
+      requests += sent.attempts;
+      costUsd += sent.costUsd;
+
+      if (sent.attempt.status !== STATUS_OK) {
+        // Lotto non riuscito: nessuna metrica inventata, gli altri lotti proseguono.
+        logger.warn("dataforseo_batch_failed", {
+          status: sent.attempt.status,
+          taskId: sent.attempt.taskId,
+          attempts: sent.attempts,
+        });
         for (const canonical of requested) {
           metrics.set(canonical, { keyword: canonical, metrics_status: "failed", metrics_provider: this.id });
+        }
+        continue;
+      }
+
+      for (const result of sent.attempt.results) {
+        // Il risultato torna in minuscolo: si ricollega al canonical richiesto con la stessa regola di T-702.
+        const canonical = canonicalizeKeyword(result.keyword ?? "", context.languageCode);
+        const metric = requested.has(canonical) ? toMetric(canonical, result) : null;
+        if (metric) {
+          metrics.set(canonical, metric);
+        }
+        if (result.spell) {
+          spellCorrected += 1;
         }
       }
     }
