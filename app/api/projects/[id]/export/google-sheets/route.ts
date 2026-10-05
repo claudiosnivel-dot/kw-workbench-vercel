@@ -3,7 +3,11 @@ import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { AppError, withApiErrors } from "@/lib/http/errors";
 import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import { ExportScope } from "@/lib/modules/export";
-import { exportProjectToGoogleSheets, GoogleSheetsExportError } from "@/lib/modules/google-sheets-export";
+import {
+  exportProjectToGoogleSheets,
+  GoogleReauthRequiredError,
+  GoogleSheetsExportError,
+} from "@/lib/modules/google-sheets-export";
 import { logger } from "@/lib/observability/logger";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
@@ -115,8 +119,9 @@ export const POST = withApiErrors(async (request: NextRequest, context: RouteCon
       filters,
     });
   } catch (error) {
-    // GoogleSheetsExportError porta status e messaggio pubblici; ogni altra eccezione resta nei log (CWE-209).
-    if (error instanceof GoogleSheetsExportError) {
+    // GoogleSheetsExportError e GoogleReauthRequiredError (409, T-906) portano status e messaggio pubblici;
+    // ogni altra eccezione resta nei log (CWE-209).
+    if (error instanceof GoogleSheetsExportError || error instanceof GoogleReauthRequiredError) {
       throw error;
     }
     logger.error("google_sheets_export_failed", { projectId: id, subprojectId, error });

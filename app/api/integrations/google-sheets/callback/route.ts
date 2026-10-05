@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { shouldUseSecureCookies } from "@/lib/auth/config";
-import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { NextRequest } from "next/server";
+import { getOptionalAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import {
   getDecryptedGoogleSheetsRefreshToken,
@@ -8,10 +7,23 @@ import {
   upsertGoogleSheetsCredential,
 } from "@/lib/integrations/google-sheets";
 import { getGoogleSheetsApiConfig } from "@/lib/integrations/google-sheets-config";
+import {
+  GOOGLE_SHEETS_OAUTH_STATE_COOKIE,
+  hasGrantedScope,
+  oauthRedirect,
+} from "@/lib/integrations/google-sheets-oauth";
+import { logger } from "@/lib/observability/logger";
 
-const OAUTH_STATE_COOKIE = "kwb_google_sheets_oauth_state";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const USER_INFO_ENDPOINT = "https://openidconnect.googleapis.com/v1/userinfo";
+
+type TokenPayload = {
+  access_token?: string;
+  refresh_token?: string;
+  scope?: string;
+  token_type?: string;
+  error?: string;
+};
 
 async function fetchProfileEmail(accessToken: string): Promise<string | undefined> {
   try {
@@ -33,27 +45,28 @@ async function fetchProfileEmail(accessToken: string): Promise<string | undefine
   }
 }
 
+/**
+ * Callback del consenso Google Sheets (T-906): ogni uscita torna a Personalizza con un codice della whitelist e
+ * cancella il cookie di state; la credenziale si salva solo se lo scope richiesto è tra quelli concessi.
+ */
 export const GET = withApiErrors(async (request: NextRequest) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
+  const user = await getOptionalAuthenticatedUserFromRequest(request);
+  if (!user) {
+    return oauthRedirect(request, { error: "sessione_scaduta" });
+  }
 
   const url = request.nextUrl;
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const oauthError = url.searchParams.get("error");
+  const stateCookie = request.cookies.get(GOOGLE_SHEETS_OAUTH_STATE_COOKIE)?.value;
 
-  const stateCookie = request.cookies.get(OAUTH_STATE_COOKIE)?.value;
-  const redirectTarget = new URL("/personalizza", request.url);
-
-  if (oauthError) {
-    redirectTarget.searchParams.set("google_sheets", "error");
-    redirectTarget.searchParams.set("reason", oauthError);
-    return NextResponse.redirect(redirectTarget);
+  // Qualsiasi errore restituito da Google (consenso negato o altro): solo il codice, mai il testo ricevuto.
+  if (url.searchParams.has("error")) {
+    return oauthRedirect(request, { error: "accesso_negato" });
   }
 
   if (!code || !state || !stateCookie || state !== stateCookie) {
-    redirectTarget.searchParams.set("google_sheets", "error");
-    redirectTarget.searchParams.set("reason", "stato_non_valido");
-    return NextResponse.redirect(redirectTarget);
+    return oauthRedirect(request, { error: "stato_non_valido" });
   }
 
   const config = await getGoogleSheetsApiConfig();
@@ -62,11 +75,10 @@ export const GET = withApiErrors(async (request: NextRequest) => {
   const redirectUri = config.redirectUri;
 
   if (!clientId || !clientSecret || !redirectUri) {
-    redirectTarget.searchParams.set("google_sheets", "error");
-    redirectTarget.searchParams.set("reason", "config_oauth_mancante");
-    return NextResponse.redirect(redirectTarget);
+    return oauthRedirect(request, { error: "config_oauth_mancante" });
   }
 
+  let tokenPayload: TokenPayload;
   try {
     const tokenResponse = await fetch(TOKEN_ENDPOINT, {
       method: "POST",
@@ -82,64 +94,36 @@ export const GET = withApiErrors(async (request: NextRequest) => {
       }),
       cache: "no-store",
     });
-
-    const tokenPayload = (await tokenResponse.json()) as {
-      access_token?: string;
-      refresh_token?: string;
-      scope?: string;
-      token_type?: string;
-      error?: string;
-      error_description?: string;
-    };
-
+    tokenPayload = (await tokenResponse.json()) as TokenPayload;
     if (!tokenResponse.ok) {
-      throw new Error(tokenPayload.error_description || tokenPayload.error || "Scambio token non riuscito");
+      logger.warn("google_sheets_token_exchange_failed", { userId: user.id, status: tokenResponse.status, error: tokenPayload.error });
+      return oauthRedirect(request, { error: "scambio_token_fallito" });
     }
-
-    const existing = await getGoogleSheetsCredentialRecord(user.id);
-    const fallbackRefreshToken = await getDecryptedGoogleSheetsRefreshToken(user.id);
-    const refreshToken = tokenPayload.refresh_token || fallbackRefreshToken;
-
-    if (!refreshToken) {
-      throw new Error("Nessun refresh_token restituito. Riesegui il consenso con prompt=consent.");
-    }
-
-    const email = tokenPayload.access_token ? await fetchProfileEmail(tokenPayload.access_token) : undefined;
-
-    await upsertGoogleSheetsCredential({
-      userId: user.id,
-      refreshToken,
-      connectedEmail: email || existing?.connected_email || undefined,
-      scope: tokenPayload.scope || existing?.scope || undefined,
-      tokenType: tokenPayload.token_type || existing?.token_type || undefined,
-    });
-
-    redirectTarget.searchParams.set("google_sheets", "connected");
-    const response = NextResponse.redirect(redirectTarget);
-    response.cookies.set({
-      name: OAUTH_STATE_COOKIE,
-      value: "",
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureCookies(),
-      maxAge: 0,
-      path: "/",
-    });
-    return response;
   } catch (error) {
-    redirectTarget.searchParams.set("google_sheets", "error");
-    redirectTarget.searchParams.set("reason", error instanceof Error ? error.message : "sconosciuto");
-
-    const response = NextResponse.redirect(redirectTarget);
-    response.cookies.set({
-      name: OAUTH_STATE_COOKIE,
-      value: "",
-      httpOnly: true,
-      sameSite: "lax",
-      secure: shouldUseSecureCookies(),
-      maxAge: 0,
-      path: "/",
-    });
-    return response;
+    logger.warn("google_sheets_token_exchange_failed", { userId: user.id, error });
+    return oauthRedirect(request, { error: "scambio_token_fallito" });
   }
+
+  // Con i permessi granulari l'utente può negare lo scope di Sheets: nessuna credenziale parziale.
+  if (!hasGrantedScope(tokenPayload.scope)) {
+    return oauthRedirect(request, { error: "scope_mancante" });
+  }
+
+  const existing = await getGoogleSheetsCredentialRecord(user.id);
+  const refreshToken = tokenPayload.refresh_token || (await getDecryptedGoogleSheetsRefreshToken(user.id));
+  if (!refreshToken) {
+    return oauthRedirect(request, { error: "scambio_token_fallito" });
+  }
+
+  const email = tokenPayload.access_token ? await fetchProfileEmail(tokenPayload.access_token) : undefined;
+
+  await upsertGoogleSheetsCredential({
+    userId: user.id,
+    refreshToken,
+    connectedEmail: email || existing?.connected_email || undefined,
+    scope: tokenPayload.scope || existing?.scope || undefined,
+    tokenType: tokenPayload.token_type || existing?.token_type || undefined,
+  });
+
+  return oauthRedirect(request, "connected");
 });
