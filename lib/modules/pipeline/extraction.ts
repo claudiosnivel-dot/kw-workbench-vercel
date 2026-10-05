@@ -152,7 +152,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     }
   }
 
-  const deduped = dedupeCandidates(rawSuggestions);
+  const deduped = dedupeCandidates(rawSuggestions, effective.language_code);
 
   const blacklistRows = await prisma.brandBlacklist.findMany({
     where: {

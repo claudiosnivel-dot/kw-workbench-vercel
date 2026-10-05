@@ -11,13 +11,13 @@ export type DedupedCandidate = RawKeywordCandidate & {
   canonicalKeyword: string;
 };
 
-export function dedupeCandidates(input: RawKeywordCandidate[]): DedupedCandidate[] {
+export function dedupeCandidates(input: RawKeywordCandidate[], languageCode: string): DedupedCandidate[] {
   const seen = new Set<string>();
   const output: DedupedCandidate[] = [];
 
   for (const item of input) {
     const normalizedKeyword = normalizeKeyword(item.keyword);
-    const canonicalKeyword = canonicalizeKeyword(item.keyword);
+    const canonicalKeyword = canonicalizeKeyword(item.keyword, languageCode);
 
     if (!normalizedKeyword || !canonicalKeyword || seen.has(canonicalKeyword)) {
       continue;
