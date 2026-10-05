@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
+import { applyBulkAction, parseBulkActionPayload } from "@/lib/modules/results-bulk";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { parsePagingParams } from "@/lib/modules/results-paging";
 import { loadResultsPage } from "@/lib/modules/results-query";
@@ -103,18 +104,9 @@ export const PATCH = withApiErrors(async (request: NextRequest, context: RouteCo
     return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
   }
 
-  const payload = (await request.json()) as {
-    action?: string;
-    ids?: string[];
-    subprojectId?: string;
-  };
+  const payload = parseBulkActionPayload(await request.json());
 
-  const ids = Array.isArray(payload.ids) ? payload.ids.filter(Boolean) : [];
-  if (!payload.action || ids.length === 0) {
-    return NextResponse.json({ error: "Azione o ID mancanti" }, { status: 400 });
-  }
-
-  const scopedSubprojectId = payload.subprojectId?.trim() || null;
+  const scopedSubprojectId = payload.subprojectId || null;
   if (scopedSubprojectId) {
     const subproject = await ensureOwnedSubproject({
       projectId: id,
@@ -127,33 +119,8 @@ export const PATCH = withApiErrors(async (request: NextRequest, context: RouteCo
     }
   }
 
-  const where: {
-    project_id: string;
-    subproject_id?: string;
-    id: { in: string[] };
-  } = {
-    project_id: id,
-    id: { in: ids },
-  };
+  const updated = await applyBulkAction(id, payload);
 
-  if (scopedSubprojectId) {
-    where.subproject_id = scopedSubprojectId;
-  }
-
-  if (payload.action === "approve") {
-    await prisma.keywordCandidate.updateMany({ where, data: { review_status: "approved" } });
-  } else if (payload.action === "reject") {
-    await prisma.keywordCandidate.updateMany({ where, data: { review_status: "rejected" } });
-  } else if (payload.action === "select") {
-    await prisma.keywordCandidate.updateMany({ where, data: { selected_for_export: true } });
-  } else if (payload.action === "unselect") {
-    await prisma.keywordCandidate.updateMany({ where, data: { selected_for_export: false } });
-  } else if (payload.action === "mark-review") {
-    await prisma.keywordCandidate.updateMany({ where, data: { review_status: "pending" } });
-  } else {
-    return NextResponse.json({ error: "Azione non supportata" }, { status: 400 });
-  }
-
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, updated });
 });
 

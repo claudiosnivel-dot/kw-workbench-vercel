@@ -126,6 +126,10 @@ export default async function ResultsPage({
   const allViewHref = resultsHref(project.id, { view: "all" }, firstPage);
   const prevPageHref = resultsHref(project.id, target, withPaging(currentParams, { page: Math.max(1, page - 1), pageSize }));
   const nextPageHref = resultsHref(project.id, target, withPaging(currentParams, { page: Math.min(totalPages, page + 1), pageSize }));
+  // Filtri della vista per l'azione massiva sull'intero set filtrato (T-803): la sezione viaggia a parte.
+  const tableFilters = Object.fromEntries(
+    [...currentParams].filter(([key]) => !["page", "pageSize", "view", "subprojectId"].includes(key))
+  );
   const exportHref = (format: ExportFormat, scope: ExportScope) =>
     buildResultsExportHref(project.id, view, resolvedSearchParams, format, scope);
 
@@ -304,6 +308,8 @@ export default async function ResultsPage({
           projectId={project.id}
           activeSubprojectId={selectedSubproject?.id ?? null}
           showSubprojectColumn={!selectedSubproject}
+          filteredCount={filteredCount}
+          filters={tableFilters}
           rows={rows.map((row) => ({
             id: row.id,
             subproject_id: row.subproject_id,
