@@ -1,16 +1,14 @@
+import { keywordLimitIssue } from "@/lib/modules/keyword-limits";
+
 // Regole di DataForSEO sulle keyword dell'endpoint Google Ads search volume (T-902), applicate prima della
 // chiamata: una keyword non ammessa può far fallire l'intero lotto.
 //
 // Fonti (consultate il 2026-10-06):
-// - https://docs.dataforseo.com/v3/keywords_data/google_ads/search_volume/live/ : al massimo 80 caratteri e
-//   10 parole per keyword;
+// - limiti di lunghezza di Google Ads: lib/modules/keyword-limits.ts;
 // - https://dataforseo.com/help-center/using-symbols-in-keywords-when-setting-a-google-ads-task (aggiornato il
 //   18.02.2025): simboli non validi (, ! @ % ^ () = {} ; ~ ` <> ? \ | ―), caratteri Unicode di 4 byte non validi
 //   e la regex dei simboli UTF-8 non supportati, riportata qui sotto intera (399 intervalli, \x{...} scritto
 //   \u{...}).
-
-export const KEYWORD_MAX_CHARACTERS = 80;
-export const KEYWORD_MAX_WORDS = 10;
 
 const UNSUPPORTED_SYMBOL_RANGES = [
   "\\u{0000}-\\u{001F}", "\\u{0021}", "\\u{0025}", "\\u{0028}-\\u{002A}", "\\u{002C}", "\\u{003B}-\\u{0040}",
@@ -86,11 +84,5 @@ export type KeywordSkipReason = "too_long" | "too_many_words" | "invalid_symbols
 
 /** Motivo per cui DataForSEO non accetterebbe la keyword, o null se si può inviare. */
 export function dataForSeoSkipReason(keyword: string): KeywordSkipReason | null {
-  if ([...keyword].length > KEYWORD_MAX_CHARACTERS) {
-    return "too_long";
-  }
-  if (keyword.trim().split(/\s+/).length > KEYWORD_MAX_WORDS) {
-    return "too_many_words";
-  }
-  return UNSUPPORTED_SYMBOL.test(keyword) ? "invalid_symbols" : null;
+  return keywordLimitIssue(keyword) ?? (UNSUPPORTED_SYMBOL.test(keyword) ? "invalid_symbols" : null);
 }

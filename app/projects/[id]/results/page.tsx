@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
 import { PaginationLinks } from "@/components/pagination-links";
+import { PlannerExportDownload } from "@/components/planner-export-download";
 import { PlannerDisabledNotice } from "@/components/planner-disabled-notice";
 import { ResultsTable } from "@/components/results-table";
 import { requirePageUser } from "@/lib/auth/page-guard";
@@ -281,6 +282,11 @@ export default async function ResultsPage({
             XLSX vista filtrata corrente
           </Link>
         </div>
+      </section>
+
+      <section className="card space-y-3">
+        <h2 className="text-lg font-semibold">Volumi da Keyword Planner</h2>
+        <PlannerExportDownload projectId={project.id} subprojectId={selectedSubproject?.id ?? null} />
       </section>
 
       <section className="card">
