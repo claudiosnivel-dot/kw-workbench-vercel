@@ -1,6 +1,6 @@
 import { MetricsProvider, Prisma } from "@/lib/generated/prisma/client";
 import { getIntEnv } from "@/lib/env";
-import { evaluateBrandStatus } from "@/lib/modules/brand-filter";
+import { evaluateBrandStatus, prepareBlacklist } from "@/lib/modules/brand-filter";
 import { classifyKeyword } from "@/lib/modules/classification";
 import { dedupeCandidates, RawKeywordCandidate } from "@/lib/modules/dedupe";
 import { buildExpansionQueries } from "@/lib/modules/expansion-engine";
@@ -159,7 +159,8 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
       OR: [{ project_id: null }, { project_id: subproject.project_id }],
     },
   });
-  const blacklist = blacklistRows.map((row) => row.brand.toLowerCase());
+  // Una sola preparazione per job; i brand restano nel testo originale per brand_reason.
+  const blacklist = prepareBlacklist(blacklistRows.map((row) => row.brand), effective.language_code);
 
   const metricsProvider = createMetricsProvider(effective.metrics_provider);
   const metricKeys = deduped.map((item) => item.canonicalKeyword);
@@ -179,6 +180,7 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
       keyword: candidate.keyword,
       blacklist,
       excludeBrands: effective.exclude_brands,
+      languageCode: effective.language_code,
     });
 
     const classification = effective.auto_classification
