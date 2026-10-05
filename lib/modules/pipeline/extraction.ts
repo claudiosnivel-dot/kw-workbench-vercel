@@ -1,12 +1,4 @@
-import { MetricsProvider, Prisma } from "@/lib/generated/prisma/client";
-import type {
-  BrandStatus,
-  KeywordType,
-  MetricsStatus,
-  ReviewStatus,
-  ScoreSource,
-  SearchIntent,
-} from "@/lib/generated/prisma/enums";
+import { MetricsProvider, Prisma, type KeywordCandidate } from "@/lib/generated/prisma/client";
 import { getIntEnv } from "@/lib/env";
 import { evaluateBrandStatus, prepareBlacklist } from "@/lib/modules/brand-filter";
 import { classifyKeyword } from "@/lib/modules/classification";
@@ -40,70 +32,10 @@ type ExtractionSummary = {
   metricsNotice?: "PROVIDER_DISABLED";
 };
 
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  concurrency: number,
-  worker: (item: T, index: number) => Promise<R>
-): Promise<R[]> {
-  const normalizedConcurrency = Math.max(1, Math.min(concurrency, items.length || 1));
-  const results: R[] = new Array(items.length);
-  let nextIndex = 0;
-
-  async function runner() {
-    while (true) {
-      const index = nextIndex;
-      nextIndex += 1;
-
-      if (index >= items.length) {
-        return;
-      }
-
-      results[index] = await worker(items[index], index);
-    }
-  }
-
-  const runners = Array.from({ length: normalizedConcurrency }, () => runner());
-  await Promise.all(runners);
-  return results;
-}
-
-/** Riga di keyword_candidates preparata dalla pipeline; project_id e subproject_id sono quelli del job. */
-type CandidateRow = {
-  keyword: string;
-  normalized_keyword: string;
-  canonical_keyword: string;
-  source: string;
-  source_query: string;
-  brand_status: BrandStatus;
-  brand_reason: string | null;
-  review_status: ReviewStatus;
-  selected_for_export: boolean;
-  keyword_type: KeywordType;
-  search_intent: SearchIntent;
-  is_question: boolean;
-  is_local_intent: boolean;
-  is_tool_intent: boolean;
-  is_commercial_intent: boolean;
-  metrics_status: MetricsStatus;
-  metrics_provider: MetricsProvider;
-  avg_monthly_searches: number | null;
-  competition: number | null;
-  low_top_of_page_bid_micros: bigint | null;
-  high_top_of_page_bid_micros: bigint | null;
-  score: number;
-  score_source: ScoreSource;
-  metrics_updated_at: Date | null;
-};
+/** Riga di keyword_candidates preparata dalla pipeline; id, project_id, subproject_id e date li mette la scrittura. */
+type CandidateRow = Omit<KeywordCandidate, "id" | "project_id" | "subproject_id" | "created_at" | "updated_at">;
 
 const UPSERT_CHUNK_SIZE = 500;
-
-function chunk<T>(items: T[], size: number): T[][] {
-  const output: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    output.push(items.slice(index, index + size));
-  }
-  return output;
-}
 
 function candidateValues(projectId: string, subprojectId: string, row: CandidateRow, now: Date): Prisma.Sql {
   return Prisma.sql`(
@@ -178,6 +110,41 @@ async function storeCandidates(
     WHERE "project_id" = ${projectId} AND "subproject_id" = ${subprojectId}
       AND "canonical_keyword" <> ALL(${produced}::text[])
   `;
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const normalizedConcurrency = Math.max(1, Math.min(concurrency, items.length || 1));
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  async function runner() {
+    while (true) {
+      const index = nextIndex;
+      nextIndex += 1;
+
+      if (index >= items.length) {
+        return;
+      }
+
+      results[index] = await worker(items[index], index);
+    }
+  }
+
+  const runners = Array.from({ length: normalizedConcurrency }, () => runner());
+  await Promise.all(runners);
+  return results;
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const output: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    output.push(items.slice(index, index + size));
+  }
+  return output;
 }
 
 export async function runExtractionPipeline(subprojectId: string): Promise<ExtractionSummary> {
