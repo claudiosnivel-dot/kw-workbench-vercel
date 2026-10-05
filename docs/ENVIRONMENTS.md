@@ -32,6 +32,7 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `PRISMA_CONNECTION_LIMIT` | facolt. (intero 1…50, default 3) | facolt. | facolt. (default 1) | no | Vercel / locale |
 | `PRISMA_POOL_TIMEOUT` | facolt. (intero 1…120, default 15) | facolt. | facolt. | no | Vercel / locale |
 | `MAX_EXPANSION_QUERIES` | facolt. (intero 50…5000, default 250) | facolt. | facolt. | no | Vercel / locale |
+| `EXTRACTION_TX_TIMEOUT_MS` | facolt. (intero 5000…300000, default 60000) | facolt. | facolt. | no | Vercel / locale |
 | `AUTOCOMPLETE_TIMEOUT_MS` | facolt. (intero 1000…30000, default 4500) | facolt. | facolt. | no | Vercel / locale |
 | `AUTOCOMPLETE_MAX_RETRIES` | facolt. (intero 0…5, default 2) | facolt. | facolt. | no | Vercel / locale |
 | `AUTOCOMPLETE_RATE_LIMIT_MS` | facolt. (intero 50…10000, default 180) | facolt. | facolt. | no | Vercel / locale |

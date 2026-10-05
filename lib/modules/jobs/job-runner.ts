@@ -1,4 +1,6 @@
+import { Prisma } from "@/lib/generated/prisma/client";
 import { JobStatus } from "@/lib/generated/prisma/enums";
+import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
@@ -13,6 +15,25 @@ export async function enqueueExtractionJob(projectId: string, subprojectId: stri
       payload: { projectId, subprojectId },
     },
   });
+}
+
+const MAX_PUBLIC_ERROR_LENGTH = 500;
+
+/**
+ * Messaggio salvato in jobs.error_message e mostrato all'utente (T-706, CWE-209): mai il dettaglio di
+ * un errore Prisma (host, query, vincoli), che resta solo nel log del server.
+ */
+function toPublicJobError(error: unknown): string {
+  if (error instanceof NoSeedsError) {
+    return "La sezione non ha seed: aggiungi almeno una seed prima di avviare l'estrazione";
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return `Errore del database durante il salvataggio dei risultati (${error.code})`;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  return message.slice(0, MAX_PUBLIC_ERROR_LENGTH);
 }
 
 export async function runJobById(jobId: string) {
@@ -46,14 +67,14 @@ export async function runJobById(jobId: string) {
       },
     });
   } catch (error) {
-    // Stack completo solo nel log, correlabile con l'evento di Sentry; nel DB resta il messaggio (T-602).
+    // Stack completo solo nel log, correlabile con l'evento di Sentry (T-602); nel DB il messaggio pubblico (T-706).
     logger.error("job_failed", { jobId: job.id, projectId: job.project_id, subprojectId: job.subproject_id, error });
     return prisma.job.update({
       where: { id: job.id },
       data: {
         status: "failed",
         completed_at: new Date(),
-        error_message: error instanceof Error ? error.message : String(error),
+        error_message: toPublicJobError(error),
       },
     });
   }

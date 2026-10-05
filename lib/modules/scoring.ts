@@ -1,8 +1,11 @@
-import { MetricsStatus, SearchIntent } from "@/lib/generated/prisma/enums";
+import { MetricsStatus, ScoreSource, SearchIntent } from "@/lib/generated/prisma/enums";
 import { clamp } from "@/lib/utils";
 import { keywordCleanlinessScore } from "@/lib/modules/normalization";
 
 export type ScoreInput = {
+  /** Keyword originale: la pulizia (simboli ripetuti, rumore) si misura qui (T-707). */
+  raw_keyword: string;
+  /** Keyword normalizzata: conta le parole. */
   keyword: string;
   brand_status: "allowed" | "excluded" | "review";
   search_intent: SearchIntent;
@@ -18,7 +21,7 @@ function heuristicScore(input: ScoreInput): number {
   const words = input.keyword.split(/\s+/).filter(Boolean);
   const wordCount = words.length;
   const lengthFactor = wordCount >= 2 && wordCount <= 6 ? 1 : 0.75;
-  const cleanliness = keywordCleanlinessScore(input.keyword);
+  const cleanliness = keywordCleanlinessScore(input.raw_keyword);
 
   let intentWeight = 0.6;
   if (input.search_intent === "commercial" || input.search_intent === "transactional") intentWeight = 1;
@@ -49,19 +52,24 @@ function metricsScore(input: ScoreInput): number {
   return clamp((volumeScore * 0.45 + competitionScore * 0.25 + cpcScore * 0.2 + intentBoost * 0.1) * 100 * brandPenalty, 0, 100);
 }
 
-export function scoreKeyword(input: ScoreInput): number {
-  const base =
+export type KeywordScore = {
+  score: number;
+  /** metrics se il punteggio nasce dalle metriche (fetched, imported, mock), heuristic altrimenti (D-18). */
+  score_source: ScoreSource;
+};
+
+function profileFactor(scoringProfile: string): number {
+  if (scoringProfile === "conservative") return 0.9;
+  if (scoringProfile === "aggressive") return 1.05;
+  return 1;
+}
+
+export function scoreKeyword(input: ScoreInput): KeywordScore {
+  const score_source: ScoreSource =
     input.metrics_status === "fetched" || input.metrics_status === "imported" || input.metrics_status === "mock"
-      ? metricsScore(input)
-      : heuristicScore(input);
+      ? "metrics"
+      : "heuristic";
+  const base = score_source === "metrics" ? metricsScore(input) : heuristicScore(input);
 
-  if (input.scoring_profile === "conservative") {
-    return clamp(base * 0.9, 0, 100);
-  }
-
-  if (input.scoring_profile === "aggressive") {
-    return clamp(base * 1.05, 0, 100);
-  }
-
-  return clamp(base, 0, 100);
+  return { score: clamp(base * profileFactor(input.scoring_profile), 0, 100), score_source };
 }

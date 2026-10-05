@@ -58,6 +58,7 @@ const EXPORT_COLUMNS: Array<keyof ExportRow> = [
   "low_top_of_page_bid_micros",
   "high_top_of_page_bid_micros",
   "score",
+  "score_source",
 ];
 
 function sanitizeSpreadsheetTitle(input: string): string {

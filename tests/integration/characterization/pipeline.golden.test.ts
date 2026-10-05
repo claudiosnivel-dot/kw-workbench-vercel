@@ -6,6 +6,7 @@
 // covers: AC-401-3
 // covers: AC-403-4
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../../helpers/auth";
@@ -132,7 +133,8 @@ describe("golden master della pipeline di estrazione", () => {
   });
 
   // covers: AC-106-3
-  it("la riesecuzione riproduce le stesse candidate e riporta a pending quelle approvate", async () => {
+  // Aggiornato da T-705 (impacted-by): la riesecuzione conserva la revisione (D-19) invece di riportarla a pending.
+  it("la riesecuzione riproduce le stesse candidate e conserva la revisione di quelle approvate", async () => {
     const subprojectId = await createSection(SEEDS);
     await runExtractionPipeline(subprojectId);
     const firstRun = await goldenRows(subprojectId);
@@ -146,15 +148,20 @@ describe("golden master della pipeline di estrazione", () => {
     await runExtractionPipeline(subprojectId);
 
     const secondRun = await goldenRows(subprojectId);
-    expect(secondRun).toEqual(firstRun);
+    expect(secondRun).toEqual(
+      firstRun.map((row) =>
+        row.canonical_keyword === approved?.canonical_keyword ? { ...row, review_status: "approved" } : row
+      )
+    );
     expect(secondRun).toHaveLength(firstRun.length);
     const rerun = secondRun.find((row) => row.canonical_keyword === approved?.canonical_keyword);
     // impacted-by: T-705
-    expect(rerun?.review_status).toBe("pending");
+    expect(rerun?.review_status).toBe("approved");
   });
 
   // covers: AC-106-4
-  it("una sezione senza seed svuota le candidate preesistenti", async () => {
+  // Aggiornato da T-706 (impacted-by): senza seed la pipeline fallisce prima di scrivere e le candidate restano.
+  it("una sezione senza seed fallisce e conserva le candidate preesistenti", async () => {
     const subprojectId = await createSection([]);
     const section = await prisma.subproject.findUniqueOrThrow({ where: { id: subprojectId } });
     await prisma.keywordCandidate.createMany({
@@ -169,10 +176,9 @@ describe("golden master della pipeline di estrazione", () => {
       })),
     });
 
-    const summary = await runExtractionPipeline(subprojectId);
+    await expect(runExtractionPipeline(subprojectId)).rejects.toBeInstanceOf(NoSeedsError);
 
-    expect(summary).toEqual({ queries: 0, rawSuggestions: 0, dedupedCandidates: 0, storedCandidates: 0 });
     // impacted-by: T-706
-    expect(await prisma.keywordCandidate.count({ where: { subproject_id: subprojectId } })).toBe(0);
+    expect(await prisma.keywordCandidate.count({ where: { subproject_id: subprojectId } })).toBe(4);
   });
 });

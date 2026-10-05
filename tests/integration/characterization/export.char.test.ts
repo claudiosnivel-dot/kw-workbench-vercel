@@ -64,6 +64,8 @@ const HEADERS = [
   "low_top_of_page_bid_micros",
   "high_top_of_page_bid_micros",
   "score",
+  // impacted-by: T-707 (sorgente del punteggio dopo score)
+  "score_source",
 ];
 
 function keywordFor(index: number): string {
@@ -161,7 +163,8 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
   });
 
   // covers: AC-107-2
-  it("XLSX selected: un solo foglio keywords con le 22 intestazioni del CSV", async () => {
+  // Aggiornato da T-707 (impacted-by): 23 intestazioni con score_source.
+  it("XLSX selected: un solo foglio keywords con le 23 intestazioni del CSV", async () => {
     const response = await callRoute(exportProject, {
       url: exportUrl(projectId, "format=xlsx&scope=selected"),
       cookie,

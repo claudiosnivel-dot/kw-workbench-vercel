@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildResultsWhere, ResultsFilters } from "@/lib/modules/results-filters";
+import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
 
 export type ExportFormat = "csv" | "xlsx" | "json";
 export type ExportScope = "approved" | "selected" | "review" | "non-excluded" | "filtered";
@@ -28,6 +29,7 @@ type ExportSourceRow = {
   low_top_of_page_bid_micros: bigint | null;
   high_top_of_page_bid_micros: bigint | null;
   score: number | null;
+  score_source: string;
   subproject_name: string;
 };
 
@@ -54,6 +56,7 @@ export type ExportRow = {
   low_top_of_page_bid_micros: string | null;
   high_top_of_page_bid_micros: string | null;
   score: number | null;
+  score_source: string;
 };
 
 function serialize(rows: ExportSourceRow[]): ExportRow[] {
@@ -80,6 +83,7 @@ function serialize(rows: ExportSourceRow[]): ExportRow[] {
     low_top_of_page_bid_micros: row.low_top_of_page_bid_micros != null ? row.low_top_of_page_bid_micros.toString() : null,
     high_top_of_page_bid_micros: row.high_top_of_page_bid_micros != null ? row.high_top_of_page_bid_micros.toString() : null,
     score: row.score,
+    score_source: row.score_source,
   }));
 }
 
@@ -168,7 +172,7 @@ export async function getExportRows(params: {
 
   const rows = await prisma.keywordCandidate.findMany({
     where,
-    orderBy: [{ score: "desc" }, { keyword: "asc" }],
+    orderBy: RESULTS_ORDER_BY,
     select: {
       keyword: true,
       normalized_keyword: true,
@@ -191,6 +195,7 @@ export async function getExportRows(params: {
       low_top_of_page_bid_micros: true,
       high_top_of_page_bid_micros: true,
       score: true,
+      score_source: true,
       subproject: {
         select: {
           name: true,
