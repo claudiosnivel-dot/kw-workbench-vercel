@@ -23,7 +23,14 @@ export async function guardSectionName<T>(write: () => Promise<T>): Promise<T> {
   }
 }
 
-const SECTION_ORDER: Prisma.SubprojectOrderByWithRelationInput[] = [{ position: "asc" }, { created_at: "asc" }];
+/** Sezioni del progetto nell'ordine di visualizzazione, con la position salvata. */
+function orderedSections(tx: Prisma.TransactionClient, projectId: string) {
+  return tx.subproject.findMany({
+    where: { project_id: projectId },
+    orderBy: [{ position: "asc" }, { created_at: "asc" }],
+    select: { id: true, position: true },
+  });
+}
 
 /** Riporta le position a 0..n-1 nell'ordine dato, aggiornando solo le sezioni fuori posto. */
 async function renumber(tx: Prisma.TransactionClient, projectId: string, ordered: { id: string; position: number }[]) {
@@ -44,11 +51,7 @@ export async function moveSection(
   direction: "up" | "down"
 ): Promise<"moved" | "edge" | "not-found"> {
   return prisma.$transaction(async (tx) => {
-    const ordered = await tx.subproject.findMany({
-      where: { project_id: projectId },
-      orderBy: SECTION_ORDER,
-      select: { id: true, position: true },
-    });
+    const ordered = await orderedSections(tx, projectId);
     const index = ordered.findIndex((section) => section.id === subprojectId);
     if (index < 0) {
       return "not-found";
@@ -92,11 +95,7 @@ export async function deleteSection(projectId: string, subprojectId: string): Pr
     const project = await tx.project.findUnique({ where: { id: projectId }, select: { default_subproject_id: true } });
     await tx.subproject.delete({ where: { id: subprojectId, project_id: projectId } });
 
-    const remaining = await tx.subproject.findMany({
-      where: { project_id: projectId },
-      orderBy: SECTION_ORDER,
-      select: { id: true, position: true },
-    });
+    const remaining = await orderedSections(tx, projectId);
     await renumber(tx, projectId, remaining);
 
     if (project?.default_subproject_id === subprojectId) {

@@ -9,8 +9,8 @@ import { prisma } from "@/lib/prisma";
 export type ExportFormat = "csv" | "xlsx" | "json";
 export type ExportScope = "approved" | "selected" | "review" | "non-excluded" | "filtered";
 
-const EXPORT_ROW_SELECT = {
-  id: true,
+/** Campi della candidata letti dall'export, nell'ordine delle colonne che seguono subproject_name. */
+const EXPORT_FIELD_SELECT = {
   keyword: true,
   normalized_keyword: true,
   canonical_keyword: true,
@@ -33,6 +33,12 @@ const EXPORT_ROW_SELECT = {
   high_top_of_page_bid_micros: true,
   score: true,
   score_source: true,
+} as const satisfies Prisma.KeywordCandidateSelect;
+
+/** Riga letta dall'export: i campi, l'id per il cursore e il nome della sezione. */
+export const EXPORT_ROW_SELECT = {
+  id: true,
+  ...EXPORT_FIELD_SELECT,
   subproject: { select: { name: true } },
 } satisfies Prisma.KeywordCandidateSelect;
 
@@ -65,31 +71,7 @@ export type ExportRow = {
 };
 
 /** Colonne dell'export nell'ordine di ExportRow: il Record impone tutte e sole le chiavi del tipo. */
-const EXPORT_COLUMN_SET: Record<keyof ExportRow, true> = {
-  subproject_name: true,
-  keyword: true,
-  normalized_keyword: true,
-  canonical_keyword: true,
-  source: true,
-  source_query: true,
-  brand_status: true,
-  review_status: true,
-  selected_for_export: true,
-  keyword_type: true,
-  search_intent: true,
-  is_question: true,
-  is_local_intent: true,
-  is_tool_intent: true,
-  is_commercial_intent: true,
-  metrics_status: true,
-  metrics_provider: true,
-  avg_monthly_searches: true,
-  competition: true,
-  low_top_of_page_bid_micros: true,
-  high_top_of_page_bid_micros: true,
-  score: true,
-  score_source: true,
-};
+const EXPORT_COLUMN_SET: Record<keyof ExportRow, true> = { subproject_name: true, ...EXPORT_FIELD_SELECT };
 export const EXPORT_COLUMNS = Object.keys(EXPORT_COLUMN_SET) as (keyof ExportRow)[];
 
 function toExportRow(row: ExportSourceRow): ExportRow {

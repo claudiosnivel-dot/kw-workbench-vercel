@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
+import { PaginationLinks } from "@/components/pagination-links";
 import { PlannerDisabledNotice } from "@/components/planner-disabled-notice";
 import { ResultsTable } from "@/components/results-table";
 import { requirePageUser } from "@/lib/auth/page-guard";
@@ -23,19 +24,6 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 type SearchParams = Record<string, string | string[] | undefined>;
-
-function getValue(searchParams: SearchParams, key: string): string {
-  const value = searchParams[key];
-  if (Array.isArray(value)) {
-    return value[0] ?? "";
-  }
-  return value ?? "";
-}
-
-function checked(searchParams: SearchParams, key: string): boolean {
-  const value = getValue(searchParams, key);
-  return ["1", "true", "on", "yes"].includes(value.toLowerCase());
-}
 
 function buildDefaultSheetsFileName(projectName: string, subprojectName?: string): string {
   const date = new Date().toISOString().slice(0, 10);
@@ -119,6 +107,9 @@ export default async function ResultsPage({
   });
 
   const currentParams = toUrlSearchParams(resolvedSearchParams);
+  // Valori correnti dei filtri per il form (primo valore dei parametri ripetuti).
+  const filterValue = (key: string) => currentParams.get(key) ?? "";
+  const filterChecked = (key: string) => ["1", "true", "on", "yes"].includes(filterValue(key).toLowerCase());
   const target = viewTarget(view);
   const firstPage = withPaging(currentParams, { page: 1, pageSize });
 
@@ -190,25 +181,25 @@ export default async function ResultsPage({
             </select>
           )}
 
-          <input className="input" name="searchText" placeholder="Testo ricerca" defaultValue={getValue(resolvedSearchParams, "searchText")} />
-          <input className="input" name="minVolume" type="number" placeholder="Volume minimo" defaultValue={getValue(resolvedSearchParams, "minVolume")} />
-          <input className="input" name="maxVolume" type="number" placeholder="Volume massimo" defaultValue={getValue(resolvedSearchParams, "maxVolume")} />
+          <input className="input" name="searchText" placeholder="Testo ricerca" defaultValue={filterValue("searchText")} />
+          <input className="input" name="minVolume" type="number" placeholder="Volume minimo" defaultValue={filterValue("minVolume")} />
+          <input className="input" name="maxVolume" type="number" placeholder="Volume massimo" defaultValue={filterValue("maxVolume")} />
 
-          <select className="select" name="brandStatus" defaultValue={getValue(resolvedSearchParams, "brandStatus")}>
+          <select className="select" name="brandStatus" defaultValue={filterValue("brandStatus")}>
             <option value="">Stato brand</option>
             <option value="allowed">consentito</option>
             <option value="excluded">escluso</option>
             <option value="review">da rivedere</option>
           </select>
 
-          <select className="select" name="reviewStatus" defaultValue={getValue(resolvedSearchParams, "reviewStatus")}>
+          <select className="select" name="reviewStatus" defaultValue={filterValue("reviewStatus")}>
             <option value="">Stato revisione</option>
             <option value="pending">in attesa</option>
             <option value="approved">approvato</option>
             <option value="rejected">rifiutato</option>
           </select>
 
-          <select className="select" name="searchIntent" defaultValue={getValue(resolvedSearchParams, "searchIntent")}>
+          <select className="select" name="searchIntent" defaultValue={filterValue("searchIntent")}>
             <option value="">Intento di ricerca</option>
             <option value="informational">informativo</option>
             <option value="commercial">commerciale</option>
@@ -217,7 +208,7 @@ export default async function ResultsPage({
             <option value="mixed">misto</option>
           </select>
 
-          <select className="select" name="keywordType" defaultValue={getValue(resolvedSearchParams, "keywordType")}>
+          <select className="select" name="keywordType" defaultValue={filterValue("keywordType")}>
             <option value="">Tipo keyword</option>
             <option value="generic">generica</option>
             <option value="question">domanda</option>
@@ -232,16 +223,16 @@ export default async function ResultsPage({
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm md:col-span-2">
             <label className="flex items-center gap-2">
-              <input type="checkbox" name="selectedOnly" defaultChecked={checked(resolvedSearchParams, "selectedOnly")} /> solo selezionate
+              <input type="checkbox" name="selectedOnly" defaultChecked={filterChecked("selectedOnly")} /> solo selezionate
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" name="questionOnly" defaultChecked={checked(resolvedSearchParams, "questionOnly")} /> solo domande
+              <input type="checkbox" name="questionOnly" defaultChecked={filterChecked("questionOnly")} /> solo domande
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" name="toolIntentOnly" defaultChecked={checked(resolvedSearchParams, "toolIntentOnly")} /> solo intent tool
+              <input type="checkbox" name="toolIntentOnly" defaultChecked={filterChecked("toolIntentOnly")} /> solo intent tool
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" name="commercialOnly" defaultChecked={checked(resolvedSearchParams, "commercialOnly")} /> solo commerciali
+              <input type="checkbox" name="commercialOnly" defaultChecked={filterChecked("commercialOnly")} /> solo commerciali
             </label>
           </div>
 
@@ -256,22 +247,10 @@ export default async function ResultsPage({
           <p className="text-slate-600">
             Riga {pageStart}-{pageEnd} di {filteredCount} (pagina {page}/{totalPages})
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            {page > 1 ? (
-              <Link className="btn-secondary w-full text-center sm:w-auto" href={prevPageHref}>
-                Pagina precedente
-              </Link>
-            ) : (
-              <span className="btn-secondary w-full text-center opacity-60 sm:w-auto">Pagina precedente</span>
-            )}
-            {page < totalPages ? (
-              <Link className="btn-secondary w-full text-center sm:w-auto" href={nextPageHref}>
-                Pagina successiva
-              </Link>
-            ) : (
-              <span className="btn-secondary w-full text-center opacity-60 sm:w-auto">Pagina successiva</span>
-            )}
-          </div>
+          <PaginationLinks
+            previousHref={page > 1 ? prevPageHref : null}
+            nextHref={page < totalPages ? nextPageHref : null}
+          />
         </div>
       </section>
 

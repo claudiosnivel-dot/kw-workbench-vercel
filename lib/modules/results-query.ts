@@ -1,39 +1,18 @@
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { EXPORT_ROW_SELECT } from "@/lib/modules/export";
 import { buildResultsWhere, type ResultsFilters } from "@/lib/modules/results-filters";
 import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
 import { prisma } from "@/lib/prisma";
 
+// Le colonne dell'export più quelle che servono solo alla tabella e all'API dei risultati.
 const RESULTS_ROW_SELECT = {
-  id: true,
+  ...EXPORT_ROW_SELECT,
   project_id: true,
   subproject_id: true,
-  keyword: true,
-  normalized_keyword: true,
-  canonical_keyword: true,
-  source: true,
-  source_query: true,
-  brand_status: true,
   brand_reason: true,
-  review_status: true,
-  selected_for_export: true,
-  keyword_type: true,
-  search_intent: true,
-  is_question: true,
-  is_local_intent: true,
-  is_tool_intent: true,
-  is_commercial_intent: true,
-  metrics_status: true,
-  metrics_provider: true,
-  avg_monthly_searches: true,
-  competition: true,
-  low_top_of_page_bid_micros: true,
-  high_top_of_page_bid_micros: true,
-  score: true,
-  score_source: true,
   metrics_updated_at: true,
   created_at: true,
   updated_at: true,
-  subproject: { select: { name: true } },
 } satisfies Prisma.KeywordCandidateSelect;
 
 export type ResultsRow = Prisma.KeywordCandidateGetPayload<{ select: typeof RESULTS_ROW_SELECT }>;

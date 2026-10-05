@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DeleteProjectButton } from "@/components/delete-project-button";
+import { PaginationLinks } from "@/components/pagination-links";
 import { ResumeOnboardingButton } from "@/components/resume-onboarding-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { listDashboardProjects } from "@/lib/modules/dashboard";
@@ -188,22 +189,10 @@ export default async function DashboardPage({
           <p className="text-slate-600">
             Pagina {page} di {totalPages}
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {page > 1 ? (
-              <Link className="btn-secondary w-full text-center sm:w-auto" href={`/?page=${page - 1}`}>
-                Pagina precedente
-              </Link>
-            ) : (
-              <span className="btn-secondary w-full text-center opacity-60 sm:w-auto">Pagina precedente</span>
-            )}
-            {page < totalPages ? (
-              <Link className="btn-secondary w-full text-center sm:w-auto" href={`/?page=${page + 1}`}>
-                Pagina successiva
-              </Link>
-            ) : (
-              <span className="btn-secondary w-full text-center opacity-60 sm:w-auto">Pagina successiva</span>
-            )}
-          </div>
+          <PaginationLinks
+            previousHref={page > 1 ? `/?page=${page - 1}` : null}
+            nextHref={page < totalPages ? `/?page=${page + 1}` : null}
+          />
         </div>
       </section>
 
