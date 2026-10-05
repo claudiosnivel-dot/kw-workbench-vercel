@@ -34,7 +34,29 @@ volta, imposta lingua e paese del progetto, poi scarica le idee di keyword o le 
 massimo di keyword per caricamento non è documentato da Google; il default di 1000 è prudente (D-26).
 Annotare qui il limite osservato.
 
-## 3. Import dei volumi
+## 3. Import dei volumi (T-910)
 
-Il file scaricato da Keyword Planner si reimporta nella pagina dei risultati o da CLI (T-910, vedi sotto
-quando è disponibile).
+- **Dall'interfaccia**: stesso riquadro, «Importa volumi» con il file scaricato da Keyword Planner (`.csv` o
+  `.tsv`, al massimo 5 MB). Vale per la sezione mostrata o per tutto il progetto; il file resta in memoria e
+  non viene salvato.
+- **Da CLI (operatore)**:
+
+  ```bash
+  npm run planner:import -- --project <id> [--section <id>] <file>
+  ```
+
+Il parser (T-905) rileva l'encoding dal BOM (UTF-16LE, UTF-16BE, UTF-8), il separatore (tab, punto e virgola,
+virgola) e la riga dei nomi colonna dopo le eventuali righe di titolo; riconosce le colonne in inglese
+(«Keyword», «Avg. monthly searches», «Competition», «Competition (indexed value)», «Top of page bid (low
+range)», «Top of page bid (high range)») e in italiano. Un volume a intervallo («1K – 10K») vale il punto
+medio con precisione `range` (D-17); «--» o vuoto non porta metriche. Ogni riga si abbina alle candidate con
+lo stesso canonical nella lingua effettiva della sezione; le candidate ricevono volumi, concorrenza, offerte,
+provider `PLANNER_CSV`, stato `imported` e punteggio ricalcolato, tutto in una transazione.
+
+**Da verificare con un file reale** (azione dell'utente): encoding, separatore, numero di righe di titolo,
+nomi italiani delle colonne e «Competition (indexed value)» del file scaricato oggi da Keyword Planner. Le
+fixture in `tests/fixtures/planner/` seguono la struttura attesa e vanno riallineate al primo file reale,
+con dati anonimizzati.
+
+**Nota**: una nuova estrazione della sezione riscrive le metriche con il provider della sezione (D-19): i
+volumi importati vanno reimportati dopo un re-run.

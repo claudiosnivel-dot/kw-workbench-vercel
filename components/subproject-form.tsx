@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import type { MetricsProvider } from "@/lib/generated/prisma/enums";
 import {
   COUNTRY_CODES,
   LANGUAGE_OPTIONS,
@@ -19,7 +20,7 @@ type SubprojectFormValues = {
   language_code_override: string;
   country_code_override: string;
   autocomplete_provider_override: "" | "MOCK" | "GOOGLE_DIRECT";
-  metrics_provider_override: "" | "NONE" | "MOCK" | "GOOGLE_KEYWORD_PLANNER" | "DATAFORSEO";
+  metrics_provider_override: "" | MetricsProvider;
   min_volume_override: string;
   exclude_brands_override: BooleanOverride;
   expand_alpha_override: BooleanOverride;

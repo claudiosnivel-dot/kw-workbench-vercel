@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
+import { type CliIo, processIo } from "@/lib/modules/planner/cli-io";
 import {
   buildPlannerExport,
   PLANNER_CHUNK_DEFAULT,
@@ -20,13 +21,6 @@ const USAGE = [
   `  --chunk <n>: intero da 1 a ${PLANNER_CHUNK_MAX} (default ${PLANNER_CHUNK_DEFAULT})`,
   `  --out <cartella>: cartella dei file (default ./${DEFAULT_OUT_DIR}/)`,
 ].join("\n");
-
-type CliIo = { out: (line: string) => void; err: (line: string) => void };
-
-const processIo: CliIo = {
-  out: (line) => process.stdout.write(`${line}\n`),
-  err: (line) => process.stderr.write(`${line}\n`),
-};
 
 function parseChunk(raw: string | undefined): number | null {
   if (raw === undefined) {

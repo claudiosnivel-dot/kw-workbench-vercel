@@ -20,6 +20,7 @@ enum MetricsProvider {
   MOCK
   GOOGLE_KEYWORD_PLANNER
   DATAFORSEO
+  PLANNER_CSV
 }
 
 enum BrandStatus {

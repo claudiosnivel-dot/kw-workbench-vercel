@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import type { MetricsProvider } from "@/lib/generated/prisma/enums";
 import {
   COUNTRY_CODES,
   LANGUAGE_OPTIONS,
@@ -17,7 +18,8 @@ type ProjectFormValues = {
   initial_subproject_name: string;
   seeds: string;
   autocomplete_provider: "MOCK" | "GOOGLE_DIRECT";
-  metrics_provider: "NONE" | "MOCK" | "GOOGLE_KEYWORD_PLANNER" | "DATAFORSEO";
+  // Tipo dell'enum: PLANNER_CSV (T-910) marca le righe importate e non è tra le opzioni del form.
+  metrics_provider: MetricsProvider;
   min_volume: number;
   exclude_brands: boolean;
   expand_alpha: boolean;
