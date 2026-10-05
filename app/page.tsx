@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { ResumeOnboardingButton } from "@/components/resume-onboarding-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { resultsHref } from "@/lib/modules/results-view";
 import { getOnboardingStateForUser, shouldRedirectUserToOnboarding } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
 
@@ -169,7 +170,7 @@ export default async function DashboardPage() {
                       <Link className="btn-secondary" href={`/projects/${project.id}`}>
                         Apri
                       </Link>
-                      <Link className="btn-secondary" href={`/projects/${project.id}/results`}>
+                      <Link className="btn-secondary" href={resultsHref(project.id, { view: "all" })}>
                         Risultati
                       </Link>
                       <DeleteProjectButton

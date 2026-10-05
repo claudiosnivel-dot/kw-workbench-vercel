@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { resolveDefaultSectionId, resultsHref } from "@/lib/modules/results-view";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -77,9 +78,10 @@ export default async function ProjectDetailPage({
   }
 
   const selectedSectionId = getValue(resolvedSearchParams, "sectionId").trim();
+  const defaultSectionId = resolveDefaultSectionId(project.subprojects, project.default_subproject_id);
   const activeSection =
     project.subprojects.find((item) => item.id === selectedSectionId) ??
-    project.subprojects[0] ??
+    project.subprojects.find((item) => item.id === defaultSectionId) ??
     null;
 
   const activeLatestJob = activeSection?.jobs[0] ?? null;
@@ -117,10 +119,10 @@ export default async function ProjectDetailPage({
               label="Avvia estrazione (sezione attiva)"
               runningLabel="Estrazione in corso..."
             />
-            <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/results?subprojectId=${activeSection.id}`}>
+            <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(project.id, { subprojectId: activeSection.id })}>
               Apri risultati sezione
             </Link>
-            <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/results?view=all`}>
+            <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(project.id, { view: "all" })}>
               Risultati tutto il progetto
             </Link>
             <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/settings`}>
@@ -181,7 +183,7 @@ export default async function ProjectDetailPage({
               <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/subprojects/${activeSection.id}`}>
                 Apri impostazioni sezione
               </Link>
-              <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/results?subprojectId=${activeSection.id}`}>
+              <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(project.id, { subprojectId: activeSection.id })}>
                 Apri risultati sezione
               </Link>
               {activeLatestJob ? (

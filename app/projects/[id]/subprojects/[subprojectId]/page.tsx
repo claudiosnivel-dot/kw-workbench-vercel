@@ -6,6 +6,7 @@ import { RunExtractionButton } from "@/components/run-extraction-button";
 import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
+import { resultsHref } from "@/lib/modules/results-view";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -66,10 +67,10 @@ export default async function SubprojectSettingsPage({
           <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${subproject.project_id}`}>
             Torna al progetto
           </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${subproject.project_id}/results?subprojectId=${subproject.id}`}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(subproject.project_id, { subprojectId: subproject.id })}>
             Vedi risultati sezione
           </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${subproject.project_id}/results`}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(subproject.project_id, { view: "all" })}>
             Vedi risultati tutto progetto
           </Link>
         </div>

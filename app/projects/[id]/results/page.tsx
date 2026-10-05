@@ -9,6 +9,15 @@ import { isClassificationSupported } from "@/lib/modules/classification";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { parsePagingParams, withPaging } from "@/lib/modules/results-paging";
 import { loadResultsPage } from "@/lib/modules/results-query";
+import type { ExportFormat, ExportScope } from "@/lib/modules/export";
+import {
+  buildResultsExportHref,
+  resolveDefaultSectionId,
+  resolveResultsView,
+  resultsHref,
+  toUrlSearchParams,
+  viewTarget,
+} from "@/lib/modules/results-view";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -26,39 +35,6 @@ function getValue(searchParams: SearchParams, key: string): string {
 function checked(searchParams: SearchParams, key: string): boolean {
   const value = getValue(searchParams, key);
   return ["1", "true", "on", "yes"].includes(value.toLowerCase());
-}
-
-function toQueryParams(searchParams: SearchParams): URLSearchParams {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (!value) continue;
-    if (Array.isArray(value)) {
-      if (value[0]) params.set(key, value[0]);
-      continue;
-    }
-
-    params.set(key, value);
-  }
-
-  return params;
-}
-
-function buildPath(projectId: string, base: URLSearchParams): string {
-  const query = base.toString();
-  return query ? `/projects/${projectId}/results?${query}` : `/projects/${projectId}/results`;
-}
-
-function buildExportLink(
-  projectId: string,
-  format: "csv" | "xlsx" | "json",
-  scope: "approved" | "selected" | "review" | "non-excluded" | "filtered",
-  searchParams: SearchParams
-): string {
-  const params = toQueryParams(searchParams);
-  params.set("format", format);
-  params.set("scope", scope);
-
-  return `/api/projects/${projectId}/export?${params.toString()}`;
 }
 
 function buildDefaultSheetsFileName(projectName: string, subprojectName?: string): string {
@@ -89,6 +65,7 @@ export default async function ResultsPage({
           select: {
             id: true,
             name: true,
+            position: true,
             metrics_provider_override: true,
             language_code_override: true,
           },
@@ -102,20 +79,21 @@ export default async function ResultsPage({
     notFound();
   }
 
-  const defaultSection = project.subprojects[0] ?? null;
+  const view = resolveResultsView({
+    subprojects: project.subprojects,
+    defaultSubprojectId: project.default_subproject_id,
+    searchParams: resolvedSearchParams,
+  });
 
-  const viewMode = getValue(resolvedSearchParams, "view").trim().toLowerCase() === "all" ? "all" : "section";
-  const requestedSubprojectId = getValue(resolvedSearchParams, "subprojectId").trim();
-  const inferredSubprojectId = requestedSubprojectId || defaultSection?.id || "";
-
-  const selectedSubproject =
-    viewMode === "all"
-      ? null
-      : project.subprojects.find((item) => item.id === inferredSubprojectId) ?? (project.subprojects[0] ?? null);
-
-  if (requestedSubprojectId && !project.subprojects.some((item) => item.id === requestedSubprojectId)) {
+  if (view.kind === "not-found") {
     notFound();
   }
+
+  const selectedSubproject =
+    view.kind === "section" ? project.subprojects.find((item) => item.id === view.subprojectId) ?? null : null;
+  // Destinazione di «Sezione attiva» dalla vista progetto: la sezione predefinita.
+  const activeSectionId =
+    view.kind === "section" ? view.subprojectId : resolveDefaultSectionId(project.subprojects, project.default_subproject_id);
 
   const shownSections = selectedSubproject ? [selectedSubproject] : project.subprojects;
 
@@ -140,24 +118,16 @@ export default async function ResultsPage({
     pageSize,
   });
 
-  const currentParams = toQueryParams(resolvedSearchParams);
+  const currentParams = toUrlSearchParams(resolvedSearchParams);
+  const target = viewTarget(view);
+  const firstPage = withPaging(currentParams, { page: 1, pageSize });
 
-  const activeViewParams = toQueryParams(resolvedSearchParams);
-  activeViewParams.set("view", "section");
-  if (selectedSubproject?.id) {
-    activeViewParams.set("subprojectId", selectedSubproject.id);
-  } else if (defaultSection?.id) {
-    activeViewParams.set("subprojectId", defaultSection.id);
-  }
-
-  const allViewParams = toQueryParams(resolvedSearchParams);
-  allViewParams.set("view", "all");
-  allViewParams.delete("subprojectId");
-
-  const sectionViewHref = buildPath(project.id, withPaging(activeViewParams, { page: 1, pageSize }));
-  const allViewHref = buildPath(project.id, withPaging(allViewParams, { page: 1, pageSize }));
-  const prevPageHref = buildPath(project.id, withPaging(currentParams, { page: Math.max(1, page - 1), pageSize }));
-  const nextPageHref = buildPath(project.id, withPaging(currentParams, { page: Math.min(totalPages, page + 1), pageSize }));
+  const sectionViewHref = activeSectionId ? resultsHref(project.id, { subprojectId: activeSectionId }, firstPage) : null;
+  const allViewHref = resultsHref(project.id, { view: "all" }, firstPage);
+  const prevPageHref = resultsHref(project.id, target, withPaging(currentParams, { page: Math.max(1, page - 1), pageSize }));
+  const nextPageHref = resultsHref(project.id, target, withPaging(currentParams, { page: Math.min(totalPages, page + 1), pageSize }));
+  const exportHref = (format: ExportFormat, scope: ExportScope) =>
+    buildResultsExportHref(project.id, view, resolvedSearchParams, format, scope);
 
   return (
     <div className="space-y-6">
@@ -178,10 +148,12 @@ export default async function ResultsPage({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Link className={viewMode === "section" ? "btn-primary" : "btn-secondary"} href={sectionViewHref}>
-            Sezione attiva
-          </Link>
-          <Link className={viewMode === "all" ? "btn-primary" : "btn-secondary"} href={allViewHref}>
+          {sectionViewHref && (
+            <Link className={view.kind === "section" ? "btn-primary" : "btn-secondary"} href={sectionViewHref}>
+              Sezione attiva
+            </Link>
+          )}
+          <Link className={view.kind === "all" ? "btn-primary" : "btn-secondary"} href={allViewHref}>
             Tutto il progetto
           </Link>
         </div>
@@ -200,11 +172,11 @@ export default async function ResultsPage({
         </p>
 
         <form method="get" className="grid gap-3 md:grid-cols-4">
-          <input type="hidden" name="view" value={viewMode} />
+          <input type="hidden" name="view" value={view.kind} />
           <input type="hidden" name="page" value="1" />
           <input type="hidden" name="pageSize" value={String(pageSize)} />
 
-          {viewMode === "section" && (
+          {view.kind === "section" && (
             <select className="select" name="subprojectId" defaultValue={selectedSubproject?.id ?? ""}>
               {project.subprojects.map((subproject) => (
                 <option key={subproject.id} value={subproject.id}>
@@ -304,24 +276,24 @@ export default async function ResultsPage({
         <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap">
           <GoogleSheetsExportButton
             projectId={project.id}
-            subprojectId={viewMode === "section" ? selectedSubproject?.id ?? null : null}
+            subprojectId={selectedSubproject?.id ?? null}
             connected={googleSheets.connected}
-            defaultFileName={buildDefaultSheetsFileName(project.name, viewMode === "section" ? selectedSubproject?.name : undefined)}
+            defaultFileName={buildDefaultSheetsFileName(project.name, selectedSubproject?.name)}
             filters={resolvedSearchParams}
           />
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "csv", "approved", resolvedSearchParams)}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("csv", "approved")}>
             CSV solo approvate
           </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "xlsx", "selected", resolvedSearchParams)}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("xlsx", "selected")}>
             XLSX solo selezionate
           </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "json", "review", resolvedSearchParams)}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("json", "review")}>
             JSON solo review
           </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "csv", "non-excluded", resolvedSearchParams)}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("csv", "non-excluded")}>
             CSV tutte non escluse
           </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={buildExportLink(project.id, "xlsx", "filtered", resolvedSearchParams)}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("xlsx", "filtered")}>
             XLSX vista filtrata corrente
           </Link>
         </div>

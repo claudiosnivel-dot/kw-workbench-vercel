@@ -3,6 +3,7 @@ import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { runJobResponse } from "@/lib/modules/jobs/run-response";
+import { resolveDefaultSectionId } from "@/lib/modules/results-view";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -39,7 +40,7 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
     include: {
       subprojects: {
         orderBy: [{ position: "asc" }, { created_at: "asc" }],
-        select: { id: true, name: true },
+        select: { id: true, name: true, position: true },
       },
     },
   });
@@ -52,9 +53,8 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
     return NextResponse.json({ error: "Nessuna sezione disponibile. Crea prima una sezione." }, { status: 400 });
   }
 
-  const targetSubproject = requestedSubprojectId
-    ? project.subprojects.find((item) => item.id === requestedSubprojectId) ?? null
-    : project.subprojects[0];
+  const targetSubprojectId = requestedSubprojectId || resolveDefaultSectionId(project.subprojects, project.default_subproject_id);
+  const targetSubproject = project.subprojects.find((item) => item.id === targetSubprojectId) ?? null;
 
   if (!targetSubproject) {
     return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });

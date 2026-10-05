@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { DeleteSubprojectButton } from "@/components/delete-subproject-button";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { SectionOrderButtons } from "@/components/section-order-buttons";
+import { SetDefaultSectionButton } from "@/components/set-default-section-button";
 import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { resultsHref } from "@/lib/modules/results-view";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -113,9 +115,14 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                         <Link className="btn-secondary" href={`/projects/${project.id}/subprojects/${section.id}`}>
                           Rinomina / impostazioni
                         </Link>
-                        <Link className="btn-secondary" href={`/projects/${project.id}/results?subprojectId=${section.id}`}>
+                        <Link className="btn-secondary" href={resultsHref(project.id, { subprojectId: section.id })}>
                           Risultati
                         </Link>
+                        <SetDefaultSectionButton
+                          projectId={project.id}
+                          subprojectId={section.id}
+                          isDefault={project.default_subproject_id === section.id}
+                        />
                         <RunExtractionButton
                           runPath={`/api/projects/${project.id}/subprojects/${section.id}/run`}
                           label="Esegui"
