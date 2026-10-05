@@ -2,6 +2,7 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { JobStatus } from "@/lib/generated/prisma/enums";
 import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
+import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -58,7 +59,7 @@ export async function runJobById(jobId: string) {
   try {
     const summary = await runExtractionPipeline(job.subproject_id);
     // await: un errore dell'aggiornamento finale passa dal catch e il job termina failed.
-    return await prisma.job.update({
+    const completed = await prisma.job.update({
       where: { id: job.id },
       data: {
         status: "completed",
@@ -66,10 +67,12 @@ export async function runJobById(jobId: string) {
         result: summary,
       },
     });
+    await touchProjectActivity(prisma, job.project_id, completed.completed_at ?? undefined);
+    return completed;
   } catch (error) {
     // Stack completo solo nel log, correlabile con l'evento di Sentry (T-602); nel DB il messaggio pubblico (T-706).
     logger.error("job_failed", { jobId: job.id, projectId: job.project_id, subprojectId: job.subproject_id, error });
-    return prisma.job.update({
+    const failed = await prisma.job.update({
       where: { id: job.id },
       data: {
         status: "failed",
@@ -77,6 +80,8 @@ export async function runJobById(jobId: string) {
         error_message: toPublicJobError(error),
       },
     });
+    await touchProjectActivity(prisma, job.project_id, failed.completed_at ?? undefined);
+    return failed;
   }
 }
 

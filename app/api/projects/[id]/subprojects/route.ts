@@ -2,6 +2,7 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
+import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { parseSubprojectCreate } from "@/lib/modules/project-settings";
 import { guardSectionName } from "@/lib/modules/sections";
 import { prisma } from "@/lib/prisma";
@@ -89,6 +90,7 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
       });
     }
 
+    await touchProjectActivity(tx, id);
     return created;
   }));
 

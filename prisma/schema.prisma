@@ -170,6 +170,8 @@ model Project {
   scoring_profile       String               @default("balanced")
   created_at            DateTime             @default(now())
   updated_at            DateTime             @updatedAt
+  /// Ultima attività reale (estrazioni, sezioni, revisione, impostazioni): ordinamento della dashboard (T-810).
+  last_activity_at      DateTime             @default(now())
   owner                 User?                @relation(fields: [owner_user_id], references: [id], onDelete: Cascade)
   subprojects           Subproject[]         @relation("ProjectSubprojects")
   default_subproject    Subproject?          @relation("ProjectDefaultSubproject", fields: [default_subproject_id], references: [id], onDelete: SetNull)

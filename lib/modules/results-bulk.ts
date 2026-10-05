@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { ValidationError } from "@/lib/http/errors";
+import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -50,6 +51,9 @@ export async function applyBulkAction(projectId: string, payload: BulkActionPayl
     ? buildResultsWhere(projectId, parseResultsFilters(payload.filters), subprojectId)
     : { project_id: projectId, id: { in: payload.ids }, ...(subprojectId ? { subproject_id: subprojectId } : {}) };
 
-  const { count } = await prisma.keywordCandidate.updateMany({ where, data: BULK_ACTION_DATA[payload.action] });
-  return count;
+  return prisma.$transaction(async (tx) => {
+    const { count } = await tx.keywordCandidate.updateMany({ where, data: BULK_ACTION_DATA[payload.action] });
+    await touchProjectActivity(tx, projectId);
+    return count;
+  });
 }

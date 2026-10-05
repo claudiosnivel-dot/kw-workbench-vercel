@@ -1,5 +1,6 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { AppError } from "@/lib/http/errors";
+import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { prisma } from "@/lib/prisma";
 
 /** Nome di sezione già usato nel progetto (vincolo project_id + name): 409 con codice stabile (T-808). */
@@ -61,6 +62,7 @@ export async function moveSection(
     await renumber(tx, projectId, ordered);
     await tx.subproject.update({ where: { id: ordered[index].id, project_id: projectId }, data: { position: target } });
     await tx.subproject.update({ where: { id: ordered[target].id, project_id: projectId }, data: { position: index } });
+    await touchProjectActivity(tx, projectId);
     return "moved";
   });
 }
@@ -100,5 +102,6 @@ export async function deleteSection(projectId: string, subprojectId: string): Pr
     if (project?.default_subproject_id === subprojectId) {
       await tx.project.update({ where: { id: projectId }, data: { default_subproject_id: remaining[0]?.id ?? null } });
     }
+    await touchProjectActivity(tx, projectId);
   });
 }

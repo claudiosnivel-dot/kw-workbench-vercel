@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
+import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { parseProjectPatch } from "@/lib/modules/project-settings";
 import { invalidSettingsResponse } from "@/lib/modules/project-settings-response";
 import { prisma } from "@/lib/prisma";
@@ -74,7 +75,11 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
 
     // Aggiornamento parziale (T-809): solo i campi inviati, validati da uno schema strict.
     const data = parseProjectPatch(payload, user, project);
-    const updated = await prisma.project.update({ where: { id }, data });
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.project.update({ where: { id }, data });
+      await touchProjectActivity(tx, id);
+      return result;
+    });
 
     return NextResponse.json({ data: updated });
   } catch (error) {
