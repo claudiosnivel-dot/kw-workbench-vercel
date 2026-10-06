@@ -1,21 +1,11 @@
 import { redirect } from "next/navigation";
 import { OnboardingRunStep } from "@/components/onboarding-run-step";
-import { requirePageUser } from "@/lib/auth/page-guard";
-import { getOnboardingStateForUser } from "@/lib/onboarding/progress";
+import { requireOnboardingStep } from "@/lib/onboarding/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingRunPage() {
-  const user = await requirePageUser();
-  const state = await getOnboardingStateForUser(user.id);
-
-  if (state.status === "COMPLETED") {
-    redirect("/");
-  }
-
-  if (state.status === "NEEDS_CHOICE") {
-    redirect("/onboarding/welcome");
-  }
+  const { state } = await requireOnboardingStep("RUN");
 
   if (!state.activeProject) {
     redirect("/onboarding/project-create");

@@ -171,7 +171,9 @@ async function computeState(userId: string, row: OnboardingProgressRow): Promise
   const hasExistingData = (await prisma.project.count({ where: { owner_user_id: userId } })) > 0;
 
   let activeProject = row.active_project_id ? await findOwnedProject(userId, row.active_project_id) : null;
-  if (!activeProject) {
+  // Dopo «Ricomincia» il progetto più recente non si riadotta: si riparte da PROJECT_CREATE (T-1002).
+  const restartedFromScratch = row.entry_mode === OnboardingEntryMode.RESTART && !row.active_project_id;
+  if (!activeProject && !restartedFromScratch) {
     activeProject = await findFallbackProject(userId);
   }
 

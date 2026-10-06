@@ -1,22 +1,12 @@
 import { redirect } from "next/navigation";
 import { OnboardingSeedsForm } from "@/components/onboarding-seeds-form";
-import { requirePageUser } from "@/lib/auth/page-guard";
-import { getOnboardingStateForUser } from "@/lib/onboarding/progress";
+import { requireOnboardingStep } from "@/lib/onboarding/navigation";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingSeedsPage() {
-  const user = await requirePageUser();
-  const state = await getOnboardingStateForUser(user.id);
-
-  if (state.status === "COMPLETED") {
-    redirect("/");
-  }
-
-  if (state.status === "NEEDS_CHOICE") {
-    redirect("/onboarding/welcome");
-  }
+  const { state } = await requireOnboardingStep("SEEDS");
 
   if (!state.activeProject) {
     redirect("/onboarding/project-create");

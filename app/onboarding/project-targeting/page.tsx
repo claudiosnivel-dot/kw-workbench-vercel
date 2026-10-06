@@ -1,21 +1,11 @@
 import { redirect } from "next/navigation";
 import { OnboardingProjectTargetingForm } from "@/components/onboarding-project-targeting-form";
-import { requirePageUser } from "@/lib/auth/page-guard";
-import { getOnboardingStateForUser } from "@/lib/onboarding/progress";
+import { requireOnboardingStep } from "@/lib/onboarding/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingProjectTargetingPage() {
-  const user = await requirePageUser();
-  const state = await getOnboardingStateForUser(user.id);
-
-  if (state.status === "COMPLETED") {
-    redirect("/");
-  }
-
-  if (state.status === "NEEDS_CHOICE") {
-    redirect("/onboarding/welcome");
-  }
+  const { state } = await requireOnboardingStep("PROJECT_TARGETING");
 
   if (!state.activeProject) {
     redirect("/onboarding/project-create");

@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
+import { pauseOnboardingAndOpenDashboard } from "@/lib/client/onboarding";
 import {
   ONBOARDING_STEP_META,
   ONBOARDING_TOTAL_STEPS,
@@ -26,15 +27,7 @@ export function OnboardingProgressHeader() {
     setError(null);
 
     try {
-      const response = await fetch("/api/onboarding/skip", {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Impossibile mettere in pausa il percorso guidato.");
-      }
-
-      window.location.assign("/");
+      await pauseOnboardingAndOpenDashboard();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
       setSkipping(false);

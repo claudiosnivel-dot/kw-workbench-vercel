@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
 import { readJsonSafe, type ApiErrorPayload } from "@/lib/client/http";
+import { pauseOnboardingAndOpenDashboard } from "@/lib/client/onboarding";
 
 type ExportFormat = "csv" | "xlsx" | "json";
 type ExportScope = "approved" | "selected" | "review" | "non-excluded" | "filtered";
@@ -39,6 +40,7 @@ export function OnboardingReviewExportStep({
   const [loading, setLoading] = useState<ExportFormat | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
 
   const defaultSheetsFileName = useMemo(() => {
     const date = new Date().toISOString().slice(0, 10);
@@ -91,6 +93,18 @@ export function OnboardingReviewExportStep({
     } catch (exportError) {
       setError(exportError instanceof Error ? exportError.message : "Errore imprevisto");
       setLoading(null);
+    }
+  };
+
+  // «Vai alla dashboard» mette in pausa il percorso: un link a / tornerebbe all'onboarding in corso (T-1002).
+  const goToDashboard = async () => {
+    setLeaving(true);
+    setError(null);
+    try {
+      await pauseOnboardingAndOpenDashboard();
+    } catch (pauseError) {
+      setError(pauseError instanceof Error ? pauseError.message : "Errore imprevisto");
+      setLeaving(false);
     }
   };
 
@@ -161,9 +175,9 @@ export function OnboardingReviewExportStep({
         <Link className="btn-secondary w-full text-center sm:w-auto" href="/onboarding/run">
           Torna allo step precedente
         </Link>
-        <Link className="btn-secondary w-full text-center sm:w-auto" href="/">
-          Vai alla dashboard
-        </Link>
+        <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => void goToDashboard()} disabled={leaving}>
+          {leaving ? "Salvataggio..." : "Vai alla dashboard"}
+        </button>
       </div>
 
       {error && <p className="text-sm text-red-700">{error}</p>}

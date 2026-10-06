@@ -1,23 +1,13 @@
 import { redirect } from "next/navigation";
 import { OnboardingReviewExportStep } from "@/components/onboarding-review-export-step";
-import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
-import { getOnboardingStateForUser } from "@/lib/onboarding/progress";
+import { requireOnboardingStep } from "@/lib/onboarding/navigation";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingReviewExportPage() {
-  const user = await requirePageUser();
-  const state = await getOnboardingStateForUser(user.id);
-
-  if (state.status === "COMPLETED") {
-    redirect("/");
-  }
-
-  if (state.status === "NEEDS_CHOICE") {
-    redirect("/onboarding/welcome");
-  }
+  const { user, state } = await requireOnboardingStep("REVIEW_EXPORT");
 
   if (!state.activeProject) {
     redirect("/onboarding/project-create");
