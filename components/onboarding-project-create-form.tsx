@@ -1,14 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { submitOnboardingCreation } from "@/lib/client/onboarding";
 
-type ProjectCreateResponse = ApiErrorPayload & {
-  data?: {
-    project?: { id: string };
-    id?: string;
-  };
-};
+const IDEMPOTENCY_STORAGE_KEY = "onboarding-idempotency:project-create";
 
 export function OnboardingProjectCreateForm() {
   const [name, setName] = useState("");
@@ -28,41 +23,13 @@ export function OnboardingProjectCreateForm() {
     setError(null);
 
     try {
-      const response = await fetch("/api/projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: trimmedName,
-          createInitialSection: false,
-        }),
-      });
-
-      const payload = await readJsonSafe<ProjectCreateResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Creazione progetto non riuscita"));
-      }
-
-      const projectId = payload?.data?.project?.id ?? payload?.data?.id;
-      if (!projectId) {
-        throw new Error("ID progetto mancante nella risposta.");
-      }
-
-      const onboardingResponse = await fetch("/api/onboarding/state", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "IN_PROGRESS",
-          currentStep: "PROJECT_TARGETING",
-          activeProjectId: projectId,
-          activeSubprojectId: null,
-        }),
-      });
-
-      if (!onboardingResponse.ok) {
-        throw new Error("Progetto creato, ma avanzamento onboarding non riuscito.");
-      }
-
-      window.location.assign("/onboarding/project-targeting");
+      const nextPath = await submitOnboardingCreation(
+        "/api/onboarding/project",
+        IDEMPOTENCY_STORAGE_KEY,
+        { name: trimmedName },
+        "Creazione progetto non riuscita"
+      );
+      window.location.assign(nextPath ?? "/onboarding/project-targeting");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
       setSaving(false);

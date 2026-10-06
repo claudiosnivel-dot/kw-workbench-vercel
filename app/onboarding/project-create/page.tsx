@@ -1,24 +1,23 @@
-import { redirect } from "next/navigation";
 import { OnboardingProjectCreateForm } from "@/components/onboarding-project-create-form";
-import { requirePageUser } from "@/lib/auth/page-guard";
-import { getOnboardingStateForUser } from "@/lib/onboarding/progress";
+import { OnboardingStepDone } from "@/components/onboarding-step-done";
+import { continuePathAfter, requireOnboardingStep } from "@/lib/onboarding/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingProjectCreatePage() {
-  const user = await requirePageUser();
-  const state = await getOnboardingStateForUser(user.id);
+  const { state } = await requireOnboardingStep("PROJECT_CREATE");
 
-  if (state.status === "COMPLETED") {
-    redirect("/");
-  }
-
-  if (state.status === "NEEDS_CHOICE") {
-    redirect("/onboarding/welcome");
-  }
-
-  if (state.activeProjectId && state.entryMode === "RESUME") {
-    redirect("/onboarding/project-targeting");
+  // Progetto già creato (anche dopo Ricomincia): il back del browser non porta a una seconda creazione (T-1001).
+  const continuePath = continuePathAfter(state, "PROJECT_CREATE");
+  if (state.activeProject && continuePath) {
+    return (
+      <OnboardingStepDone
+        heading="Step 2: Progetto creato"
+        label="Progetto attivo"
+        name={state.activeProject.name}
+        continuePath={continuePath}
+      />
+    );
   }
 
   return <OnboardingProjectCreateForm />;

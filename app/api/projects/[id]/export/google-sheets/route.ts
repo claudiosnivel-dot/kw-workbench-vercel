@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { AppError, withApiErrors } from "@/lib/http/errors";
-import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
+import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
 import { ExportScope } from "@/lib/modules/export";
 import {
   exportProjectToGoogleSheets,
@@ -128,7 +128,8 @@ export const POST = withApiErrors(async (request: NextRequest, context: RouteCon
     throw new AppError(500, "INTERNAL_ERROR", INTERNAL_EXPORT_ERROR);
   }
 
-  await markOnboardingExportCompleted(user.id);
+  // Best-effort come l'export su file: l'onboarding non fa fallire un export già scritto (T-1003).
+  await recordOnboardingExport(user.id, id, async () => output.exportedRows);
 
   return NextResponse.json({ data: output });
 });

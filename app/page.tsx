@@ -6,7 +6,7 @@ import { ResumeOnboardingButton } from "@/components/resume-onboarding-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { listDashboardProjects } from "@/lib/modules/dashboard";
 import { resultsHref } from "@/lib/modules/results-view";
-import { getOnboardingStateForUser, shouldRedirectUserToOnboarding } from "@/lib/onboarding/progress";
+import { getOnboardingStatusForUser, shouldRedirectUserToOnboarding } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +33,10 @@ export default async function DashboardPage({
 }) {
   const user = await requirePageUser();
   const { page: rawPage } = await searchParams;
-  const onboardingState = await getOnboardingStateForUser(user.id);
+  // Solo lo status: una query e nessuna scrittura (T-1004).
+  const onboardingStatus = await getOnboardingStatusForUser(user.id);
 
-  if (shouldRedirectUserToOnboarding(onboardingState.status)) {
+  if (shouldRedirectUserToOnboarding(onboardingStatus)) {
     redirect("/onboarding");
   }
 
@@ -78,7 +79,7 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-6">
-      {onboardingState.status === "PAUSED" && (
+      {onboardingStatus === "PAUSED" && (
         <section className="card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

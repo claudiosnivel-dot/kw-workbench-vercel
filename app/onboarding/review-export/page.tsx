@@ -1,40 +1,21 @@
-import { redirect } from "next/navigation";
 import { OnboardingReviewExportStep } from "@/components/onboarding-review-export-step";
-import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
-import { getOnboardingStateForUser } from "@/lib/onboarding/progress";
+import { requireOnboardingSection } from "@/lib/onboarding/navigation";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingReviewExportPage() {
-  const user = await requirePageUser();
-  const state = await getOnboardingStateForUser(user.id);
-
-  if (state.status === "COMPLETED") {
-    redirect("/");
-  }
-
-  if (state.status === "NEEDS_CHOICE") {
-    redirect("/onboarding/welcome");
-  }
-
-  if (!state.activeProject) {
-    redirect("/onboarding/project-create");
-  }
-
-  if (!state.activeSubproject) {
-    redirect("/onboarding/section-create");
-  }
+  const { user, project, subproject } = await requireOnboardingSection("REVIEW_EXPORT");
 
   const [projectKeywordCount, sectionKeywordCount, googleSheets] = await Promise.all([
     prisma.keywordCandidate.count({
-      where: { project_id: state.activeProject.id },
+      where: { project_id: project.id },
     }),
     prisma.keywordCandidate.count({
       where: {
-        project_id: state.activeProject.id,
-        subproject_id: state.activeSubproject.id,
+        project_id: project.id,
+        subproject_id: subproject.id,
       },
     }),
     getGoogleSheetsCredentialSnapshot(user.id),
@@ -42,10 +23,10 @@ export default async function OnboardingReviewExportPage() {
 
   return (
     <OnboardingReviewExportStep
-      projectId={state.activeProject.id}
-      subprojectId={state.activeSubproject.id}
-      projectName={state.activeProject.name}
-      subprojectName={state.activeSubproject.name}
+      projectId={project.id}
+      subprojectId={subproject.id}
+      projectName={project.name}
+      subprojectName={subproject.name}
       projectKeywordCount={projectKeywordCount}
       sectionKeywordCount={sectionKeywordCount}
       googleSheetsConnected={googleSheets.connected}

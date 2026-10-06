@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
-
-type SectionCreateResponse = ApiErrorPayload & {
-  data?: {
-    id?: string;
-  };
-};
+import { submitOnboardingCreation } from "@/lib/client/onboarding";
 
 type OnboardingSectionCreateFormProps = {
   projectId: string;
@@ -33,42 +27,13 @@ export function OnboardingSectionCreateForm({ projectId, projectName }: Onboardi
     setError(null);
 
     try {
-      const response = await fetch(`/api/projects/${projectId}/subprojects`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: trimmedName,
-          description: "",
-          seeds: "",
-        }),
-      });
-
-      const payload = await readJsonSafe<SectionCreateResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Creazione sezione non riuscita"));
-      }
-
-      const subprojectId = payload?.data?.id;
-      if (!subprojectId) {
-        throw new Error("ID sezione mancante nella risposta.");
-      }
-
-      const onboardingResponse = await fetch("/api/onboarding/state", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "IN_PROGRESS",
-          currentStep: "SEEDS",
-          activeProjectId: projectId,
-          activeSubprojectId: subprojectId,
-        }),
-      });
-
-      if (!onboardingResponse.ok) {
-        throw new Error("Sezione creata, ma avanzamento onboarding non riuscito.");
-      }
-
-      window.location.assign("/onboarding/seeds");
+      const nextPath = await submitOnboardingCreation(
+        "/api/onboarding/section",
+        `onboarding-idempotency:section-create:${projectId}`,
+        { projectId, name: trimmedName },
+        "Creazione sezione non riuscita"
+      );
+      window.location.assign(nextPath ?? "/onboarding/seeds");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
       setSaving(false);

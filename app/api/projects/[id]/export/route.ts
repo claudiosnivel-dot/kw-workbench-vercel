@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
-import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import {
   CSV_DIALECT_DEFAULT,
+  countExportRows,
   ExportFormat,
   ExportScope,
   exportFileInfo,
   isCsvDialect,
   streamExport,
 } from "@/lib/modules/export";
-import { logger } from "@/lib/observability/logger";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
+import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -81,12 +81,8 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   const { contentType, filename } = exportFileInfo(params);
   const stream = streamExport(params);
 
-  // L'avanzamento dell'onboarding non deve far fallire un export valido.
-  try {
-    await markOnboardingExportCompleted(user.id);
-  } catch (error) {
-    logger.error("onboarding_export_mark_failed", { userId: user.id, projectId: id, error });
-  }
+  // Conta solo un export non vuoto del progetto attivo (T-1003); un errore non fa fallire l'export.
+  await recordOnboardingExport(user.id, id, () => countExportRows(params));
 
   return new Response(stream, {
     status: 200,
