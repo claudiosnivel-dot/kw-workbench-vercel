@@ -37,9 +37,6 @@ type Selection = { rowsKey: string; ids: string[]; allFiltered: boolean };
 
 const ACTIONS = ["approve", "reject", "mark-review", "select", "unselect"] as const;
 
-/** Gruppi di valori della tabella con un'etichetta nel catalogo (results.<gruppo>.<valore>). */
-type ValueGroup = "intent" | "type" | "brand" | "review";
-
 function chipTone(type: "default" | "success" | "warning" | "danger"): string {
   if (type === "success") return "border-emerald-400/40 bg-emerald-500/15 text-emerald-200";
   if (type === "warning") return "border-amber-400/40 bg-amber-500/15 text-amber-200";
@@ -80,12 +77,6 @@ export function ResultsTable({
   const selectedCount = current.allFiltered ? filteredCount : selectedIds.length;
 
   const select = (ids: string[], allFiltered = false) => setSelection({ rowsKey, ids, allFiltered });
-
-  // Etichetta del valore nella lingua corrente; un valore senza voce nel catalogo resta com'è.
-  const valueLabel = (group: ValueGroup, value: string) => {
-    const key = `${group}.${value}` as Parameters<typeof t>[0];
-    return t.has(key) ? t(key) : value;
-  };
 
   const toggle = (id: string) => {
     select(selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id]);
@@ -191,16 +182,16 @@ export function ResultsTable({
                   <td className="max-w-[20rem] wrap-break-word px-3 py-3 font-medium">{displayKeyword}</td>
                   <td className="px-3 py-3 text-xs">{row.source}</td>
                   <td className="hidden px-3 py-3 md:table-cell">
-                    <span className="status-chip">{valueLabel("intent", row.search_intent)}</span>
+                    <span className="status-chip">{row.search_intent}</span>
                   </td>
                   <td className="hidden px-3 py-3 md:table-cell">
-                    <span className="status-chip">{valueLabel("type", row.keyword_type)}</span>
+                    <span className="status-chip">{row.keyword_type}</span>
                   </td>
                   <td className="hidden px-3 py-3 md:table-cell">
-                    <span className={`status-chip ${brandTone(row.brand_status)}`}>{valueLabel("brand", row.brand_status)}</span>
+                    <span className={`status-chip ${brandTone(row.brand_status)}`}>{row.brand_status}</span>
                   </td>
                   <td className="hidden px-3 py-3 md:table-cell">
-                    <span className={`status-chip ${reviewTone(row.review_status)}`}>{valueLabel("review", row.review_status)}</span>
+                    <span className={`status-chip ${reviewTone(row.review_status)}`}>{row.review_status}</span>
                   </td>
                   <td className="px-3 py-3">{row.avg_monthly_searches ?? "-"}</td>
                   <td className="hidden px-3 py-3 md:table-cell">{row.competition ?? "-"}</td>

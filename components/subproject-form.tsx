@@ -70,12 +70,12 @@ const defaultValues: SubprojectFormValues = {
 
 // Override booleani: campo del form, id del select e chiave dell'etichetta nel catalogo.
 const BOOLEAN_OVERRIDES = [
-  { key: "exclude_brands_override", id: "subproject-exclude-brands-override", label: "excludeBrandsOverride" },
-  { key: "expand_alpha_override", id: "subproject-expand-alpha-override", label: "expandAlphaOverride" },
-  { key: "expand_numeric_override", id: "subproject-expand-numeric-override", label: "expandNumericOverride" },
-  { key: "expand_patterns_override", id: "subproject-expand-patterns-override", label: "expandPatternsOverride" },
-  { key: "auto_classification_override", id: "subproject-auto-classification-override", label: "autoClassificationOverride" },
-] as const satisfies ReadonlyArray<{ key: BooleanOverrideKey; id: string; label: string }>;
+  { field: "exclude_brands_override", id: "subproject-exclude-brands-override", label: "excludeBrandsOverride" },
+  { field: "expand_alpha_override", id: "subproject-expand-alpha-override", label: "expandAlphaOverride" },
+  { field: "expand_numeric_override", id: "subproject-expand-numeric-override", label: "expandNumericOverride" },
+  { field: "expand_patterns_override", id: "subproject-expand-patterns-override", label: "expandPatternsOverride" },
+  { field: "auto_classification_override", id: "subproject-auto-classification-override", label: "autoClassificationOverride" },
+] as const satisfies ReadonlyArray<{ field: BooleanOverrideKey; id: string; label: string }>;
 
 function parseBooleanOverride(value: BooleanOverride): boolean | null {
   if (value === "true") {
@@ -367,16 +367,19 @@ export function SubprojectForm({
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            {BOOLEAN_OVERRIDES.map((field) => (
-              <div key={field.key} className={field.key === "auto_classification_override" ? "md:col-span-2" : undefined}>
-                <label className="label" htmlFor={field.id}>
-                  {t(field.label)}
+            {BOOLEAN_OVERRIDES.map((override) => (
+              <div
+                key={override.field}
+                className={override.field === "auto_classification_override" ? "md:col-span-2" : undefined}
+              >
+                <label className="label" htmlFor={override.id}>
+                  {t(override.label)}
                 </label>
                 <select
-                  id={field.id}
+                  id={override.id}
                   className="select"
-                  value={values[field.key]}
-                  onChange={(event) => update(field.key, event.target.value as BooleanOverride)}
+                  value={values[override.field]}
+                  onChange={(event) => update(override.field, event.target.value as BooleanOverride)}
                 >
                   <option value="inherit">{t("useProjectDefault")}</option>
                   <option value="true">{t("on")}</option>
