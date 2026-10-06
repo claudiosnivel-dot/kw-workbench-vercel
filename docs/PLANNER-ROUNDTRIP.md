@@ -58,5 +58,6 @@ nomi italiani delle colonne e «Competition (indexed value)» del file scaricato
 fixture in `tests/fixtures/planner/` seguono la struttura attesa e vanno riallineate al primo file reale,
 con dati anonimizzati.
 
-**Nota**: una nuova estrazione della sezione riscrive le metriche con il provider della sezione (D-19): i
-volumi importati vanno reimportati dopo un re-run.
+**Re-run** (D-19 emendata il 2026-10-06): con il provider di metriche della sezione «Nessuna metrica» (NONE)
+le keyword ancora prodotte conservano i volumi importati, con la data dell'import, e il punteggio si ricalcola
+su quei volumi; con un altro provider (Mock, DataForSEO) valgono le metriche del provider.

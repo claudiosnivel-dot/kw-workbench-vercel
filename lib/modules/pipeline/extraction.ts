@@ -8,7 +8,7 @@ import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { createAutocompleteProvider } from "@/lib/modules/providers/autocomplete/factory";
 import { AutocompleteQueryFailedError } from "@/lib/modules/providers/autocomplete/types";
 import { createMetricsProvider } from "@/lib/modules/providers/metrics/factory";
-import { toMetricsResult } from "@/lib/modules/providers/metrics/types";
+import { type KeywordMetric, toMetricsResult } from "@/lib/modules/providers/metrics/types";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
 import { scoreKeyword } from "@/lib/modules/scoring";
 import { parseSeedsFromRows } from "@/lib/modules/seed-parser";
@@ -154,6 +154,44 @@ function chunk<T>(items: T[], size: number): T[][] {
   return output;
 }
 
+/**
+ * Volumi importati da Keyword Planner nella sezione (T-910, D-19 emendata il 2026-10-06): con il provider effettivo
+ * NONE una keyword ancora prodotta li conserva, con la data dell'import, invece di restare senza metriche.
+ */
+async function loadImportedMetrics(subprojectId: string): Promise<Map<string, { metric: KeywordMetric; at: Date | null }>> {
+  const rows = await prisma.keywordCandidate.findMany({
+    where: { subproject_id: subprojectId, metrics_provider: "PLANNER_CSV" },
+    select: {
+      canonical_keyword: true,
+      metrics_status: true,
+      metrics_precision: true,
+      avg_monthly_searches: true,
+      competition: true,
+      low_top_of_page_bid_micros: true,
+      high_top_of_page_bid_micros: true,
+      metrics_updated_at: true,
+    },
+  });
+  return new Map(
+    rows.map((row: (typeof rows)[number]) => [
+      row.canonical_keyword,
+      {
+        metric: {
+          keyword: row.canonical_keyword,
+          metrics_status: row.metrics_status,
+          metrics_provider: "PLANNER_CSV" as const,
+          metrics_precision: row.metrics_precision ?? undefined,
+          avg_monthly_searches: row.avg_monthly_searches ?? undefined,
+          competition: row.competition ?? undefined,
+          low_top_of_page_bid_micros: row.low_top_of_page_bid_micros ?? undefined,
+          high_top_of_page_bid_micros: row.high_top_of_page_bid_micros ?? undefined,
+        },
+        at: row.metrics_updated_at,
+      },
+    ])
+  );
+}
+
 export async function runExtractionPipeline(
   subprojectId: string,
   options: { jobId?: string } = {}
@@ -267,6 +305,8 @@ export async function runExtractionPipeline(
     }
   );
   const metrics = metricsOutcome.metrics;
+  const imported =
+    effective.metrics_provider === "NONE" ? await loadImportedMetrics(subproject.id) : new Map<string, never>();
 
   const now = new Date();
   const preparedRows: CandidateRow[] = [];
@@ -294,11 +334,13 @@ export async function runExtractionPipeline(
       classification.keyword_type = "branded";
     }
 
-    const metric = metrics.get(candidate.canonicalKeyword) ?? {
-      keyword: candidate.canonicalKeyword,
-      metrics_status: "missing" as const,
-      metrics_provider: effective.metrics_provider,
-    };
+    const kept = imported.get(candidate.canonicalKeyword);
+    const metric = kept?.metric ??
+      metrics.get(candidate.canonicalKeyword) ?? {
+        keyword: candidate.canonicalKeyword,
+        metrics_status: "missing" as const,
+        metrics_provider: effective.metrics_provider,
+      };
 
     if (
       typeof effective.min_volume === "number" &&
@@ -347,7 +389,7 @@ export async function runExtractionPipeline(
       metrics_precision: metric.metrics_precision ?? null,
       score,
       score_source,
-      metrics_updated_at: metric.metrics_status === "missing" ? null : now,
+      metrics_updated_at: kept ? kept.at : metric.metrics_status === "missing" ? null : now,
     });
   }
 
