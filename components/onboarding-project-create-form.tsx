@@ -1,21 +1,12 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
-import { clearIdempotencyKey, readIdempotencyKey } from "@/lib/client/idempotency-key";
-
-type ProjectCreateResponse = ApiErrorPayload & {
-  data?: {
-    projectId?: string;
-    nextPath?: string;
-  };
-};
+import { FormEvent, useState } from "react";
+import { submitOnboardingCreation } from "@/lib/client/onboarding";
 
 const IDEMPOTENCY_STORAGE_KEY = "onboarding-idempotency:project-create";
 
 export function OnboardingProjectCreateForm() {
   const [name, setName] = useState("");
-  const idempotencyKey = useRef<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,21 +23,13 @@ export function OnboardingProjectCreateForm() {
     setError(null);
 
     try {
-      // Stessa chiave per i nuovi tentativi, anche dopo un reload: un retry non crea un secondo progetto.
-      idempotencyKey.current ??= readIdempotencyKey(IDEMPOTENCY_STORAGE_KEY);
-      const response = await fetch("/api/onboarding/project", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmedName, idempotencyKey: idempotencyKey.current }),
-      });
-
-      const payload = await readJsonSafe<ProjectCreateResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Creazione progetto non riuscita"));
-      }
-
-      clearIdempotencyKey(IDEMPOTENCY_STORAGE_KEY);
-      window.location.assign(payload?.data?.nextPath ?? "/onboarding/project-targeting");
+      const nextPath = await submitOnboardingCreation(
+        "/api/onboarding/project",
+        IDEMPOTENCY_STORAGE_KEY,
+        { name: trimmedName },
+        "Creazione progetto non riuscita"
+      );
+      window.location.assign(nextPath ?? "/onboarding/project-targeting");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
       setSaving(false);

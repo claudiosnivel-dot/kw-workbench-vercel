@@ -1,16 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useRef, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
-import { clearIdempotencyKey, readIdempotencyKey } from "@/lib/client/idempotency-key";
-
-type SectionCreateResponse = ApiErrorPayload & {
-  data?: {
-    subprojectId?: string;
-    nextPath?: string;
-  };
-};
+import { FormEvent, useState } from "react";
+import { submitOnboardingCreation } from "@/lib/client/onboarding";
 
 type OnboardingSectionCreateFormProps = {
   projectId: string;
@@ -19,8 +11,6 @@ type OnboardingSectionCreateFormProps = {
 
 export function OnboardingSectionCreateForm({ projectId, projectName }: OnboardingSectionCreateFormProps) {
   const [name, setName] = useState("Generale");
-  const idempotencyKey = useRef<string | null>(null);
-  const storageKey = `onboarding-idempotency:section-create:${projectId}`;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,21 +27,13 @@ export function OnboardingSectionCreateForm({ projectId, projectName }: Onboardi
     setError(null);
 
     try {
-      // Stessa chiave per i nuovi tentativi, anche dopo un reload: un retry non crea una seconda sezione.
-      idempotencyKey.current ??= readIdempotencyKey(storageKey);
-      const response = await fetch("/api/onboarding/section", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, name: trimmedName, idempotencyKey: idempotencyKey.current }),
-      });
-
-      const payload = await readJsonSafe<SectionCreateResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Creazione sezione non riuscita"));
-      }
-
-      clearIdempotencyKey(storageKey);
-      window.location.assign(payload?.data?.nextPath ?? "/onboarding/seeds");
+      const nextPath = await submitOnboardingCreation(
+        "/api/onboarding/section",
+        `onboarding-idempotency:section-create:${projectId}`,
+        { projectId, name: trimmedName },
+        "Creazione sezione non riuscita"
+      );
+      window.location.assign(nextPath ?? "/onboarding/seeds");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
       setSaving(false);

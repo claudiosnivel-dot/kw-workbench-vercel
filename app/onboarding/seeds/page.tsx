@@ -1,25 +1,16 @@
-import { redirect } from "next/navigation";
 import { OnboardingSeedsForm } from "@/components/onboarding-seeds-form";
-import { requireOnboardingStep } from "@/lib/onboarding/navigation";
+import { requireOnboardingSection } from "@/lib/onboarding/navigation";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingSeedsPage() {
-  const { state } = await requireOnboardingStep("SEEDS");
-
-  if (!state.activeProject) {
-    redirect("/onboarding/project-create");
-  }
-
-  if (!state.activeSubproject) {
-    redirect("/onboarding/section-create");
-  }
+  const { project, subproject } = await requireOnboardingSection("SEEDS");
 
   const rows = await prisma.seed.findMany({
     where: {
-      project_id: state.activeProject.id,
-      subproject_id: state.activeSubproject.id,
+      project_id: project.id,
+      subproject_id: subproject.id,
     },
     orderBy: { created_at: "asc" },
     select: { keyword: true },
@@ -27,8 +18,8 @@ export default async function OnboardingSeedsPage() {
 
   return (
     <OnboardingSeedsForm
-      project={state.activeProject}
-      subproject={state.activeSubproject}
+      project={project}
+      subproject={subproject}
       initialSeeds={rows.map((row) => row.keyword).join("\n")}
     />
   );

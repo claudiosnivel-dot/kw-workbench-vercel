@@ -35,10 +35,7 @@ export function resolveStepAccess(
   return { kind: "render" };
 }
 
-/**
- * Utente e stato dell'onboarding per la pagina del passo, dopo la regola di accesso e le precondizioni del passo
- * (T-1003): se manca una precondizione si torna al passo che la soddisfa.
- */
+/** Utente e stato dell'onboarding per la pagina del passo, dopo la regola di accesso (redirect se non ammesso). */
 export async function requireOnboardingStep(step: OnboardingStepKey) {
   const user = await requirePageUser();
   const state = await getOnboardingStateForUser(user.id);
@@ -47,10 +44,38 @@ export async function requireOnboardingStep(step: OnboardingStepKey) {
     redirect(access.path);
   }
 
-  const missing = await missingPrecondition(step, state.activeSubprojectId);
+  return { user, state };
+}
+
+/** Passi che richiedono il progetto attivo: senza, si torna alla sua creazione. */
+export async function requireOnboardingProject(step: OnboardingStepKey) {
+  const { user, state } = await requireOnboardingStep(step);
+  if (!state.activeProject) {
+    redirect(stepToPath("PROJECT_CREATE"));
+  }
+
+  return { user, state, project: state.activeProject };
+}
+
+/**
+ * Passi che richiedono progetto e sezione attivi, con le precondizioni del passo (T-1003): se ne manca una si
+ * torna al passo che la soddisfa.
+ */
+export async function requireOnboardingSection(step: OnboardingStepKey) {
+  const { user, state, project } = await requireOnboardingProject(step);
+  if (!state.activeSubproject) {
+    redirect(stepToPath("SECTION_CREATE"));
+  }
+
+  const missing = await missingPrecondition(step, state.activeSubproject.id);
   if (missing) {
     redirect(stepToPath(PRECONDITION_STEP[missing]));
   }
 
-  return { user, state };
+  return { user, state, project, subproject: state.activeSubproject };
+}
+
+/** Passo successivo da cui riprendere se il passo indicato è già stato superato, altrimenti null. */
+export function continuePathAfter(state: Pick<OnboardingState, "currentStep">, step: OnboardingStepKey): string | null {
+  return stepIndex(state.currentStep) > stepIndex(step) ? stepToPath(state.currentStep) : null;
 }
