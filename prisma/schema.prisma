@@ -163,6 +163,8 @@ model User {
 
   @@index([role])
   @@index([status])
+  // Indice unico parziale users_single_root_admin_idx (migrazione 0005): un solo root admin. Prisma non esprime
+  // gli indici parziali: c'è solo nella migrazione e tests/integration/schema-indexes.test.ts ne verifica la presenza.
   @@map("users")
 }
 
@@ -173,7 +175,8 @@ model Project {
   name                  String
   language_code         String               @default("en")
   country_code          String               @default("US")
-  autocomplete_provider AutocompleteProvider @default(MOCK)
+  /// Provider reale per default (T-1103): MOCK produce keyword fittizie (CWE-1188).
+  autocomplete_provider AutocompleteProvider @default(GOOGLE_DIRECT)
   metrics_provider      MetricsProvider      @default(NONE)
   min_volume            Int                  @default(0)
   exclude_brands        Boolean              @default(true)
@@ -292,6 +295,9 @@ model KeywordCandidate {
   @@index([subproject_id, brand_status])
   @@index([subproject_id, search_intent])
   @@index([subproject_id, keyword_type])
+  // Ordinamento dei risultati (RESULTS_ORDER_BY, T-707, T-801): stesso ordine e stessa posizione dei NULL (T-1103).
+  @@index([project_id, score_source, score(sort: Desc), keyword, id], map: "keyword_candidates_results_order_project_idx")
+  @@index([subproject_id, score_source, score(sort: Desc), keyword, id], map: "keyword_candidates_results_order_subproject_idx")
   @@map("keyword_candidates")
 }
 
@@ -327,6 +333,8 @@ model BrandBlacklist {
 
   @@unique([project_id, brand])
   @@index([brand])
+  // Righe globali uniche: indice unico parziale brand_blacklist_global_brand_key (brand) WHERE project_id IS NULL
+  // (migrazione 0023, T-1103), non esprimibile in Prisma; l'unique sopra non vale per i NULL.
   @@map("brand_blacklist")
 }
 
@@ -339,6 +347,8 @@ model ExpansionPattern {
   project    Project? @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
   @@unique([project_id, pattern])
+  // Righe globali uniche: indice unico parziale expansion_patterns_global_pattern_key (pattern) WHERE
+  // project_id IS NULL (migrazione 0023, T-1103), non esprimibile in Prisma.
   @@map("expansion_patterns")
 }
 
