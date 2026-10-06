@@ -5,7 +5,8 @@ import {
   type OnboardingStepKey,
   stepToPath,
 } from "@/lib/onboarding/constants";
-import { ValidationError } from "@/lib/http/errors";
+import { AppError, ValidationError } from "@/lib/http/errors";
+import { missingPrecondition } from "@/lib/onboarding/preconditions";
 import type { OnboardingProjectSnapshot, OnboardingSubprojectSnapshot } from "@/lib/onboarding/types";
 import { prisma } from "@/lib/prisma";
 
@@ -340,7 +341,16 @@ async function validateActiveSubprojectId(userId: string, subprojectId: string, 
   return { id: owned.id, project_id: owned.project_id };
 }
 
+/**
+ * PATCH dello stato dal client. Il completamento non si dichiara (arriva da un export reale, T-1003) e un passo
+ * con precondizioni non soddisfatte sulla sezione attiva risultante viene rifiutato: in entrambi i casi nessuna
+ * scrittura.
+ */
 export async function patchOnboardingState(userId: string, input: PatchInput): Promise<OnboardingState> {
+  if (input.status === "COMPLETED") {
+    throw new AppError(400, "ONBOARDING_STATUS_FORBIDDEN", "Il percorso guidato si completa con il primo export");
+  }
+
   const row = await ensureProgressRow(userId);
 
   const data: {
@@ -380,6 +390,12 @@ export async function patchOnboardingState(userId: string, input: PatchInput): P
   }
 
   if (input.currentStep) {
+    const activeSubprojectId = data.active_subproject_id !== undefined ? data.active_subproject_id : row.active_subproject_id;
+    const missing = await missingPrecondition(input.currentStep, activeSubprojectId);
+    if (missing) {
+      throw new AppError(409, "ONBOARDING_PRECONDITION", "Il passo richiesto non è ancora disponibile", { missing });
+    }
+
     data.current_step = input.currentStep as OnboardingStep;
     if (!input.status) {
       data.status = OnboardingStatus.IN_PROGRESS;
@@ -392,17 +408,7 @@ export async function patchOnboardingState(userId: string, input: PatchInput): P
 
   if (input.status) {
     data.status = input.status as OnboardingStatus;
-    if (input.status === "COMPLETED") {
-      const now = new Date();
-      data.completed_at = now;
-      if (!row.first_export_at) {
-        data.first_export_at = now;
-      }
-    }
-
-    if (input.status !== "COMPLETED") {
-      data.completed_at = null;
-    }
+    data.completed_at = null;
   }
 
   if (Object.keys(data).length === 0) {
@@ -447,28 +453,34 @@ export async function resumeOnboarding(userId: string): Promise<OnboardingState>
   return getOnboardingStateForUser(userId);
 }
 
-export async function markOnboardingExportCompleted(userId: string): Promise<void> {
-  const now = new Date();
-  const existing = await prisma.userOnboardingProgress.findUnique({
-    where: { user_id: userId },
-    select: { first_export_at: true },
-  });
+/**
+ * Completa l'onboarding con un export reale (T-1003): solo se il progetto esportato è quello attivo del progress
+ * e l'export ha almeno una riga. Senza riga di progress non c'è un progetto attivo, quindi nulla da completare.
+ */
+export async function markOnboardingExportCompleted(
+  userId: string,
+  exported: { projectId: string; exportedRows: number }
+): Promise<void> {
+  if (exported.exportedRows <= 0) {
+    return;
+  }
 
-  await prisma.userOnboardingProgress.upsert({
+  const progress = await prisma.userOnboardingProgress.findUnique({
     where: { user_id: userId },
-    create: {
-      user_id: userId,
+    select: { status: true, active_project_id: true, first_export_at: true },
+  });
+  if (!progress || progress.status === OnboardingStatus.COMPLETED || progress.active_project_id !== exported.projectId) {
+    return;
+  }
+
+  const now = new Date();
+  await prisma.userOnboardingProgress.update({
+    where: { user_id: userId },
+    data: {
       status: OnboardingStatus.COMPLETED,
       current_step: OnboardingStep.REVIEW_EXPORT,
-      entry_mode: OnboardingEntryMode.RESUME,
-      first_export_at: now,
       completed_at: now,
-    },
-    update: {
-      status: OnboardingStatus.COMPLETED,
-      current_step: OnboardingStep.REVIEW_EXPORT,
-      completed_at: now,
-      first_export_at: existing?.first_export_at ?? now,
+      first_export_at: progress.first_export_at ?? now,
     },
   });
 }

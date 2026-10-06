@@ -108,8 +108,12 @@ export function OnboardingSeedsForm({ project, subproject, initialSeeds }: Onboa
           <p className="mt-1 text-xs text-slate-500">Una keyword per riga. Seed rilevate: {seedCount}.</p>
         </div>
 
+        {seedCount === 0 && (
+          <p className="text-sm text-slate-600">Inserisci almeno una seed: il run della sezione parte dalle seed.</p>
+        )}
+
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <button className="btn-primary w-full sm:w-auto" type="submit" disabled={saving}>
+          <button className="btn-primary w-full sm:w-auto" type="submit" disabled={saving || seedCount === 0}>
             {saving ? "Salvataggio..." : "Salva seed e continua"}
           </button>
           <Link className="btn-secondary w-full text-center sm:w-auto" href="/onboarding/section-create">

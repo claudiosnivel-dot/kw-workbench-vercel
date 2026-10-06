@@ -128,7 +128,12 @@ export const POST = withApiErrors(async (request: NextRequest, context: RouteCon
     throw new AppError(500, "INTERNAL_ERROR", INTERNAL_EXPORT_ERROR);
   }
 
-  await markOnboardingExportCompleted(user.id);
+  // Best-effort come l'export su file (T-805): l'onboarding non fa fallire un export già scritto (T-1003).
+  try {
+    await markOnboardingExportCompleted(user.id, { projectId: id, exportedRows: output.exportedRows });
+  } catch (error) {
+    logger.error("onboarding_export_mark_failed", { userId: user.id, projectId: id, error });
+  }
 
   return NextResponse.json({ data: output });
 });

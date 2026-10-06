@@ -4,6 +4,7 @@ import { withApiErrors } from "@/lib/http/errors";
 import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import {
   CSV_DIALECT_DEFAULT,
+  countExportRows,
   ExportFormat,
   ExportScope,
   exportFileInfo,
@@ -81,9 +82,9 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   const { contentType, filename } = exportFileInfo(params);
   const stream = streamExport(params);
 
-  // L'avanzamento dell'onboarding non deve far fallire un export valido.
+  // L'avanzamento dell'onboarding non deve far fallire un export valido; conta solo un export non vuoto (T-1003).
   try {
-    await markOnboardingExportCompleted(user.id);
+    await markOnboardingExportCompleted(user.id, { projectId: id, exportedRows: await countExportRows(params) });
   } catch (error) {
     logger.error("onboarding_export_mark_failed", { userId: user.id, projectId: id, error });
   }

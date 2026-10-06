@@ -185,6 +185,13 @@ export function buildExportWhere(
   return { AND: [...buildResultsClauses(projectId, filters, subprojectId), ...SCOPE_CLAUSES[scope]] };
 }
 
+/** Righe che l'export conterrà: il completamento dell'onboarding richiede un export non vuoto (T-1003). */
+export function countExportRows(params: Pick<ExportParams, "projectId" | "subprojectId" | "scope" | "filters">) {
+  return prisma.keywordCandidate.count({
+    where: buildExportWhere(params.projectId, params.scope, params.filters, params.subprojectId),
+  });
+}
+
 /** Righe lette da ogni findMany dell'export (T-805): in memoria resta un blocco, non l'intero set. */
 const EXPORT_BATCH_SIZE = 1000;
 

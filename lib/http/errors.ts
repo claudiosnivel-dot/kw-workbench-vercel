@@ -3,6 +3,7 @@
  *
  * Ogni risposta d'errore prodotta da withApiErrors ha il body
  *   { error: string, code: string, requestId: string }
+ * (più gli eventuali fields di un AppError, per esempio missing di ONBOARDING_PRECONDITION, T-1003)
  * e l'header x-request-id con lo stesso requestId.
  * - error: messaggio pubblico, scritto apposta in un AppError; mai il messaggio di un'eccezione
  *   non prevista (Prisma, host del DB, stack).
@@ -22,12 +23,15 @@ import { getRequestId } from "@/lib/observability/request-id";
 export class AppError extends Error {
   readonly status: number;
   readonly code: string;
+  /** Campi pubblici aggiuntivi del body d'errore; non sostituiscono error, code e requestId. */
+  readonly fields?: Record<string, string>;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, fields?: Record<string, string>) {
     super(message);
     this.name = "AppError";
     this.status = status;
     this.code = code;
+    this.fields = fields;
   }
 }
 
@@ -66,8 +70,14 @@ export class ForbiddenError extends AppError {
   }
 }
 
-function errorJson(status: number, code: string, error: string, requestId: string): Response {
-  return NextResponse.json({ error, code, requestId }, { status });
+function errorJson(
+  status: number,
+  code: string,
+  error: string,
+  requestId: string,
+  fields?: Record<string, string>
+): Response {
+  return NextResponse.json({ ...fields, error, code, requestId }, { status });
 }
 
 function logInternalError(error: unknown, request: Request, requestId: string): void {
@@ -86,7 +96,7 @@ function toErrorResponse(error: unknown, request: Request, requestId: string): R
   }
 
   if (error instanceof AppError) {
-    return errorJson(error.status, error.code, error.message, requestId);
+    return errorJson(error.status, error.code, error.message, requestId, error.fields);
   }
 
   if (error instanceof SyntaxError) {

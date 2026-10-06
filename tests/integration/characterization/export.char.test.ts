@@ -213,7 +213,9 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
 describe("caratterizzazione: export vuoto e onboarding", () => {
   // covers: AC-107-4
   // Aggiornato da T-804 (impacted-by): con 0 righe il file ha BOM e la sola intestazione.
-  it("CSV approved senza candidate: BOM e sola intestazione, onboarding completato", async () => {
+  // Aggiornato da T-1003 (impacted-by): un export vuoto non completa più l'onboarding (serve almeno una riga del
+  // progetto attivo).
+  it("CSV approved senza candidate: BOM e sola intestazione, onboarding non completato", async () => {
     const { owner, projectId: emptyProjectId } = await createOwnerProject("IN_PROGRESS");
 
     const response = await callRoute(exportProject, {
@@ -229,6 +231,7 @@ describe("caratterizzazione: export vuoto e onboarding", () => {
     expect(new TextDecoder().decode(bytes)).toBe(`${HEADERS.join(";")}\r\n`);
     const progress = await prisma.userOnboardingProgress.findUniqueOrThrow({ where: { user_id: owner.user.id } });
     // impacted-by: T-1003
-    expect(progress.status).toBe("COMPLETED");
+    expect(progress.status).toBe("IN_PROGRESS");
+    expect(progress.completed_at).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { type OnboardingStepKey, stepIndex, stepToPath } from "@/lib/onboarding/constants";
+import { missingPrecondition, PRECONDITION_STEP } from "@/lib/onboarding/preconditions";
 import { getOnboardingStateForUser, type OnboardingState } from "@/lib/onboarding/progress";
 
 export type StepAccess = { kind: "render" } | { kind: "redirect"; path: string };
@@ -34,13 +35,21 @@ export function resolveStepAccess(
   return { kind: "render" };
 }
 
-/** Utente e stato dell'onboarding per la pagina del passo, dopo la regola di accesso (redirect se non ammesso). */
+/**
+ * Utente e stato dell'onboarding per la pagina del passo, dopo la regola di accesso e le precondizioni del passo
+ * (T-1003): se manca una precondizione si torna al passo che la soddisfa.
+ */
 export async function requireOnboardingStep(step: OnboardingStepKey) {
   const user = await requirePageUser();
   const state = await getOnboardingStateForUser(user.id);
   const access = resolveStepAccess(state, step);
   if (access.kind === "redirect") {
     redirect(access.path);
+  }
+
+  const missing = await missingPrecondition(step, state.activeSubprojectId);
+  if (missing) {
+    redirect(stepToPath(PRECONDITION_STEP[missing]));
   }
 
   return { user, state };

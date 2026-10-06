@@ -92,6 +92,8 @@ export function OnboardingReviewExportStep({
       setMessage("Export completato. Se non vedi il completamento, aggiorna la pagina.");
     } catch (exportError) {
       setError(exportError instanceof Error ? exportError.message : "Errore imprevisto");
+    } finally {
+      // Su ogni ramo, anche export riuscito senza completamento: i pulsanti non restano bloccati (T-1003).
       setLoading(null);
     }
   };
