@@ -26,6 +26,12 @@ export const JOB_ERROR_CODES = {
   signatureInvalid: "JOB_SIGNATURE_INVALID",
   /** 401: Authorization del cron diversa da Bearer CRON_SECRET, o CRON_SECRET non configurata. */
   cronUnauthorized: "CRON_UNAUTHORIZED",
+  /** 409: la sezione ha già un job pending o running; il body riporta il suo jobId. */
+  alreadyActive: "JOB_ALREADY_ACTIVE",
+  /** 404: job inesistente o di un progetto di un altro utente (mai 403, per non rivelarne l'esistenza). */
+  notFound: "JOB_NOT_FOUND",
+  /** 409: annullamento di un job già terminato (completed, failed o canceled). */
+  notCancelable: "JOB_NOT_CANCELABLE",
 } as const;
 
 export class AppError extends Error {

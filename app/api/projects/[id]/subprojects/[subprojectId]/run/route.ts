@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
-import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
-import { runJobResponse } from "@/lib/modules/jobs/run-response";
+import { enqueueExtractionJob } from "@/lib/modules/jobs/job-runner";
+import { startedJobResponse } from "@/lib/modules/jobs/run-response";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -34,9 +34,7 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
     return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
   }
 
-  const { job } = await enqueueExtractionJob(subproject.project_id, subproject.id);
-  const completed = await runJobById(job.id);
-
-  return runJobResponse(completed, { data: completed });
+  const { job, created } = await enqueueExtractionJob(subproject.project_id, subproject.id);
+  return startedJobResponse(job, created, subproject.id);
 });
 
