@@ -79,6 +79,14 @@
 
 ## 5. Esiti dell'ultima sessione
 
+### Sessione 2026-10-06 (decima) — decisioni dell'utente sul macrotask 09
+
+- **Rimozione di T-901**: approvati tutti gli 8 elementi della proposta (provider Planner via API con il ramo di `factory.ts` e `DisabledMetricsProvider`; `lib/integrations/google-ads*.ts`; le 5 rotte `app/api/integrations/google-ads/**`; card admin e suo uso in `/admin`; model `GoogleAdsCredential` con `DROP TABLE` e `DELETE` delle righe `app_settings` `GOOGLE_ADS_%`; variabili `GOOGLE_ADS_*`; migrazione dei dati a NONE con l'enum ricreato; riferimenti residui).
+- **Duplicazioni del controllo 1**: rinfresco della baseline d'igiene dopo la rimozione (le residue tra `auth-settings-card` e `personalization-settings-card` restano debito noto per T-1102).
+- **Baseline visiva dei risultati** (`e7e1d32`): approvata così.
+- **Scelte confermate**: logger JSON al posto di `console.error` (T-906); `last_activity_at` aggiornato dall'import (T-910); lotto DataForSEO esaurito = `failed` (T-909); `zh`, `he`, `fil` senza volumi finché l'elenco lingue di DataForSEO non li conferma (T-902).
+- **Re-run e volumi importati**: conservarli quando il provider effettivo è NONE. D-19 emendata, T-910 con una voce di DoD e AC-910-3 in più (emendamento del modulo 09).
+
 ### Sessione 2026-10-06 (decima) — BUILD di `google-integrations` (09) (prima chiusura, merge sospeso)
 
 - **Avvio**: working tree pulito su `master` `743020b`; branch `trueline/build/google-integrations`. Preflight non ripetuto (OK del 2026-10-04). Postgres di test già acceso.

@@ -342,6 +342,7 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
     - "Upload, strada principale per i clienti: rotta POST /api/projects/[id]/planner-import (multipart, campo file, sectionId facoltativo) e componente components/planner-import-upload.tsx in evidenza nella pagina app/projects/[id]/results/page.tsx, accanto al download di T-904 e con le istruzioni del round-trip; dimensione massima 5 MB come costante esportata e mostrata in UI; estensioni .csv e .tsv; il file non viene salvato su disco"
     - "CLI per l'operatore scripts/planner-import.ts registrata come planner:import (npm run planner:import -- --project <id> [--section <id>] <file>), stessa funzione applyPlannerImport"
     - "Nessuna nuova dipendenza: multipart letto con request.formData() nativo"
+    - "Re-run con provider di metriche effettivo NONE (D-19 emendata il 2026-10-06): le candidate ancora prodotte con metrics_provider PLANNER_CSV conservano volumi, concorrenza, offerte, precisione, stato imported, provider e metrics_updated_at dell'import, e il punteggio è ricalcolato su quei volumi; con un provider diverso da NONE valgono le metriche del provider"
 
   acceptance_criteria:
     - id: AC-910-1
@@ -352,10 +353,16 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
       given: "un utente B autenticato e un progetto dell'utente A, e separatamente un file da 6 MB inviato dal proprietario"
       when: "si invia l'upload a POST /api/projects/[id]/planner-import"
       then: "l'utente B riceve 404, il file da 6 MB riceve 413 e in entrambi i casi 0 righe di keyword_candidates hanno metrics_updated_at modificato"
+    - id: AC-910-3
+      given: "una sezione con provider di metriche effettivo NONE e la candidata 'caffè espresso' importata da Keyword Planner (avg_monthly_searches 1200, metrics_provider PLANNER_CSV, metrics_status imported, metrics_precision range, score_source metrics)"
+      when: "si esegue di nuovo l'estrazione della sezione e la keyword è ancora prodotta"
+      then: "la riga ha ancora avg_monthly_searches 1200, metrics_provider PLANNER_CSV, metrics_status imported, metrics_precision range, score_source metrics e metrics_updated_at uguale a quello dell'import"
 
   target_tests:
     - file: "tests/integration/planner-import.test.ts"
       covers: [AC-910-1, AC-910-2]
+    - file: "tests/integration/planner-rerun.test.ts"
+      covers: [AC-910-3]
 
   security_notes:
     - "A01 Broken Access Control / CWE-639 (IDOR): progetto e sezione filtrati per owner_user_id della sessione (poi membership di workspace con T-1502); gli update usano un where che include project_id"
@@ -528,3 +535,4 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0 (in isolamento i soli riferimenti non risolti sono T-304, T-702, T-707 e T-503, di altri moduli).
 - Semantico: `self-check-checklist.md` punti 6-10 applicati a T-901..T-908; rilievo di atomicità aperto su T-901 (contratto + rimozione + migrazione dell'enum) e T-905, da confermare o dividere con l'utente.
 - **Emendamento 2026-10-06** (all'avvio del BUILD, decisione dell'utente del 2026-10-05 sui rilievi di atomicità): T-902 diviso in T-902 (richiesta, lotti, filtro, mappe, parsing, costo, credenziali; AC-902-1…3) e T-909 (limitatore, timeout e retry; l'AC-902-4 diventa AC-909-1 con lo stesso testo, target test `tests/unit/dataforseo-limiter.test.ts`); T-905 diviso in T-905 (parser e fixture; AC-905-1, AC-905-2) e T-910 (migrazione PLANNER_CSV, servizio, upload e CLI; gli AC-905-3 e AC-905-4 diventano AC-910-1 e AC-910-2 con lo stesso testo). Le voci di DoD sono le stesse, ripartite; in più T-909 esplicita l'esito del lotto che esaurisce i tentativi (metrics_status failed, gli altri lotti proseguono). T-903 dipende anche da T-909. I riferimenti a T-905 negli altri moduli per servizio, upload e ricalcolo del punteggio valgono per T-910.
+- **Emendamento 2026-10-06** (decisione dell'utente alla prima chiusura del 09, D-19 emendata): T-910 conserva i volumi importati al re-run quando il provider effettivo è NONE (voce di DoD e AC-910-3, target test `tests/integration/planner-rerun.test.ts`).
