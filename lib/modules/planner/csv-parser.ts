@@ -2,9 +2,9 @@
 // (UTF-16LE, UTF-16BE, UTF-8 con o senza BOM), separatore tab, punto e virgola o virgola, righe di titolo prima
 // dei nomi colonna, colonne riconosciute per nome in inglese (guida Google Ads, fonte in
 // docs/METRICS-PROVIDERS.md) e in italiano.
-// Da verificare su un file reale scaricato da Keyword Planner: encoding, separatore, numero di righe di titolo,
-// nomi italiani delle colonne e «Competition (indexed value)»; le fixture in tests/fixtures/planner/ seguono la
-// struttura descritta nel DoD e vanno riallineate al primo file reale (dati anonimizzati).
+// Verificato sul primo file reale (2026-10-06, docs/PLANNER-ROUNDTRIP.md): UTF-16LE, tab, due righe di titolo,
+// nomi inglesi, righe di riepilogo per segmento senza keyword, volumi decimali «50000.0», offerte «"1,35"». Restano
+// da verificare i nomi italiani delle colonne su un file scaricato con l'interfaccia in italiano.
 
 export type PlannerCsvRow = {
   keyword: string;
@@ -113,7 +113,9 @@ function parseCount(raw: string): number | null {
   if (/^\d{1,3}([.,]\d{3})+$/.test(value) || /^\d+$/.test(value)) {
     return Number(value.replace(/[.,]/g, ""));
   }
-  return null;
+  // Il file reale di Keyword Planner (2026-10-06) scrive i volumi come decimali con parte frazionaria nulla: «50000.0».
+  const zeroFraction = value.match(/^(\d+)[.,]0{1,2}$/);
+  return zeroFraction ? Number(zeroFraction[1]) : null;
 }
 
 /**
