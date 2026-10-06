@@ -81,6 +81,11 @@ export function stepToPath(step: OnboardingStepKey): string {
   return ONBOARDING_STEP_META[step].path;
 }
 
+/** Posizione del passo nel percorso (1 = WELCOME): confronta passi precedenti e successivi. */
+export function stepIndex(step: OnboardingStepKey): number {
+  return ONBOARDING_STEP_META[step].index;
+}
+
 export function pathToStep(pathname: string): OnboardingStepKey | null {
   const match = ONBOARDING_STEP_ORDER.find((step) => ONBOARDING_STEP_META[step].path === pathname);
   return match ?? null;

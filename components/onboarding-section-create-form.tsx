@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { clearIdempotencyKey, readIdempotencyKey } from "@/lib/client/idempotency-key";
 
 type SectionCreateResponse = ApiErrorPayload & {
   data?: {
-    id?: string;
+    subprojectId?: string;
+    nextPath?: string;
   };
 };
 
@@ -17,6 +19,8 @@ type OnboardingSectionCreateFormProps = {
 
 export function OnboardingSectionCreateForm({ projectId, projectName }: OnboardingSectionCreateFormProps) {
   const [name, setName] = useState("Generale");
+  const idempotencyKey = useRef<string | null>(null);
+  const storageKey = `onboarding-idempotency:section-create:${projectId}`;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,14 +37,12 @@ export function OnboardingSectionCreateForm({ projectId, projectName }: Onboardi
     setError(null);
 
     try {
-      const response = await fetch(`/api/projects/${projectId}/subprojects`, {
+      // Stessa chiave per i nuovi tentativi, anche dopo un reload: un retry non crea una seconda sezione.
+      idempotencyKey.current ??= readIdempotencyKey(storageKey);
+      const response = await fetch("/api/onboarding/section", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: trimmedName,
-          description: "",
-          seeds: "",
-        }),
+        body: JSON.stringify({ projectId, name: trimmedName, idempotencyKey: idempotencyKey.current }),
       });
 
       const payload = await readJsonSafe<SectionCreateResponse>(response);
@@ -48,27 +50,8 @@ export function OnboardingSectionCreateForm({ projectId, projectName }: Onboardi
         throw new Error(buildApiErrorMessage(response, payload, "Creazione sezione non riuscita"));
       }
 
-      const subprojectId = payload?.data?.id;
-      if (!subprojectId) {
-        throw new Error("ID sezione mancante nella risposta.");
-      }
-
-      const onboardingResponse = await fetch("/api/onboarding/state", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "IN_PROGRESS",
-          currentStep: "SEEDS",
-          activeProjectId: projectId,
-          activeSubprojectId: subprojectId,
-        }),
-      });
-
-      if (!onboardingResponse.ok) {
-        throw new Error("Sezione creata, ma avanzamento onboarding non riuscito.");
-      }
-
-      window.location.assign("/onboarding/seeds");
+      clearIdempotencyKey(storageKey);
+      window.location.assign(payload?.data?.nextPath ?? "/onboarding/seeds");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
       setSaving(false);

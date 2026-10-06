@@ -137,6 +137,11 @@ enum OnboardingEntryMode {
   RESTART
 }
 
+enum OnboardingIdempotencyKind {
+  PROJECT
+  SECTION
+}
+
 model User {
   id                String            @id @default(cuid())
   username          String            @unique
@@ -154,6 +159,7 @@ model User {
   projects          Project[]
   google_sheets_credential GoogleSheetsCredential?
   onboarding_progress UserOnboardingProgress?
+  onboarding_idempotency_keys OnboardingIdempotencyKey[]
 
   @@index([role])
   @@index([status])
@@ -190,6 +196,7 @@ model Project {
   expansion_patterns    ExpansionPattern[]
   metrics_provider_requests MetricsProviderRequest[]
   onboarding_active_for_users UserOnboardingProgress[] @relation("OnboardingActiveProject")
+  onboarding_idempotency_keys OnboardingIdempotencyKey[]
 
   @@index([owner_user_id])
   @@index([default_subproject_id])
@@ -221,6 +228,7 @@ model Subproject {
   keyword_candidates             KeywordCandidate[]
   jobs                           Job[]
   onboarding_active_for_users    UserOnboardingProgress[] @relation("OnboardingActiveSubproject")
+  onboarding_idempotency_keys    OnboardingIdempotencyKey[]
 
   @@unique([project_id, name])
   @@index([project_id, position])
@@ -372,6 +380,26 @@ model UserOnboardingProgress {
   @@index([active_project_id])
   @@index([active_subproject_id])
   @@map("user_onboarding_progress")
+}
+
+/// Chiavi di idempotenza delle creazioni dell'onboarding (T-1001): la stessa chiave dello stesso utente
+/// restituisce gli id già creati invece di creare un secondo progetto o una seconda sezione.
+model OnboardingIdempotencyKey {
+  id            String                    @id @default(cuid())
+  user_id       String
+  key           String
+  kind          OnboardingIdempotencyKind
+  project_id    String
+  subproject_id String?
+  created_at    DateTime                  @default(now())
+  user          User                      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  project       Project                   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  subproject    Subproject?               @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, key])
+  @@index([project_id])
+  @@index([subproject_id])
+  @@map("onboarding_idempotency_keys")
 }
 
 // Stato di una richiesta al fornitore di metriche (T-903): pending = prenotata, costo stimato.
