@@ -13,8 +13,6 @@ import { prisma } from "@/lib/prisma";
 export type { OnboardingProjectSnapshot, OnboardingSubprojectSnapshot } from "@/lib/onboarding/types";
 
 type OnboardingProgressRow = {
-  id: string;
-  user_id: string;
   status: OnboardingStatus;
   current_step: OnboardingStep;
   entry_mode: OnboardingEntryMode;
@@ -22,8 +20,27 @@ type OnboardingProgressRow = {
   active_subproject_id: string | null;
   first_export_at: Date | null;
   completed_at: Date | null;
-  created_at: Date;
-  updated_at: Date;
+};
+
+const PROGRESS_SELECT = {
+  status: true,
+  current_step: true,
+  entry_mode: true,
+  active_project_id: true,
+  active_subproject_id: true,
+  first_export_at: true,
+  completed_at: true,
+} as const;
+
+// Stato di chi non ha ancora una riga: la lettura non la crea, nasce solo nelle mutazioni (T-1004).
+const NO_PROGRESS_ROW: OnboardingProgressRow = {
+  status: OnboardingStatus.NEEDS_CHOICE,
+  current_step: OnboardingStep.WELCOME,
+  entry_mode: OnboardingEntryMode.NONE,
+  active_project_id: null,
+  active_subproject_id: null,
+  first_export_at: null,
+  completed_at: null,
 };
 
 export type OnboardingState = {
@@ -104,27 +121,14 @@ function mapProgress(row: OnboardingProgressRow): {
   };
 }
 
+/** Riga di progress per le mutazioni (choice, resume, PATCH): la crea se manca. */
 async function ensureProgressRow(userId: string): Promise<OnboardingProgressRow> {
-  const row = await prisma.userOnboardingProgress.upsert({
+  return prisma.userOnboardingProgress.upsert({
     where: { user_id: userId },
     create: { user_id: userId },
     update: {},
-    select: {
-      id: true,
-      user_id: true,
-      status: true,
-      current_step: true,
-      entry_mode: true,
-      active_project_id: true,
-      active_subproject_id: true,
-      first_export_at: true,
-      completed_at: true,
-      created_at: true,
-      updated_at: true,
-    },
+    select: PROGRESS_SELECT,
   });
-
-  return row;
 }
 
 async function findOwnedProject(userId: string, projectId: string) {
@@ -168,9 +172,11 @@ async function findFallbackSubproject(projectId: string) {
   });
 }
 
+/**
+ * Stato calcolato senza scritture (T-1004): progetto e sezione attivi (con il fallback del progetto più recente e
+ * della prima sezione) restano nel risultato; la riga si riconcilia solo nelle mutazioni (choice, resume).
+ */
 async function computeState(userId: string, row: OnboardingProgressRow): Promise<OnboardingState> {
-  const hasExistingData = (await prisma.project.count({ where: { owner_user_id: userId } })) > 0;
-
   let activeProject = row.active_project_id ? await findOwnedProject(userId, row.active_project_id) : null;
   // Dopo «Ricomincia» il progetto più recente non si riadotta: si riparte da PROJECT_CREATE (T-1002).
   const restartedFromScratch = row.entry_mode === OnboardingEntryMode.RESTART && !row.active_project_id;
@@ -187,23 +193,15 @@ async function computeState(userId: string, row: OnboardingProgressRow): Promise
     activeSubproject = await findFallbackSubproject(activeProject.id);
   }
 
-  const seedCount = activeSubproject
-    ? await prisma.seed.count({
-        where: {
-          project_id: activeSubproject.project_id,
-          subproject_id: activeSubproject.id,
-        },
-      })
-    : 0;
-
-  const jobCount = activeSubproject
-    ? await prisma.job.count({
-        where: {
-          project_id: activeSubproject.project_id,
-          subproject_id: activeSubproject.id,
-        },
-      })
-    : 0;
+  const sectionWhere = activeSubproject
+    ? { project_id: activeSubproject.project_id, subproject_id: activeSubproject.id }
+    : null;
+  // Conteggi indipendenti in parallelo.
+  const [projectCount, seedCount, jobCount] = await Promise.all([
+    prisma.project.count({ where: { owner_user_id: userId } }),
+    sectionWhere ? prisma.seed.count({ where: sectionWhere }) : 0,
+    sectionWhere ? prisma.job.count({ where: sectionWhere }) : 0,
+  ]);
 
   const recommendedStep = resolveRecommendedStep({
     activeProject: Boolean(activeProject),
@@ -213,25 +211,10 @@ async function computeState(userId: string, row: OnboardingProgressRow): Promise
     hasExport: Boolean(row.first_export_at),
   });
 
-  const updates: Record<string, string | null> = {};
-  if ((row.active_project_id ?? null) !== (activeProject?.id ?? null)) {
-    updates.active_project_id = activeProject?.id ?? null;
-  }
-  if ((row.active_subproject_id ?? null) !== (activeSubproject?.id ?? null)) {
-    updates.active_subproject_id = activeSubproject?.id ?? null;
-  }
-
-  if (Object.keys(updates).length > 0) {
-    await prisma.userOnboardingProgress.update({
-      where: { id: row.id },
-      data: updates,
-    });
-  }
-
   return {
     ...mapProgress(row),
     recommendedStep,
-    hasExistingData,
+    hasExistingData: projectCount > 0,
     activeProjectId: activeProject?.id ?? null,
     activeSubprojectId: activeSubproject?.id ?? null,
     seedCount,
@@ -267,9 +250,16 @@ function resolveRecommendedStep(input: {
   return "REVIEW_EXPORT";
 }
 
+/** Stato completo per le pagine dell'onboarding e GET /api/onboarding/state: solo letture (T-1004). */
 export async function getOnboardingStateForUser(userId: string): Promise<OnboardingState> {
-  const row = await ensureProgressRow(userId);
-  return computeState(userId, row);
+  const row = await prisma.userOnboardingProgress.findUnique({ where: { user_id: userId }, select: PROGRESS_SELECT });
+  return computeState(userId, row ?? NO_PROGRESS_ROW);
+}
+
+/** Solo lo status, con una query e nessuna scrittura (dashboard, T-1004): senza riga vale NEEDS_CHOICE. */
+export async function getOnboardingStatusForUser(userId: string): Promise<OnboardingStatusKey> {
+  const row = await prisma.userOnboardingProgress.findUnique({ where: { user_id: userId }, select: { status: true } });
+  return row?.status ?? OnboardingStatus.NEEDS_CHOICE;
 }
 
 export function shouldRedirectUserToOnboarding(status: OnboardingStatusKey): boolean {
@@ -289,6 +279,7 @@ export function resolveOnboardingPathForState(state: OnboardingState): string {
 }
 
 export async function applyOnboardingChoice(userId: string, mode: "resume" | "restart"): Promise<OnboardingState> {
+  await ensureProgressRow(userId);
   const current = await getOnboardingStateForUser(userId);
   const now = new Date();
 
@@ -424,15 +415,17 @@ export async function patchOnboardingState(userId: string, input: PatchInput): P
 }
 
 export async function skipOnboarding(userId: string): Promise<OnboardingState> {
-  await prisma.userOnboardingProgress.update({
+  await prisma.userOnboardingProgress.upsert({
     where: { user_id: userId },
-    data: { status: OnboardingStatus.PAUSED },
+    create: { user_id: userId, status: OnboardingStatus.PAUSED },
+    update: { status: OnboardingStatus.PAUSED },
   });
 
   return getOnboardingStateForUser(userId);
 }
 
 export async function resumeOnboarding(userId: string): Promise<OnboardingState> {
+  await ensureProgressRow(userId);
   const state = await getOnboardingStateForUser(userId);
   if (state.status === "COMPLETED") {
     return state;
