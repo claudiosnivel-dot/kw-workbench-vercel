@@ -9,12 +9,12 @@ import {
   settleProviderRequest,
 } from "@/lib/modules/providers/metrics/metrics-ledger";
 import {
-  buildMissingMetrics,
   KeywordMetric,
   MetricsContext,
   MetricsItem,
   MetricsOutcome,
   MetricsProvider,
+  missingOutcome,
 } from "@/lib/modules/providers/metrics/types";
 import { logger } from "@/lib/observability/logger";
 
@@ -102,14 +102,6 @@ function isRetryable(status: AttemptResult["status"]): boolean {
     RETRYABLE_TASK_CODES.has(status) ||
     (status >= 50000 && status < 60000)
   );
-}
-
-function chunk<T>(items: T[], size: number): T[][] {
-  const output: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    output.push(items.slice(index, index + size));
-  }
-  return output;
 }
 
 /** Offerta in micros; la doc di DataForSEO non dichiara la valuta delle offerte (indica USD solo per cpc). */
@@ -223,23 +215,19 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
   readonly id = "DATAFORSEO" as const;
 
   async enrichKeywords(items: MetricsItem[], context: MetricsContext): Promise<MetricsOutcome> {
-    const metrics = buildMissingMetrics(
-      items.map((item) => item.canonical),
-      this.id
-    );
-
     const credentials = getDataForSeoCredentials();
     if (!credentials) {
-      return { metrics, notice: "PROVIDER_NOT_CONFIGURED" };
+      return missingOutcome(items, this.id, "PROVIDER_NOT_CONFIGURED");
     }
     const locationCode = toDataForSeoLocationCode(context.countryCode);
     if (locationCode === null) {
-      return { metrics, notice: "LOCATION_UNSUPPORTED" };
+      return missingOutcome(items, this.id, "LOCATION_UNSUPPORTED");
     }
     const languageCode = toDataForSeoLanguageCode(context.languageCode);
     if (languageCode === null) {
-      return { metrics, notice: "LANGUAGE_UNSUPPORTED" };
+      return missingOutcome(items, this.id, "LANGUAGE_UNSUPPORTED");
     }
+    const { metrics } = missingOutcome(items, this.id);
 
     const skipped: Record<string, number> = {};
     const accepted: MetricsItem[] = [];
@@ -260,7 +248,10 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
     let requests = 0;
     let spellCorrected = 0;
 
-    for (const batch of chunk(accepted, DATAFORSEO_BATCH_SIZE)) {
+    const batches = Array.from({ length: Math.ceil(accepted.length / DATAFORSEO_BATCH_SIZE) }, (_, index) =>
+      accepted.slice(index * DATAFORSEO_BATCH_SIZE, (index + 1) * DATAFORSEO_BATCH_SIZE)
+    );
+    for (const batch of batches) {
       const requested = new Set(batch.map((item) => item.canonical));
       const sent = await sendBatch(
         batch.map((item) => item.displayKeyword),

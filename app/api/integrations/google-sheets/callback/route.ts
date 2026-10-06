@@ -1,15 +1,14 @@
-import { NextRequest } from "next/server";
-import { getOptionalAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { NextRequest, NextResponse } from "next/server";
 import { withApiErrors } from "@/lib/http/errors";
 import {
   getDecryptedGoogleSheetsRefreshToken,
   getGoogleSheetsCredentialRecord,
   upsertGoogleSheetsCredential,
 } from "@/lib/integrations/google-sheets";
-import { getGoogleSheetsApiConfig } from "@/lib/integrations/google-sheets-config";
 import {
   GOOGLE_SHEETS_OAUTH_STATE_COOKIE,
   hasGrantedScope,
+  oauthPreflight,
   oauthRedirect,
 } from "@/lib/integrations/google-sheets-oauth";
 import { logger } from "@/lib/observability/logger";
@@ -50,10 +49,11 @@ async function fetchProfileEmail(accessToken: string): Promise<string | undefine
  * cancella il cookie di state; la credenziale si salva solo se lo scope richiesto è tra quelli concessi.
  */
 export const GET = withApiErrors(async (request: NextRequest) => {
-  const user = await getOptionalAuthenticatedUserFromRequest(request);
-  if (!user) {
-    return oauthRedirect(request, { error: "sessione_scaduta" });
+  const preflight = await oauthPreflight(request);
+  if (preflight instanceof NextResponse) {
+    return preflight;
   }
+  const { user, config } = preflight;
 
   const url = request.nextUrl;
   const code = url.searchParams.get("code");
@@ -69,15 +69,6 @@ export const GET = withApiErrors(async (request: NextRequest) => {
     return oauthRedirect(request, { error: "stato_non_valido" });
   }
 
-  const config = await getGoogleSheetsApiConfig();
-  const clientId = config.clientId;
-  const clientSecret = config.clientSecret;
-  const redirectUri = config.redirectUri;
-
-  if (!clientId || !clientSecret || !redirectUri) {
-    return oauthRedirect(request, { error: "config_oauth_mancante" });
-  }
-
   let tokenPayload: TokenPayload;
   try {
     const tokenResponse = await fetch(TOKEN_ENDPOINT, {
@@ -88,9 +79,9 @@ export const GET = withApiErrors(async (request: NextRequest) => {
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        redirect_uri: config.redirectUri,
       }),
       cache: "no-store",
     });

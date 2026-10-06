@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { parseArgs } from "node:util";
-import { type CliIo, processIo } from "@/lib/modules/planner/cli-io";
+import { type CliIo, parseCliArgs, processIo } from "@/lib/modules/planner/cli-io";
 import { parsePlannerCsv } from "@/lib/modules/planner/csv-parser";
 import { applyPlannerImport } from "@/lib/modules/planner/import";
 
@@ -11,18 +10,11 @@ const USAGE = "Uso: npm run planner:import -- --project <id> [--section <id>] <f
 
 /** Esegue l'import e restituisce l'exit code: 0 riuscito, 1 argomenti, file o progetto/sezione non validi. */
 export async function runPlannerImportCli(argv: string[], io: CliIo = processIo): Promise<number> {
-  let parsedArgs;
-  try {
-    parsedArgs = parseArgs({
-      args: argv,
-      options: { project: { type: "string" }, section: { type: "string" } },
-      allowPositionals: true,
-    });
-  } catch (error) {
-    io.err(`${error instanceof Error ? error.message : String(error)}\n${USAGE}`);
+  const args = parseCliArgs(argv, ["project", "section"], USAGE, io);
+  if (!args) {
     return 1;
   }
-  const { values, positionals } = parsedArgs;
+  const { values, positionals } = args;
   if (!values.project || positionals.length !== 1) {
     io.err(USAGE);
     return 1;

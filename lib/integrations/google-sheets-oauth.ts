@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { shouldUseSecureCookies } from "@/lib/auth/config";
+import type { AuthUser } from "@/lib/auth/credentials";
+import { getOptionalAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { type GoogleSheetsApiConfig, getCompleteGoogleSheetsOAuthConfig } from "@/lib/integrations/google-sheets-config";
 
 // Flusso OAuth di Google Sheets (T-906): costanti condivise da connect e callback e uscite di errore leggibili.
 
@@ -45,6 +48,21 @@ export function oauthRedirect(request: Request, outcome: { error: GoogleSheetsOA
     target.searchParams.set("reason", outcome.error);
   }
   return clearOAuthStateCookie(NextResponse.redirect(target, 302));
+}
+
+/**
+ * Controlli comuni a connect e callback: utente della sessione e configurazione OAuth completa, oppure il redirect
+ * d'errore da restituire subito (sessione_scaduta, config_oauth_mancante).
+ */
+export async function oauthPreflight(
+  request: Request
+): Promise<{ user: AuthUser; config: Required<GoogleSheetsApiConfig> } | NextResponse> {
+  const user = await getOptionalAuthenticatedUserFromRequest(request);
+  if (!user) {
+    return oauthRedirect(request, { error: "sessione_scaduta" });
+  }
+  const config = await getCompleteGoogleSheetsOAuthConfig();
+  return config ? { user, config } : oauthRedirect(request, { error: "config_oauth_mancante" });
 }
 
 /** Il campo scope della risposta token (scope separati da spazio) contiene lo scope richiesto. */

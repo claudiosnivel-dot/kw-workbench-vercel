@@ -68,6 +68,17 @@ export interface MetricsProvider {
   enrichKeywords(items: MetricsItem[], context: MetricsContext): Promise<MetricsOutcome>;
 }
 
+/** Esito senza volumi: ogni canonical missing per il provider dato, con l'eventuale motivo. */
+export function missingOutcome(items: MetricsItem[], provider: MetricsProviderId, notice?: MetricsNotice): MetricsOutcome {
+  return {
+    metrics: buildMissingMetrics(
+      items.map((item) => item.canonical),
+      provider
+    ),
+    ...(notice ? { notice } : {}),
+  };
+}
+
 export function buildMissingMetrics(
   canonicals: string[],
   provider: MetricsProviderId,

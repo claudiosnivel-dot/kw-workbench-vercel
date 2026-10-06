@@ -1,7 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { parseArgs } from "node:util";
-import { type CliIo, processIo } from "@/lib/modules/planner/cli-io";
+import { type CliIo, parseCliArgs, processIo } from "@/lib/modules/planner/cli-io";
 import {
   buildPlannerExport,
   PLANNER_CHUNK_DEFAULT,
@@ -32,24 +31,13 @@ function parseChunk(raw: string | undefined): number | null {
 
 /** Esegue l'export e restituisce l'exit code: 0 riuscito, 1 argomenti non validi o progetto/sezione non trovati. */
 export async function runPlannerExportCli(argv: string[], io: CliIo = processIo): Promise<number> {
-  let values: { project?: string; section?: string; chunk?: string; out?: string };
-  try {
-    ({ values } = parseArgs({
-      args: argv,
-      options: {
-        project: { type: "string" },
-        section: { type: "string" },
-        chunk: { type: "string" },
-        out: { type: "string" },
-      },
-    }));
-  } catch (error) {
-    io.err(`${error instanceof Error ? error.message : String(error)}\n${USAGE}`);
+  const args = parseCliArgs(argv, ["project", "section", "chunk", "out"], USAGE, io);
+  if (!args) {
     return 1;
   }
-
+  const { values } = args;
   const chunkSize = parseChunk(values.chunk);
-  if (!values.project || chunkSize === null) {
+  if (!values.project || chunkSize === null || args.positionals.length > 0) {
     io.err(USAGE);
     return 1;
   }

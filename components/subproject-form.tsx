@@ -1,9 +1,9 @@
 "use client";
 
+import type { MetricsProvider } from "@/lib/generated/prisma/enums";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
-import type { MetricsProvider } from "@/lib/generated/prisma/enums";
 import {
   COUNTRY_CODES,
   LANGUAGE_OPTIONS,

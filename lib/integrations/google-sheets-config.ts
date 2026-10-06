@@ -1,7 +1,7 @@
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
 import { ValidationError } from "@/lib/http/errors";
 import { deleteSettingValue, getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
-import { prisma } from "@/lib/prisma";
 
 const KEYS = {
   clientId: "GOOGLE_SHEETS_OAUTH_CLIENT_ID",
@@ -58,6 +58,12 @@ async function resolveConfig(): Promise<{ values: GoogleSheetsApiConfig; sources
 
 export async function getGoogleSheetsApiConfig(): Promise<GoogleSheetsApiConfig> {
   return (await resolveConfig()).values;
+}
+
+/** Configurazione OAuth con tutti e tre i valori, o null se ne manca uno (connect e callback, T-906). */
+export async function getCompleteGoogleSheetsOAuthConfig(): Promise<Required<GoogleSheetsApiConfig> | null> {
+  const { clientId, clientSecret, redirectUri } = await getGoogleSheetsApiConfig();
+  return clientId && clientSecret && redirectUri ? { clientId, clientSecret, redirectUri } : null;
 }
 
 export async function getGoogleSheetsApiConfigSnapshot(): Promise<GoogleSheetsApiConfigSnapshot> {

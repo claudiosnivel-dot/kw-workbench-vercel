@@ -50,9 +50,8 @@ async function readBodyWithin(request: NextRequest, limit: number): Promise<Uint
  * Progetto e sezione filtrati per proprietario (404 agli altri, CWE-639); massimo 5 MB verificato sul
  * Content-Length e sui byte letti; il file resta in memoria e non viene salvato.
  */
-export const POST = withApiErrors(async (request: NextRequest, context: RouteContext) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-  const { id } = await context.params;
+export const POST = withApiErrors(async (request: NextRequest, { params }: RouteContext) => {
+  const [user, { id }] = await Promise.all([requireAuthenticatedUserFromRequest(request), params]);
 
   const owned = await resolvePlannerScope({ projectId: id, ownerUserId: user.id });
   if ("notFound" in owned) {

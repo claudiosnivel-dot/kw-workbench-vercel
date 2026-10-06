@@ -64,15 +64,10 @@ export function PlannerImportUpload({ projectId, subprojectId }: { projectId: st
       <button className="btn-primary w-full sm:w-auto" type="submit" disabled={!file || loading}>
         {loading ? "Import in corso..." : "Importa volumi"}
       </button>
-      {error && (
-        <p className="text-red-700" role="alert">
-          {error}
-        </p>
-      )}
-      {summary && (
-        <p role="status">
-          {summary.matched} righe abbinate ({summary.rangeRows} con volume a intervallo), {summary.updated} keyword
-          aggiornate, {summary.unmatched} righe senza keyword corrispondente.
+      {(error || summary) && (
+        <p className={error ? "text-red-700" : undefined} role={error ? "alert" : "status"}>
+          {error ??
+            `${summary?.matched} righe abbinate (${summary?.rangeRows} con volume a intervallo), ${summary?.updated} keyword aggiornate, ${summary?.unmatched} righe senza keyword corrispondente.`}
         </p>
       )}
     </form>

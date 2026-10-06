@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { useState } from "react";
+import { type ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 type ConfigField = "clientId" | "clientSecret" | "redirectUri";
 
@@ -27,39 +27,35 @@ export function GoogleSheetsApiConfigCard({ initial }: { initial: GoogleSheetsAp
   const [redirectUri, setRedirectUri] = useState(initial.redirectUri);
   const [clientSecret, setClientSecret] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  // Esito dell'ultima richiesta: errore (role=alert) o conferma (role=status).
+  const [outcome, setOutcome] = useState<{ failed: boolean; text: string } | null>(null);
 
   /** Invia la PATCH (T-908): solo i campi cambiati, null per rimuovere un override; poi ricarica i dati del server. */
   const send = async (body: Partial<Record<ConfigField, string | null>>, successMessage: string) => {
     setSaving(true);
-    setError(null);
-    setSuccess(null);
+    setOutcome(null);
+    const response = await fetch("/api/integrations/google-sheets/config", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(() => null);
+    const payload = response
+      ? await readJsonSafe<ApiErrorPayload & { data?: GoogleSheetsApiConfigSnapshot }>(response)
+      : null;
+    setSaving(false);
 
-    try {
-      const response = await fetch("/api/integrations/google-sheets/config", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const payload = await readJsonSafe<ApiErrorPayload & { data?: GoogleSheetsApiConfigSnapshot }>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Salvataggio configurazione Google Sheets non riuscito"));
-      }
-
-      if (payload?.data) {
-        setClientId(payload.data.clientId);
-        setRedirectUri(payload.data.redirectUri);
-      }
-      setClientSecret("");
-      setSuccess(successMessage);
-      router.refresh();
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Errore imprevisto");
-    } finally {
-      setSaving(false);
+    if (!response?.ok) {
+      const fallback = "Salvataggio configurazione Google Sheets non riuscito";
+      setOutcome({ failed: true, text: response ? buildApiErrorMessage(response, payload, fallback) : fallback });
+      return;
     }
+    if (payload?.data) {
+      setClientId(payload.data.clientId);
+      setRedirectUri(payload.data.redirectUri);
+    }
+    setClientSecret("");
+    setOutcome({ failed: false, text: successMessage });
+    router.refresh();
   };
 
   const save = () =>
@@ -150,13 +146,13 @@ export function GoogleSheetsApiConfigCard({ initial }: { initial: GoogleSheetsAp
         {saving ? "Salvataggio..." : "Salva configurazione Google Sheets"}
       </button>
 
-      {error && (
+      {outcome?.failed && (
         <p className="text-sm text-red-700" role="alert">
-          {error}
+          {outcome.text}
         </p>
       )}
       <p className="text-sm text-green-700" role="status">
-        {success}
+        {outcome && !outcome.failed ? outcome.text : null}
       </p>
     </section>
   );
