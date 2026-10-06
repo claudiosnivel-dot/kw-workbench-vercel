@@ -2,16 +2,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as runProject } from "@/app/api/projects/[id]/run/route";
 import { POST as runSection } from "@/app/api/projects/[id]/subprojects/[subprojectId]/run/route";
+import { advanceJob } from "@/lib/modules/jobs/advance-job";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
-import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
-vi.mock("@/lib/modules/pipeline/extraction", () => ({ runExtractionPipeline: vi.fn() }));
+// impacted-by: T-1202 (runJobById esegue il job con advanceJob, non più con runExtractionPipeline)
+vi.mock("@/lib/modules/jobs/advance-job", () => ({ advanceJob: vi.fn() }));
 
-const pipeline = vi.mocked(runExtractionPipeline);
+const pipeline = vi.mocked(advanceJob);
 
 async function createOwnedSection() {
   const { user, cookie } = await createUserWithSession({ username: "t305-owner" });
@@ -70,10 +71,10 @@ describe("rotte di esecuzione con pipeline in errore", () => {
 describe("runJobById con aggiornamento finale in errore", () => {
   // covers: AC-305-2
   it("si risolve con il job failed e la riga non resta running", async () => {
-    pipeline.mockResolvedValue({ queries: 1, rawSuggestions: 1, dedupedCandidates: 1, storedCandidates: 1 });
     const { projectId, sectionId } = await createOwnedSection();
     const { job } = await enqueueExtractionJob(projectId, sectionId);
-    vi.spyOn(prisma.job, "update").mockRejectedValueOnce(new Error("aggiornamento a completed non riuscito"));
+    // impacted-by: T-1202 (il completamento è nella transazione dell'ultimo passo: il suo errore esce da advanceJob)
+    pipeline.mockRejectedValueOnce(new Error("aggiornamento a completed non riuscito"));
 
     const result = await runJobById(job.id);
 

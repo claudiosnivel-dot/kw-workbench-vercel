@@ -1,14 +1,15 @@
 // Gate di T-602 (AC-602-3, AC-602-4): x-request-id assegnato dal proxy e fallimenti dei job nel log.
 import { NextRequest } from "next/server";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { advanceJob } from "@/lib/modules/jobs/advance-job";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
-import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";
 import { proxy } from "@/proxy";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
-vi.mock("@/lib/modules/pipeline/extraction", () => ({ runExtractionPipeline: vi.fn() }));
+// impacted-by: T-1202 (runJobById esegue il job con advanceJob, non più con runExtractionPipeline)
+vi.mock("@/lib/modules/jobs/advance-job", () => ({ advanceJob: vi.fn() }));
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -21,7 +22,7 @@ afterAll(() => {
 });
 
 beforeEach(async () => {
-  vi.mocked(runExtractionPipeline).mockReset();
+  vi.mocked(advanceJob).mockReset();
   await resetDatabase();
 });
 
@@ -61,7 +62,7 @@ describe("job di estrazione fallito", () => {
     const project = await prisma.project.create({ data: { name: "Progetto T-602", owner_user_id: user.id } });
     const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
     const { job } = await enqueueExtractionJob(project.id, section.id);
-    vi.mocked(runExtractionPipeline).mockRejectedValueOnce(new Error("provider down"));
+    vi.mocked(advanceJob).mockRejectedValueOnce(new Error("provider down"));
     const written: string[] = [];
     vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array) => {
       written.push(String(chunk));

@@ -104,6 +104,9 @@ beforeEach(async () => {
 
 describe("golden master della pipeline di estrazione", () => {
   // covers: AC-106-1
+  // Da T-1202 runExtractionPipeline esegue il job con advanceJob: lo snapshot invariato è l'oracolo del refactor
+  // a passi, e tests/integration/job-steps.test.ts confronta l'esecuzione a un batch per chiamata con questa.
+  // covers: AC-1202-1
   it("le candidate prodotte coincidono con lo snapshot senza chiamate di rete", async () => {
     const subprojectId = await createSection(SEEDS);
 

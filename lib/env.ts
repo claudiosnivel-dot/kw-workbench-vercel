@@ -11,6 +11,9 @@ export const INT_ENV = {
   MAX_EXPANSION_QUERIES: { def: 250, min: 50, max: 5_000 },
   // Timeout della transazione finale dell'estrazione (T-706): il default di Prisma (5 s) non basta su un DB remoto.
   EXTRACTION_TX_TIMEOUT_MS: { def: 60_000, min: 5_000, max: 300_000 },
+  // Estrazione a passi (T-1202): query di autocomplete per batch e durata di un passo del job.
+  JOB_AUTOCOMPLETE_BATCH: { def: 24, min: 1, max: 500 },
+  JOB_STEP_BUDGET_MS: { def: 60_000, min: 5_000, max: 240_000 },
   AUTOCOMPLETE_CONCURRENCY: { def: 6, min: 1, max: 20 },
   AUTOCOMPLETE_RATE_LIMIT_MS: { def: 180, min: 50, max: 10_000 },
   AUTOCOMPLETE_CACHE_TTL_MS: { def: 300_000, min: 30_000, max: 86_400_000 },
@@ -78,6 +81,8 @@ const envSchema = z.object({
   PRISMA_POOL_TIMEOUT: optional,
   MAX_EXPANSION_QUERIES: optional,
   EXTRACTION_TX_TIMEOUT_MS: optional,
+  JOB_AUTOCOMPLETE_BATCH: optional,
+  JOB_STEP_BUDGET_MS: optional,
   AUTOCOMPLETE_TIMEOUT_MS: optional,
   AUTOCOMPLETE_MAX_RETRIES: optional,
   AUTOCOMPLETE_RATE_LIMIT_MS: optional,

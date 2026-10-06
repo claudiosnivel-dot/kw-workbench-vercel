@@ -59,7 +59,13 @@ export async function reserveProviderRequest(input: {
     if (toUnits(monthSpent) + toUnits(estimate) > toUnits(monthlyBudget)) {
       return { ok: false, notice: "METRICS_BUDGET_EXCEEDED" } as const;
     }
-    const runSpent = input.runRequestIds.length > 0 ? await spent(tx, { id: { in: input.runRequestIds } }) : 0;
+    // L'estrazione a passi (T-1202) arricchisce a batch in chiamate distinte: contano anche le richieste già
+    // registrate per lo stesso job.
+    const runWhere: Prisma.MetricsProviderRequestWhereInput[] = [{ id: { in: input.runRequestIds } }];
+    if (input.jobId) {
+      runWhere.push({ job_id: input.jobId });
+    }
+    const runSpent = input.runRequestIds.length > 0 || input.jobId ? await spent(tx, { OR: runWhere }) : 0;
     if (toUnits(runSpent) + toUnits(estimate) > toUnits(runBudget)) {
       return { ok: false, notice: "RUN_BUDGET_EXCEEDED" } as const;
     }

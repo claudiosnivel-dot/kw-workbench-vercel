@@ -33,6 +33,8 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `PRISMA_POOL_TIMEOUT` | facolt. (intero 1…120, default 15) | facolt. | facolt. | no | Vercel / locale |
 | `MAX_EXPANSION_QUERIES` | facolt. (intero 50…5000, default 250) | facolt. | facolt. | no | Vercel / locale |
 | `EXTRACTION_TX_TIMEOUT_MS` | facolt. (intero 5000…300000, default 60000) | facolt. | facolt. | no | Vercel / locale |
+| `JOB_AUTOCOMPLETE_BATCH` | facolt. (intero 1…500, default 24: query di autocomplete per batch di un job, T-1202) | facolt. | facolt. | no | Vercel / locale |
+| `JOB_STEP_BUDGET_MS` | facolt. (intero 5000…240000, default 60000: durata di un passo del job; ogni passo resta sotto i 300 s di `maxDuration`) | facolt. | facolt. | no | Vercel / locale |
 | `AUTOCOMPLETE_TIMEOUT_MS` | facolt. (intero 1000…30000, default 4500) | facolt. | facolt. | no | Vercel / locale |
 | `AUTOCOMPLETE_MAX_RETRIES` | facolt. (intero 0…5, default 2) | facolt. | facolt. | no | Vercel / locale |
 | `AUTOCOMPLETE_RATE_LIMIT_MS` | facolt. (intero 50…10000, default 180) | facolt. | facolt. | no | Vercel / locale |
