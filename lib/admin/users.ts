@@ -100,7 +100,7 @@ type AdminUsersListRow = { [K in keyof AdminUserRow]: AdminUserRow[K] | null } &
 };
 
 // SQL statico della lista utenti (T-1105): totali del perimetro, totale filtrato e pagina in una sola query.
-// I valori (perimetro, filtri, LIMIT, OFFSET) entrano solo come parametri legati, composti in listQuery.
+// I valori (perimetro, filtri, LIMIT, OFFSET) entrano solo come parametri legati, composti in listAdminUsers.
 const LIST_TOTALS = Prisma.sql`
   SELECT "t"."total_users", "t"."total_admins", "t"."total_subscribers", "t"."total_active", "t"."total_suspended",
     "t"."filtered_total", "p"."id", "p"."username", "p"."role", "p"."status", "p"."is_root_admin", "p"."created_at",
