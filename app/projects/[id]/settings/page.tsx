@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { DeleteProjectButton } from "@/components/delete-project-button";
+import { DeleteEntityButton } from "@/components/delete-entity-button";
 import { ProjectForm } from "@/components/project-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
-import { prisma } from "@/lib/prisma";
+import { requireOwnedProject } from "@/lib/modules/project-pages";
+import { projectDeleteTarget } from "@/lib/view/delete-targets";
 
 export const dynamic = "force-dynamic";
 
@@ -11,25 +11,9 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
   const user = await requirePageUser();
   const { id } = await params;
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      owner_user_id: user.id,
-    },
-    include: {
-      subprojects: {
-        orderBy: [{ position: "asc" }, { created_at: "asc" }],
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
+  const project = await requireOwnedProject(user.id, id, {
+    subprojects: { orderBy: [{ position: "asc" }, { created_at: "asc" }], select: { id: true, name: true } },
   });
-
-  if (!project) {
-    notFound();
-  }
 
   return (
     <div className="space-y-6">
@@ -79,7 +63,12 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
         <p className="mb-4 text-sm text-slate-600">
           Eliminando questo progetto verranno rimosse sezioni, seed, keyword candidate e job collegati.
         </p>
-        <DeleteProjectButton projectId={project.id} projectName={project.name} />
+        <DeleteEntityButton
+          {...projectDeleteTarget(project)}
+          buttonLabel="Elimina progetto"
+          buttonClassName="btn btn-danger w-full sm:w-auto"
+          redirectTo="/"
+        />
       </section>
     </div>
   );

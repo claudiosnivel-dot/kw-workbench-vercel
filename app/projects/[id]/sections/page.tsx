@@ -1,71 +1,39 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { DeleteSubprojectButton } from "@/components/delete-subproject-button";
+import { DeleteEntityButton } from "@/components/delete-entity-button";
+import { PageHeaderCard } from "@/components/page-header-card";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { SectionOrderButtons } from "@/components/section-order-buttons";
 import { SetDefaultSectionButton } from "@/components/set-default-section-button";
 import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { requireOwnedProject, SECTIONS_WITH_STATS } from "@/lib/modules/project-pages";
 import { resultsHref } from "@/lib/modules/results-view";
-import { prisma } from "@/lib/prisma";
+import { sectionDeleteTarget } from "@/lib/view/delete-targets";
+import { jobStatusTone } from "@/lib/view/format";
 
 export const dynamic = "force-dynamic";
-
-function jobStatusTone(value: string): string {
-  if (value === "completed") return "border-emerald-400/40 bg-emerald-500/15 text-emerald-200";
-  if (value === "failed") return "border-rose-400/40 bg-rose-500/15 text-rose-200";
-  if (value === "running") return "border-amber-400/40 bg-amber-500/15 text-amber-200";
-  return "border-slate-500/40 bg-slate-700/25 text-slate-200";
-}
 
 export default async function ProjectSectionsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageUser();
   const { id } = await params;
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      owner_user_id: user.id,
-    },
-    include: {
-      subprojects: {
-        orderBy: [{ position: "asc" }, { created_at: "asc" }],
-        include: {
-          _count: {
-            select: {
-              seeds: true,
-              keyword_candidates: true,
-              jobs: true,
-            },
-          },
-          jobs: {
-            orderBy: { created_at: "desc" },
-            take: 1,
-          },
-        },
-      },
-    },
-  });
-
-  if (!project) {
-    notFound();
-  }
+  const project = await requireOwnedProject(user.id, id, { subprojects: SECTIONS_WITH_STATS });
 
   return (
     <div className="space-y-6">
-      <section className="card space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Gestisci sezioni</h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Progetto: <span className="font-medium">{project.name}</span>
-            </p>
-          </div>
+      <PageHeaderCard
+        title="Gestisci sezioni"
+        subtitle={
+          <>
+            Progetto: <span className="font-medium">{project.name}</span>
+          </>
+        }
+        action={
           <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}`}>
             Torna al progetto
           </Link>
-        </div>
-      </section>
+        }
+      />
 
       <section className="card space-y-3">
         <h2 className="text-base font-semibold">Aggiungi nuova sezione</h2>
@@ -129,14 +97,7 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                           label="Esegui"
                           runningLabel="Esecuzione..."
                         />
-                        <DeleteSubprojectButton
-                          projectId={project.id}
-                          subprojectId={section.id}
-                          subprojectName={section.name}
-                          buttonClassName="btn-danger"
-                          buttonLabel="Elimina"
-                          showInlineError={false}
-                        />
+                        <DeleteEntityButton {...sectionDeleteTarget(project.id, section)} showInlineError={false} />
                       </div>
                     </td>
                   </tr>

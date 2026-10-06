@@ -1,13 +1,12 @@
 import { PassThrough, Readable } from "node:stream";
 import ExcelJS from "exceljs";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 import { buildResultsClauses, type ResultsFilters } from "@/lib/modules/results-filters";
 import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 
-export type ExportFormat = "csv" | "xlsx" | "json";
-export type ExportScope = "approved" | "selected" | "review" | "non-excluded" | "filtered";
 
 /** Campi della candidata letti dall'export, nell'ordine delle colonne che seguono subproject_name. */
 const EXPORT_FIELD_SELECT = {

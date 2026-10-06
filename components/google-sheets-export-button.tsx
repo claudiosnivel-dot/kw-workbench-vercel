@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
-
-type ExportScope = "approved" | "selected" | "review" | "non-excluded" | "filtered";
+import type { ExportScope } from "@/lib/modules/export-types";
 
 type ExportModalResponse = ApiErrorPayload & {
   data?: {

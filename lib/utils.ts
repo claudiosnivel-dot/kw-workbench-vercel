@@ -1,9 +1,27 @@
-export function parseBoolean(value: string | null | undefined, defaultValue = false): boolean {
+const BOOLEAN_WORDS = new Map<string, boolean>([
+  ["true", true],
+  ["1", true],
+  ["yes", true],
+  ["on", true],
+  ["false", false],
+  ["0", false],
+  ["no", false],
+  ["off", false],
+]);
+
+/** Booleano o parola booleana riconosciuta (true/1/yes/on, false/0/no/off, maiuscole ammesse); altrimenti undefined. */
+export function parseBooleanWord(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  return BOOLEAN_WORDS.get(String(value).toLowerCase());
+}
+
+/** Flag permissivo: null o undefined → defaultValue; true solo per true e per le parole 1, true, yes, on. */
+export function parseBoolean(value: unknown, defaultValue = false): boolean {
   if (value == null) {
     return defaultValue;
   }
 
-  return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+  return parseBooleanWord(value) === true;
 }
 
 export function clamp(value: number, min: number, max: number): number {

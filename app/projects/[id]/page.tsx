@@ -1,83 +1,23 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { readParam } from "@/lib/http/search-params";
+import { type ProjectPageProps, requireOwnedProject, SECTIONS_WITH_STATS } from "@/lib/modules/project-pages";
 import { resolveDefaultSectionId, resultsHref } from "@/lib/modules/results-view";
-import { prisma } from "@/lib/prisma";
+import { formatDate, jobStatusTone } from "@/lib/view/format";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function getValue(searchParams: SearchParams, key: string): string {
-  const value = searchParams[key];
-  if (Array.isArray(value)) {
-    return value[0] ?? "";
-  }
-
-  return value ?? "";
-}
-
-function formatDate(value: Date | null | undefined): string {
-  if (!value) return "-";
-  return new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(value);
-}
-
-function jobStatusTone(value: string): string {
-  if (value === "completed") return "border-emerald-400/40 bg-emerald-500/15 text-emerald-200";
-  if (value === "failed") return "border-rose-400/40 bg-rose-500/15 text-rose-200";
-  if (value === "running") return "border-amber-400/40 bg-amber-500/15 text-amber-200";
-  return "border-slate-500/40 bg-slate-700/25 text-slate-200";
-}
-
-export default async function ProjectDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function ProjectDetailPage({ params, searchParams }: ProjectPageProps) {
   const user = await requirePageUser();
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      owner_user_id: user.id,
-    },
-    include: {
-      subprojects: {
-        orderBy: [{ position: "asc" }, { created_at: "asc" }],
-        include: {
-          _count: {
-            select: {
-              seeds: true,
-              keyword_candidates: true,
-              jobs: true,
-            },
-          },
-          jobs: {
-            orderBy: { created_at: "desc" },
-            take: 1,
-          },
-        },
-      },
-      _count: {
-        select: {
-          seeds: true,
-          keyword_candidates: true,
-          jobs: true,
-          subprojects: true,
-        },
-      },
-    },
+  const project = await requireOwnedProject(user.id, id, {
+    subprojects: SECTIONS_WITH_STATS,
+    _count: { select: { seeds: true, keyword_candidates: true, jobs: true, subprojects: true } },
   });
 
-  if (!project) {
-    notFound();
-  }
-
-  const selectedSectionId = getValue(resolvedSearchParams, "sectionId").trim();
+  const selectedSectionId = readParam(resolvedSearchParams, "sectionId").trim();
   const defaultSectionId = resolveDefaultSectionId(project.subprojects, project.default_subproject_id);
   const activeSection =
     project.subprojects.find((item) => item.id === selectedSectionId) ??

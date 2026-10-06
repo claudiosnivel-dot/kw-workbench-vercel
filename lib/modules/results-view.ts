@@ -1,4 +1,5 @@
-import type { ExportFormat, ExportScope } from "@/lib/modules/export";
+import type { SearchParamsSource } from "@/lib/http/search-params";
+import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 
 /**
  * Vista dei risultati (T-802, D-21): risolta in un solo punto e riusata da tabella, conteggi, link di
@@ -9,8 +10,6 @@ import type { ExportFormat, ExportScope } from "@/lib/modules/export";
 export type ResultsView = { kind: "section"; subprojectId: string } | { kind: "all" } | { kind: "not-found" };
 
 type ShownResultsView = Exclude<ResultsView, { kind: "not-found" }>;
-
-type SearchParamsSource = URLSearchParams | Record<string, string | string[] | undefined>;
 
 /** Destinazione di un link verso la pagina dei risultati: sempre con la vista dichiarata. */
 export type ResultsTarget = { view: "all" } | { subprojectId: string };

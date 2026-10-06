@@ -8,10 +8,11 @@ import { ResultsTable } from "@/components/results-table";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { isClassificationSupported } from "@/lib/modules/classification";
+import { type ProjectPageProps, requireOwnedProject } from "@/lib/modules/project-pages";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { parsePagingParams, withPaging } from "@/lib/modules/results-paging";
 import { loadResultsPage } from "@/lib/modules/results-query";
-import type { ExportFormat, ExportScope } from "@/lib/modules/export";
+import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 import {
   buildResultsExportHref,
   resolveDefaultSectionId,
@@ -20,11 +21,8 @@ import {
   toUrlSearchParams,
   viewTarget,
 } from "@/lib/modules/results-view";
-import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-
-type SearchParams = Record<string, string | string[] | undefined>;
 
 function buildDefaultSheetsFileName(projectName: string, subprojectName?: string): string {
   const date = new Date().toISOString().slice(0, 10);
@@ -32,41 +30,19 @@ function buildDefaultSheetsFileName(projectName: string, subprojectName?: string
   return `${base} keyword export ${date}`;
 }
 
-export default async function ResultsPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function ResultsPage({ params, searchParams }: ProjectPageProps) {
   const user = await requirePageUser();
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
   const [project, googleSheets] = await Promise.all([
-    prisma.project.findFirst({
-      where: {
-        id,
-        owner_user_id: user.id,
-      },
-      include: {
-        subprojects: {
-          orderBy: [{ position: "asc" }, { created_at: "asc" }],
-          select: {
-            id: true,
-            name: true,
-            position: true,
-            metrics_provider_override: true,
-            language_code_override: true,
-          },
-        },
+    requireOwnedProject(user.id, id, {
+      subprojects: {
+        orderBy: [{ position: "asc" }, { created_at: "asc" }],
+        select: { id: true, name: true, position: true, metrics_provider_override: true, language_code_override: true },
       },
     }),
     getGoogleSheetsCredentialSnapshot(user.id),
   ]);
-
-  if (!project) {
-    notFound();
-  }
 
   const view = resolveResultsView({
     subprojects: project.subprojects,

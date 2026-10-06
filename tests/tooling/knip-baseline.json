@@ -8,8 +8,6 @@
     { "type": "exports", "file": "lib/integrations/app-settings.ts", "symbol": "getSettingValue" },
     { "type": "exports", "file": "lib/modules/jobs/job-runner.ts", "symbol": "runQueuedExtractionJobs" },
     { "type": "exports", "file": "lib/modules/jobs/job-runner.ts", "symbol": "getJobStats" },
-    { "type": "exports", "file": "lib/text/encoding.ts", "symbol": "repairCommonMojibake" },
-    { "type": "exports", "file": "lib/utils.ts", "symbol": "parseBoolean" },
-    { "type": "exports", "file": "lib/utils.ts", "symbol": "toNumber" }
+    { "type": "exports", "file": "lib/text/encoding.ts", "symbol": "repairCommonMojibake" }
   ]
 }

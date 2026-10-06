@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { DeleteProjectButton } from "@/components/delete-project-button";
+import { DeleteEntityButton } from "@/components/delete-entity-button";
 import { PaginationLinks } from "@/components/pagination-links";
 import { ResumeOnboardingButton } from "@/components/resume-onboarding-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
@@ -8,23 +8,10 @@ import { listDashboardProjects } from "@/lib/modules/dashboard";
 import { resultsHref } from "@/lib/modules/results-view";
 import { getOnboardingStatusForUser, shouldRedirectUserToOnboarding } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
+import { projectDeleteTarget } from "@/lib/view/delete-targets";
+import { formatDate, jobStatusTone } from "@/lib/view/format";
 
 export const dynamic = "force-dynamic";
-
-function formatDate(value: Date | null | undefined): string {
-  if (!value) return "-";
-  return new Intl.DateTimeFormat("it-IT", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(value);
-}
-
-function jobStatusTone(value: string): string {
-  if (value === "completed") return "border-emerald-400/40 bg-emerald-500/15 text-emerald-200";
-  if (value === "failed") return "border-rose-400/40 bg-rose-500/15 text-rose-200";
-  if (value === "running") return "border-amber-400/40 bg-amber-500/15 text-amber-200";
-  return "border-slate-500/40 bg-slate-700/25 text-slate-200";
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -169,14 +156,7 @@ export default async function DashboardPage({
                       <Link className="btn-secondary" href={resultsHref(project.id, { view: "all" })}>
                         Risultati
                       </Link>
-                      <DeleteProjectButton
-                        projectId={project.id}
-                        projectName={project.name}
-                        buttonLabel="Elimina"
-                        buttonClassName="btn-danger"
-                        redirectTo={null}
-                        showInlineError={false}
-                      />
+                      <DeleteEntityButton {...projectDeleteTarget(project)} showInlineError={false} />
                     </div>
                   </td>
                 </tr>

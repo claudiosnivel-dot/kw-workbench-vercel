@@ -2,7 +2,7 @@
   {
     "ghsa": "GHSA-vfj7-8cjw-p6xm",
     "package": "braces",
-    "reason": "braces fino a 3.0.3, l'ultima su npm: nessun fix upstream. Solo strumenti di sviluppo via micromatch: @next/eslint-plugin-next con fast-glob 3.3.1 (anche in eslint-config-next 16.3.8) e jscpd 4.3.0 (fix solo in jscpd 5); il percorso di tailwindcss 3 è chiuso da T-405. Accettata dall'utente il 2026-10-04 fino a T-1102, che rivaluta jscpd 5 ed eslint-config-next.",
+    "reason": "braces fino a 3.0.3, l'ultima su npm: nessun fix upstream. Solo strumenti di sviluppo via micromatch: @next/eslint-plugin-next con fast-glob 3.3.1 (anche in eslint-config-next 16.3.8) e jscpd 4.3.0 (fix solo in jscpd 5); il percorso di tailwindcss 3 è chiuso da T-405. Accettata dall'utente il 2026-10-04 fino a T-1102, che rivaluta jscpd 5 ed eslint-config-next. Rivalutata da T-1102 il 2026-10-06: eslint-config-next 16.3.8 è ancora l'ultima e porta braces 3.0.3 (@next/eslint-plugin-next, fast-glob 3.3.1, micromatch 4.0.8); jscpd 5.4.0 toglierebbe solo il percorso di jscpd (@jscpd/finder, fast-glob 3.3.3). Voce mantenuta, percorso residuo riportato all'utente.",
     "closedBy": ["T-1102"]
   }
 ]
