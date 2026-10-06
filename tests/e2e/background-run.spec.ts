@@ -1,11 +1,12 @@
+import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/security/password";
 
 // Utente dedicato: il progetto e i job di questo file non compaiono nelle pagine fotografate dall'utente seed.
-// La password è un valore di test, mai una credenziale reale.
+// Password generata a ogni esecuzione, mai una credenziale reale.
 const USERNAME = "e2e-background-run";
-const PASSWORD = "e2e-background-password-not-real";
+const PASSWORD = randomBytes(18).toString("hex");
 
 let userId = "";
 let projectId = "";
