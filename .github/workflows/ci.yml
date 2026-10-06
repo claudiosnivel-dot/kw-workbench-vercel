@@ -110,4 +110,5 @@ jobs:
         run: |
           echo "APP_SESSION_SECRET=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
           echo "APP_ENCRYPTION_KEY=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          echo "JOB_SIGNING_SECRET=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
       - run: npm run build

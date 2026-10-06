@@ -29,6 +29,9 @@ const appEnv: Record<string, string> = {
   APP_SESSION_SECRET: testSecret(),
   APP_SESSION_MAX_AGE_SECONDS: "604800",
   APP_ENCRYPTION_KEY: testSecret(),
+  // Job in background (T-1203): firma dei passi e chiamate interne verso il server degli E2E.
+  JOB_SIGNING_SECRET: testSecret(),
+  APP_PUBLIC_URL: `http://localhost:${PORT}`,
   APP_COOKIE_SECURE: "false",
   APP_BRAND_NAME: "Seo God Mode",
   APP_BRAND_LOGO_URL: "",

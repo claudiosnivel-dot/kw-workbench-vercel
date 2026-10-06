@@ -14,13 +14,22 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/session-ended",
   // Health check per il monitoraggio esterno (T-603): solo il percorso esatto, nessun prefisso.
   "/api/health",
+  // Cron di Vercel per i job bloccati (T-1203): protetto da CRON_SECRET nella rotta.
+  "/api/cron/reap-jobs",
 ]);
+
+// Passi dei job in background (T-1203): nessuna sessione, solo la firma HMAC verificata dalla rotta.
+const INTERNAL_JOBS_PREFIX = "/api/internal/jobs/";
 
 // File di public serviti senza login: un solo segmento (es. /robots.txt) con estensione ammessa.
 const PUBLIC_ROOT_FILE = /^\/[^/]+\.(?:txt|xml|ico|png|jpg|jpeg|svg|webp|webmanifest)$/;
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) {
+    return true;
+  }
+
+  if (pathname.startsWith(INTERNAL_JOBS_PREFIX)) {
     return true;
   }
 

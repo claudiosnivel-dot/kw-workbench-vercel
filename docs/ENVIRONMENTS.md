@@ -35,6 +35,13 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `EXTRACTION_TX_TIMEOUT_MS` | facolt. (intero 5000…300000, default 60000) | facolt. | facolt. | no | Vercel / locale |
 | `JOB_AUTOCOMPLETE_BATCH` | facolt. (intero 1…500, default 24: query di autocomplete per batch di un job, T-1202) | facolt. | facolt. | no | Vercel / locale |
 | `JOB_STEP_BUDGET_MS` | facolt. (intero 5000…240000, default 60000: durata di un passo del job; ogni passo resta sotto i 300 s di `maxDuration`) | facolt. | facolt. | no | Vercel / locale |
+| `JOB_STALE_AFTER_MS` | facolt. (intero 35000…3600000, default 180000: heartbeat fermo oltre il quale il reaper riprende il job; rifiutata se non supera `JOB_STEP_BUDGET_MS` di almeno 30000) | facolt. | facolt. | no | Vercel / locale |
+| `JOB_MAX_ATTEMPTS` | facolt. (intero 1…20, default 5: tentativi di un job prima del fallimento definitivo) | facolt. | facolt. | no | Vercel / locale |
+| `JOB_SIGNING_SECRET` | obbl.: almeno 32 caratteri, non un segnaposto, diversa da `APP_SESSION_SECRET` (firma HMAC dei passi dei job, T-1203) | obbl., come Production (stesse variabili) | facolt. (senza, i job non proseguono oltre il primo passo) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
+| `CRON_SECRET` | facolt. ma necessaria al cron dei job (almeno 16 caratteri; Vercel la invia come `Authorization: Bearer`; senza, `/api/cron/reap-jobs` risponde 401) | facolt. | facolt. | sì | Vercel (Sensitive) / locale |
+| `APP_PUBLIC_URL` | facolt. (URL https dell'app: base delle chiamate interne fuori da Vercel e, da T-1402, dei link nelle email; su Vercel le chiamate interne usano `VERCEL_URL`) | facolt. | facolt. (`http://localhost:3000`; http ammesso solo per localhost) | no | Vercel / locale |
+| `VERCEL_URL` | no (di sistema: dominio della deployment corrente, base delle chiamate interne dei job) | no (di sistema) | no | no | piattaforma (Vercel) |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | no (di sistema: presente se è attivo Protection Bypass for Automation; serve alle chiamate interne verso deployment protette) | no (di sistema) | no | sì | piattaforma (Vercel, Settings → Deployment Protection) |
 | `AUTOCOMPLETE_TIMEOUT_MS` | facolt. (intero 1000…30000, default 4500) | facolt. | facolt. | no | Vercel / locale |
 | `AUTOCOMPLETE_MAX_RETRIES` | facolt. (intero 0…5, default 2) | facolt. | facolt. | no | Vercel / locale |
 | `AUTOCOMPLETE_RATE_LIMIT_MS` | facolt. (intero 50…10000, default 180) | facolt. | facolt. | no | Vercel / locale |
@@ -68,6 +75,19 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
   il build con lo stesso exit code.
 - Un progetto Supabase in pausa (piano gratuito, dopo un periodo di inattività) fa fallire il build
   al primo passo: `prisma migrate deploy` non raggiunge il DB. Si riattiva dal pannello Supabase.
+
+### Job in background (T-1203)
+
+- L'estrazione avanza a passi brevi: dopo ogni passo la funzione pianifica il successivo con una POST firmata
+  (`JOB_SIGNING_SECRET`) verso `/api/internal/jobs/{id}/advance` della stessa deployment (`https://` +
+  `VERCEL_URL`). Le URL delle deployment sono protette da Vercel Authentication: va attivato **Protection Bypass
+  for Automation** (Settings → Deployment Protection), che fornisce `VERCEL_AUTOMATION_BYPASS_SECRET`; senza, le
+  continuazioni ricevono la pagina di login di Vercel e i job restano fermi fino al recupero.
+- Recupero principale al polling di stato (`GET /api/jobs/{id}`, collegato da T-1204): un job con heartbeat fermo
+  da più di `JOB_STALE_AFTER_MS` riparte, fino a `JOB_MAX_ATTEMPTS` tentativi.
+- Cron di sicurezza in `vercel.json`: `GET /api/cron/reap-jobs` ogni giorno alle 04:00 UTC, l'unica frequenza
+  ammessa sul piano Hobby (precisione oraria); su Pro la frequenza può salire fino a una volta al minuto. Vercel
+  invia `CRON_SECRET` come `Authorization: Bearer`; senza `CRON_SECRET` la rotta risponde 401.
 
 ## Preview
 

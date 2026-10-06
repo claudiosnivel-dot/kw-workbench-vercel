@@ -1,6 +1,7 @@
 import { Prisma, type Job, type JobStatus } from "@/lib/generated/prisma/client";
 import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
+import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 
 /** Stati di un job ancora da eseguire o in esecuzione: al massimo uno per sezione (T-1201). */
@@ -44,5 +45,17 @@ export async function failActiveJob(job: Pick<Job, "id" | "project_id">, message
     await touchProjectActivity(tx, job.project_id, now);
     return true;
   });
+  return failed;
+}
+
+/**
+ * Fallimento definitivo per tetto di tentativi (T-1203): messaggio generico con il solo numero di tentativi, mai il
+ * dettaglio interno; una riga di log con jobId e tentativi (CWE-778).
+ */
+export async function failJobAfterAttempts(job: Pick<Job, "id" | "project_id">, attempts: number): Promise<boolean> {
+  const failed = await failActiveJob(job, `Estrazione interrotta dopo ${attempts} tentativi`);
+  if (failed) {
+    logger.error("job_attempts_exhausted", { jobId: job.id, attempts });
+  }
   return failed;
 }

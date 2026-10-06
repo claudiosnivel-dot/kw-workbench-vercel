@@ -18,6 +18,8 @@ beforeAll(() => {
   vi.stubEnv("APP_AUTH_USERNAME", BOOTSTRAP_USERNAME);
   vi.stubEnv("APP_AUTH_PASSWORD", "changeme");
   vi.stubEnv("APP_ENCRYPTION_KEY", "y".repeat(40));
+  // impacted-by: T-1203 (JOB_SIGNING_SECRET obbligatoria in produzione)
+  vi.stubEnv("JOB_SIGNING_SECRET", "z".repeat(40));
   resetEnvForTests();
 });
 

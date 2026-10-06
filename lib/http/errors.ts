@@ -8,7 +8,7 @@
  * - error: messaggio pubblico, scritto apposta in un AppError; mai il messaggio di un'eccezione
  *   non prevista (Prisma, host del DB, stack).
  * - code: codice stabile (VALIDATION_ERROR, INVALID_JSON, AUTH_REQUIRED, FORBIDDEN, NOT_FOUND,
- *   CONFLICT, INTERNAL_ERROR o un code esplicito di un AppError).
+ *   CONFLICT, INTERNAL_ERROR o un code esplicito di un AppError, come quelli dei job in JOB_ERROR_CODES).
  * - requestId: x-request-id assegnato dal proxy (getRequestId, T-602): quello in ingresso se conforme a
  *   ^[A-Za-z0-9-]{8,64}$, altrimenti un UUID.
  * Il client (lib/client/http.ts) continua a leggere error.
@@ -19,6 +19,14 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { AUTH_REQUIRED_CODE, AUTH_REQUIRED_MESSAGE, authRequiredResponse } from "@/lib/http/auth-required";
 import { logger } from "@/lib/observability/logger";
 import { getRequestId } from "@/lib/observability/request-id";
+
+/** Code dei job in background (T-1203, T-1204), con lo status HTTP con cui li usano le rotte. */
+export const JOB_ERROR_CODES = {
+  /** 401: firma assente, scaduta o non valida sulla rotta interna di avanzamento. */
+  signatureInvalid: "JOB_SIGNATURE_INVALID",
+  /** 401: Authorization del cron diversa da Bearer CRON_SECRET, o CRON_SECRET non configurata. */
+  cronUnauthorized: "CRON_UNAUTHORIZED",
+} as const;
 
 export class AppError extends Error {
   readonly status: number;
