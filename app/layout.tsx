@@ -19,10 +19,14 @@ const sora = Sora({
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Seo God Mode",
-  description: "Workspace web per keyword research",
-};
+// Titolo dal branding (T-1104): Next lo inserisce come testo con escaping, mai come HTML (CWE-79).
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await getBrandingSnapshot();
+  return {
+    title: branding.appName,
+    description: "Workspace web per keyword research",
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [branding, currentUser] = await Promise.all([

@@ -23,13 +23,23 @@ export default async function globalSetup(): Promise<void> {
 
   await resetDatabase();
 
+  // impacted-by: T-1105 (il login non promuove più il primo utente a root admin quando la tabella users non è
+  // vuota): l'utente seed nasce root admin, come diventava al primo login, e può salvare il branding (T-1104).
   const user = await prisma.user.create({
     data: {
       username: E2E_USERNAME,
       password_hash: await hashPassword(E2E_USER_PASSWORD),
+      role: "ADMIN",
+      is_root_admin: true,
       created_at: FIXED_AT,
       updated_at: FIXED_AT,
     },
+  });
+
+  // Account Google Sheets collegato (T-1104, AC-1104-2): la modale di export mostra il modulo. Il token non è
+  // cifrato con la chiave del server, quindi la credenziale risulta da ricollegare ma resta collegata.
+  await prisma.googleSheetsCredential.create({
+    data: { user_id: user.id, refresh_token_encrypted: "e2e-token-non-reale", connected_email: "e2e@example.com" },
   });
 
   // Con onboarding non completato app/page.tsx redirige a /onboarding.

@@ -143,7 +143,7 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
           <input type="hidden" name="pageSize" value={String(pageSize)} />
 
           {view.kind === "section" && (
-            <select className="select" name="subprojectId" defaultValue={selectedSubproject?.id ?? ""}>
+            <select className="select" name="subprojectId" aria-label="Sezione" defaultValue={selectedSubproject?.id ?? ""}>
               {project.subprojects.map((subproject) => (
                 <option key={subproject.id} value={subproject.id}>
                   {subproject.name}
@@ -156,21 +156,21 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
           <input className="input" name="minVolume" type="number" placeholder="Volume minimo" defaultValue={filterValue("minVolume")} />
           <input className="input" name="maxVolume" type="number" placeholder="Volume massimo" defaultValue={filterValue("maxVolume")} />
 
-          <select className="select" name="brandStatus" defaultValue={filterValue("brandStatus")}>
+          <select className="select" name="brandStatus" aria-label="Stato brand" defaultValue={filterValue("brandStatus")}>
             <option value="">Stato brand</option>
             <option value="allowed">consentito</option>
             <option value="excluded">escluso</option>
             <option value="review">da rivedere</option>
           </select>
 
-          <select className="select" name="reviewStatus" defaultValue={filterValue("reviewStatus")}>
+          <select className="select" name="reviewStatus" aria-label="Stato revisione" defaultValue={filterValue("reviewStatus")}>
             <option value="">Stato revisione</option>
             <option value="pending">in attesa</option>
             <option value="approved">approvato</option>
             <option value="rejected">rifiutato</option>
           </select>
 
-          <select className="select" name="searchIntent" defaultValue={filterValue("searchIntent")}>
+          <select className="select" name="searchIntent" aria-label="Intento di ricerca" defaultValue={filterValue("searchIntent")}>
             <option value="">Intento di ricerca</option>
             <option value="informational">informativo</option>
             <option value="commercial">commerciale</option>
@@ -179,7 +179,7 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
             <option value="mixed">misto</option>
           </select>
 
-          <select className="select" name="keywordType" defaultValue={filterValue("keywordType")}>
+          <select className="select" name="keywordType" aria-label="Tipo keyword" defaultValue={filterValue("keywordType")}>
             <option value="">Tipo keyword</option>
             <option value="generic">generica</option>
             <option value="question">domanda</option>
