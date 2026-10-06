@@ -1,14 +1,18 @@
-import type { Job } from "@/lib/generated/prisma/client";
+import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import type { Job, JobStatus } from "@/lib/generated/prisma/client";
 import { AppError, JOB_ERROR_CODES } from "@/lib/http/errors";
+import { ACTIVE_JOB_STATUSES } from "@/lib/modules/jobs/job-state";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Job del progetto dell'utente in una sola query (T-1204, CWE-639): id e proprietario nello stesso where. Job di
- * altri utenti o inesistente -> 404 JOB_NOT_FOUND, mai 403. Con T-1502 il proprietario diventa la membership del
- * workspace.
+ * Job del progetto dell'utente della sessione in una sola query (T-1204, CWE-639): id e proprietario nello stesso
+ * where. Sessione assente -> 401; job di altri utenti o inesistente -> 404 JOB_NOT_FOUND, mai 403. Con T-1502 il
+ * proprietario diventa la membership del workspace.
  */
-export async function findOwnedJob(jobId: string, userId: string): Promise<Job> {
-  const job = await prisma.job.findFirst({ where: { id: jobId, project: { owner_user_id: userId } } });
+export async function requireOwnedJob(request: Request, params: Promise<{ id: string }>): Promise<Job> {
+  const user = await requireAuthenticatedUserFromRequest(request);
+  const { id } = await params;
+  const job = await prisma.job.findFirst({ where: { id, project: { owner_user_id: user.id } } });
   if (!job) {
     throw new AppError(404, JOB_ERROR_CODES.notFound, "Job non trovato");
   }
@@ -52,4 +56,21 @@ export async function cancelOwnedJob(jobId: string): Promise<"canceled" | "runni
   }
 
   throw new AppError(409, JOB_ERROR_CODES.notCancelable, "Il job è già terminato");
+}
+
+/**
+ * Job pending o running della sezione da mostrare al ricaricamento (T-1205): è sempre l'ultimo creato, perché
+ * l'indice jobs_one_active_per_subproject impedisce un nuovo job finché uno è attivo.
+ */
+export function activeJobIdOf(latest: { id: string; status: JobStatus } | null | undefined): string | null {
+  return latest && ACTIVE_JOB_STATUSES.includes(latest.status) ? latest.id : null;
+}
+
+/** Id del job pending o running della sezione, letto lato server da una pagina già autorizzata; null se non c'è. */
+export async function findActiveJobId(subprojectId: string): Promise<string | null> {
+  const job = await prisma.job.findFirst({
+    where: { subproject_id: subprojectId, status: { in: ACTIVE_JOB_STATUSES } },
+    select: { id: true },
+  });
+  return job?.id ?? null;
 }

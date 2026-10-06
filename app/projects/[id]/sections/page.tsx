@@ -6,6 +6,7 @@ import { SectionOrderButtons } from "@/components/section-order-buttons";
 import { SetDefaultSectionButton } from "@/components/set-default-section-button";
 import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { activeJobIdOf } from "@/lib/modules/jobs/job-api";
 import { requireOwnedProject, SECTIONS_WITH_STATS } from "@/lib/modules/project-pages";
 import { resultsHref } from "@/lib/modules/results-view";
 import { sectionDeleteTarget } from "@/lib/view/delete-targets";
@@ -96,6 +97,8 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                           runPath={`/api/projects/${project.id}/subprojects/${section.id}/run`}
                           label="Esegui"
                           runningLabel="Esecuzione..."
+                          resultsHref={resultsHref(project.id, { subprojectId: section.id })}
+                          activeJobId={activeJobIdOf(latestJob)}
                         />
                         <DeleteEntityButton {...sectionDeleteTarget(project.id, section)} showInlineError={false} />
                       </div>

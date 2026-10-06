@@ -2,6 +2,7 @@ import Link from "next/link";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { readParam } from "@/lib/http/search-params";
+import { activeJobIdOf } from "@/lib/modules/jobs/job-api";
 import { type ProjectPageProps, requireOwnedProject, SECTIONS_WITH_STATS } from "@/lib/modules/project-pages";
 import { resolveDefaultSectionId, resultsHref } from "@/lib/modules/results-view";
 import { formatDate, jobStatusTone } from "@/lib/view/format";
@@ -58,6 +59,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               subprojectId={activeSection.id}
               label="Avvia estrazione (sezione attiva)"
               runningLabel="Estrazione in corso..."
+              resultsHref={resultsHref(project.id, { subprojectId: activeSection.id })}
+              activeJobId={activeJobIdOf(activeLatestJob)}
             />
             <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(project.id, { subprojectId: activeSection.id })}>
               Apri risultati sezione
@@ -119,6 +122,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 subprojectId={activeSection.id}
                 label="Avvia estrazione"
                 runningLabel="Estrazione in corso..."
+                resultsHref={resultsHref(project.id, { subprojectId: activeSection.id })}
               />
               <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/subprojects/${activeSection.id}`}>
                 Apri impostazioni sezione

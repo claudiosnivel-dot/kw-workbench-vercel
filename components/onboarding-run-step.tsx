@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ensureExtractionCompleted } from "@/lib/client/run-extraction";
+import { JobProgress } from "@/components/job-progress";
+import { readStartedJobId } from "@/lib/client/run-extraction";
 
 type OnboardingRunStepProps = {
   projectId: string;
   subprojectId: string;
   projectName: string;
   subprojectName: string;
+  /** Pagina dei risultati della sezione attiva. */
+  resultsHref: string;
+  /** Job pending o running della sezione: al ricaricamento l'avanzamento riprende da qui. */
+  activeJobId?: string | null;
 };
 
 export function OnboardingRunStep({
@@ -16,13 +21,16 @@ export function OnboardingRunStep({
   subprojectId,
   projectName,
   subprojectName,
+  resultsHref,
+  activeJobId = null,
 }: OnboardingRunStepProps) {
-  const [running, setRunning] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(activeJobId);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const runExtraction = async () => {
-    setRunning(true);
+    setStarting(true);
     setError(null);
     setSuccess(null);
 
@@ -33,8 +41,17 @@ export function OnboardingRunStep({
         body: JSON.stringify({ subprojectId }),
       });
 
-      await ensureExtractionCompleted(response);
+      setJobId(await readStartedJobId(response));
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
+    } finally {
+      setStarting(false);
+    }
+  };
 
+  // Solo a job completed l'onboarding avanza: con failed o canceled JobProgress mostra l'esito e si resta qui.
+  const advanceOnboarding = async () => {
+    try {
       const onboardingResponse = await fetch("/api/onboarding/state", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -56,7 +73,6 @@ export function OnboardingRunStep({
       }, 450);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
-      setRunning(false);
     }
   };
 
@@ -72,9 +88,11 @@ export function OnboardingRunStep({
         Lanceremo subito un job reale sulla sezione attiva con le seed inserite al passo precedente.
       </div>
 
+      {jobId && <JobProgress key={jobId} jobId={jobId} resultsHref={resultsHref} onCompleted={advanceOnboarding} />}
+
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <button className="btn-primary w-full sm:w-auto" type="button" onClick={runExtraction} disabled={running}>
-          {running ? "Estrazione in corso..." : "Avvia prima estrazione"}
+        <button className="btn-primary w-full sm:w-auto" type="button" onClick={runExtraction} disabled={starting}>
+          {starting ? "Estrazione in corso..." : "Avvia prima estrazione"}
         </button>
         <Link className="btn-secondary w-full text-center sm:w-auto" href="/onboarding/seeds">
           Torna allo step precedente
