@@ -83,7 +83,7 @@ describe("attività reale", () => {
     const [p01] = await createProjects(user.id, 45);
     const section = await prisma.subproject.create({ data: { project_id: p01, name: "Generale", position: 0 } });
     await prisma.seed.create({ data: { project_id: p01, subproject_id: section.id, keyword: "caffè moka" } });
-    const job = await enqueueExtractionJob(p01, section.id);
+    const { job } = await enqueueExtractionJob(p01, section.id);
 
     const finished = await runJobById(job.id);
     const first = await listDashboardProjects(user.id, 1);

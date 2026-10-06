@@ -1,20 +1,56 @@
-import { Prisma } from "@/lib/generated/prisma/client";
+import { Prisma, type Job } from "@/lib/generated/prisma/client";
 import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 
-export async function enqueueExtractionJob(projectId: string, subprojectId: string) {
-  return prisma.job.create({
-    data: {
-      project_id: projectId,
-      subproject_id: subprojectId,
-      type: "extraction",
-      status: "pending",
-      payload: { projectId, subprojectId },
-    },
-  });
+type DriverAdapterFailure = { meta?: { driverAdapterError?: { cause?: { originalCode?: string } } } };
+
+/** Violazione di un vincolo unico: P2002 di Prisma o SQLSTATE 23505 riportato dal driver adapter. */
+function isUniqueViolation(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+  return error.code === "P2002" || (error as DriverAdapterFailure).meta?.driverAdapterError?.cause?.originalCode === "23505";
+}
+
+// Un job concluso tra la violazione dell'indice e la rilettura libera la sezione: si riprova l'inserimento.
+const ENQUEUE_ATTEMPTS = 3;
+
+/**
+ * Crea il job di estrazione della sezione (T-1201). L'indice parziale jobs_one_active_per_subproject ammette un solo
+ * job pending o running per sezione: se esiste già, restituisce quello con created=false invece di propagare la
+ * violazione (nessun controllo check-then-insert, CWE-362).
+ */
+export async function enqueueExtractionJob(projectId: string, subprojectId: string): Promise<{ job: Job; created: boolean }> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      const job = await prisma.job.create({
+        data: {
+          project_id: projectId,
+          subproject_id: subprojectId,
+          type: "extraction",
+          status: "pending",
+          payload: { projectId, subprojectId },
+        },
+      });
+      return { job, created: true };
+    } catch (error) {
+      if (!isUniqueViolation(error)) {
+        throw error;
+      }
+      const active = await prisma.job.findFirst({
+        where: { subproject_id: subprojectId, status: { in: ["pending", "running"] } },
+      });
+      if (active) {
+        return { job: active, created: false };
+      }
+      if (attempt >= ENQUEUE_ATTEMPTS) {
+        throw error;
+      }
+    }
+  }
 }
 
 const MAX_PUBLIC_ERROR_LENGTH = 500;
@@ -83,4 +119,3 @@ export async function runJobById(jobId: string) {
     return failed;
   }
 }
-

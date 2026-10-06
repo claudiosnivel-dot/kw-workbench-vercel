@@ -72,7 +72,7 @@ describe("runJobById con aggiornamento finale in errore", () => {
   it("si risolve con il job failed e la riga non resta running", async () => {
     pipeline.mockResolvedValue({ queries: 1, rawSuggestions: 1, dedupedCandidates: 1, storedCandidates: 1 });
     const { projectId, sectionId } = await createOwnedSection();
-    const job = await enqueueExtractionJob(projectId, sectionId);
+    const { job } = await enqueueExtractionJob(projectId, sectionId);
     vi.spyOn(prisma.job, "update").mockRejectedValueOnce(new Error("aggiornamento a completed non riuscito"));
 
     const result = await runJobById(job.id);

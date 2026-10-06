@@ -85,6 +85,17 @@ enum JobStatus {
   running
   completed
   failed
+  canceled
+}
+
+// Fase dell'estrazione a passi (T-1201, T-1202): expand calcola le query, autocomplete e metrics lavorano a
+// batch sullo staging del job, store scrive i risultati; done a job completed.
+enum JobPhase {
+  expand
+  autocomplete
+  metrics
+  store
+  done
 }
 
 enum UserRole {
@@ -312,13 +323,59 @@ model Job {
   completed_at  DateTime?
   created_at    DateTime   @default(now())
   updated_at    DateTime   @updatedAt
-  project       Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  subproject    Subproject @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
+  // Esecuzione a passi ripartibile (T-1201): cursore della fase, avanzamento, heartbeat e lease del passo in corso.
+  phase            JobPhase        @default(expand)
+  cursor           Json            @default("{}")
+  progress_done    Int             @default(0)
+  progress_total   Int             @default(0)
+  heartbeat_at     DateTime?
+  locked_until     DateTime?
+  attempts         Int             @default(0)
+  cancel_requested Boolean         @default(false)
+  project          Project         @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  subproject       Subproject      @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
+  suggestions      JobSuggestion[]
+  metrics          JobMetric[]
 
   @@index([project_id, status])
   @@index([subproject_id, status])
   @@index([status, created_at])
+  // Indice unico parziale jobs_one_active_per_subproject (migrazione 0025, T-1201): al massimo un job pending o
+  // running per sezione, ON jobs (subproject_id) WHERE status IN ('pending','running'). Prisma non esprime gli
+  // indici parziali: c'è solo nella migrazione e tests/integration/job-model.test.ts ne verifica la presenza.
   @@map("jobs")
+}
+
+// Staging dell'autocomplete di un job (T-1201): suggerimenti per query, nell'ordine di inserimento (id).
+model JobSuggestion {
+  id           BigInt @id @default(autoincrement())
+  job_id       String
+  query_index  Int
+  keyword      String
+  source       String
+  source_query String
+  job          Job    @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@unique([job_id, query_index, keyword])
+  @@map("job_suggestions")
+}
+
+// Staging delle metriche di un job (T-1201): una riga per canonical arricchita.
+model JobMetric {
+  id                          BigInt            @id @default(autoincrement())
+  job_id                      String
+  canonical_keyword           String
+  metrics_status              MetricsStatus
+  metrics_provider            MetricsProvider
+  metrics_precision           MetricsPrecision?
+  avg_monthly_searches        Int?
+  competition                 Float?
+  low_top_of_page_bid_micros  BigInt?
+  high_top_of_page_bid_micros BigInt?
+  job                         Job               @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@unique([job_id, canonical_keyword])
+  @@map("job_metrics")
 }
 
 model BrandBlacklist {

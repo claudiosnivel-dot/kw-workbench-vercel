@@ -60,7 +60,7 @@ describe("job di estrazione fallito", () => {
     const { user } = await createUserWithSession({ username: "t602-owner" });
     const project = await prisma.project.create({ data: { name: "Progetto T-602", owner_user_id: user.id } });
     const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
-    const job = await enqueueExtractionJob(project.id, section.id);
+    const { job } = await enqueueExtractionJob(project.id, section.id);
     vi.mocked(runExtractionPipeline).mockRejectedValueOnce(new Error("provider down"));
     const written: string[] = [];
     vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array) => {
