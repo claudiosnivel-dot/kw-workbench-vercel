@@ -14,6 +14,12 @@ import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
 const CONFIG_URL = "/api/integrations/google-sheets/config";
+// Nomi delle righe di app_settings, uguali alle variabili d'ambiente (lib/integrations/google-sheets-config.ts).
+const [CLIENT_ID_SETTING, CLIENT_SECRET_SETTING, REDIRECT_URI_SETTING] = [
+  "GOOGLE_SHEETS_OAUTH_CLIENT_ID",
+  "GOOGLE_SHEETS_OAUTH_CLIENT_SECRET",
+  "GOOGLE_SHEETS_OAUTH_REDIRECT_URI",
+];
 
 function listFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
@@ -36,14 +42,14 @@ beforeEach(async () => {
 describe("configurazione OAuth di Google Sheets", () => {
   // covers: AC-908-1
   it("con clientId null elimina l'override e torna al valore d'ambiente", async () => {
-    vi.stubEnv("GOOGLE_SHEETS_OAUTH_CLIENT_ID", "env-id.apps.googleusercontent.com");
-    await upsertSettingValue({ key: "GOOGLE_SHEETS_OAUTH_CLIENT_ID", value: "db-id.apps.googleusercontent.com" });
+    vi.stubEnv(CLIENT_ID_SETTING, "env-id.apps.googleusercontent.com");
+    await upsertSettingValue({ key: CLIENT_ID_SETTING, value: "db-id.apps.googleusercontent.com" });
     const root = await createUserWithSession({ role: UserRole.ADMIN, isRootAdmin: true });
 
     const response = await callRoute(patchConfig, { method: "PATCH", url: CONFIG_URL, cookie: root.cookie, body: { clientId: null } });
 
     expect(response.status).toBe(200);
-    expect(await prisma.appSetting.count({ where: { key: "GOOGLE_SHEETS_OAUTH_CLIENT_ID" } })).toBe(0);
+    expect(await prisma.appSetting.count({ where: { key: CLIENT_ID_SETTING } })).toBe(0);
     const snapshot = await callRoute(getConfig, { url: CONFIG_URL, cookie: root.cookie });
     const data = ((await snapshot.json()) as { data: { clientId: string; sources: { clientId: string } } }).data;
     expect(data.clientId).toBe("env-id.apps.googleusercontent.com");
@@ -52,9 +58,9 @@ describe("configurazione OAuth di Google Sheets", () => {
 
   // covers: AC-908-2
   it("un valore non valido riceve 400 e un ADMIN non root 403, senza scritture", async () => {
-    await upsertSettingValue({ key: "GOOGLE_SHEETS_OAUTH_CLIENT_ID", value: "db-id.apps.googleusercontent.com" });
+    await upsertSettingValue({ key: CLIENT_ID_SETTING, value: "db-id.apps.googleusercontent.com" });
     await upsertSettingValue({
-      key: "GOOGLE_SHEETS_OAUTH_REDIRECT_URI",
+      key: REDIRECT_URI_SETTING,
       value: "https://app.example.com/api/integrations/google-sheets/callback",
     });
     const before = await prisma.appSetting.findMany({ select: { key: true, updated_at: true }, orderBy: { key: "asc" } });
@@ -83,7 +89,7 @@ describe("configurazione OAuth di Google Sheets", () => {
 
   // covers: AC-908-4
   it("non restituisce mai il client secret e nessuna rotta riguarda le credenziali del fornitore", async () => {
-    await upsertSettingValue({ key: "GOOGLE_SHEETS_OAUTH_CLIENT_SECRET", value: "SHEETS-SECRET-1", isSecret: true });
+    await upsertSettingValue({ key: CLIENT_SECRET_SETTING, value: "SHEETS-SECRET-1", isSecret: true });
     const root = await createUserWithSession({ role: UserRole.ADMIN, isRootAdmin: true });
 
     const response = await callRoute(getConfig, { url: CONFIG_URL, cookie: root.cookie });
