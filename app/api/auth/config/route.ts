@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getAuthConfigSnapshot,
-  updateAuthCredentials,
-  verifyUserPassword,
-} from "@/lib/auth/credentials";
+import { updateAuthCredentials, verifyUserPassword } from "@/lib/auth/credentials";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
 import { withApiErrors } from "@/lib/http/errors";
-
-export const GET = withApiErrors(async (request: NextRequest) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-  const snapshot = await getAuthConfigSnapshot(user.id);
-  return NextResponse.json({ data: snapshot });
-});
 
 export const PATCH = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);

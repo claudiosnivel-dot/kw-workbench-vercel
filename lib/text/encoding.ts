@@ -108,7 +108,7 @@ export function parseJsonWithXssiGuard(input: string): unknown {
   return JSON.parse(trimmed);
 }
 
-export function repairCommonMojibake(input: string): string {
+function repairCommonMojibake(input: string): string {
   if (!looksLikeMojibake(input)) {
     return input.normalize("NFC");
   }

@@ -11,7 +11,6 @@ export type AutocompleteSuggestion = {
 };
 
 export interface AutocompleteProviderClient {
-  readonly id: string;
   suggest(input: SuggestionRequest): Promise<AutocompleteSuggestion[]>;
 }
 

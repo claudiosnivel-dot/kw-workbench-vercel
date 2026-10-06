@@ -165,7 +165,7 @@ export async function updateBrandingSettings(input: {
   if (changes.size > 0) {
     await prisma.$transaction(
       [...changes].map(([key, value]) =>
-        value === null ? deleteSettingValue(key) : upsertSettingValue({ key, value, isSecret: false })
+        value === null ? deleteSettingValue(key) : upsertSettingValue({ key, value })
       )
     );
     // expire 0: nessuna richiesta successiva riceve il branding precedente (niente stale-while-revalidate).

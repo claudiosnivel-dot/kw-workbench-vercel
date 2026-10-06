@@ -11,43 +11,6 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export const GET = withApiErrors(async (request: Request, context: RouteContext) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-  const { id } = await context.params;
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      owner_user_id: user.id,
-    },
-    select: { id: true },
-  });
-
-  if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
-  }
-
-  const subprojects = await prisma.subproject.findMany({
-    where: { project_id: id },
-    orderBy: [{ position: "asc" }, { created_at: "asc" }],
-    include: {
-      _count: {
-        select: {
-          seeds: true,
-          keyword_candidates: true,
-          jobs: true,
-        },
-      },
-      jobs: {
-        orderBy: { created_at: "desc" },
-        take: 1,
-      },
-    },
-  });
-
-  return NextResponse.json({ data: subprojects });
-});
-
 export const POST = withApiErrors(async (request: Request, context: RouteContext) => {
   const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await context.params;

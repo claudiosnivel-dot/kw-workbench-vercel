@@ -88,7 +88,6 @@ async function withRateLimit<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 export class GoogleDirectAutocompleteProvider implements AutocompleteProviderClient {
-  readonly id = "GOOGLE_DIRECT";
   private readonly wait: (ms: number) => Promise<void>;
 
   /** wait: attesa tra un tentativo e il successivo, iniettabile nei test. */

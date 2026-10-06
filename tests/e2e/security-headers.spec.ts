@@ -38,8 +38,9 @@ async function trackCspViolations(page: Page): Promise<string[]> {
 
 test.describe("header di sicurezza", () => {
   // covers: AC-505-1
-  test("/login e /api/auth/session portano gli header di sicurezza e nessun X-Powered-By", async ({ request }) => {
-    for (const path of ["/login", "/api/auth/session"]) {
+  // impacted-by: T-1101 (rotta /api/auth/session rimossa: la risposta API di prova è /api/health)
+  test("/login e /api/health portano gli header di sicurezza e nessun X-Powered-By", async ({ request }) => {
+    for (const path of ["/login", "/api/health"]) {
       const response = await request.get(path);
       const headers = response.headers();
 

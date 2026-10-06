@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { withApiErrors } from "@/lib/http/errors";
+import { AppError, withApiErrors } from "@/lib/http/errors";
 import {
-  type OnboardingEntryModeKey,
   type OnboardingStatusKey,
   type OnboardingStepKey,
-  isOnboardingEntryMode,
   isOnboardingStatus,
   isOnboardingStep,
 } from "@/lib/onboarding/constants";
@@ -50,16 +48,14 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
   }
   const status = statusRaw as OnboardingStatusKey | undefined;
 
-  const entryModeRaw = payload.entryMode === undefined ? undefined : String(payload.entryMode).trim().toUpperCase();
-  if (entryModeRaw && !isOnboardingEntryMode(entryModeRaw)) {
-    return NextResponse.json({ error: "entryMode non valido" }, { status: 400 });
+  // La modalità d'ingresso la fissano la scelta e la ripresa dell'onboarding, non il PATCH dello stato (T-1101).
+  if (payload.entryMode !== undefined) {
+    throw new AppError(400, "ONBOARDING_ENTRY_MODE_FORBIDDEN", "La modalità del percorso guidato non si modifica da qui");
   }
-  const entryMode = entryModeRaw as OnboardingEntryModeKey | undefined;
 
   const state = await patchOnboardingState(user.id, {
     currentStep,
     status,
-    entryMode,
     activeProjectId: parseStringOrNull(payload.activeProjectId),
     activeSubprojectId: parseStringOrNull(payload.activeSubprojectId),
   });

@@ -4,22 +4,16 @@
 // Oracolo di non regressione degli upgrade di 04-stack-upgrade (snapshot invariati):
 // covers: AC-401-3
 // covers: AC-403-4
+// Oracolo di T-1102: il consolidamento dei duplicati non cambia il comportamento fotografato.
+// covers: AC-1102-4
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as createProject } from "@/app/api/projects/route";
-import {
-  DELETE as deleteProject,
-  GET as getProject,
-  PATCH as patchProject,
-} from "@/app/api/projects/[id]/route";
+import { DELETE as deleteProject, PATCH as patchProject } from "@/app/api/projects/[id]/route";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
 import { PATCH as patchResults } from "@/app/api/projects/[id]/results/route";
 import { POST as runProject } from "@/app/api/projects/[id]/run/route";
-import { GET as listSections, POST as createSection } from "@/app/api/projects/[id]/subprojects/route";
-import {
-  DELETE as deleteSection,
-  GET as getSection,
-  PATCH as patchSection,
-} from "@/app/api/projects/[id]/subprojects/[subprojectId]/route";
+import { POST as createSection } from "@/app/api/projects/[id]/subprojects/route";
+import { DELETE as deleteSection, PATCH as patchSection } from "@/app/api/projects/[id]/subprojects/[subprojectId]/route";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
@@ -117,13 +111,13 @@ beforeEach(async () => {
 
 describe("caratterizzazione: isolamento dei progetti", () => {
   // covers: AC-105-1
-  it("B riceve 404 su GET, PATCH e DELETE del progetto di A, che resta invariato", async () => {
+  // impacted-by: T-1101 (GET di progetto, sezione ed elenco delle sezioni rimossi: senza chiamanti)
+  it("B riceve 404 su PATCH e DELETE del progetto di A, che resta invariato", async () => {
     const { cookieB, projectA } = fixture;
     const url = `/api/projects/${projectA}`;
     const params = { id: projectA };
 
     for (const [handler, method, body] of [
-      [getProject, "GET", undefined],
       [patchProject, "PATCH", { name: "Rinominato da B" }],
       [deleteProject, "DELETE", undefined],
     ] as const) {
@@ -143,7 +137,6 @@ describe("caratterizzazione: isolamento di sezioni, export ed estrazione", () =>
     const sectionParams = { id: projectA, subprojectId: sectionA };
 
     for (const [handler, method, body] of [
-      [getSection, "GET", undefined],
       [patchSection, "PATCH", { name: "Sezione di B", seeds: ["seed di b"] }],
       [deleteSection, "DELETE", undefined],
     ] as const) {
@@ -174,12 +167,11 @@ describe("caratterizzazione: isolamento di sezioni, export ed estrazione", () =>
     expect(await snapshotOfA(projectA)).toEqual(UNCHANGED_A);
   });
 
-  it("B riceve 404 sull'elenco e sulla creazione delle sezioni del progetto di A", async () => {
+  it("B riceve 404 sulla creazione delle sezioni del progetto di A", async () => {
     const { cookieB, projectA } = fixture;
     const url = `/api/projects/${projectA}/subprojects`;
 
     for (const [handler, method, body] of [
-      [listSections, "GET", undefined],
       [createSection, "POST", { name: "Sezione di B" }],
     ] as const) {
       const response = await callRoute(handler, { method, url, body, cookie: cookieB, params: { id: projectA } });

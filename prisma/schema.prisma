@@ -161,8 +161,6 @@ model User {
   onboarding_progress UserOnboardingProgress?
   onboarding_idempotency_keys OnboardingIdempotencyKey[]
 
-  @@index([role])
-  @@index([status])
   // Indice unico parziale users_single_root_admin_idx (migrazione 0005): un solo root admin. Prisma non esprime
   // gli indici parziali: c'è solo nella migrazione e tests/integration/schema-indexes.test.ts ne verifica la presenza.
   @@map("users")
@@ -365,7 +363,6 @@ model GoogleSheetsCredential {
   updated_at              DateTime @updatedAt
   user                    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@index([user_id])
   @@map("google_sheets_credentials")
 }
 
@@ -440,7 +437,6 @@ model AppSetting {
   id              String   @id @default(cuid())
   key             String   @unique
   value_encrypted String
-  is_secret       Boolean  @default(false)
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 

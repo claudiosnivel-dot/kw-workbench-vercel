@@ -2,7 +2,7 @@
 // primo utente rifiuta la password di default.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as login } from "@/app/api/auth/login/route";
-import { GET as session } from "@/app/api/auth/session/route";
+import { GET as onboardingState } from "@/app/api/onboarding/state/route";
 import { resetEnvForTests } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { resetDatabase } from "../helpers/db";
@@ -33,7 +33,8 @@ beforeEach(async () => {
 describe("bootstrap del primo utente in produzione", () => {
   // covers: AC-201-4
   it("sessione anonima 401, login con changeme rifiutato senza righe, login con password valida crea il root admin", async () => {
-    const anonymous = await callRoute(session, { url: "/api/auth/session" });
+    // impacted-by: T-1101 (rotta /api/auth/session rimossa): l'auth resta attiva, una rotta autenticata risponde 401.
+    const anonymous = await callRoute(onboardingState, { url: "/api/onboarding/state" });
     expect(anonymous.status).toBe(401);
 
     // impacted-by: T-503 (l'errore di bootstrap diventa un 500 INTERNAL_ERROR di withApiErrors: il motivo

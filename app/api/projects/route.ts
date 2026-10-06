@@ -5,31 +5,6 @@ import { withApiErrors } from "@/lib/http/errors";
 import { parseProjectCreate } from "@/lib/modules/project-settings";
 import { prisma } from "@/lib/prisma";
 
-export const GET = withApiErrors(async (request: Request) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-
-  const projects = await prisma.project.findMany({
-    where: { owner_user_id: user.id },
-    orderBy: { created_at: "desc" },
-    include: {
-      _count: {
-        select: {
-          subprojects: true,
-          seeds: true,
-          keyword_candidates: true,
-          jobs: true,
-        },
-      },
-      jobs: {
-        orderBy: { created_at: "desc" },
-        take: 1,
-      },
-    },
-  });
-
-  return NextResponse.json({ data: projects });
-});
-
 export const POST = withApiErrors(async (request: Request) => {
   const user = await requireAuthenticatedUserFromRequest(request);
 

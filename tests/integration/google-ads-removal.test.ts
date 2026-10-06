@@ -4,8 +4,9 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { Client } from "pg";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
+import { resetDatabase } from "../helpers/db";
 
 const auth = vi.hoisted(() => ({ user: null as unknown }));
 
@@ -77,6 +78,12 @@ beforeAll(async () => {
   scratchUrl.pathname = `/${SCRATCH_DB}`;
   scratch = new Client({ connectionString: scratchUrl.toString() });
   await scratch.connect();
+});
+
+// Il DB di test è condiviso tra i file: il root admin del test non deve trovarne un altro lasciato da un file
+// precedente (users_single_root_admin_idx), che rendeva il test dipendente dall'ordine dei file.
+beforeEach(async () => {
+  await resetDatabase();
 });
 
 afterAll(async () => {

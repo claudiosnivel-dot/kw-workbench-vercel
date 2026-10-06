@@ -131,12 +131,16 @@ describe("indici e schema (T-1103)", () => {
   });
 
   // covers: AC-1103-3
-  it("users_single_root_admin_idx c'è e lo schema non diverge dalle migrazioni", async () => {
+  it("users_single_root_admin_idx c'è, gli indici ridondanti no e lo schema non diverge dalle migrazioni", async () => {
     const indexes = await prisma.$queryRaw<{ indexname: string }[]>`
       SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
     `;
     const names = indexes.map((row) => row.indexname);
     expect(names).toContain("users_single_root_admin_idx");
+    // Rimossi su decisione dell'utente (2026-10-06): il primo duplica l'unique su user_id.
+    for (const removed of ["google_sheets_credentials_user_id_idx", "users_role_idx", "users_status_idx"]) {
+      expect(names).not.toContain(removed);
+    }
 
     // Il DB di test è migrato da migrate deploy (global setup): il diff verso lo schema deve essere vuoto.
     const diff = spawnSync(

@@ -129,7 +129,7 @@ export async function updateGoogleSheetsApiConfig(patch: GoogleSheetsApiConfigPa
     if (value === null) {
       writes.push(deleteSettingValue(KEYS[field]));
     } else if (value) {
-      writes.push(upsertSettingValue({ key: KEYS[field], value, isSecret: field === "clientSecret" }));
+      writes.push(upsertSettingValue({ key: KEYS[field], value }));
     }
   }
 

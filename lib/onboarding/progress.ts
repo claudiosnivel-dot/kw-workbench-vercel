@@ -62,7 +62,6 @@ export type OnboardingState = {
 type PatchInput = {
   currentStep?: OnboardingStepKey;
   status?: OnboardingStatusKey;
-  entryMode?: OnboardingEntryModeKey;
   activeProjectId?: string | null;
   activeSubprojectId?: string | null;
 };
@@ -208,7 +207,6 @@ async function computeState(userId: string, row: OnboardingProgressRow): Promise
     activeSubproject: Boolean(activeSubproject),
     seedCount,
     jobCount,
-    hasExport: Boolean(row.first_export_at),
   });
 
   return {
@@ -229,7 +227,6 @@ function resolveRecommendedStep(input: {
   activeSubproject: boolean;
   seedCount: number;
   jobCount: number;
-  hasExport: boolean;
 }): OnboardingStepKey {
   if (!input.activeProject) {
     return "PROJECT_CREATE";
@@ -347,7 +344,6 @@ export async function patchOnboardingState(userId: string, input: PatchInput): P
   const data: {
     current_step?: OnboardingStep;
     status?: OnboardingStatus;
-    entry_mode?: OnboardingEntryMode;
     active_project_id?: string | null;
     active_subproject_id?: string | null;
     completed_at?: Date | null;
@@ -391,10 +387,6 @@ export async function patchOnboardingState(userId: string, input: PatchInput): P
     if (!input.status) {
       data.status = OnboardingStatus.IN_PROGRESS;
     }
-  }
-
-  if (input.entryMode) {
-    data.entry_mode = input.entryMode as OnboardingEntryMode;
   }
 
   if (input.status) {

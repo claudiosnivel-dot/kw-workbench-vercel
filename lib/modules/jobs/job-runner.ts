@@ -1,5 +1,4 @@
 import { Prisma } from "@/lib/generated/prisma/client";
-import { JobStatus } from "@/lib/generated/prisma/enums";
 import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
@@ -85,28 +84,3 @@ export async function runJobById(jobId: string) {
   }
 }
 
-export async function runQueuedExtractionJobs(limit = 1) {
-  const jobs = await prisma.job.findMany({
-    where: { status: "pending", type: "extraction" },
-    orderBy: { created_at: "asc" },
-    take: Math.max(1, limit),
-  });
-
-  const results = [];
-  for (const job of jobs) {
-    const result = await runJobById(job.id);
-    results.push(result);
-  }
-
-  return results.filter((item): item is NonNullable<typeof item> => Boolean(item));
-}
-
-export async function getJobStats() {
-  const [pending, running, failed] = await Promise.all([
-    prisma.job.count({ where: { status: "pending" as JobStatus } }),
-    prisma.job.count({ where: { status: "running" as JobStatus } }),
-    prisma.job.count({ where: { status: "failed" as JobStatus } }),
-  ]);
-
-  return { pending, running, failed };
-}

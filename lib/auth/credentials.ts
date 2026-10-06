@@ -1,15 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { ColorVisionMode, FontScaleMode, Prisma, ThemeMode, UserRole, UserStatus } from "@/lib/generated/prisma/client";
 import { getAuthPassword, getAuthUsername } from "@/lib/auth/config";
-import { getManySettingValues } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
-import { ConflictError, NotFoundError, ValidationError } from "@/lib/http/errors";
+import { ConflictError, ValidationError } from "@/lib/http/errors";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
-
-const LEGACY_KEYS = {
-  username: "APP_AUTH_USERNAME",
-  passwordHash: "APP_AUTH_PASSWORD_HASH",
-} as const;
 
 const USERNAME_PATTERN = /^[a-z0-9._-]+$/;
 const ROOT_ADMIN_USERNAME = "admin";
@@ -48,13 +42,6 @@ export type AuthUser = {
   fontScaleMode: FontScaleMode;
   colorVisionMode: ColorVisionMode;
   sessionVersion: number;
-};
-
-export type AuthConfigSnapshot = {
-  username: string;
-  role: UserRole;
-  status: UserStatus;
-  isRootAdmin: boolean;
 };
 
 export type LoginFailureReason = "INVALID_CREDENTIALS" | "SUSPENDED";
@@ -96,18 +83,6 @@ function mapAuthUser(row: AuthUserRow): AuthUser {
     colorVisionMode: row.color_vision_mode,
     sessionVersion: row.session_version,
   };
-}
-
-async function getLegacyAuthValues() {
-  const values = await getManySettingValues(Object.values(LEGACY_KEYS));
-  const username = normalizeUsername(String(values[LEGACY_KEYS.username] ?? ""));
-  const passwordHash = String(values[LEGACY_KEYS.passwordHash] ?? "").trim();
-
-  if (!username || !passwordHash) {
-    return null;
-  }
-
-  return { username, passwordHash };
 }
 
 async function assignOrphanDataToUser(userId: string) {
@@ -198,10 +173,9 @@ export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
     return mapAuthUser(resolved as AuthUserRow);
   }
 
-  const legacy = await getLegacyAuthValues();
-  const fallbackUsername = normalizeUsername(getAuthUsername()) || ROOT_ADMIN_USERNAME;
-  const username = legacy?.username || fallbackUsername;
-  const passwordHash = legacy?.passwordHash || (await hashPassword(getAuthPassword()));
+  // Primo utente dalle sole variabili d'ambiente validate (T-201).
+  const username = normalizeUsername(getAuthUsername()) || ROOT_ADMIN_USERNAME;
+  const passwordHash = await hashPassword(getAuthPassword());
 
   try {
     const created = await prisma.user.create({
@@ -268,20 +242,6 @@ export async function findAuthUserById(userId: string): Promise<AuthUser | null>
   });
 
   return user ? mapAuthUser(user as AuthUserRow) : null;
-}
-
-export async function getAuthConfigSnapshot(userId: string): Promise<AuthConfigSnapshot> {
-  const user = await findAuthUserById(userId);
-  if (!user) {
-    throw new NotFoundError("Utente non trovato");
-  }
-
-  return {
-    username: user.username,
-    role: user.role,
-    status: user.status,
-    isRootAdmin: user.isRootAdmin,
-  };
 }
 
 export async function verifyLoginCredentials(username: string, password: string): Promise<VerifyLoginResult> {
@@ -417,7 +377,6 @@ export async function updateUserAdminFields(input: {
   role?: UserRole;
   status?: UserStatus;
   password?: string;
-  isRootAdmin?: boolean;
 }): Promise<AuthUser> {
   const data: Prisma.UserUpdateInput = {};
 
@@ -434,11 +393,7 @@ export async function updateUserAdminFields(input: {
     data.password_hash = passwordHash;
   }
 
-  if (typeof input.isRootAdmin === "boolean") {
-    data.is_root_admin = input.isRootAdmin;
-  }
-
-  if (!data.role && !data.status && !data.password_hash && data.is_root_admin === undefined) {
+  if (!data.role && !data.status && !data.password_hash) {
     throw new ValidationError("Nessuna modifica da salvare");
   }
 

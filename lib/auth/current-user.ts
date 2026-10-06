@@ -60,7 +60,7 @@ export function isAdminUser(user: AuthUser): boolean {
   return user.role === UserRole.ADMIN;
 }
 
-export function isRootAdminUser(user: AuthUser): boolean {
+function isRootAdminUser(user: AuthUser): boolean {
   return user.role === UserRole.ADMIN && user.isRootAdmin;
 }
 
@@ -115,30 +115,3 @@ export const getOptionalAuthenticatedUserFromCookies = cache(async (): Promise<A
   const token = store.get(SESSION_COOKIE_NAME)?.value ?? null;
   return resolveUserFromToken(token);
 });
-
-export async function requireAuthenticatedUserFromCookies(): Promise<AuthUser> {
-  const user = await getOptionalAuthenticatedUserFromCookies();
-  if (!user) {
-    throw new AuthRequiredError();
-  }
-
-  return user;
-}
-
-export async function requireAdminUserFromCookies(): Promise<AuthUser> {
-  const user = await requireAuthenticatedUserFromCookies();
-  if (!isAdminUser(user)) {
-    throw new ForbiddenError();
-  }
-
-  return user;
-}
-
-export async function requireRootAdminUserFromCookies(): Promise<AuthUser> {
-  const user = await requireAdminUserFromCookies();
-  if (!isRootAdminUser(user)) {
-    throw new ForbiddenError();
-  }
-
-  return user;
-}

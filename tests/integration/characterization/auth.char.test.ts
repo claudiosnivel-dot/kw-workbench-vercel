@@ -4,6 +4,8 @@
 // Oracolo di non regressione degli upgrade di 04-stack-upgrade (snapshot invariati):
 // covers: AC-401-3
 // covers: AC-403-4
+// Oracolo di T-1102: il consolidamento dei duplicati non cambia il comportamento fotografato.
+// covers: AC-1102-4
 import { UserStatus } from "@/lib/generated/prisma/enums";
 import { NextRequest } from "next/server";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
@@ -11,7 +13,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { POST as login } from "@/app/api/auth/login/route";
 import { POST as logout } from "@/app/api/auth/logout/route";
 import { POST as register } from "@/app/api/auth/register/route";
-import { GET as session } from "@/app/api/auth/session/route";
 import LoginPage from "@/app/login/page";
 import { LoginForm } from "@/components/login-form";
 import { prisma } from "@/lib/prisma";
@@ -156,14 +157,7 @@ describe("caratterizzazione: middleware e sessione", () => {
     // impacted-by: T-602 (il 401 del proxy porta anche il requestId assegnato alla richiesta)
     expect(await api.json()).toEqual({ error: "Sessione non valida o scaduta. Effettua di nuovo il login.", code: "AUTH_REQUIRED", requestId: expect.any(String) });
 
-    const anonymous = await callRoute(session, { url: "/api/auth/session" });
-    expect(anonymous.status).toBe(401);
-    expect(await anonymous.json()).toEqual({ authenticated: false, authEnabled: true });
-
-    const { user, cookie } = await createUserWithSession({ username: "char-session" });
-    const authenticated = await callRoute(session, { url: "/api/auth/session", cookie });
-    expect(authenticated.status).toBe(200);
-    expect(((await authenticated.json()) as { userId: string }).userId).toBe(user.id);
+    // impacted-by: T-1101 (rotta /api/auth/session rimossa: nessun chiamante nell'app)
   });
 });
 

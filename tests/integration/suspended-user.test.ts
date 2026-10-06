@@ -2,8 +2,8 @@
 import { UserStatus } from "@/lib/generated/prisma/enums";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as sessionEnded } from "@/app/api/auth/session-ended/route";
+import { GET as onboardingState } from "@/app/api/onboarding/state/route";
 import { POST as runProject } from "@/app/api/projects/[id]/run/route";
-import { GET as listProjects } from "@/app/api/projects/route";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { buildApiErrorMessage, readJsonSafe, type ApiErrorPayload } from "@/lib/client/http";
 import { AuthRequiredError } from "@/lib/http/errors";
@@ -72,7 +72,8 @@ describe("API con utente sospeso", () => {
         cookie,
         params: { id: "progetto-qualsiasi" },
       }),
-      await callRoute(listProjects, { url: "/api/projects", cookie }),
+      // impacted-by: T-1101 (GET /api/projects rimossa)
+      await callRoute(onboardingState, { url: "/api/onboarding/state", cookie }),
     ];
 
     for (const response of responses) {
