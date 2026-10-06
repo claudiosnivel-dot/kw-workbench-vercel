@@ -85,5 +85,5 @@ La web app resta pronta per wrapping Electron: puoi puntare al dominio deployato
 - `APP_PUBLIC_SIGNUP_ENABLED=true|false` per aprire/chiudere signup pubblico
 - Dashboard admin su `/admin` per gestione utenti (monitoraggio, ruolo, sospensione, reset password, hard delete)
 - Privacy: la dashboard admin non espone i progetti personali degli utenti
-- Google Keyword Planner e globale: configurazione/connessione disponibile solo al root admin in `/admin`.
+- Volumi di ricerca: file di Keyword Planner del cliente (`docs/PLANNER-ROUNDTRIP.md`) o fornitore DataForSEO (`docs/METRICS-PROVIDERS.md`); l'API Google Ads non si usa (D-09).
 

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteSubprojectButton } from "@/components/delete-subproject-button";
-import { PlannerDisabledNotice } from "@/components/planner-disabled-notice";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
@@ -75,7 +74,6 @@ export default async function SubprojectSettingsPage({
           </Link>
         </div>
 
-        {effective.metrics_provider === "GOOGLE_KEYWORD_PLANNER" && <PlannerDisabledNotice />}
 
         <div className="grid gap-3 text-sm md:grid-cols-3">
           <p>

@@ -32,7 +32,6 @@ export type MetricsItem = {
 
 /** Motivo dell'assenza dei volumi, riportato dall'estrazione in result.metricsNotice del job. */
 export type MetricsNotice =
-  | "PROVIDER_DISABLED"
   | "PROVIDER_NOT_CONFIGURED"
   | "LOCATION_UNSUPPORTED"
   | "LANGUAGE_UNSUPPORTED"

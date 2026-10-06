@@ -329,10 +329,6 @@ export function SubprojectForm({
                 {(canEditAutocompleteProvider || initialValues?.metrics_provider_override === "DATAFORSEO") && (
                   <option value="DATAFORSEO">DataForSEO (a pagamento)</option>
                 )}
-                {/* Non più selezionabile (T-304): resta solo per la sezione che lo ha già. */}
-                {initialValues?.metrics_provider_override === "GOOGLE_KEYWORD_PLANNER" && (
-                  <option value="GOOGLE_KEYWORD_PLANNER">Google Keyword Planner - Non disponibile</option>
-                )}
               </select>
             </div>
 

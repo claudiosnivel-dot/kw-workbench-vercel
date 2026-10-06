@@ -4,7 +4,6 @@ import { GoogleSheetsExportButton } from "@/components/google-sheets-export-butt
 import { PaginationLinks } from "@/components/pagination-links";
 import { PlannerExportDownload } from "@/components/planner-export-download";
 import { PlannerImportUpload } from "@/components/planner-import-upload";
-import { PlannerDisabledNotice } from "@/components/planner-disabled-notice";
 import { ResultsTable } from "@/components/results-table";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
@@ -87,11 +86,6 @@ export default async function ResultsPage({
 
   const shownSections = selectedSubproject ? [selectedSubproject] : project.subprojects;
 
-  // Avviso di T-304 se una delle sezioni mostrate usa il provider Keyword Planner spento.
-  const plannerDisabled = shownSections.some(
-    (section) => (section.metrics_provider_override ?? project.metrics_provider) === "GOOGLE_KEYWORD_PLANNER"
-  );
-
   // Nota di T-704 per ogni lingua effettiva delle sezioni mostrate senza lessico di classificazione.
   const unclassifiedLanguages = Array.from(
     new Set(shownSections.map((section) => section.language_code_override ?? project.language_code))
@@ -155,7 +149,6 @@ export default async function ResultsPage({
           </Link>
         </div>
 
-        {plannerDisabled && <PlannerDisabledNotice />}
         {unclassifiedLanguages.map((languageCode) => (
           <p key={languageCode} className="text-sm text-slate-600">
             Classificazione automatica non disponibile per la lingua {languageCode}
