@@ -53,10 +53,14 @@ medio con precisione `range` (D-17); «--» o vuoto non porta metriche. Ogni rig
 lo stesso canonical nella lingua effettiva della sezione; le candidate ricevono volumi, concorrenza, offerte,
 provider `PLANNER_CSV`, stato `imported` e punteggio ricalcolato, tutto in una transazione.
 
-**Da verificare con un file reale** (azione dell'utente): encoding, separatore, numero di righe di titolo,
-nomi italiani delle colonne e «Competition (indexed value)» del file scaricato oggi da Keyword Planner. Le
-fixture in `tests/fixtures/planner/` seguono la struttura attesa e vanno riallineate al primo file reale,
-con dati anonimizzati.
+**Verificato sul primo file reale** (2026-10-06, interfaccia di Google Ads in inglese): UTF-16LE con BOM,
+tabulazioni, fine riga LF, due righe di titolo (nome del file e periodo), 26 colonne con i nomi in inglese
+(anche «Currency», «Segmentation», variazioni, quota impressioni e 12 colonne «Searches: <mese>»), due righe di
+riepilogo per segmento senza keyword («Tutti», «Italia», scartate), volumi come decimali con parte frazionaria
+nulla («50000.0», 0 o 1 decimale), offerte tra virgolette con la virgola decimale («"1,35"»), concorrenza in
+italiano («Bassa», «Alta») con il valore indicizzato, «∞» nelle variazioni. La fixture
+`tests/fixtures/planner/keyword-stats-real-2026-10-utf16le.csv` riproduce questa struttura con keyword
+anonimizzate. Restano da verificare i nomi delle colonne di un file scaricato con l'interfaccia in italiano.
 
 **Re-run** (D-19 emendata il 2026-10-06): con il provider di metriche della sezione «Nessuna metrica» (NONE)
 le keyword ancora prodotte conservano i volumi importati, con la data dell'import, e il punteggio si ricalcola

@@ -61,6 +61,26 @@ describe("parsePlannerCsv", () => {
     expect(parsed.rows[2].competition).toBe(0.8);
   });
 
+  // Struttura del primo file reale scaricato da Keyword Planner (2026-10-06), con keyword anonimizzate: volumi
+  // decimali con «.0», colonna Segmentation e righe di riepilogo «Tutti»/«Italia» senza keyword, offerte tra
+  // virgolette con la virgola decimale, «∞» nelle variazioni, livelli di concorrenza in italiano.
+  it("legge il formato reale: volumi decimali con .0, righe di riepilogo scartate e offerte con la virgola", () => {
+    const parsed = parsePlannerCsv(fixture("keyword-stats-real-2026-10-utf16le.csv"));
+
+    expect(parsed).toMatchObject({ encoding: "utf-16le", separator: "\t", skippedRows: 2 });
+    expect(parsed.rows.map((row) => [row.keyword, row.avgMonthlySearches, row.precision])).toEqual([
+      ["caffè moka", 5000, "exact"],
+      ["caffè moka prezzo", 50, "exact"],
+      ["caffè moka elettrica", 100, "exact"],
+      ["caffè moka 13 tazze", undefined, undefined],
+      ["caffè moka università", 50, "exact"],
+    ]);
+    expect(parsed.rows[0]).toMatchObject({ competition: 0, lowTopOfPageBidMicros: 1_350_000n, highTopOfPageBidMicros: 4_430_000n });
+    expect(parsed.rows[1]).toMatchObject({ competition: 0.86, lowTopOfPageBidMicros: undefined });
+    expect(parsed.rows[2]).toMatchObject({ competition: 0.4, lowTopOfPageBidMicros: 140_000n, highTopOfPageBidMicros: 680_000n });
+    expect(parsed.rows[4].competition).toBeUndefined();
+  });
+
   it("rileva UTF-16BE e UTF-8 con BOM e scarta un file senza colonna keyword", () => {
     const text = "Keyword;Avg. monthly searches\nmoka;1.200\n";
     const utf16be = new Uint8Array([0xfe, 0xff, ...Buffer.from(text, "utf16le").swap16()]);

@@ -10,6 +10,10 @@ type PlannerImportSummary = {
   unmatched: number;
   updated: number;
   rangeRows: number;
+  /** Righe senza volume («--» o vuoto). */
+  withoutVolume: number;
+  /** Righe scartate dal parser: senza keyword (riepiloghi per segmento) o con valori non leggibili. */
+  skippedRows: number;
 };
 
 const MAX_MEGABYTES = PLANNER_IMPORT_MAX_BYTES / (1024 * 1024);
@@ -67,7 +71,7 @@ export function PlannerImportUpload({ projectId, subprojectId }: { projectId: st
       {(error || summary) && (
         <p className={error ? "text-red-700" : undefined} role={error ? "alert" : "status"}>
           {error ??
-            `${summary?.matched} righe abbinate (${summary?.rangeRows} con volume a intervallo), ${summary?.updated} keyword aggiornate, ${summary?.unmatched} righe senza keyword corrispondente.`}
+            `${summary?.matched} righe abbinate (${summary?.rangeRows} con volume a intervallo), ${summary?.updated} keyword aggiornate, ${summary?.unmatched} righe senza keyword corrispondente, ${summary?.withoutVolume} righe senza volume, ${summary?.skippedRows} righe scartate perché senza keyword o con valori non leggibili.`}
         </p>
       )}
     </form>
