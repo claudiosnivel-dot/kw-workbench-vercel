@@ -49,7 +49,7 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
 
   definition_of_done:
     - "lib/modules/providers/metrics/types.ts: interfaccia unica MetricsProvider (sostituisce MetricsProviderClient) con id e enrichKeywords(items, context); ogni item ha displayKeyword (keyword originale con accenti) e canonical; context ha languageCode e countryCode effettivi; il risultato è una Map indicizzata per canonical di KeywordMetric con metrics_status, metrics_provider, metrics_precision (exact o range), avg_monthly_searches, competition, offerte in micros, più notice e costUsd facoltativi a livello di esito"
-    - "Colonna keyword_candidates.metrics_precision (enum MetricsPrecision exact o range, nullable) creata dal primo tra T-901 e T-905 con migrazione"
+    - "Colonna keyword_candidates.metrics_precision (enum MetricsPrecision exact o range, nullable) creata dal primo tra T-901 e T-910 con migrazione"
     - "lib/modules/pipeline/extraction.ts passa per ogni canonical la keyword di visualizzazione della prima candidata (ordine keyword asc, id asc) e legge le metriche per canonical; salva metrics_precision; il notice del provider finisce in result.metricsNotice del job (convenzione di T-304, T-1605, T-1703); MockMetricsProvider e NoMetricsProvider adeguati; golden master di T-106 aggiornato solo con gate umano"
     - "Proposta di rimozione con, per ogni elemento, il git grep rieseguito al momento del task; l'umano approva o scarta ogni elemento e l'esito è registrato in SESSION-STATE prima del commit (L-COL-021)"
     - "Elementi: lib/modules/providers/metrics/google-keyword-planner.ts (incluso il provider da file GOOGLE_ADS_METRICS_FILE) e il ramo GOOGLE_KEYWORD_PLANNER disattivato da T-304 in factory.ts; lib/integrations/google-ads.ts, lib/integrations/google-ads-config.ts e lib/integrations/google-ads-version.ts se esiste; app/api/integrations/google-ads/** (route, config, connect, callback, disconnect); components/google-ads-integration-card.tsx e il suo uso in app/admin/page.tsx (import, ramo del Promise.all, JSX)"
@@ -92,7 +92,7 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
 
   out_of_scope:
     - "Fornitore con licenza DataForSEO: T-902"
-    - "Import dei volumi dal CSV di Keyword Planner: T-905"
+    - "Import dei volumi dal CSV di Keyword Planner: T-905 (parser) e T-910 (servizio, upload e CLI)"
     - "Codice morto non legato a Google Ads: T-1101"
 
 - id: T-902
@@ -110,8 +110,6 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
     - "lib/modules/providers/metrics/dataforseo.ts implementa MetricsProvider; valore DATAFORSEO aggiunto all'enum MetricsProvider con migrazione; factory.ts crea il provider per DATAFORSEO"
     - "Richiesta: POST https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live con header Authorization Basic base64(DATAFORSEO_LOGIN:DATAFORSEO_PASSWORD) e corpo con un solo task {keywords, location_code, language_code, search_partners: false}; location_code sempre presente (senza location DataForSEO restituisce dati mondiali)"
     - "Lotti di al massimo 1.000 keyword (limite documentato); filtro prima della chiamata: più di 80 caratteri, più di 10 parole, simboli non ammessi (emoji e simboli UTF secondo la nota di DataForSEO; insieme esatto dei caratteri ammessi da verificare nel task sull'articolo di help collegato) -> metrics_status missing senza chiamata e conteggio per motivo in result"
-    - "Limitatore: al massimo 12 richieste in qualunque finestra di 60 secondi (limite documentato per account sugli endpoint live), in memoria per istanza; T-903 lo rende condiviso tra istanze tramite il registro delle richieste"
-    - "Timeout con AbortSignal.timeout e numero massimo di tentativi da env validata (T-201); retry con backoff esponenziale e jitter solo su HTTP 429, 5xx e timeout; nessun retry sugli altri 4xx; status_code del task diverso da 20000 trattato come errore del lotto (codici d'errore di DataForSEO e codice del superamento del limite da verificare nel task sulla pagina degli status code)"
     - "Mappa in lib/modules/providers/metrics/dataforseo-targets.ts con commento di provenienza: countryCode -> location_code dalle location di primo livello del CSV DataForSEO 2026-09-01 (coincidono con i Criteria ID Google); AX, BY, CU, IR, KP, RU senza location -> nessuna chiamata, metrics_status missing e metricsNotice LOCATION_UNSUPPORTED; languageCode -> language_code dall'elenco di GET .../google_ads/languages scaricato nel task; lingua senza corrispondenza -> missing e metricsNotice LANGUAGE_UNSUPPORTED"
     - "Parsing: search_volume intero -> avg_monthly_searches, null -> missing per quella keyword; competition_index/100 se presente, altrimenti HIGH/MEDIUM/LOW -> 0.8/0.5/0.2; low_top_of_page_bid e high_top_of_page_bid convertiti in micros (Math.round del valore per 1.000.000, BigInt), valuta delle offerte da verificare nel task (la doc indica USD solo per cpc); metrics_status fetched, metrics_precision exact, metrics_provider DATAFORSEO"
     - "Match: canonicalizeKeyword(result.keyword, languageCode) (firma di T-702) ricollega ogni risultato al canonical richiesto; keyword richieste senza risultato -> missing; risultati con spell non nullo contati in result.metricsSpellCorrected"
@@ -132,30 +130,61 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
       given: "un progetto con country_code 'RU', e separatamente un ambiente senza DATAFORSEO_LOGIN"
       when: "si esegue l'arricchimento delle metriche"
       then: "in entrambi i casi il mock registra 0 richieste verso api.dataforseo.com, tutte le keyword hanno metrics_status 'missing' e result.metricsNotice vale LOCATION_UNSUPPORTED nel primo caso e PROVIDER_NOT_CONFIGURED nel secondo"
-    - id: AC-902-4
+
+  target_tests:
+    - file: "tests/unit/dataforseo-provider.test.ts"
+      covers: [AC-902-1, AC-902-2, AC-902-3]
+
+  security_notes:
+    - "A04 Cryptographic Failures / CWE-798 e CWE-532: credenziali del fornitore solo da env validata, mai nel sorgente, nel DB o nei log"
+    - "A06 Insecure Design / CWE-770 (allocazione di risorse senza limiti): lotti da 1.000 keyword e scelta del provider a pagamento riservata al root admin fino a T-1605; limitatore in T-909, tetto di spesa in T-903"
+    - "A08 Software or Data Integrity Failures / CWE-345: location_code sempre inviato, lingua e paese non mappati producono missing con motivo, mai volumi mondiali salvati come locali"
+    - "A10 Mishandling of Exceptional Conditions / CWE-755: un errore del lotto non produce metriche inventate (le keyword del lotto restano senza volumi)"
+
+  out_of_scope:
+    - "Limitatore, timeout e retry: T-909"
+    - "Tetto di spesa e registro dei costi: T-903"
+    - "Abilitazione per piano e quote per workspace: T-1601, T-1605, T-1703"
+    - "Coda standard di DataForSEO (più economica, 1-3 ore): valutabile dopo i job in background del macrotask 12 (D-30)"
+
+- id: T-909
+  title: "Provider DataForSEO: limitatore, timeout e retry"
+  macrotask: "google-integrations"
+  depends_on: [T-902]
+
+  objective: >
+    Rispettare il limite di richieste del fornitore e rendere robusta ogni chiamata del provider DataForSEO di
+    T-902: al massimo 12 richieste al minuto, timeout per richiesta e retry limitati solo sugli errori
+    transitori, senza mai esporre le credenziali nei log. Nato dalla divisione di T-902 (emendamento del
+    2026-10-06, rilievo di atomicità).
+
+  definition_of_done:
+    - "Limitatore: al massimo 12 richieste in qualunque finestra di 60 secondi (limite documentato per account sugli endpoint live), in memoria per istanza; T-903 lo rende condiviso tra istanze tramite il registro delle richieste"
+    - "Timeout con AbortSignal.timeout e numero massimo di tentativi da env validata (T-201); retry con backoff esponenziale e jitter solo su HTTP 429, 5xx e timeout; nessun retry sugli altri 4xx; status_code del task diverso da 20000 trattato come errore del lotto (codici d'errore di DataForSEO e codice del superamento del limite da verificare nel task sulla pagina degli status code)"
+    - "Un lotto che esaurisce i tentativi lascia le sue keyword senza volumi (metrics_status failed) e non interrompe gli altri lotti; i log riportano status, id del task e cost, mai login o password"
+
+  acceptance_criteria:
+    - id: AC-909-1
       given: "13.000 keyword valide con timer finti, un mock che risponde 500 alla prima chiamata e 200 alle successive, e console spiata"
       when: "si chiama enrichKeywords"
       then: "nessuna finestra di 60 secondi contiene più di 12 richieste, il primo lotto è inviato 2 volte, tutte le keyword risultano fetched e nessun messaggio di console contiene la password di test"
 
   target_tests:
-    - file: "tests/unit/dataforseo-provider.test.ts"
-      covers: [AC-902-1, AC-902-2, AC-902-3, AC-902-4]
+    - file: "tests/unit/dataforseo-limiter.test.ts"
+      covers: [AC-909-1]
 
   security_notes:
-    - "A04 Cryptographic Failures / CWE-798 e CWE-532: credenziali del fornitore solo da env validata, mai nel sorgente, nel DB o nei log"
-    - "A06 Insecure Design / CWE-770 (allocazione di risorse senza limiti): limitatore a 12 richieste al minuto, lotti da 1.000 keyword e scelta del provider a pagamento riservata al root admin fino a T-1605; il tetto di spesa è T-903"
-    - "A08 Software or Data Integrity Failures / CWE-345: location_code sempre inviato, lingua e paese non mappati producono missing con motivo, mai volumi mondiali salvati come locali"
-    - "A10 Mishandling of Exceptional Conditions / CWE-755: timeout, retry limitati ed esito per lotto; un errore non produce metriche inventate"
+    - "A06 Insecure Design / CWE-770 (allocazione di risorse senza limiti): limitatore a 12 richieste al minuto per istanza e tentativi limitati da env"
+    - "A10 Mishandling of Exceptional Conditions / CWE-755: timeout, retry solo sugli errori transitori ed esito per lotto"
+    - "A09 Security Logging and Alerting Failures / CWE-532: i log del provider non contengono credenziali"
 
   out_of_scope:
-    - "Tetto di spesa e registro dei costi: T-903"
-    - "Abilitazione per piano e quote per workspace: T-1601, T-1605, T-1703"
-    - "Coda standard di DataForSEO (più economica, 1-3 ore): valutabile dopo i job in background del macrotask 12 (D-30)"
+    - "Limitatore condiviso tra istanze tramite il registro delle richieste: T-903"
 
 - id: T-903
   title: "Tetto di spesa del fornitore e registro dei costi"
   macrotask: "google-integrations"
-  depends_on: [T-902]
+  depends_on: [T-902, T-909]
 
   objective: >
     Impedire che il fornitore con licenza generi costi senza controllo: ogni richiesta è registrata con il
@@ -167,7 +196,7 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
     - "Env validate (T-201): METRICS_MONTHLY_BUDGET_USD e METRICS_RUN_BUDGET_USD decimali maggiori o uguali a 0, default 0 (nessuna spesa ammessa finché l'operatore non li imposta); METRICS_COST_PER_REQUEST_USD con default 0.09 (prezzo live verificato)"
     - "Prima di ogni richiesta, in una transazione con pg_advisory_xact_lock, si calcola lo speso del mese UTC (somma di cost_usd, o di estimated_cost_usd per le righe ancora in corso) e dell'estrazione corrente; se speso più costo stimato supera il tetto, nessuna chiamata, keyword del lotto missing e result.metricsNotice METRICS_BUDGET_EXCEEDED (mensile) o RUN_BUDGET_EXCEEDED (estrazione); altrimenti si inserisce una riga di prenotazione con estimated_cost_usd"
     - "Dopo la risposta la riga è aggiornata con il cost restituito da DataForSEO e lo status; anche le richieste fallite sono registrate con il cost riportato (0 se assente)"
-    - "Il limitatore di T-902 conta anche le righe degli ultimi 60 secondi del registro, così il limite di 12 richieste al minuto vale tra istanze diverse"
+    - "Il limitatore di T-909 conta anche le righe degli ultimi 60 secondi del registro, così il limite di 12 richieste al minuto vale tra istanze diverse"
     - "Rotta GET /api/admin/metrics-spend riservata al root admin: {month, spentUsd, budgetUsd, requests, keywords}; card 'Spesa fornitore metriche' in app/admin/page.tsx visibile solo al root admin"
     - "Nessuna abilitazione per piano né quota per workspace in questo task (le aggiungono T-1601, T-1605, T-1703)"
 
@@ -220,8 +249,8 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
     - "Keyword oltre i limiti di Keyword Planner (più di 80 caratteri o più di 10 parole, limiti della guida Google Ads) e keyword che iniziano con = + - @ sono saltate e conteggiate per motivo"
     - "Ogni file: UTF-8, prima riga 'Keyword' (modello di caricamento a una colonna della guida Google Ads), poi una keyword per riga; nome <projectId>-<sectionId o all>-partNN.csv"
     - "Download web: rotta GET /api/projects/[id]/planner-export (sectionId facoltativo) che restituisce JSON {canonicals, parts, skipped}; con parametro part=N restituisce il blocco N come text/csv con Content-Disposition attachment; rotta autenticata e filtrata per owner_user_id della sessione (poi membership di workspace con T-1502)"
-    - "Componente components/planner-export-download.tsx nella pagina app/projects/[id]/results/page.tsx, accanto all'upload di T-905, con un link per blocco e le istruzioni del round-trip"
-    - "Limite massimo di keyword per singolo caricamento in Keyword Planner: non documentato da Google, da verificare nel task con un caricamento reale e annotare in docs/PLANNER-ROUNDTRIP.md insieme alla procedura export -> Keyword Planner -> import (T-905)"
+    - "Componente components/planner-export-download.tsx nella pagina app/projects/[id]/results/page.tsx, accanto all'upload di T-910, con un link per blocco e le istruzioni del round-trip"
+    - "Limite massimo di keyword per singolo caricamento in Keyword Planner: non documentato da Google, da verificare nel task con un caricamento reale e annotare in docs/PLANNER-ROUNDTRIP.md insieme alla procedura export -> Keyword Planner -> import (T-910)"
 
   acceptance_criteria:
     - id: AC-904-1
@@ -253,31 +282,27 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
     - "A02 Security Misconfiguration / CWE-538 (informazioni in file accessibili): la cartella di output della CLI è in .gitignore, i dati di keyword dei clienti non finiscono nel repository"
 
   out_of_scope:
-    - "Import dei volumi dal CSV di Keyword Planner: T-905"
+    - "Import dei volumi dal CSV di Keyword Planner: T-905 (parser) e T-910 (servizio, upload e CLI)"
     - "Export dei risultati in CSV/XLSX per l'utente: T-804 e T-805"
 
 - id: T-905
-  title: "Import dei volumi da CSV di Keyword Planner (CLI e upload)"
+  title: "Parser del CSV di Keyword Planner"
   macrotask: "google-integrations"
   depends_on: [T-904, T-707]
 
   objective: >
-    Chiudere il round-trip con la strada principale per i clienti (D-09): l'upload nella pagina risultati
-    del file scaricato dal proprio Keyword Planner (anche localizzato e con volumi a range), abbinato alle
-    candidate per canonical, con aggiornamento di metriche, provider e punteggio in transazione; la stessa
-    funzione è disponibile da CLI per l'operatore.
+    Leggere il file che il cliente scarica dal proprio Keyword Planner (anche localizzato, in UTF-16 con
+    tabulazioni e con volumi a range) e ricavarne per ogni riga keyword, volume con la sua precisione,
+    concorrenza e offerte, primo passo dell'import dei volumi (D-09). Nato dalla divisione di T-905
+    (emendamento del 2026-10-06, rilievo di atomicità): servizio, upload e CLI sono in T-910.
 
   definition_of_done:
     - "Parser in lib/modules/planner/csv-parser.ts: rileva l'encoding dal BOM (UTF-16LE, UTF-16BE, UTF-8 con o senza BOM), il separatore (tab, virgola, punto e virgola) e la riga dei nomi colonna come prima riga che contiene una colonna keyword riconosciuta, saltando le righe di titolo precedenti; encoding, separatore e numero di righe iniziali del file reale da verificare nel task e fissati in una fixture"
     - "Colonne riconosciute per nome, case-insensitive, EN e IT: Keyword, Avg. monthly searches, Competition, Top of page bid (low range), Top of page bid (high range) (nomi EN verificati sulla guida Google Ads); nomi IT e Competition (indexed value) da verificare nel task sul file reale"
     - "Volumi: intero -> metrics_precision exact; range (es. '1K – 10K', trattino lungo o corto, suffissi K/M, decimali localizzati) -> punto medio arrotondato e metrics_precision range (D-17); vuoto o '--' -> nessuna metrica; separatori delle migliaia punto, virgola, spazio e NBSP gestiti"
     - "Offerte convertite in micros (valore per 1.000.000) come BigInt; Competition low/medium/high (anche IT) mappata su 0.2/0.5/0.8"
-    - "Migrazione: valore PLANNER_CSV nell'enum MetricsProvider; colonna keyword_candidates.metrics_precision creata qui se T-901 non l'ha già creata; metrics_status 'imported' già esistente"
-    - "Servizio applyPlannerImport(projectId, sectionId opzionale, righe) in lib/modules/planner/import.ts: match tramite canonicalizeKeyword(keyword, languageCode effettivo della sezione) (T-702) sul canonical_keyword delle candidate del perimetro; aggiorna avg_monthly_searches, competition, offerte, metrics_provider PLANNER_CSV, metrics_status imported, metrics_precision, metrics_updated_at e ricalcola score e score_source con scoreKeyword (che restituisce {score, score_source}, T-707); tutto in una transazione; ritorna {matched, unmatched, updated, rangeRows}"
-    - "Upload, strada principale per i clienti: rotta POST /api/projects/[id]/planner-import (multipart, campo file, sectionId facoltativo) e componente components/planner-import-upload.tsx in evidenza nella pagina app/projects/[id]/results/page.tsx, accanto al download di T-904 e con le istruzioni del round-trip; dimensione massima 5 MB come costante esportata e mostrata in UI; estensioni .csv e .tsv; il file non viene salvato su disco"
-    - "CLI per l'operatore scripts/planner-import.ts registrata come planner:import (npm run planner:import -- --project <id> [--section <id>] <file>), stessa funzione applyPlannerImport"
-    - "Nessuna nuova dipendenza: multipart letto con request.formData() nativo, decodifica con TextDecoder (utf-16le, utf-16be, utf-8)"
     - "Fixture in tests/fixtures/planner/: file UTF-16LE con tabulazioni e righe d'intestazione (EN), file con colonne IT, file con volumi a range; appena disponibile un file reale scaricato da Keyword Planner, la fixture principale ne riproduce la struttura (dati anonimizzati)"
+    - "Nessuna nuova dipendenza: decodifica con TextDecoder (utf-16le, utf-16be, utf-8)"
 
   acceptance_criteria:
     - id: AC-905-1
@@ -288,28 +313,64 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
       given: "una riga con volume '1K – 10K' e una con '1.200'"
       when: "si chiama parsePlannerCsv"
       then: "la prima ha avgMonthlySearches 5500 e precision 'range', la seconda ha 1200 e precision 'exact'"
-    - id: AC-905-3
-      given: "un progetto con la candidata 'caffè espresso' (canonical 'caffe espresso', score precedente S0) e un CSV con la riga 'Caffe Espresso' e volume 1200"
-      when: "il proprietario invia il file a POST /api/projects/[id]/planner-import"
-      then: "la risposta è 200 con matched 1, e la riga in DB ha avg_monthly_searches 1200, metrics_provider PLANNER_CSV, metrics_status imported, score_source metrics e score diverso da S0"
-    - id: AC-905-4
-      given: "un utente B autenticato e un progetto dell'utente A, e separatamente un file da 6 MB inviato dal proprietario"
-      when: "si invia l'upload a POST /api/projects/[id]/planner-import"
-      then: "l'utente B riceve 404, il file da 6 MB riceve 413 e in entrambi i casi 0 righe di keyword_candidates hanno metrics_updated_at modificato"
 
   target_tests:
     - file: "tests/unit/planner-csv-parser.test.ts"
       covers: [AC-905-1, AC-905-2]
+
+  security_notes:
+    - "A08 Software or Data Integrity Failures / CWE-20 (validazione dell'input): numeri e range validati, righe non interpretabili scartate e conteggiate, nessun aggiornamento parziale fuori transazione"
+
+  out_of_scope:
+    - "Abbinamento alle candidate, upload e CLI: T-910"
+    - "Export delle keyword verso Keyword Planner: T-904"
+
+- id: T-910
+  title: "Import dei volumi da Keyword Planner: servizio, upload e CLI"
+  macrotask: "google-integrations"
+  depends_on: [T-905, T-904, T-707]
+
+  objective: >
+    Chiudere il round-trip con la strada principale per i clienti (D-09): l'upload nella pagina risultati
+    del file scaricato dal proprio Keyword Planner, letto dal parser di T-905 e abbinato alle candidate per
+    canonical, con aggiornamento di metriche, provider e punteggio in transazione; la stessa funzione è
+    disponibile da CLI per l'operatore. Nato dalla divisione di T-905 (emendamento del 2026-10-06).
+
+  definition_of_done:
+    - "Migrazione: valore PLANNER_CSV nell'enum MetricsProvider; colonna keyword_candidates.metrics_precision creata qui se T-901 non l'ha già creata; metrics_status 'imported' già esistente"
+    - "Servizio applyPlannerImport(projectId, sectionId opzionale, righe) in lib/modules/planner/import.ts: match tramite canonicalizeKeyword(keyword, languageCode effettivo della sezione) (T-702) sul canonical_keyword delle candidate del perimetro; aggiorna avg_monthly_searches, competition, offerte, metrics_provider PLANNER_CSV, metrics_status imported, metrics_precision, metrics_updated_at e ricalcola score e score_source con scoreKeyword (che restituisce {score, score_source}, T-707); tutto in una transazione; ritorna {matched, unmatched, updated, rangeRows}"
+    - "Upload, strada principale per i clienti: rotta POST /api/projects/[id]/planner-import (multipart, campo file, sectionId facoltativo) e componente components/planner-import-upload.tsx in evidenza nella pagina app/projects/[id]/results/page.tsx, accanto al download di T-904 e con le istruzioni del round-trip; dimensione massima 5 MB come costante esportata e mostrata in UI; estensioni .csv e .tsv; il file non viene salvato su disco"
+    - "CLI per l'operatore scripts/planner-import.ts registrata come planner:import (npm run planner:import -- --project <id> [--section <id>] <file>), stessa funzione applyPlannerImport"
+    - "Nessuna nuova dipendenza: multipart letto con request.formData() nativo"
+    - "Re-run con provider di metriche effettivo NONE (D-19 emendata il 2026-10-06): le candidate ancora prodotte con metrics_provider PLANNER_CSV conservano volumi, concorrenza, offerte, precisione, stato imported, provider e metrics_updated_at dell'import, e il punteggio è ricalcolato su quei volumi; con un provider diverso da NONE valgono le metriche del provider"
+
+  acceptance_criteria:
+    - id: AC-910-1
+      given: "un progetto con la candidata 'caffè espresso' (canonical 'caffe espresso', score precedente S0) e un CSV con la riga 'Caffe Espresso' e volume 1200"
+      when: "il proprietario invia il file a POST /api/projects/[id]/planner-import"
+      then: "la risposta è 200 con matched 1, e la riga in DB ha avg_monthly_searches 1200, metrics_provider PLANNER_CSV, metrics_status imported, score_source metrics e score diverso da S0"
+    - id: AC-910-2
+      given: "un utente B autenticato e un progetto dell'utente A, e separatamente un file da 6 MB inviato dal proprietario"
+      when: "si invia l'upload a POST /api/projects/[id]/planner-import"
+      then: "l'utente B riceve 404, il file da 6 MB riceve 413 e in entrambi i casi 0 righe di keyword_candidates hanno metrics_updated_at modificato"
+    - id: AC-910-3
+      given: "una sezione con provider di metriche effettivo NONE e la candidata 'caffè espresso' importata da Keyword Planner (avg_monthly_searches 1200, metrics_provider PLANNER_CSV, metrics_status imported, metrics_precision range, score_source metrics)"
+      when: "si esegue di nuovo l'estrazione della sezione e la keyword è ancora prodotta"
+      then: "la riga ha ancora avg_monthly_searches 1200, metrics_provider PLANNER_CSV, metrics_status imported, metrics_precision range, score_source metrics e metrics_updated_at uguale a quello dell'import"
+
+  target_tests:
     - file: "tests/integration/planner-import.test.ts"
-      covers: [AC-905-3, AC-905-4]
+      covers: [AC-910-1, AC-910-2]
+    - file: "tests/integration/planner-rerun.test.ts"
+      covers: [AC-910-3]
 
   security_notes:
     - "A01 Broken Access Control / CWE-639 (IDOR): progetto e sezione filtrati per owner_user_id della sessione (poi membership di workspace con T-1502); gli update usano un where che include project_id"
     - "A06 Insecure Design / CWE-400 (consumo di risorse non controllato): limite di 5 MB verificato sul Content-Length e sui byte letti, tetto di righe, parsing in memoria senza file temporanei"
     - "A05 Injection / CWE-89: valori del CSV scritti solo tramite query parametrizzate di Prisma; nessun SQL composto a mano"
-    - "A08 Software or Data Integrity Failures / CWE-20 (validazione dell'input): numeri e range validati, righe non interpretabili scartate e conteggiate, nessun aggiornamento parziale fuori transazione"
 
   out_of_scope:
+    - "Parser del file di Keyword Planner: T-905"
     - "Export delle keyword verso Keyword Planner: T-904"
     - "Diritti di piano per l'import (plannerImport): T-1601 e T-1605"
 
@@ -473,3 +534,5 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
 
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0 (in isolamento i soli riferimenti non risolti sono T-304, T-702, T-707 e T-503, di altri moduli).
 - Semantico: `self-check-checklist.md` punti 6-10 applicati a T-901..T-908; rilievo di atomicità aperto su T-901 (contratto + rimozione + migrazione dell'enum) e T-905, da confermare o dividere con l'utente.
+- **Emendamento 2026-10-06** (all'avvio del BUILD, decisione dell'utente del 2026-10-05 sui rilievi di atomicità): T-902 diviso in T-902 (richiesta, lotti, filtro, mappe, parsing, costo, credenziali; AC-902-1…3) e T-909 (limitatore, timeout e retry; l'AC-902-4 diventa AC-909-1 con lo stesso testo, target test `tests/unit/dataforseo-limiter.test.ts`); T-905 diviso in T-905 (parser e fixture; AC-905-1, AC-905-2) e T-910 (migrazione PLANNER_CSV, servizio, upload e CLI; gli AC-905-3 e AC-905-4 diventano AC-910-1 e AC-910-2 con lo stesso testo). Le voci di DoD sono le stesse, ripartite; in più T-909 esplicita l'esito del lotto che esaurisce i tentativi (metrics_status failed, gli altri lotti proseguono). T-903 dipende anche da T-909. I riferimenti a T-905 negli altri moduli per servizio, upload e ricalcolo del punteggio valgono per T-910.
+- **Emendamento 2026-10-06** (decisione dell'utente alla prima chiusura del 09, D-19 emendata): T-910 conserva i volumi importati al re-run quando il provider effettivo è NONE (voce di DoD e AC-910-3, target test `tests/integration/planner-rerun.test.ts`).

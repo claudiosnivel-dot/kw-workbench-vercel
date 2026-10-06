@@ -1,5 +1,6 @@
 "use client";
 
+import type { MetricsProvider } from "@/lib/generated/prisma/enums";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
@@ -19,7 +20,7 @@ type SubprojectFormValues = {
   language_code_override: string;
   country_code_override: string;
   autocomplete_provider_override: "" | "MOCK" | "GOOGLE_DIRECT";
-  metrics_provider_override: "" | "NONE" | "MOCK" | "GOOGLE_KEYWORD_PLANNER";
+  metrics_provider_override: "" | MetricsProvider;
   min_volume_override: string;
   exclude_brands_override: BooleanOverride;
   expand_alpha_override: BooleanOverride;
@@ -324,9 +325,9 @@ export function SubprojectForm({
                 <option value="">Usa default progetto</option>
                 <option value="NONE">NoMetricsProvider</option>
                 <option value="MOCK">MockMetricsProvider</option>
-                {/* Non più selezionabile (T-304): resta solo per la sezione che lo ha già. */}
-                {initialValues?.metrics_provider_override === "GOOGLE_KEYWORD_PLANNER" && (
-                  <option value="GOOGLE_KEYWORD_PLANNER">Google Keyword Planner - Non disponibile</option>
+                {/* A pagamento (T-902): solo il root admin, o la sezione che lo ha già. */}
+                {(canEditAutocompleteProvider || initialValues?.metrics_provider_override === "DATAFORSEO") && (
+                  <option value="DATAFORSEO">DataForSEO (a pagamento)</option>
                 )}
               </select>
             </div>

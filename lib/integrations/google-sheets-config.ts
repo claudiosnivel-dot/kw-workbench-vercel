@@ -1,4 +1,7 @@
-import { getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
+import type { Prisma } from "@/lib/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
+import { ValidationError } from "@/lib/http/errors";
+import { deleteSettingValue, getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
 
 const KEYS = {
   clientId: "GOOGLE_SHEETS_OAUTH_CLIENT_ID",
@@ -12,74 +15,126 @@ export type GoogleSheetsApiConfig = {
   redirectUri?: string;
 };
 
+export type ConfigSource = "db" | "env" | "none";
+
+type Field = keyof typeof KEYS;
+
+const FIELDS = Object.keys(KEYS) as Field[];
+
 export type GoogleSheetsApiConfigSnapshot = {
   clientId: string;
   redirectUri: string;
+  /** Del client secret solo la presenza e la fonte, mai il valore (CWE-200). */
   hasClientSecret: boolean;
+  sources: Record<Field, ConfigSource>;
 };
+
+/** null = rimuove l'override salvato e torna al valore d'ambiente; assente o stringa vuota = invariato. */
+export type GoogleSheetsApiConfigPatch = Partial<Record<Field, string | null>>;
+
+const CALLBACK_PATH = "/api/integrations/google-sheets/callback";
+const CLIENT_ID_SUFFIX = ".apps.googleusercontent.com";
 
 function clean(value: string | null | undefined): string | undefined {
   const trimmed = String(value ?? "").trim();
   return trimmed || undefined;
 }
 
-export async function getGoogleSheetsApiConfig(): Promise<GoogleSheetsApiConfig> {
+/** Valore effettivo di ogni campo e la sua fonte: l'override in DB vince sull'ambiente. */
+async function resolveConfig(): Promise<{ values: GoogleSheetsApiConfig; sources: Record<Field, ConfigSource> }> {
   const dbValues = await getManySettingValues(Object.values(KEYS));
+  const values: GoogleSheetsApiConfig = {};
+  const sources = {} as Record<Field, ConfigSource>;
 
-  return {
-    clientId: clean(dbValues[KEYS.clientId]) ?? clean(process.env.GOOGLE_SHEETS_OAUTH_CLIENT_ID),
-    clientSecret: clean(dbValues[KEYS.clientSecret]) ?? clean(process.env.GOOGLE_SHEETS_OAUTH_CLIENT_SECRET),
-    redirectUri: clean(dbValues[KEYS.redirectUri]) ?? clean(process.env.GOOGLE_SHEETS_OAUTH_REDIRECT_URI),
-  };
+  for (const field of FIELDS) {
+    const fromDb = clean(dbValues[KEYS[field]]);
+    const fromEnv = clean(process.env[KEYS[field]]);
+    values[field] = fromDb ?? fromEnv;
+    sources[field] = fromDb ? "db" : fromEnv ? "env" : "none";
+  }
+
+  return { values, sources };
+}
+
+export async function getGoogleSheetsApiConfig(): Promise<GoogleSheetsApiConfig> {
+  return (await resolveConfig()).values;
+}
+
+/** Configurazione OAuth con tutti e tre i valori, o null se ne manca uno (connect e callback, T-906). */
+export async function getCompleteGoogleSheetsOAuthConfig(): Promise<Required<GoogleSheetsApiConfig> | null> {
+  const { clientId, clientSecret, redirectUri } = await getGoogleSheetsApiConfig();
+  return clientId && clientSecret && redirectUri ? { clientId, clientSecret, redirectUri } : null;
 }
 
 export async function getGoogleSheetsApiConfigSnapshot(): Promise<GoogleSheetsApiConfigSnapshot> {
-  const config = await getGoogleSheetsApiConfig();
+  const { values, sources } = await resolveConfig();
 
   return {
-    clientId: config.clientId ?? "",
-    redirectUri: config.redirectUri ?? "",
-    hasClientSecret: Boolean(config.clientSecret),
+    clientId: values.clientId ?? "",
+    redirectUri: values.redirectUri ?? "",
+    hasClientSecret: Boolean(values.clientSecret),
+    sources,
   };
 }
 
-export async function updateGoogleSheetsApiConfig(input: {
-  clientId?: string;
-  clientSecret?: string;
-  redirectUri?: string;
-}) {
-  const writes: Promise<unknown>[] = [];
+function isValidRedirectUri(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const localHttp = url.protocol === "http:" && (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+    return (url.protocol === "https:" || localHttp) && url.pathname.endsWith(CALLBACK_PATH);
+  } catch {
+    return false;
+  }
+}
 
-  if (typeof input.clientId === "string" && input.clientId.trim()) {
-    writes.push(
-      upsertSettingValue({
-        key: KEYS.clientId,
-        value: input.clientId.trim(),
-        isSecret: false,
-      })
-    );
+/**
+ * Valida il corpo della PATCH prima di qualsiasi scrittura (T-908): ogni campo è una stringa, null o assente;
+ * redirectUri https (http solo per localhost) che termina con la callback; clientId di Google.
+ */
+export function parseGoogleSheetsConfigPatch(payload: unknown): GoogleSheetsApiConfigPatch {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new ValidationError("Corpo della richiesta non valido");
+  }
+  const input = payload as Record<string, unknown>;
+  const patch: GoogleSheetsApiConfigPatch = {};
+
+  for (const field of FIELDS) {
+    const value = input[field];
+    if (value === undefined || value === null) {
+      if (value === null) {
+        patch[field] = null;
+      }
+      continue;
+    }
+    if (typeof value !== "string") {
+      throw new ValidationError(`${field} deve essere una stringa o null`);
+    }
+    patch[field] = value.trim();
   }
 
-  if (typeof input.clientSecret === "string" && input.clientSecret.trim()) {
-    writes.push(
-      upsertSettingValue({
-        key: KEYS.clientSecret,
-        value: input.clientSecret.trim(),
-        isSecret: true,
-      })
-    );
+  if (patch.redirectUri && !isValidRedirectUri(patch.redirectUri)) {
+    throw new ValidationError(`redirectUri deve essere un URL https (http solo per localhost) che termina con ${CALLBACK_PATH}`);
+  }
+  if (patch.clientId && !patch.clientId.endsWith(CLIENT_ID_SUFFIX)) {
+    throw new ValidationError(`clientId deve terminare con ${CLIENT_ID_SUFFIX}`);
+  }
+  return patch;
+}
+
+/** Applica la PATCH già validata in una sola transazione: upsert dei valori, eliminazione degli override a null. */
+export async function updateGoogleSheetsApiConfig(patch: GoogleSheetsApiConfigPatch) {
+  const writes: Prisma.PrismaPromise<unknown>[] = [];
+  for (const field of FIELDS) {
+    const value = patch[field];
+    if (value === null) {
+      writes.push(deleteSettingValue(KEYS[field]));
+    } else if (value) {
+      writes.push(upsertSettingValue({ key: KEYS[field], value, isSecret: field === "clientSecret" }));
+    }
   }
 
-  if (typeof input.redirectUri === "string" && input.redirectUri.trim()) {
-    writes.push(
-      upsertSettingValue({
-        key: KEYS.redirectUri,
-        value: input.redirectUri.trim(),
-        isSecret: false,
-      })
-    );
+  if (writes.length > 0) {
+    await prisma.$transaction(writes);
   }
-
-  await Promise.all(writes);
   return getGoogleSheetsApiConfigSnapshot();
 }

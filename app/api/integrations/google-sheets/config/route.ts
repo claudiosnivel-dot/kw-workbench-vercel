@@ -3,6 +3,7 @@ import { requireRootAdminUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import {
   getGoogleSheetsApiConfigSnapshot,
+  parseGoogleSheetsConfigPatch,
   updateGoogleSheetsApiConfig,
 } from "@/lib/integrations/google-sheets-config";
 
@@ -12,20 +13,12 @@ export const GET = withApiErrors(async (request: Request) => {
   return NextResponse.json({ data: snapshot });
 });
 
+/** PATCH della configurazione (T-908): validata per intero prima di scrivere; null rimuove un override. */
 export const PATCH = withApiErrors(async (request: Request) => {
   await requireRootAdminUserFromRequest(request);
 
-  const payload = (await request.json()) as {
-    clientId?: string;
-    clientSecret?: string;
-    redirectUri?: string;
-  };
-
-  const snapshot = await updateGoogleSheetsApiConfig({
-    clientId: payload.clientId,
-    clientSecret: payload.clientSecret,
-    redirectUri: payload.redirectUri,
-  });
+  const payload: unknown = await request.json().catch(() => null);
+  const snapshot = await updateGoogleSheetsApiConfig(parseGoogleSheetsConfigPatch(payload));
 
   return NextResponse.json({ data: snapshot });
 });

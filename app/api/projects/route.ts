@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
 import { parseProjectCreate } from "@/lib/modules/project-settings";
-import { invalidSettingsResponse } from "@/lib/modules/project-settings-response";
 import { prisma } from "@/lib/prisma";
 
 export const GET = withApiErrors(async (request: Request) => {
@@ -35,16 +34,7 @@ export const POST = withApiErrors(async (request: Request) => {
   const user = await requireAuthenticatedUserFromRequest(request);
 
   const payload: unknown = await request.json();
-  let input: ReturnType<typeof parseProjectCreate>;
-  try {
-    input = parseProjectCreate(payload, user);
-  } catch (error) {
-    const invalid = invalidSettingsResponse(error);
-    if (!invalid) {
-      throw error;
-    }
-    return invalid;
-  }
+  const input = parseProjectCreate(payload, user);
 
   const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const created = await tx.project.create({

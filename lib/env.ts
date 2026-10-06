@@ -16,12 +16,27 @@ export const INT_ENV = {
   AUTOCOMPLETE_CACHE_TTL_MS: { def: 300_000, min: 30_000, max: 86_400_000 },
   AUTOCOMPLETE_MAX_RETRIES: { def: 2, min: 0, max: 5 },
   AUTOCOMPLETE_TIMEOUT_MS: { def: 4_500, min: 1_000, max: 30_000 },
+  // Provider DataForSEO (T-909): timeout di ogni richiesta e tentativi per lotto (il primo compreso).
+  DATAFORSEO_TIMEOUT_MS: { def: 30_000, min: 1_000, max: 120_000 },
+  DATAFORSEO_MAX_ATTEMPTS: { def: 3, min: 1, max: 6 },
   // Il default effettivo dipende da NODE_ENV (lib/prisma.ts): 3 in produzione, 1 altrove.
   PRISMA_CONNECTION_LIMIT: { def: 3, min: 1, max: 50 },
   PRISMA_POOL_TIMEOUT: { def: 15, min: 1, max: 120 },
 } as const;
 
 type IntEnvKey = keyof typeof INT_ENV;
+
+/**
+ * Importi in USD letti dall'ambiente (T-903): decimali >= 0. I tetti valgono 0 se assenti (nessuna spesa ammessa
+ * finché l'operatore non li imposta); il costo per richiesta stimato parte dal prezzo live verificato (D-30).
+ */
+export const USD_ENV = {
+  METRICS_MONTHLY_BUDGET_USD: { def: 0 },
+  METRICS_RUN_BUDGET_USD: { def: 0 },
+  METRICS_COST_PER_REQUEST_USD: { def: 0.09 },
+} as const;
+
+type UsdEnvKey = keyof typeof USD_ENV;
 
 /** Livelli del logger (T-602), dal più al meno verboso; LOG_LEVEL fissa il minimo (default info). */
 export const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
@@ -70,16 +85,14 @@ const envSchema = z.object({
   AUTOCOMPLETE_CONCURRENCY: optional,
   GOOGLE_AUTOCOMPLETE_ENDPOINT: optional,
   GOOGLE_AUTOCOMPLETE_CLIENT: optional,
-  GOOGLE_ADS_DEVELOPER_TOKEN: optional,
-  GOOGLE_ADS_CLIENT_ID: optional,
-  GOOGLE_ADS_CLIENT_SECRET: optional,
-  GOOGLE_ADS_CUSTOMER_ID: optional,
-  GOOGLE_ADS_LOGIN_CUSTOMER_ID: optional,
-  GOOGLE_ADS_REFRESH_TOKEN: optional,
-  GOOGLE_ADS_REDIRECT_URI: optional,
-  GOOGLE_ADS_API_VERSION: optional,
-  GOOGLE_ADS_BATCH_SIZE: optional,
-  GOOGLE_ADS_METRICS_FILE: optional,
+  // Fornitore di metriche con licenza (T-902, D-30): credenziali dell'account API, mai in DB né nei log.
+  DATAFORSEO_LOGIN: optional,
+  DATAFORSEO_PASSWORD: optional,
+  DATAFORSEO_TIMEOUT_MS: optional,
+  DATAFORSEO_MAX_ATTEMPTS: optional,
+  METRICS_MONTHLY_BUDGET_USD: optional,
+  METRICS_RUN_BUDGET_USD: optional,
+  METRICS_COST_PER_REQUEST_USD: optional,
   GOOGLE_SHEETS_OAUTH_CLIENT_ID: optional,
   GOOGLE_SHEETS_OAUTH_CLIENT_SECRET: optional,
   GOOGLE_SHEETS_OAUTH_REDIRECT_URI: optional,
@@ -166,6 +179,18 @@ export function getIntEnv(name: IntEnvKey, source: EnvSource = process.env): num
   return envInt(name, def, min, max, source);
 }
 
+/** Importo in USD da env: assente o vuoto -> default; non decimale o negativo -> errore. */
+export function getUsdEnv(name: UsdEnvKey, source: EnvSource = process.env): number {
+  const raw = present(source[name])?.trim();
+  if (raw === undefined) {
+    return USD_ENV[name].def;
+  }
+  if (!/^\d+(\.\d+)?$/.test(raw)) {
+    throw new Error(`${name} deve essere un importo decimale maggiore o uguale a 0`);
+  }
+  return Number(raw);
+}
+
 const validatedSchema = envSchema.superRefine((raw, ctx) => {
   const isProduction = raw.NODE_ENV === "production";
 
@@ -196,6 +221,14 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
   const logLevel = present(raw.LOG_LEVEL)?.trim().toLowerCase();
   if (logLevel !== undefined && !isLogLevel(logLevel)) {
     ctx.addIssue({ code: "custom", path: ["LOG_LEVEL"], message: `deve essere uno tra ${LOG_LEVELS.join(", ")}` });
+  }
+
+  for (const name of Object.keys(USD_ENV) as UsdEnvKey[]) {
+    try {
+      getUsdEnv(name, raw);
+    } catch {
+      ctx.addIssue({ code: "custom", path: [name], message: "deve essere un importo decimale maggiore o uguale a 0" });
+    }
   }
 
   for (const name of Object.keys(INT_ENV) as IntEnvKey[]) {
@@ -229,6 +262,13 @@ export function parseEnv(source: EnvSource): Env {
     encryptionKey: present(raw.APP_ENCRYPTION_KEY),
     sessionMaxAgeSeconds: getIntEnv("APP_SESSION_MAX_AGE_SECONDS", raw),
   };
+}
+
+/** Credenziali DataForSEO dall'ambiente; null se una delle due manca (provider non configurato). */
+export function getDataForSeoCredentials(source: EnvSource = process.env): { login: string; password: string } | null {
+  const login = present(source.DATAFORSEO_LOGIN)?.trim();
+  const password = present(source.DATAFORSEO_PASSWORD);
+  return login && password ? { login, password } : null;
 }
 
 let cachedEnv: Env | undefined;

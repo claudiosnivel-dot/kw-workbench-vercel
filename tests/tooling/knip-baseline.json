@@ -1,12 +1,6 @@
 {
   "description": "Codice morto preesistente rilevato dall'audit del 2026-10-02 (T-108). Il gate segnala solo le segnalazioni di knip assenti da qui; la rimozione è di T-1101, human-gated.",
   "entries": [
-    {
-      "type": "files",
-      "file": "lib/modules/providers/metrics/google-keyword-planner.ts",
-      "symbol": "lib/modules/providers/metrics/google-keyword-planner.ts",
-      "note": "T-304: provider disattivato (D-09), accettato dall'utente il 2026-10-04 fino alla rimozione in T-901"
-    },
     { "type": "exports", "file": "lib/auth/current-user.ts", "symbol": "isRootAdminUser" },
     { "type": "exports", "file": "lib/auth/current-user.ts", "symbol": "requireAdminUserFromCookies" },
     { "type": "exports", "file": "lib/auth/current-user.ts", "symbol": "requireRootAdminUserFromCookies" },

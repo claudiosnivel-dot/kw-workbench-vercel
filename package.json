@@ -9,6 +9,8 @@
     "env:check": "node scripts/env-check.mjs",
     "db:backup": "node scripts/db-backup.mjs",
     "db:restore": "node scripts/db-restore.mjs",
+    "planner:export": "tsx --env-file-if-exists=.env scripts/planner-export.ts",
+    "planner:import": "tsx --env-file-if-exists=.env scripts/planner-import.ts",
     "start": "next start -p 3000",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",

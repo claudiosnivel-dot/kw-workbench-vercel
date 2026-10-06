@@ -30,6 +30,15 @@ test.describe("smoke di login", () => {
     await expect(page.getByRole("button", { name: "Esci" }).first()).toBeVisible();
   });
 
+  // Rimozione di T-901 (AC-901-1): la rotta Google Ads non esiste più, Next risponde 404 a un utente autenticato.
+  test("dopo il login la rotta Google Ads rimossa risponde 404", async ({ page }) => {
+    await submitLogin(page, E2E_USER_PASSWORD);
+    await page.waitForURL((url) => url.pathname === "/");
+
+    const response = await page.request.get("/api/integrations/google-ads");
+    expect(response.status()).toBe(404);
+  });
+
   // covers: AC-103-2
   test("con password errata resta su /login e mostra l'errore", async ({ page }) => {
     await submitLogin(page, "password-errata");

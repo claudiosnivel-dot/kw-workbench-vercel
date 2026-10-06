@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import type { MetricsProvider } from "@/lib/generated/prisma/enums";
 import {
   COUNTRY_CODES,
   LANGUAGE_OPTIONS,
@@ -17,7 +18,8 @@ type ProjectFormValues = {
   initial_subproject_name: string;
   seeds: string;
   autocomplete_provider: "MOCK" | "GOOGLE_DIRECT";
-  metrics_provider: "NONE" | "MOCK" | "GOOGLE_KEYWORD_PLANNER";
+  // Tipo dell'enum: PLANNER_CSV (T-910) marca le righe importate e non è tra le opzioni del form.
+  metrics_provider: MetricsProvider;
   min_volume: number;
   exclude_brands: boolean;
   expand_alpha: boolean;
@@ -70,6 +72,9 @@ export function ProjectForm({
   showInitialSubprojectName = true,
 }: ProjectFormProps) {
   const router = useRouter();
+  // DataForSEO ha un costo per richiesta: lo sceglie solo il root admin (lo stesso che sceglie l'autocomplete),
+  // chi lo ha già lo vede selezionato (T-902).
+  const showLicensedProvider = canEditAutocompleteProvider || initialValues?.metrics_provider === "DATAFORSEO";
   const [values, setValues] = useState<ProjectFormValues>(() => {
     const base = initialValues ?? defaultValues;
     if (canEditAutocompleteProvider) {
@@ -289,7 +294,7 @@ export function ProjectForm({
             languageOptions={LANGUAGE_OPTIONS}
             countryOptions={countryOptions}
             canEditAutocompleteProvider={canEditAutocompleteProvider}
-            keepsPlannerProvider={initialValues?.metrics_provider === "GOOGLE_KEYWORD_PLANNER"}
+            showLicensedProvider={showLicensedProvider}
           />
 
           <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-background)] p-3">
@@ -316,7 +321,7 @@ export function ProjectForm({
             languageOptions={LANGUAGE_OPTIONS}
             countryOptions={countryOptions}
             canEditAutocompleteProvider={canEditAutocompleteProvider}
-            keepsPlannerProvider={initialValues?.metrics_provider === "GOOGLE_KEYWORD_PLANNER"}
+            showLicensedProvider={showLicensedProvider}
           />
         </section>
       )}
@@ -360,8 +365,7 @@ type AdvancedProjectFieldsProps = {
   languageOptions: ReadonlyArray<{ code: string; label: string }>;
   countryOptions: ReadonlyArray<{ code: string; label: string }>;
   canEditAutocompleteProvider: boolean;
-  /** Il progetto ha già GOOGLE_KEYWORD_PLANNER: l'opzione resta visibile come non disponibile (T-304). */
-  keepsPlannerProvider: boolean;
+  showLicensedProvider: boolean;
 };
 
 function AdvancedProjectFields({
@@ -374,7 +378,7 @@ function AdvancedProjectFields({
   languageOptions,
   countryOptions,
   canEditAutocompleteProvider,
-  keepsPlannerProvider,
+  showLicensedProvider,
 }: AdvancedProjectFieldsProps) {
   return (
     <>
@@ -448,10 +452,7 @@ function AdvancedProjectFields({
           >
             <option value="NONE">Nessuna metrica</option>
             <option value="MOCK">Mock</option>
-            {/* Non più selezionabile (T-304): resta solo per il progetto che lo ha già. */}
-            {keepsPlannerProvider && (
-              <option value="GOOGLE_KEYWORD_PLANNER">Google Keyword Planner - Non disponibile</option>
-            )}
+            {showLicensedProvider && <option value="DATAFORSEO">DataForSEO (a pagamento)</option>}
           </select>
         </div>
 

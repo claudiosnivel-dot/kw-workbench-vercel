@@ -1,9 +1,15 @@
-import { MetricsProvider, MetricsStatus } from "@/lib/generated/prisma/enums";
+import type {
+  MetricsPrecision,
+  MetricsProvider as MetricsProviderId,
+  MetricsStatus,
+} from "@/lib/generated/prisma/enums";
 
+/** Metriche di un canonical; `keyword` è il canonical con cui la mappa le indicizza. */
 export type KeywordMetric = {
   keyword: string;
   metrics_status: MetricsStatus;
-  metrics_provider: MetricsProvider;
+  metrics_provider: MetricsProviderId;
+  metrics_precision?: MetricsPrecision;
   avg_monthly_searches?: number;
   competition?: number;
   low_top_of_page_bid_micros?: bigint;
@@ -13,22 +19,72 @@ export type KeywordMetric = {
 export type MetricsContext = {
   languageCode: string;
   countryCode: string;
+  /** Progetto e job dell'estrazione, per il registro delle richieste a pagamento (T-903). */
+  projectId?: string;
+  jobId?: string;
 };
 
-export interface MetricsProviderClient {
-  readonly id: MetricsProvider;
-  /** Presente quando il provider è spento: l'estrazione lo riporta come metricsNotice. */
-  readonly disabledReason?: "PROVIDER_DISABLED";
-  enrichKeywords(keywords: string[], context: MetricsContext): Promise<Map<string, KeywordMetric>>;
+/** Una keyword da arricchire: la forma di visualizzazione (con accenti) e il canonical che indicizza il risultato. */
+export type MetricsItem = {
+  displayKeyword: string;
+  canonical: string;
+};
+
+/** Motivo dell'assenza dei volumi, riportato dall'estrazione in result.metricsNotice del job. */
+export type MetricsNotice =
+  | "PROVIDER_NOT_CONFIGURED"
+  | "LOCATION_UNSUPPORTED"
+  | "LANGUAGE_UNSUPPORTED"
+  | "METRICS_BUDGET_EXCEEDED"
+  | "RUN_BUDGET_EXCEEDED";
+
+export type MetricsOutcome = {
+  metrics: Map<string, KeywordMetric>;
+  notice?: MetricsNotice;
+  costUsd?: number;
+  /** Richieste inviate al fornitore, tentativi compresi. */
+  requests?: number;
+  /** Risultati che il fornitore ha restituito per la forma corretta della keyword (campo spell). */
+  spellCorrected?: number;
+  /** Keyword escluse prima della chiamata, per motivo. */
+  skipped?: Record<string, number>;
+};
+
+/** Campi dell'esito che l'estrazione aggiunge al result del job (solo quelli presenti). */
+export function toMetricsResult(outcome: MetricsOutcome) {
+  return {
+    ...(outcome.notice ? { metricsNotice: outcome.notice } : {}),
+    ...(outcome.costUsd !== undefined ? { metricsCostUsd: outcome.costUsd } : {}),
+    ...(outcome.requests !== undefined ? { metricsRequests: outcome.requests } : {}),
+    ...(outcome.spellCorrected !== undefined ? { metricsSpellCorrected: outcome.spellCorrected } : {}),
+    ...(outcome.skipped !== undefined ? { metricsSkipped: outcome.skipped } : {}),
+  };
+}
+
+/** Contratto unico dei provider di metriche (T-901). */
+export interface MetricsProvider {
+  readonly id: MetricsProviderId;
+  enrichKeywords(items: MetricsItem[], context: MetricsContext): Promise<MetricsOutcome>;
+}
+
+/** Esito senza volumi: ogni canonical missing per il provider dato, con l'eventuale motivo. */
+export function missingOutcome(items: MetricsItem[], provider: MetricsProviderId, notice?: MetricsNotice): MetricsOutcome {
+  return {
+    metrics: buildMissingMetrics(
+      items.map((item) => item.canonical),
+      provider
+    ),
+    ...(notice ? { notice } : {}),
+  };
 }
 
 export function buildMissingMetrics(
-  keywords: string[],
-  provider: MetricsProvider,
+  canonicals: string[],
+  provider: MetricsProviderId,
   status: MetricsStatus = "missing"
 ): Map<string, KeywordMetric> {
   return new Map(
-    keywords.map((keyword) => [
+    canonicals.map((keyword) => [
       keyword,
       {
         keyword,

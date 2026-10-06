@@ -20,3 +20,5 @@ test-results
 # Backup logici del DB (T-604): contengono hash di password e token cifrati, mai nel repo
 backups/
 *.dump
+# File per Keyword Planner della CLI (T-904): keyword dei clienti, mai nel repo
+planner-exports/

@@ -30,6 +30,8 @@ export default async function PersonalizzaPage() {
       <GoogleSheetsPersonalCard
         initial={{
           connected: googleSheets.connected,
+          status: googleSheets.status,
+          needsReconnect: googleSheets.needsReconnect,
           connectedEmail: googleSheets.connectedEmail,
           scope: googleSheets.scope,
           tokenType: googleSheets.tokenType,

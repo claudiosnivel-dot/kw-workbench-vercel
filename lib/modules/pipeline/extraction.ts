@@ -1,4 +1,4 @@
-import { MetricsProvider, Prisma, type KeywordCandidate } from "@/lib/generated/prisma/client";
+import { Prisma, type KeywordCandidate } from "@/lib/generated/prisma/client";
 import { getIntEnv } from "@/lib/env";
 import { evaluateBrandStatus, prepareBlacklist } from "@/lib/modules/brand-filter";
 import { classifyKeyword } from "@/lib/modules/classification";
@@ -8,7 +8,7 @@ import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { createAutocompleteProvider } from "@/lib/modules/providers/autocomplete/factory";
 import { AutocompleteQueryFailedError } from "@/lib/modules/providers/autocomplete/types";
 import { createMetricsProvider } from "@/lib/modules/providers/metrics/factory";
-import { buildMissingMetrics } from "@/lib/modules/providers/metrics/types";
+import { type KeywordMetric, toMetricsResult } from "@/lib/modules/providers/metrics/types";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
 import { scoreKeyword } from "@/lib/modules/scoring";
 import { parseSeedsFromRows } from "@/lib/modules/seed-parser";
@@ -29,8 +29,7 @@ type ExtractionSummary = {
   failedQueries?: number;
   truncated?: boolean;
   skippedQueries?: number;
-  metricsNotice?: "PROVIDER_DISABLED";
-};
+} & ReturnType<typeof toMetricsResult>;
 
 /** Riga di keyword_candidates preparata dalla pipeline; id, project_id, subproject_id e date li mette la scrittura. */
 type CandidateRow = Omit<KeywordCandidate, "id" | "project_id" | "subproject_id" | "created_at" | "updated_at">;
@@ -45,7 +44,8 @@ const UPSERT_INSERT = Prisma.sql`
     "source_query", "brand_status", "brand_reason", "review_status", "selected_for_export", "keyword_type",
     "search_intent", "is_question", "is_local_intent", "is_tool_intent", "is_commercial_intent",
     "metrics_status", "metrics_provider", "avg_monthly_searches", "competition", "low_top_of_page_bid_micros",
-    "high_top_of_page_bid_micros", "score", "score_source", "metrics_updated_at", "created_at", "updated_at"
+    "high_top_of_page_bid_micros", "metrics_precision", "score", "score_source", "metrics_updated_at", "created_at",
+    "updated_at"
   )
   VALUES`;
 
@@ -70,6 +70,7 @@ const UPSERT_ON_CONFLICT = Prisma.sql`
     "competition" = EXCLUDED."competition",
     "low_top_of_page_bid_micros" = EXCLUDED."low_top_of_page_bid_micros",
     "high_top_of_page_bid_micros" = EXCLUDED."high_top_of_page_bid_micros",
+    "metrics_precision" = EXCLUDED."metrics_precision",
     "score" = EXCLUDED."score",
     "score_source" = EXCLUDED."score_source",
     "metrics_updated_at" = EXCLUDED."metrics_updated_at",
@@ -87,7 +88,7 @@ function candidateValues(projectId: string, subprojectId: string, row: Candidate
     ${row.metrics_status}::"MetricsStatus", ${row.metrics_provider}::"MetricsProvider",
     ${row.avg_monthly_searches}::integer, ${row.competition}::double precision,
     ${row.low_top_of_page_bid_micros}::bigint, ${row.high_top_of_page_bid_micros}::bigint,
-    ${row.score}::double precision, ${row.score_source}::"ScoreSource", ${row.metrics_updated_at}::timestamp(3),
+    ${row.metrics_precision}::"MetricsPrecision", ${row.score}::double precision, ${row.score_source}::"ScoreSource", ${row.metrics_updated_at}::timestamp(3),
     ${now}::timestamp(3), ${now}::timestamp(3)
   )`;
 }
@@ -153,7 +154,48 @@ function chunk<T>(items: T[], size: number): T[][] {
   return output;
 }
 
-export async function runExtractionPipeline(subprojectId: string): Promise<ExtractionSummary> {
+/**
+ * Volumi importati da Keyword Planner nella sezione (T-910, D-19 emendata il 2026-10-06): con il provider effettivo
+ * NONE una keyword ancora prodotta li conserva, con la data dell'import, invece di restare senza metriche.
+ */
+async function loadImportedMetrics(subprojectId: string): Promise<Map<string, { metric: KeywordMetric; at: Date | null }>> {
+  const rows = await prisma.keywordCandidate.findMany({
+    where: { subproject_id: subprojectId, metrics_provider: "PLANNER_CSV" },
+    select: {
+      canonical_keyword: true,
+      metrics_status: true,
+      metrics_precision: true,
+      avg_monthly_searches: true,
+      competition: true,
+      low_top_of_page_bid_micros: true,
+      high_top_of_page_bid_micros: true,
+      metrics_updated_at: true,
+    },
+  });
+  return new Map(
+    rows.map((row: (typeof rows)[number]) => [
+      row.canonical_keyword,
+      {
+        metric: {
+          keyword: row.canonical_keyword,
+          metrics_status: row.metrics_status,
+          metrics_provider: "PLANNER_CSV" as const,
+          metrics_precision: row.metrics_precision ?? undefined,
+          avg_monthly_searches: row.avg_monthly_searches ?? undefined,
+          competition: row.competition ?? undefined,
+          low_top_of_page_bid_micros: row.low_top_of_page_bid_micros ?? undefined,
+          high_top_of_page_bid_micros: row.high_top_of_page_bid_micros ?? undefined,
+        },
+        at: row.metrics_updated_at,
+      },
+    ])
+  );
+}
+
+export async function runExtractionPipeline(
+  subprojectId: string,
+  options: { jobId?: string } = {}
+): Promise<ExtractionSummary> {
   const subproject = await prisma.subproject.findUnique({
     where: { id: subprojectId },
     include: {
@@ -251,15 +293,20 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
   // Una sola preparazione per job; i brand restano nel testo originale per brand_reason.
   const blacklist = prepareBlacklist(blacklistRows.map((row) => row.brand), effective.language_code);
 
+  // Una voce per canonical: dedupeCandidates tiene la prima candidata, la stessa keyword salvata nella riga.
   const metricsProvider = createMetricsProvider(effective.metrics_provider);
-  const metricKeys = deduped.map((item) => item.canonicalKeyword);
-  const metrics =
-    metricKeys.length > 0
-      ? await metricsProvider.enrichKeywords(metricKeys, {
-          languageCode: effective.language_code,
-          countryCode: effective.country_code,
-        })
-      : buildMissingMetrics([], effective.metrics_provider as MetricsProvider, "missing");
+  const metricsOutcome = await metricsProvider.enrichKeywords(
+    deduped.map((item) => ({ displayKeyword: item.keyword, canonical: item.canonicalKeyword })),
+    {
+      languageCode: effective.language_code,
+      countryCode: effective.country_code,
+      projectId: subproject.project_id,
+      jobId: options.jobId,
+    }
+  );
+  const metrics = metricsOutcome.metrics;
+  const imported =
+    effective.metrics_provider === "NONE" ? await loadImportedMetrics(subproject.id) : new Map<string, never>();
 
   const now = new Date();
   const preparedRows: CandidateRow[] = [];
@@ -287,11 +334,13 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
       classification.keyword_type = "branded";
     }
 
-    const metric = metrics.get(candidate.canonicalKeyword) ?? {
-      keyword: candidate.canonicalKeyword,
-      metrics_status: "missing" as const,
-      metrics_provider: effective.metrics_provider,
-    };
+    const kept = imported.get(candidate.canonicalKeyword);
+    const metric = kept?.metric ??
+      metrics.get(candidate.canonicalKeyword) ?? {
+        keyword: candidate.canonicalKeyword,
+        metrics_status: "missing" as const,
+        metrics_provider: effective.metrics_provider,
+      };
 
     if (
       typeof effective.min_volume === "number" &&
@@ -337,9 +386,10 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
       competition: metric.competition ?? null,
       low_top_of_page_bid_micros: metric.low_top_of_page_bid_micros ?? null,
       high_top_of_page_bid_micros: metric.high_top_of_page_bid_micros ?? null,
+      metrics_precision: metric.metrics_precision ?? null,
       score,
       score_source,
-      metrics_updated_at: metric.metrics_status === "missing" ? null : now,
+      metrics_updated_at: kept ? kept.at : metric.metrics_status === "missing" ? null : now,
     });
   }
 
@@ -359,6 +409,6 @@ export async function runExtractionPipeline(subprojectId: string): Promise<Extra
     failedQueries,
     truncated: expansion.truncated,
     skippedQueries: expansion.skippedQueries,
-    ...(metricsProvider.disabledReason ? { metricsNotice: metricsProvider.disabledReason } : {}),
+    ...toMetricsResult(metricsOutcome),
   };
 }

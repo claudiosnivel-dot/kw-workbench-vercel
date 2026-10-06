@@ -6,10 +6,29 @@ import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/clien
 
 type GoogleSheetsSnapshot = {
   connected: boolean;
+  status: "connected" | "reauth_required" | "disconnected";
+  needsReconnect: boolean;
   connectedEmail?: string;
   scope?: string;
   tokenType?: string;
   updatedAt?: string;
+};
+
+// Testi dei codici di errore del collegamento (whitelist di T-906); un codice sconosciuto ha un testo generico.
+const OAUTH_REASON_MESSAGES: Record<string, string> = {
+  accesso_negato: "l'accesso a Google è stato negato o annullato.",
+  stato_non_valido: "la richiesta di collegamento è scaduta o non è valida. Riprova.",
+  config_oauth_mancante: "la configurazione OAuth di Google Sheets manca. Contatta l'amministratore principale.",
+  scope_mancante: "non hai concesso il permesso per Google Sheets. Ricollega e accetta tutti i permessi richiesti.",
+  scambio_token_fallito: "Google non ha completato il collegamento. Riprova.",
+  sessione_scaduta: "la sessione è scaduta. Accedi di nuovo e ricollega.",
+};
+const UNKNOWN_REASON_MESSAGE = "errore sconosciuto.";
+
+const STATUS_LABELS: Record<GoogleSheetsSnapshot["status"], string> = {
+  connected: "Connesso",
+  reauth_required: "Da ricollegare",
+  disconnected: "Non connesso",
 };
 
 export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSnapshot }) {
@@ -56,12 +75,14 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
 
       {oauthStatus === "connected" && <p className="text-sm text-green-700">Account Google Sheets collegato con successo.</p>}
       {oauthStatus === "error" && (
-        <p className="text-sm text-red-700">Connessione Google Sheets non riuscita: {oauthReason ?? "errore sconosciuto"}</p>
+        <p className="text-sm text-red-700">
+          Connessione Google Sheets non riuscita: {OAUTH_REASON_MESSAGES[oauthReason ?? ""] ?? UNKNOWN_REASON_MESSAGE}
+        </p>
       )}
 
       <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
         <p>
-          <span className="font-medium">Stato:</span> {initial.connected ? "Connesso" : "Non connesso"}
+          <span className="font-medium">Stato:</span> {STATUS_LABELS[initial.status]}
         </p>
         <p>
           <span className="font-medium">Email:</span> {initial.connectedEmail ?? "-"}
@@ -70,6 +91,19 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
           <span className="font-medium">Scope:</span> {initial.scope ?? "-"}
         </p>
       </div>
+
+      {initial.connected && initial.needsReconnect && initial.status === "connected" && (
+        <p className="text-sm text-amber-700">
+          Il collegamento usa un permesso più ampio di quello che serve: ricollega Google Sheets per passare all&apos;accesso
+          ai soli file creati da questa app.
+        </p>
+      )}
+
+      {initial.connected && (initial.status === "reauth_required" || initial.needsReconnect) && (
+        <a className="btn-primary w-full text-center sm:w-auto" href="/api/integrations/google-sheets/connect">
+          Ricollega Google Sheets
+        </a>
+      )}
 
       {!initial.connected ? (
         <a className="btn-primary w-full text-center sm:w-auto" href="/api/integrations/google-sheets/connect">

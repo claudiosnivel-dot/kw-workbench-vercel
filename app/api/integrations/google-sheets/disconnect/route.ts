@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
-import { clearGoogleSheetsCredential } from "@/lib/integrations/google-sheets";
+import { revokeAndClearGoogleSheetsCredential } from "@/lib/integrations/google-sheets";
 
+/** Disconnessione di Google Sheets: token revocato presso Google se possibile, credenziale sempre cancellata (T-906). */
 export const POST = withApiErrors(async (request: Request) => {
   const user = await requireAuthenticatedUserFromRequest(request);
-  await clearGoogleSheetsCredential(user.id);
-  return NextResponse.json({ success: true });
+  const revoked = await revokeAndClearGoogleSheetsCredential(user.id);
+  return NextResponse.json({ success: true, revoked });
 });

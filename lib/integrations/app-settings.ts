@@ -1,17 +1,23 @@
+import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret, encryptSecret } from "@/lib/security/encryption";
 
-export async function getSettingValue(key: string): Promise<string | null> {
-  const setting = await prisma.appSetting.findUnique({ where: { key } });
-  if (!setting) {
-    return null;
-  }
-
+/** Valore in chiaro, o null se la decifratura fallisce: registrata con chiave e nome dell'errore, mai il valore (T-906). */
+function decryptSetting(setting: { key: string; value_encrypted: string }): string | null {
   try {
     return decryptSecret(setting.value_encrypted);
-  } catch {
+  } catch (error) {
+    logger.error("app_setting_decrypt_failed", {
+      key: setting.key,
+      errorName: error instanceof Error ? error.name : typeof error,
+    });
     return null;
   }
+}
+
+export async function getSettingValue(key: string): Promise<string | null> {
+  const setting = await prisma.appSetting.findUnique({ where: { key } });
+  return setting ? decryptSetting(setting) : null;
 }
 
 /** Restituisce la PrismaPromise non ancora eseguita: si può attendere o passare a prisma.$transaction. */
@@ -40,10 +46,9 @@ export async function getManySettingValues(keys: string[]): Promise<Record<strin
   const out: Record<string, string> = {};
 
   for (const row of rows) {
-    try {
-      out[row.key] = decryptSecret(row.value_encrypted);
-    } catch {
-      // Ignore invalid encrypted payloads.
+    const value = decryptSetting(row);
+    if (value !== null) {
+      out[row.key] = value;
     }
   }
 

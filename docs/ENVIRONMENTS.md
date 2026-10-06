@@ -40,16 +40,13 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `AUTOCOMPLETE_CONCURRENCY` | facolt. (intero 1…20, default 6) | facolt. | facolt. | no | Vercel / locale |
 | `GOOGLE_AUTOCOMPLETE_ENDPOINT` | facolt. | facolt. | facolt. | no | Vercel / locale |
 | `GOOGLE_AUTOCOMPLETE_CLIENT` | facolt. | facolt. | facolt. | no | Vercel / locale |
-| `GOOGLE_ADS_DEVELOPER_TOKEN` | facolt. (API Google Ads dismessa per le metriche, D-09) | facolt. | facolt. | sì | Vercel / locale / dashboard admin |
-| `GOOGLE_ADS_CLIENT_ID` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
-| `GOOGLE_ADS_CLIENT_SECRET` | facolt. | facolt. | facolt. | sì | Vercel / locale / dashboard admin |
-| `GOOGLE_ADS_CUSTOMER_ID` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
-| `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
-| `GOOGLE_ADS_REFRESH_TOKEN` | facolt. | facolt. | facolt. | sì | Vercel / locale / dashboard admin |
-| `GOOGLE_ADS_REDIRECT_URI` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
-| `GOOGLE_ADS_API_VERSION` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
-| `GOOGLE_ADS_BATCH_SIZE` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
-| `GOOGLE_ADS_METRICS_FILE` | facolt. | facolt. | facolt. | no | Vercel / locale |
+| `DATAFORSEO_LOGIN` | facolt. (login dell'account API DataForSEO, D-30; senza login o password il provider DATAFORSEO non chiama il fornitore e dichiara `PROVIDER_NOT_CONFIGURED`) | facolt. (come Production: stesse variabili) | facolt. (di norma vuota) | no | Vercel / locale |
+| `DATAFORSEO_PASSWORD` | facolt. (password dell'account API DataForSEO; mai in DB né nei log) | facolt. | facolt. (di norma vuota) | sì | Vercel (Sensitive) / locale |
+| `DATAFORSEO_TIMEOUT_MS` | facolt. (intero 1000…120000, default 30000: timeout di ogni richiesta a DataForSEO) | facolt. | facolt. | no | Vercel / locale |
+| `DATAFORSEO_MAX_ATTEMPTS` | facolt. (intero 1…6, default 3: tentativi per lotto, ripetuti solo su 429, 5xx, timeout e codici 40202, 40209, 5xxxx) | facolt. | facolt. | no | Vercel / locale |
+| `METRICS_MONTHLY_BUDGET_USD` | facolt. (importo decimale >= 0, default 0: tetto mensile globale della spesa del fornitore di metriche, mese UTC; con 0 nessuna richiesta e `METRICS_BUDGET_EXCEEDED`) | facolt. (come Production: stesse variabili) | facolt. | no | Vercel / locale |
+| `METRICS_RUN_BUDGET_USD` | facolt. (importo decimale >= 0, default 0: tetto di spesa per singola estrazione; oltre, `RUN_BUDGET_EXCEEDED`) | facolt. | facolt. | no | Vercel / locale |
+| `METRICS_COST_PER_REQUEST_USD` | facolt. (importo decimale >= 0, default 0.09: costo stimato di una richiesta live, prenotato prima dell'invio) | facolt. | facolt. | no | Vercel / locale |
 | `GOOGLE_SHEETS_OAUTH_CLIENT_ID` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |
 | `GOOGLE_SHEETS_OAUTH_CLIENT_SECRET` | facolt. | facolt. | facolt. | sì | Vercel / locale / dashboard admin |
 | `GOOGLE_SHEETS_OAUTH_REDIRECT_URI` | facolt. | facolt. | facolt. | no | Vercel / locale / dashboard admin |

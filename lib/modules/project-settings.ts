@@ -23,21 +23,6 @@ export type EffectiveProjectSettings = {
   scoring_profile: string;
 };
 
-/** GOOGLE_KEYWORD_PLANNER non si può scegliere come nuovo valore (T-304, D-09): le rotte rispondono 400. */
-export class MetricsProviderUnavailableError extends Error {
-  readonly code = "METRICS_PROVIDER_UNAVAILABLE";
-
-  constructor() {
-    super("Volumi Google Ads non disponibili: il provider Google Keyword Planner non si può più selezionare");
-    this.name = "MetricsProviderUnavailableError";
-  }
-
-  /** Corpo della risposta 400 delle rotte. */
-  get body() {
-    return { error: this.message, code: this.code };
-  }
-}
-
 // Limiti degli input di progetti e sezioni (T-809, D-24).
 const NAME_MAX_LENGTH = 120;
 const DESCRIPTION_MAX_LENGTH = 1000;
@@ -48,7 +33,7 @@ const INT4_MAX = 2_147_483_647;
 
 const SCORING_PROFILES = ["balanced", "conservative", "aggressive"] as const;
 const AUTOCOMPLETE_PROVIDERS = ["MOCK", "GOOGLE_DIRECT"] as const;
-const METRICS_PROVIDERS = ["NONE", "MOCK", "GOOGLE_KEYWORD_PLANNER"] as const;
+const METRICS_PROVIDERS = ["NONE", "MOCK", "DATAFORSEO"] as const;
 const BOOLEAN_WORDS = new Map<string, boolean>([
   ["true", true],
   ["1", true],
@@ -177,21 +162,22 @@ function parseOrThrow<T>(schema: z.ZodType<T>, payload: unknown): T {
 
 type Actor = { isRootAdmin: boolean };
 
-/**
- * MOCK produce volumi finti: si sceglie solo come root admin (CWE-284); chi lo ha già lo conserva.
- * GOOGLE_KEYWORD_PLANNER sul progetto resta solo se c'era già (T-304, D-09).
- */
+// Provider che solo il root admin può scegliere: MOCK produce volumi finti, DATAFORSEO ha un costo per richiesta
+// (T-902, finché T-1605 non introduce il diritto di piano licensedMetrics).
+const ROOT_ONLY_METRICS_PROVIDERS = new Map<MetricsProvider, string>([
+  ["MOCK", "Il provider di metriche MOCK è riservato all'amministratore principale"],
+  ["DATAFORSEO", "Il provider di metriche DATAFORSEO è riservato all'amministratore principale"],
+]);
+
+/** MOCK e DATAFORSEO si scelgono solo come root admin (CWE-284); chi li ha già li conserva. */
 function assertMetricsProviderAllowed(
   value: MetricsProvider | null | undefined,
   current: MetricsProvider | null | undefined,
-  actor: Actor,
-  options: { plannerAllowed: boolean }
+  actor: Actor
 ): void {
-  if (value === "MOCK" && current !== "MOCK" && !actor.isRootAdmin) {
-    throw new AppError(403, "FORBIDDEN_FIELD", "Il provider di metriche MOCK è riservato all'amministratore principale");
-  }
-  if (value === "GOOGLE_KEYWORD_PLANNER" && current !== "GOOGLE_KEYWORD_PLANNER" && !options.plannerAllowed) {
-    throw new MetricsProviderUnavailableError();
+  const rootOnlyMessage = value ? ROOT_ONLY_METRICS_PROVIDERS.get(value) : undefined;
+  if (rootOnlyMessage && value !== current && !actor.isRootAdmin) {
+    throw new AppError(403, "FORBIDDEN_FIELD", rootOnlyMessage);
   }
 }
 
@@ -217,7 +203,7 @@ export type ProjectCreateInput = {
 
 export function parseProjectCreate(payload: unknown, actor: Actor): ProjectCreateInput {
   const input = parseOrThrow(projectCreateSchema, payload);
-  assertMetricsProviderAllowed(input.metrics_provider, undefined, actor, { plannerAllowed: false });
+  assertMetricsProviderAllowed(input.metrics_provider, undefined, actor);
 
   return {
     data: {
@@ -244,7 +230,7 @@ export function parseProjectCreate(payload: unknown, actor: Actor): ProjectCreat
 /** Aggiornamento parziale del progetto: nel data ci sono solo i campi inviati. */
 export function parseProjectPatch(payload: unknown, actor: Actor, current: { metrics_provider: MetricsProvider }) {
   const input = parseOrThrow(projectPatchSchema, payload);
-  assertMetricsProviderAllowed(input.metrics_provider, current.metrics_provider, actor, { plannerAllowed: false });
+  assertMetricsProviderAllowed(input.metrics_provider, current.metrics_provider, actor);
   if (input.autocomplete_provider !== undefined && !actor.isRootAdmin) {
     input.autocomplete_provider = "GOOGLE_DIRECT";
   }
@@ -253,7 +239,7 @@ export function parseProjectPatch(payload: unknown, actor: Actor, current: { met
 
 export function parseSubprojectCreate(payload: unknown, actor: Actor) {
   const { seeds, ...input } = parseOrThrow(subprojectCreateSchema, payload);
-  assertMetricsProviderAllowed(input.metrics_provider_override, null, actor, { plannerAllowed: true });
+  assertMetricsProviderAllowed(input.metrics_provider_override, null, actor);
 
   return {
     data: {
@@ -282,9 +268,7 @@ export function parseSubprojectPatch(
   current: { metrics_provider_override: MetricsProvider | null }
 ) {
   const { seeds, ...data } = parseOrThrow(subprojectPatchSchema, payload);
-  assertMetricsProviderAllowed(data.metrics_provider_override, current.metrics_provider_override, actor, {
-    plannerAllowed: true,
-  });
+  assertMetricsProviderAllowed(data.metrics_provider_override, current.metrics_provider_override, actor);
   if (data.autocomplete_provider_override !== undefined && !actor.isRootAdmin) {
     data.autocomplete_provider_override = null;
   }
