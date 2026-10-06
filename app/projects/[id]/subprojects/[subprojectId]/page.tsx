@@ -5,6 +5,7 @@ import { PageHeaderCard } from "@/components/page-header-card";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { findActiveJobId } from "@/lib/modules/jobs/job-api";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
 import { resultsHref } from "@/lib/modules/results-view";
 import { prisma } from "@/lib/prisma";
@@ -48,6 +49,7 @@ export default async function SubprojectSettingsPage({
     project: subproject.project,
     subproject,
   });
+  const activeJobId = await findActiveJobId(subproject.id);
 
   return (
     <div className="space-y-6">
@@ -59,6 +61,8 @@ export default async function SubprojectSettingsPage({
             runPath={`/api/projects/${subproject.project_id}/subprojects/${subproject.id}/run`}
             label="Avvia estrazione"
             runningLabel="Estrazione in corso..."
+            resultsHref={resultsHref(subproject.project_id, { subprojectId: subproject.id })}
+            activeJobId={activeJobId}
           />
         }
       >

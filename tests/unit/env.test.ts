@@ -61,6 +61,32 @@ describe("segreti obbligatori in produzione", () => {
   }
 });
 
+describe("variabili dei job in background (T-1203)", () => {
+  it("JOB_SIGNING_SECRET è obbligatoria in produzione, lunga almeno 32 caratteri e diversa da APP_SESSION_SECRET", () => {
+    expect(errorMessageOf(() => parseEnv(PRODUCTION))).toContain("JOB_SIGNING_SECRET è obbligatoria in produzione");
+    expect(() => parseEnv({ ...PRODUCTION, JOB_SIGNING_SECRET: "j".repeat(40) })).not.toThrow();
+    expect(errorMessageOf(() => parseEnv({ ...PRODUCTION, JOB_SIGNING_SECRET: "j".repeat(31) }))).toContain(
+      "JOB_SIGNING_SECRET"
+    );
+    expect(errorMessageOf(() => parseEnv({ ...PRODUCTION, JOB_SIGNING_SECRET: VALID_SECRET }))).toContain(
+      "JOB_SIGNING_SECRET deve essere diversa da APP_SESSION_SECRET"
+    );
+  });
+
+  it("rifiuta CRON_SECRET corta, APP_PUBLIC_URL http fuori da localhost e JOB_STALE_AFTER_MS vicina al passo", () => {
+    const development = { NODE_ENV: "development" };
+
+    expect(errorMessageOf(() => parseEnv({ ...development, CRON_SECRET: "corta" }))).toContain("CRON_SECRET");
+    expect(errorMessageOf(() => parseEnv({ ...development, APP_PUBLIC_URL: "http://app.example.com" }))).toContain(
+      "APP_PUBLIC_URL"
+    );
+    expect(() => parseEnv({ ...development, APP_PUBLIC_URL: "http://localhost:3000" })).not.toThrow();
+    expect(errorMessageOf(() => parseEnv({ ...development, JOB_STEP_BUDGET_MS: "200000" }))).toContain(
+      "JOB_STALE_AFTER_MS deve superare JOB_STEP_BUDGET_MS"
+    );
+  });
+});
+
 describe("DSN di Sentry (T-601)", () => {
   it("accetta un DSN https o l'assenza e rifiuta un valore non conforme nominando la variabile, mai il valore", () => {
     expect(() => parseEnv({ NODE_ENV: "development", SENTRY_DSN: "https://chiave@o1.ingest.sentry.io/2" })).not.toThrow();

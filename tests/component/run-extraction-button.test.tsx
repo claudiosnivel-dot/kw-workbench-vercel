@@ -1,4 +1,5 @@
-// Gate di T-305 (AC-305-3, AC-305-4): l'estrazione è riuscita solo con response.ok e data.status completed.
+// Gate di T-305 (AC-305-3, AC-305-4): un avvio non riuscito mostra l'errore e non fa avanzare onboarding né pagina.
+// impacted-by: T-1205 (l'avvio riuscito è un 202 seguito da JobProgress; una risposta 200 non è un job avviato)
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingRunStep } from "@/components/onboarding-run-step";
@@ -31,7 +32,15 @@ afterEach(() => {
 });
 
 function renderOnboardingRunStep() {
-  render(<OnboardingRunStep projectId="p1" subprojectId="s1" projectName="Progetto" subprojectName="Sezione" />);
+  render(
+    <OnboardingRunStep
+      projectId="p1"
+      subprojectId="s1"
+      projectName="Progetto"
+      subprojectName="Sezione"
+      resultsHref="/projects/p1/results?subprojectId=s1"
+    />
+  );
 }
 
 describe("OnboardingRunStep", () => {
@@ -63,7 +72,7 @@ describe("RunExtractionButton", () => {
   // covers: AC-305-4
   it("con risposta 200 e data.status failed mostra l'errore e non aggiorna la pagina", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { data: { status: "failed" } }));
-    render(<RunExtractionButton projectId="p1" />);
+    render(<RunExtractionButton projectId="p1" resultsHref="/projects/p1/results?subprojectId=s1" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Avvia estrazione" }));
 

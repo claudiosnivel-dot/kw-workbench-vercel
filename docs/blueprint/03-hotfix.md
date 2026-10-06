@@ -236,10 +236,12 @@ caratterizzazioni di 01-foundation.
     - "tests/component/run-extraction-button.test.tsx copre sia RunExtractionButton sia OnboardingRunStep"
 
   acceptance_criteria:
+    # Emendamento T-1204 (2026-10-06): le rotte run avviano il job in background e rispondono 202; l'esito failed si
+    # legge dallo stato del job (GET /api/jobs/{id}), non più da un 500 JOB_FAILED della rotta di avvio.
     - id: AC-305-1
-      given: "un progetto del richiedente e runExtractionPipeline mockata perché lanci un errore con messaggio contenente dettaglio-interno"
-      when: "si chiamano POST /api/projects/{id}/run e POST /api/projects/{id}/subprojects/{subprojectId}/run"
-      then: "entrambe rispondono 500 con code JOB_FAILED e jobId valorizzato, il body non contiene dettaglio-interno e la riga jobs corrispondente ha status failed e completed_at non nullo"
+      given: "un progetto del richiedente con due sezioni, advanceJob mockata perché lanci un errore con messaggio contenente dettaglio-interno e JOB_MAX_ATTEMPTS=1"
+      when: "si chiamano POST /api/projects/{id}/run e POST /api/projects/{id}/subprojects/{subprojectId}/run su sezioni diverse, si esegue il passo in background di ciascun job e si legge GET /api/jobs/{jobId}"
+      then: "entrambe le rotte di avvio rispondono 202 con jobId valorizzato; lo stato risponde 200 con data.status failed, il body non contiene dettaglio-interno e la riga jobs corrispondente ha status failed e completed_at non nullo"
     - id: AC-305-2
       given: "una pipeline che termina e prisma.job.update che rigetta una sola volta (mockRejectedValueOnce) sull'aggiornamento a completed"
       when: "si chiama runJobById"

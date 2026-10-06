@@ -72,7 +72,7 @@ async function createDataForSeoSection(ownerId: string, seed: string, count: num
 }
 
 async function runExtraction(projectId: string, sectionId: string) {
-  const job = await enqueueExtractionJob(projectId, sectionId);
+  const { job } = await enqueueExtractionJob(projectId, sectionId);
   await runJobById(job.id);
   return prisma.job.findUniqueOrThrow({ where: { id: job.id } });
 }

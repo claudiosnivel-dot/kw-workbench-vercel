@@ -2,16 +2,17 @@
 // esplicito, messaggi d'errore pubblici e troncati, dettaglio solo nel log.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { advanceJob } from "@/lib/modules/jobs/advance-job";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
-import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
-// La pipeline resta quella vera; AC-706-3 e AC-706-4 la sostituiscono per un solo run.
-vi.mock("@/lib/modules/pipeline/extraction", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/modules/pipeline/extraction")>();
-  return { ...actual, runExtractionPipeline: vi.fn(actual.runExtractionPipeline) };
+// I passi del job restano quelli veri; AC-706-3 e AC-706-4 sostituiscono un solo passo.
+// impacted-by: T-1202 (runJobById esegue il job con advanceJob, non più con runExtractionPipeline)
+vi.mock("@/lib/modules/jobs/advance-job", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/modules/jobs/advance-job")>();
+  return { ...actual, advanceJob: vi.fn(actual.advanceJob) };
 });
 
 // Autocomplete mock: un solo suggerimento per query, oppure SUGGESTIONS_PER_QUERY suggerimenti diversi.
@@ -28,7 +29,7 @@ vi.mock("@/lib/modules/providers/autocomplete/factory", () => ({
   }),
 }));
 
-const pipeline = vi.mocked(runExtractionPipeline);
+const advance = vi.mocked(advanceJob);
 const NO_SEEDS_MESSAGE = "La sezione non ha seed: aggiungi almeno una seed prima di avviare l'estrazione";
 
 async function createSection(seeds: string[]) {
@@ -54,7 +55,7 @@ async function createSection(seeds: string[]) {
 }
 
 async function runSection(projectId: string, sectionId: string) {
-  const job = await enqueueExtractionJob(projectId, sectionId);
+  const { job } = await enqueueExtractionJob(projectId, sectionId);
   await runJobById(job.id);
   return prisma.job.findUniqueOrThrow({ where: { id: job.id } });
 }
@@ -126,8 +127,12 @@ describe("transazione finale", () => {
 
     const job = await runSection(projectId, sectionId);
 
-    expect(transaction).toHaveBeenCalledTimes(1);
-    expect(transaction.mock.calls[0][1]).toMatchObject({ timeout: 60000, maxWait: 10000 });
+    // impacted-by: T-1202 (una transazione per batch, tutte con il timeout esplicito; prima una sola transazione
+    // finale): expand, autocomplete (1 query), metrics (3 batch da 1000 canonical) e store.
+    expect(transaction).toHaveBeenCalledTimes(6);
+    for (const call of transaction.mock.calls) {
+      expect(call[1]).toMatchObject({ timeout: 60000, maxWait: 10000 });
+    }
     expect(job.status).toBe("completed");
     expect((job.result as { storedCandidates?: number }).storedCandidates).toBe(3000);
     expect(await prisma.keywordCandidate.count({ where: { subproject_id: sectionId } })).toBe(3000);
@@ -137,7 +142,7 @@ describe("transazione finale", () => {
 describe("errori della pipeline", () => {
   // covers: AC-706-3
   it("un errore Prisma salva solo il codice e scrive una riga di log con l'id del job", async () => {
-    pipeline.mockRejectedValueOnce(
+    advance.mockRejectedValueOnce(
       new Prisma.PrismaClientKnownRequestError("Unique constraint failed on host=db.internal.example port=5432", {
         code: "P2002",
         clientVersion: "7.10.0",
@@ -159,7 +164,7 @@ describe("errori della pipeline", () => {
 
   // covers: AC-706-4
   it("un messaggio di 2000 caratteri è salvato troncato a 500", async () => {
-    pipeline.mockRejectedValueOnce(new Error("x".repeat(2000)));
+    advance.mockRejectedValueOnce(new Error("x".repeat(2000)));
     const { projectId, sectionId } = await createSection(["caffe"]);
     captureStdout();
 

@@ -5,3 +5,11 @@ export class NoSeedsError extends Error {
     this.name = "NoSeedsError";
   }
 }
+
+/** Query di autocomplete fallite oltre la soglia (T-306): il job fallisce prima di toccare i risultati salvati. */
+export class AutocompleteUnavailableError extends Error {
+  constructor(failedQueries: number, totalQueries: number) {
+    super(`Autocomplete non disponibile: ${failedQueries} query su ${totalQueries} fallite`);
+    this.name = "AutocompleteUnavailableError";
+  }
+}

@@ -81,7 +81,8 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
       covers: [AC-901-1, AC-901-2]
     - file: "tests/tooling/google-ads-removal.test.ts"
       covers: [AC-901-3]
-    - file: "tests/unit/metrics-provider-contract.test.ts"
+    # Emendamento T-1202 (2026-10-06): il test passa a tests/integration perché la pipeline a passi scrive sul DB.
+    - file: "tests/integration/metrics-provider-contract.test.ts"
       covers: [AC-901-4]
 
   security_notes:
