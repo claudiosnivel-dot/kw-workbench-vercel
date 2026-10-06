@@ -1,3 +1,4 @@
+import { revalidateTag, unstable_cache } from "next/cache";
 import { ValidationError } from "@/lib/http/errors";
 import { deleteSettingValue, getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
@@ -80,24 +81,34 @@ function normalizeLogoUrl(value: string | null | undefined): string | undefined 
   return undefined;
 }
 
-export async function getBrandingSnapshot(): Promise<BrandingSnapshot> {
-  // I valori salvati non conformi (es. http: di prima di T-506) si ignorano: nome e logo predefiniti.
-  try {
-    const values = await getManySettingValues(Object.values(KEYS));
+/** Tag della cache dati di Next con le righe del branding: lo invalida updateBrandingSettings (T-1105). */
+const BRANDING_CACHE_TAG = "branding";
 
-    return {
-      appName: normalizeAppName(values[KEYS.appName] ?? process.env.APP_BRAND_NAME),
-      logoUrl: normalizeLogoUrl(values[KEYS.logoUrl] ?? process.env.APP_BRAND_LOGO_URL) ?? "",
-      logoUrlDark: normalizeLogoUrl(values[KEYS.logoUrlDark] ?? process.env.APP_BRAND_LOGO_URL_DARK) ?? "",
-      logoUrlLight: normalizeLogoUrl(values[KEYS.logoUrlLight] ?? process.env.APP_BRAND_LOGO_URL_LIGHT) ?? "",
-    };
+function brandingFrom(values: Record<string, string>): BrandingSnapshot {
+  // I valori salvati non conformi (es. http: di prima di T-506) si ignorano: nome e logo predefiniti.
+  return {
+    appName: normalizeAppName(values[KEYS.appName] ?? process.env.APP_BRAND_NAME),
+    logoUrl: normalizeLogoUrl(values[KEYS.logoUrl] ?? process.env.APP_BRAND_LOGO_URL) ?? "",
+    logoUrlDark: normalizeLogoUrl(values[KEYS.logoUrlDark] ?? process.env.APP_BRAND_LOGO_URL_DARK) ?? "",
+    logoUrlLight: normalizeLogoUrl(values[KEYS.logoUrlLight] ?? process.env.APP_BRAND_LOGO_URL_LIGHT) ?? "",
+  };
+}
+
+function readBrandingValues(): Promise<Record<string, string>> {
+  return getManySettingValues(Object.values(KEYS));
+}
+
+// Solo le righe pubbliche del branding (nome e logo) entrano nella cache condivisa; un errore del DB non si
+// mette in cache e la richiesta usa i valori d'ambiente.
+const readCachedBrandingValues = unstable_cache(readBrandingValues, ["branding-values"], {
+  tags: [BRANDING_CACHE_TAG],
+});
+
+export async function getBrandingSnapshot(): Promise<BrandingSnapshot> {
+  try {
+    return brandingFrom(await readCachedBrandingValues());
   } catch {
-    return {
-      appName: normalizeAppName(process.env.APP_BRAND_NAME),
-      logoUrl: normalizeLogoUrl(process.env.APP_BRAND_LOGO_URL) ?? "",
-      logoUrlDark: normalizeLogoUrl(process.env.APP_BRAND_LOGO_URL_DARK) ?? "",
-      logoUrlLight: normalizeLogoUrl(process.env.APP_BRAND_LOGO_URL_LIGHT) ?? "",
-    };
+    return brandingFrom({});
   }
 }
 
@@ -157,7 +168,10 @@ export async function updateBrandingSettings(input: {
         value === null ? deleteSettingValue(key) : upsertSettingValue({ key, value, isSecret: false })
       )
     );
+    // expire 0: nessuna richiesta successiva riceve il branding precedente (niente stale-while-revalidate).
+    revalidateTag(BRANDING_CACHE_TAG, { expire: 0 });
   }
 
-  return getBrandingSnapshot();
+  // Lettura diretta: nella stessa richiesta la cache può non vedere ancora l'invalidazione.
+  return brandingFrom(await readBrandingValues());
 }

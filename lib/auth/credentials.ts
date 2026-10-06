@@ -251,6 +251,16 @@ export async function ensureLegacyDefaultUser(): Promise<AuthUser> {
   }
 }
 
+/**
+ * Bootstrap del primo utente (regole di T-201) solo con la tabella users vuota: con utenti presenti login e
+ * registrazione eseguono una sola count e nessuna lettura di app_settings (T-1105).
+ */
+async function bootstrapFirstUserIfEmpty(): Promise<void> {
+  if ((await prisma.user.count()) === 0) {
+    await ensureLegacyDefaultUser();
+  }
+}
+
 export async function findAuthUserById(userId: string): Promise<AuthUser | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -275,7 +285,7 @@ export async function getAuthConfigSnapshot(userId: string): Promise<AuthConfigS
 }
 
 export async function verifyLoginCredentials(username: string, password: string): Promise<VerifyLoginResult> {
-  await ensureLegacyDefaultUser();
+  await bootstrapFirstUserIfEmpty();
 
   const normalized = normalizeUsername(username);
   if (!normalized || !password) {
@@ -327,7 +337,7 @@ export async function registerUser(input: {
   password: string;
   role?: UserRole;
 }): Promise<AuthUser> {
-  await ensureLegacyDefaultUser();
+  await bootstrapFirstUserIfEmpty();
 
   const username = validateUsername(input.username);
   const password = validatePassword(input.password);

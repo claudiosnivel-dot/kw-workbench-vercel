@@ -1,5 +1,6 @@
 import { UserRole, UserStatus } from "@/lib/generated/prisma/enums";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { isAuthEnabled, SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { ensureLegacyDefaultUser, findAuthUserById, type AuthUser } from "@/lib/auth/credentials";
 import { verifySessionToken } from "@/lib/auth/session";
@@ -100,7 +101,12 @@ export async function requireRootAdminUserFromRequest(request: Request): Promise
   return user;
 }
 
-export async function getOptionalAuthenticatedUserFromCookies(): Promise<AuthUser | null> {
+/**
+ * Utente della richiesta dai cookie, risolto una volta per richiesta: layout e pagina condividono il risultato
+ * con cache() di React, che vive solo dentro la richiesta; la verifica della sessione (T-501) resta per ogni
+ * richiesta (T-1105).
+ */
+export const getOptionalAuthenticatedUserFromCookies = cache(async (): Promise<AuthUser | null> => {
   if (!isAuthEnabled()) {
     return ensureLegacyDefaultUser();
   }
@@ -108,7 +114,7 @@ export async function getOptionalAuthenticatedUserFromCookies(): Promise<AuthUse
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value ?? null;
   return resolveUserFromToken(token);
-}
+});
 
 export async function requireAuthenticatedUserFromCookies(): Promise<AuthUser> {
   const user = await getOptionalAuthenticatedUserFromCookies();

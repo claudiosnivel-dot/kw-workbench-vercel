@@ -1,4 +1,13 @@
+import { beforeEach, vi } from "vitest";
 import { assertLocalTestDatabase } from "../helpers/db-guard";
+import { clearNextCache } from "../helpers/next-cache";
+
+// La cache dati di Next (unstable_cache, revalidateTag) esiste solo nel server di Next: nei test è una mappa in
+// memoria con gli stessi tag (T-1105), vuota all'inizio di ogni test.
+vi.mock("next/cache", () => import("../helpers/next-cache"));
+beforeEach(() => {
+  clearNextCache();
+});
 
 // Va eseguito prima di qualunque import di lib/prisma.ts: il client è un singleton creato all'import.
 const url = assertLocalTestDatabase(process.env.TEST_DATABASE_URL);

@@ -90,33 +90,66 @@ function getManagedRoleScope(actor: AuthUser): UserRole | undefined {
   return UserRole.SUBSCRIBER;
 }
 
-function buildListWhere(actor: AuthUser, input: {
-  searchText?: string;
-  role?: UserRole;
-  status?: UserStatus;
-}): Prisma.UserWhereInput {
-  const where: Prisma.UserWhereInput = {};
+type AdminUsersListRow = { [K in keyof AdminUserRow]: AdminUserRow[K] | null } & {
+  total_users: number;
+  total_admins: number;
+  total_subscribers: number;
+  total_active: number;
+  total_suspended: number;
+  filtered_total: number;
+};
+
+// SQL statico della lista utenti (T-1105): totali del perimetro, totale filtrato e pagina in una sola query.
+// I valori (perimetro, filtri, LIMIT, OFFSET) entrano solo come parametri legati, composti in listQuery.
+const LIST_TOTALS = Prisma.sql`
+  SELECT "t"."total_users", "t"."total_admins", "t"."total_subscribers", "t"."total_active", "t"."total_suspended",
+    "t"."filtered_total", "p"."id", "p"."username", "p"."role", "p"."status", "p"."is_root_admin", "p"."created_at",
+    "p"."updated_at", "p"."last_login_at"
+  FROM (
+    SELECT count(*)::int AS "total_users",
+      count(*) FILTER (WHERE "role" = 'ADMIN')::int AS "total_admins",
+      count(*) FILTER (WHERE "role" = 'SUBSCRIBER')::int AS "total_subscribers",
+      count(*) FILTER (WHERE "status" = 'ACTIVE')::int AS "total_active",
+      count(*) FILTER (WHERE "status" = 'SUSPENDED')::int AS "total_suspended",
+      count(*) FILTER (WHERE`;
+const LIST_TOTALS_SCOPE = Prisma.sql`)::int AS "filtered_total" FROM "users" WHERE`;
+const LIST_PAGE = Prisma.sql`) AS "t" LEFT JOIN LATERAL (
+    SELECT "id", "username", "role", "status", "is_root_admin", "created_at", "updated_at", "last_login_at"
+    FROM "users" WHERE`;
+// id come ultimo criterio: ordinamento totale, nessun utente ripetuto o saltato fra le pagine.
+const LIST_PAGE_ORDER = Prisma.sql`ORDER BY "is_root_admin" DESC, "created_at" DESC, "id" DESC`;
+const LIST_TAIL = Prisma.sql`) AS "p" ON true
+  ORDER BY "p"."is_root_admin" DESC NULLS LAST, "p"."created_at" DESC, "p"."id" DESC`;
+const AND = Prisma.sql`AND`;
+const ALL_ROWS = Prisma.sql`TRUE`;
+
+/** LIKE con %, _ e \ dell'utente presi alla lettera. */
+function containsPattern(text: string): string {
+  return `%${text.replace(/[\\%_]/g, "\\$&")}%`;
+}
+
+/** Perimetro gestibile (per l'admin non root solo i sottoscrittori) e filtri della lista, come condizioni SQL. */
+function listConditions(actor: AuthUser, input: { searchText?: string; role?: UserRole; status?: UserStatus }) {
+  const filters: Prisma.Sql[] = [];
 
   const searchText = String(input.searchText ?? "").trim().slice(0, MAX_SEARCH_TEXT_LENGTH);
   if (searchText) {
-    where.username = {
-      contains: searchText,
-      mode: "insensitive",
-    };
+    filters.push(Prisma.sql`"username" ILIKE ${containsPattern(searchText)}`);
   }
 
   const managedRoleScope = getManagedRoleScope(actor);
-  if (managedRoleScope) {
-    where.role = managedRoleScope;
-  } else if (input.role) {
-    where.role = input.role;
+  if (!managedRoleScope && input.role) {
+    filters.push(Prisma.sql`"role" = ${input.role}::"UserRole"`);
   }
 
   if (input.status) {
-    where.status = input.status;
+    filters.push(Prisma.sql`"status" = ${input.status}::"UserStatus"`);
   }
 
-  return where;
+  return {
+    scope: managedRoleScope ? Prisma.sql`"role" = ${managedRoleScope}::"UserRole"` : ALL_ROWS,
+    filters: filters.length > 0 ? Prisma.join(filters, " AND ") : ALL_ROWS,
+  };
 }
 
 function assertCanManageTarget(actor: AuthUser, target: {
@@ -174,55 +207,44 @@ export async function listAdminUsers(
     pageSize?: number;
   }
 ): Promise<{ users: AdminUserRecord[]; totals: AdminUsersTotals; page: number; pageSize: number; total: number }> {
-  const where = buildListWhere(actor, input);
   const page = positiveInt(input.page, 1);
   const pageSize = Math.min(MAX_PAGE_SIZE, positiveInt(input.pageSize, DEFAULT_PAGE_SIZE));
+  const { scope, filters } = listConditions(actor, input);
 
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      // id come ultimo criterio: ordinamento totale, nessun utente ripetuto o saltato fra le pagine.
-      orderBy: [{ is_root_admin: "desc" }, { created_at: "desc" }, { id: "desc" }],
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        status: true,
-        is_root_admin: true,
-        created_at: true,
-        updated_at: true,
-        last_login_at: true,
-      },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.user.count({ where }),
-  ]);
-
-  // Totali nel perimetro gestibile: per l'admin non root solo i sottoscrittori.
-  const managedRoleScope = getManagedRoleScope(actor);
-  const baseWhere: Prisma.UserWhereInput = managedRoleScope ? { role: managedRoleScope } : {};
-
-  const [totalUsers, totalAdmins, totalSubscribers, totalActive, totalSuspended] = await Promise.all([
-    prisma.user.count({ where: baseWhere }),
-    managedRoleScope ? Promise.resolve(null) : prisma.user.count({ where: { role: UserRole.ADMIN } }),
-    prisma.user.count({ where: { ...baseWhere, role: UserRole.SUBSCRIBER } }),
-    prisma.user.count({ where: { ...baseWhere, status: UserStatus.ACTIVE } }),
-    prisma.user.count({ where: { ...baseWhere, status: UserStatus.SUSPENDED } }),
-  ]);
+  // Una sola query: con una pagina oltre l'ultima la riga dei totali arriva con le colonne dell'utente a null.
+  const rows = await prisma.$queryRaw<AdminUsersListRow[]>(
+    Prisma.join(
+      [
+        LIST_TOTALS,
+        filters,
+        LIST_TOTALS_SCOPE,
+        scope,
+        LIST_PAGE,
+        scope,
+        AND,
+        filters,
+        LIST_PAGE_ORDER,
+        Prisma.sql`LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`,
+        LIST_TAIL,
+      ],
+      " "
+    )
+  );
+  const [first] = rows;
 
   return {
-    users: users.map((row) => toAdminUserRecord(row as AdminUserRow)),
+    users: rows.filter((row) => row.id !== null).map((row) => toAdminUserRecord(row as AdminUserRow)),
     totals: {
-      totalUsers,
-      totalAdmins,
-      totalSubscribers,
-      totalActive,
-      totalSuspended,
+      totalUsers: first.total_users,
+      // Totali nel perimetro gestibile: l'admin non root non vede il numero degli admin (CWE-200).
+      totalAdmins: actor.isRootAdmin ? first.total_admins : null,
+      totalSubscribers: first.total_subscribers,
+      totalActive: first.total_active,
+      totalSuspended: first.total_suspended,
     },
     page,
     pageSize,
-    total,
+    total: first.filtered_total,
   };
 }
 
