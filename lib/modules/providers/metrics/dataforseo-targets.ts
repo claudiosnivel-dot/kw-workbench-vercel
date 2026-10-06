@@ -7,7 +7,7 @@
 //
 // language_code: l'elenco di GET https://api.dataforseo.com/v3/keywords_data/google_ads/languages richiede le
 // credenziali e non è stato scaricato. Fonte provvisoria: la tabella ufficiale delle lingue di Google Ads
-// (https://developers.google.com/google-ads/api/data/tables/languagecodes.csv, scaricata il 2026-10-06), tenendo
+// (CSV dei codici lingua, URL in docs/METRICS-PROVIDERS.md, scaricata il 2026-10-06), tenendo
 // solo i codici dell'app identici al codice Google (ISO 639-1). Restano senza corrispondenza, finché l'elenco di
 // DataForSEO non li conferma, zh (Google: zh_CN e zh_TW), he (Google: iw) e fil (Google: tl), e le lingue che
 // Google Ads non supporta: si, eu, gl, af, sw, am (nessuna chiamata, LANGUAGE_UNSUPPORTED).

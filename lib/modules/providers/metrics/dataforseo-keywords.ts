@@ -5,8 +5,8 @@ import { keywordLimitIssue } from "@/lib/modules/keyword-limits";
 //
 // Fonti (consultate il 2026-10-06):
 // - limiti di lunghezza di Google Ads: lib/modules/keyword-limits.ts;
-// - https://dataforseo.com/help-center/using-symbols-in-keywords-when-setting-a-google-ads-task (aggiornato il
-//   18.02.2025): simboli non validi (, ! @ % ^ () = {} ; ~ ` <> ? \ | ―), caratteri Unicode di 4 byte non validi
+// - articolo dell'help center di DataForSEO sui simboli nelle keyword (aggiornato il 18.02.2025, URL in
+//   docs/METRICS-PROVIDERS.md): simboli non validi (, ! @ % ^ () = {} ; ~ ` <> ? \ | ―), caratteri Unicode di 4 byte non validi
 //   e la regex dei simboli UTF-8 non supportati, riportata qui sotto intera (399 intervalli, \x{...} scritto
 //   \u{...}).
 

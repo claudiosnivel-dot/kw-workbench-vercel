@@ -1,7 +1,7 @@
 // Parser del file scaricato da Keyword Planner (T-905, D-09, D-17). Struttura gestita: encoding dal BOM
 // (UTF-16LE, UTF-16BE, UTF-8 con o senza BOM), separatore tab, punto e virgola o virgola, righe di titolo prima
-// dei nomi colonna, colonne riconosciute per nome in inglese (guida Google Ads,
-// https://support.google.com/google-ads/answer/3022575) e in italiano.
+// dei nomi colonna, colonne riconosciute per nome in inglese (guida Google Ads, fonte in
+// docs/METRICS-PROVIDERS.md) e in italiano.
 // Da verificare su un file reale scaricato da Keyword Planner: encoding, separatore, numero di righe di titolo,
 // nomi italiani delle colonne e «Competition (indexed value)»; le fixture in tests/fixtures/planner/ seguono la
 // struttura descritta nel DoD e vanno riallineate al primo file reale (dati anonimizzati).

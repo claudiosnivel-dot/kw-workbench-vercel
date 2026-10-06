@@ -1,7 +1,6 @@
 // Limiti di Google Ads sulle keyword, comuni al caricamento in Keyword Planner (T-904) e all'endpoint Google Ads
 // di DataForSEO (T-902): al massimo 80 caratteri e 10 parole per keyword.
-// Fonti: https://support.google.com/google-ads/answer/7337243 ;
-// https://docs.dataforseo.com/v3/keywords_data/google_ads/search_volume/live/ (consultate il 2026-10-06).
+// Fonti (guida di Keyword Planner e documentazione di DataForSEO): docs/METRICS-PROVIDERS.md.
 
 export const KEYWORD_MAX_CHARACTERS = 80;
 export const KEYWORD_MAX_WORDS = 10;

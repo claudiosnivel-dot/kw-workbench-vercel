@@ -2,8 +2,8 @@ import { keywordLimitIssue } from "@/lib/modules/keyword-limits";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 
 // Export delle keyword per «Ottieni volume di ricerca e previsioni» di Keyword Planner (T-904, D-09, D-26):
-// file CSV con la sola colonna «Keyword» (modello di caricamento della guida Google Ads,
-// https://support.google.com/google-ads/answer/7337243), una keyword per canonical, a blocchi.
+// file CSV con la sola colonna «Keyword» (modello di caricamento della guida Google Ads, fonte in
+// docs/METRICS-PROVIDERS.md), una keyword per canonical, a blocchi.
 
 /** Keyword per file: default prudente, il limite reale di Keyword Planner non è documentato (D-26). */
 export const PLANNER_CHUNK_DEFAULT = 1000;
