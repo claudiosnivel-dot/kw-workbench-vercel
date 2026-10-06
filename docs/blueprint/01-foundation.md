@@ -198,7 +198,7 @@ se rompe un comportamento esistente.
       then: "la prima risposta è 200 con cookie kwb_session e users conta 2 righe (l'utente di bootstrap APP_AUTH_USERNAME con role ADMIN e is_root_admin true, più il nuovo SUBSCRIBER); la seconda è 400 con error 'Username gia in uso'; il logout risponde 200 con Set-Cookie kwb_session vuoto e Max-Age=0"
     - id: AC-104-3
       given: "nessun cookie di sessione, poi il cookie di un utente ACTIVE"
-      when: "si invoca middleware su /projects e su /api/projects e si chiama GET /api/auth/session"
+      when: "si invoca middleware su /projects e su /api/projects e si chiama GET /api/auth/session (emendato da T-1101 il 2026-10-06: la rotta /api/auth/session è rimossa, restano le asserzioni sul middleware)"
       then: "da anonimo /projects risponde 307 con location di pathname /login e parametro next uguale a /projects, /api/projects risponde 401 con body {error: 'Unauthorized'}, la sessione risponde 401 con {authenticated: false, authEnabled: true}; da autenticato la sessione risponde 200 con userId uguale all'id dell'utente"
     - id: AC-104-4
       given: "i difetti noti dell'audit 2026-10-02"
@@ -239,7 +239,7 @@ se rompe un comportamento esistente.
   acceptance_criteria:
     - id: AC-105-1
       given: "il progetto di A e la sessione di B"
-      when: "B chiama GET, PATCH e DELETE su /api/projects/{idA}"
+      when: "B chiama GET, PATCH e DELETE su /api/projects/{idA} (emendato da T-1101 il 2026-10-06: la GET è rimossa, restano PATCH e DELETE)"
       then: "ogni risposta è 404 con error 'Progetto non trovato' e dopo le chiamate il progetto di A esiste con nome invariato"
     - id: AC-105-2
       given: "la sezione S del progetto di A e la sessione di B"

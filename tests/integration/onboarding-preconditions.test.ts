@@ -130,6 +130,19 @@ describe("completamento", () => {
     expect(progress.completed_at).toBeNull();
   });
 
+  // R20 di T-1101: la modalità d'ingresso non si modifica dal PATCH dello stato.
+  it("PATCH con entryMode riceve 400 ONBOARDING_ENTRY_MODE_FORBIDDEN e lo stato non cambia", async () => {
+    const { user, cookie } = await createActiveSection("t1101-entry-mode", "SEEDS");
+    const before = await progressOf(user.id);
+
+    const response = await patchState(cookie, { entryMode: "RESTART", currentStep: "PROJECT_CREATE" });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.code).toBe("ONBOARDING_ENTRY_MODE_FORBIDDEN");
+    expect(await progressOf(user.id)).toEqual(before);
+  });
+
   // covers: AC-1003-3
   it("solo un export non vuoto del progetto attivo completa l'onboarding", async () => {
     const { user, cookie, projectId, sectionId } = await createActiveSection("t1003-export", "REVIEW_EXPORT");

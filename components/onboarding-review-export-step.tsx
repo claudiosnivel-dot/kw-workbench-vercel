@@ -5,9 +5,7 @@ import { useMemo, useState } from "react";
 import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
 import { readJsonSafe, type ApiErrorPayload } from "@/lib/client/http";
 import { pauseOnboardingAndOpenDashboard } from "@/lib/client/onboarding";
-
-type ExportFormat = "csv" | "xlsx" | "json";
-type ExportScope = "approved" | "selected" | "review" | "non-excluded" | "filtered";
+import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 
 type OnboardingReviewExportStepProps = {
   projectId: string;

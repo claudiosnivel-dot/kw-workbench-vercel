@@ -249,7 +249,7 @@ L'isolamento resta applicativo (ecosistema `postgres-jsts`, D-02): ogni controll
   acceptance_criteria:
     - id: AC-505-1
       given: "build di produzione avviata"
-      when: "lo spec E2E richiede GET /login e GET /api/auth/session"
+      when: "lo spec E2E richiede GET /login e GET /api/auth/session (emendato da T-1101 il 2026-10-06: GET /api/health al posto della rotta rimossa)"
       then: "entrambe le risposte hanno X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, X-Frame-Options DENY, un Permissions-Policy che contiene camera=() e nessun header X-Powered-By"
     - id: AC-505-2
       given: "due richieste consecutive a /login sulla build di produzione"

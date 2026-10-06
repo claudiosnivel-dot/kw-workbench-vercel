@@ -99,8 +99,4 @@ export function isOnboardingStatus(value: string): value is OnboardingStatusKey 
   return ONBOARDING_STATUS_VALUES.includes(value as OnboardingStatusKey);
 }
 
-export function isOnboardingEntryMode(value: string): value is OnboardingEntryModeKey {
-  return ONBOARDING_ENTRY_MODE_VALUES.includes(value as OnboardingEntryModeKey);
-}
-
 export const ONBOARDING_TOTAL_STEPS = ONBOARDING_STEP_ORDER.length;

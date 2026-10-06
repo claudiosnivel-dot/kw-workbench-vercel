@@ -1,6 +1,7 @@
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { AppError } from "@/lib/http/errors";
-import { buildExportWhere, EXPORT_COLUMNS, ExportScope, iterateExportRows } from "@/lib/modules/export";
+import { buildExportWhere, EXPORT_COLUMNS, iterateExportRows } from "@/lib/modules/export";
+import type { ExportScope } from "@/lib/modules/export-types";
 import { ResultsFilters } from "@/lib/modules/results-filters";
 import {
   getDecryptedGoogleSheetsRefreshToken,

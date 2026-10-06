@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { formatDate } from "@/lib/view/format";
 
 type UserRole = "ADMIN" | "SUBSCRIBER";
 type UserStatus = "ACTIVE" | "SUSPENDED";
@@ -47,19 +48,6 @@ const STATUS_OPTIONS: Array<{ value: UserStatus; label: string }> = [
   { value: "ACTIVE", label: "Attivo" },
   { value: "SUSPENDED", label: "Sospeso" },
 ];
-
-function formatDate(value: string | null): string {
-  if (!value) return "-";
-
-  try {
-    return new Intl.DateTimeFormat("it-IT", {
-      dateStyle: "short",
-      timeStyle: "short",
-    }).format(new Date(value));
-  } catch {
-    return value;
-  }
-}
 
 function roleLabel(value: UserRole): string {
   return value === "ADMIN" ? "Admin" : "Sottoscrittore";

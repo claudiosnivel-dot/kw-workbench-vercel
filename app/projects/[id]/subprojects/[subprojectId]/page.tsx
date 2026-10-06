@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DeleteSubprojectButton } from "@/components/delete-subproject-button";
+import { DeleteEntityButton } from "@/components/delete-entity-button";
+import { PageHeaderCard } from "@/components/page-header-card";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
 import { resultsHref } from "@/lib/modules/results-view";
 import { prisma } from "@/lib/prisma";
+import { sectionDeleteTarget } from "@/lib/view/delete-targets";
 
 export const dynamic = "force-dynamic";
 
@@ -49,19 +51,17 @@ export default async function SubprojectSettingsPage({
 
   return (
     <div className="space-y-6">
-      <section className="card space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Sezione: {subproject.name}</h1>
-            <p className="mt-1 text-sm text-slate-600">Progetto: {subproject.project.name}</p>
-          </div>
+      <PageHeaderCard
+        title={`Sezione: ${subproject.name}`}
+        subtitle={`Progetto: ${subproject.project.name}`}
+        action={
           <RunExtractionButton
             runPath={`/api/projects/${subproject.project_id}/subprojects/${subproject.id}/run`}
             label="Avvia estrazione"
             runningLabel="Estrazione in corso..."
           />
-        </div>
-
+        }
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${subproject.project_id}`}>
             Torna al progetto
@@ -74,7 +74,6 @@ export default async function SubprojectSettingsPage({
           </Link>
         </div>
 
-
         <div className="grid gap-3 text-sm md:grid-cols-3">
           <p>
             <span className="font-medium">Keyword sezione:</span> {subproject._count.keyword_candidates}
@@ -86,7 +85,7 @@ export default async function SubprojectSettingsPage({
             <span className="font-medium">Locale effettivo:</span> {effective.language_code}-{effective.country_code}
           </p>
         </div>
-      </section>
+      </PageHeaderCard>
 
       <section className="card space-y-4">
         <h2 className="text-lg font-semibold">Impostazioni sezione</h2>
@@ -134,10 +133,8 @@ export default async function SubprojectSettingsPage({
         <p className="mb-4 text-sm text-slate-600">
           Eliminando questa sezione verranno rimossi seed, keyword e job collegati. Il progetto restera attivo.
         </p>
-        <DeleteSubprojectButton
-          projectId={subproject.project_id}
-          subprojectId={subproject.id}
-          subprojectName={subproject.name}
+        <DeleteEntityButton
+          {...sectionDeleteTarget(subproject.project_id, subproject)}
           buttonClassName="btn btn-danger w-full sm:w-auto"
           redirectTo={`/projects/${subproject.project_id}`}
         />

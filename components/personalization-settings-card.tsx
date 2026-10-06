@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 type ThemeMode = "DARK" | "LIGHT";
@@ -31,10 +31,17 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // Preferenze salvate: l'anteprima non salvata non sopravvive all'uscita dalla pagina (T-1104).
+  const saved = useRef<PreferencesSnapshot>(initial);
 
   useEffect(() => {
     applyPreferenceAttributes({ themeMode, fontScaleMode, colorVisionMode });
   }, [themeMode, fontScaleMode, colorVisionMode]);
+
+  useEffect(() => {
+    const savedPreferences = saved;
+    return () => applyPreferenceAttributes(savedPreferences.current);
+  }, []);
 
   const save = async () => {
     setSaving(true);
@@ -58,6 +65,7 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
       }
 
       if (payload?.data) {
+        saved.current = payload.data;
         setThemeMode(payload.data.themeMode);
         setFontScaleMode(payload.data.fontScaleMode);
         setColorVisionMode(payload.data.colorVisionMode);

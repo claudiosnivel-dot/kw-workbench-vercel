@@ -1,3 +1,5 @@
+import { readParam, type SearchParamsSource } from "@/lib/http/search-params";
+
 /**
  * Parametri di paginazione dei risultati (T-801, D-23), unici per la pagina dei risultati e l'API.
  * Valori vuoti, non numerici, zero o negativi tornano al default; i decimali si troncano; pageSize
@@ -7,18 +9,7 @@ export const PAGE_SIZE_DEFAULT = 100;
 export const PAGE_SIZE_MIN = 20;
 export const PAGE_SIZE_MAX = 250;
 
-type PagingSource = URLSearchParams | Record<string, string | string[] | undefined>;
-
 export type PagingParams = { page: number; pageSize: number };
-
-function readValue(source: PagingSource, key: string): string {
-  if (source instanceof URLSearchParams) {
-    return source.get(key) ?? "";
-  }
-
-  const value = source[key];
-  return (Array.isArray(value) ? value[0] : value) ?? "";
-}
 
 function positiveIntOr(raw: string, fallback: number): number {
   // Number("") vale 0: il vuoto ricade nel default come zero e negativi.
@@ -26,11 +17,11 @@ function positiveIntOr(raw: string, fallback: number): number {
   return Number.isFinite(parsed) && parsed >= 1 ? parsed : fallback;
 }
 
-export function parsePagingParams(source: PagingSource): PagingParams {
-  const pageSize = positiveIntOr(readValue(source, "pageSize"), PAGE_SIZE_DEFAULT);
+export function parsePagingParams(source: SearchParamsSource): PagingParams {
+  const pageSize = positiveIntOr(readParam(source, "pageSize"), PAGE_SIZE_DEFAULT);
 
   return {
-    page: positiveIntOr(readValue(source, "page"), 1),
+    page: positiveIntOr(readParam(source, "page"), 1),
     pageSize: Math.min(PAGE_SIZE_MAX, Math.max(PAGE_SIZE_MIN, pageSize)),
   };
 }

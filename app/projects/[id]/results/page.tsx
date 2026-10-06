@@ -8,10 +8,11 @@ import { ResultsTable } from "@/components/results-table";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { isClassificationSupported } from "@/lib/modules/classification";
+import { type ProjectPageProps, requireOwnedProject } from "@/lib/modules/project-pages";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { parsePagingParams, withPaging } from "@/lib/modules/results-paging";
 import { loadResultsPage } from "@/lib/modules/results-query";
-import type { ExportFormat, ExportScope } from "@/lib/modules/export";
+import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 import {
   buildResultsExportHref,
   resolveDefaultSectionId,
@@ -20,11 +21,8 @@ import {
   toUrlSearchParams,
   viewTarget,
 } from "@/lib/modules/results-view";
-import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-
-type SearchParams = Record<string, string | string[] | undefined>;
 
 function buildDefaultSheetsFileName(projectName: string, subprojectName?: string): string {
   const date = new Date().toISOString().slice(0, 10);
@@ -32,41 +30,19 @@ function buildDefaultSheetsFileName(projectName: string, subprojectName?: string
   return `${base} keyword export ${date}`;
 }
 
-export default async function ResultsPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function ResultsPage({ params, searchParams }: ProjectPageProps) {
   const user = await requirePageUser();
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
   const [project, googleSheets] = await Promise.all([
-    prisma.project.findFirst({
-      where: {
-        id,
-        owner_user_id: user.id,
-      },
-      include: {
-        subprojects: {
-          orderBy: [{ position: "asc" }, { created_at: "asc" }],
-          select: {
-            id: true,
-            name: true,
-            position: true,
-            metrics_provider_override: true,
-            language_code_override: true,
-          },
-        },
+    requireOwnedProject(user.id, id, {
+      subprojects: {
+        orderBy: [{ position: "asc" }, { created_at: "asc" }],
+        select: { id: true, name: true, position: true, metrics_provider_override: true, language_code_override: true },
       },
     }),
     getGoogleSheetsCredentialSnapshot(user.id),
   ]);
-
-  if (!project) {
-    notFound();
-  }
 
   const view = resolveResultsView({
     subprojects: project.subprojects,
@@ -167,7 +143,7 @@ export default async function ResultsPage({
           <input type="hidden" name="pageSize" value={String(pageSize)} />
 
           {view.kind === "section" && (
-            <select className="select" name="subprojectId" defaultValue={selectedSubproject?.id ?? ""}>
+            <select className="select" name="subprojectId" aria-label="Sezione" defaultValue={selectedSubproject?.id ?? ""}>
               {project.subprojects.map((subproject) => (
                 <option key={subproject.id} value={subproject.id}>
                   {subproject.name}
@@ -180,21 +156,21 @@ export default async function ResultsPage({
           <input className="input" name="minVolume" type="number" placeholder="Volume minimo" defaultValue={filterValue("minVolume")} />
           <input className="input" name="maxVolume" type="number" placeholder="Volume massimo" defaultValue={filterValue("maxVolume")} />
 
-          <select className="select" name="brandStatus" defaultValue={filterValue("brandStatus")}>
+          <select className="select" name="brandStatus" aria-label="Stato brand" defaultValue={filterValue("brandStatus")}>
             <option value="">Stato brand</option>
             <option value="allowed">consentito</option>
             <option value="excluded">escluso</option>
             <option value="review">da rivedere</option>
           </select>
 
-          <select className="select" name="reviewStatus" defaultValue={filterValue("reviewStatus")}>
+          <select className="select" name="reviewStatus" aria-label="Stato revisione" defaultValue={filterValue("reviewStatus")}>
             <option value="">Stato revisione</option>
             <option value="pending">in attesa</option>
             <option value="approved">approvato</option>
             <option value="rejected">rifiutato</option>
           </select>
 
-          <select className="select" name="searchIntent" defaultValue={filterValue("searchIntent")}>
+          <select className="select" name="searchIntent" aria-label="Intento di ricerca" defaultValue={filterValue("searchIntent")}>
             <option value="">Intento di ricerca</option>
             <option value="informational">informativo</option>
             <option value="commercial">commerciale</option>
@@ -203,7 +179,7 @@ export default async function ResultsPage({
             <option value="mixed">misto</option>
           </select>
 
-          <select className="select" name="keywordType" defaultValue={filterValue("keywordType")}>
+          <select className="select" name="keywordType" aria-label="Tipo keyword" defaultValue={filterValue("keywordType")}>
             <option value="">Tipo keyword</option>
             <option value="generic">generica</option>
             <option value="question">domanda</option>

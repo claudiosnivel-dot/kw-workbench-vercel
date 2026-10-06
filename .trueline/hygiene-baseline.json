@@ -8,62 +8,44 @@
   ],
   "run_id": "baseline",
   "captured_at": "1970-01-01T00:00:00.000Z",
-  "count": 127,
+  "count": 87,
   "fingerprints": [
     "04832f2abcd03379d9bfd07ff8b8038d",
     "084b562b6db16a78d39a45ecc7aaacc1",
-    "0bcb648179b73d9e603004e1c4e1371e",
     "0caffc4694aa0fa28b04b9dc7658ddd3",
     "0e1e07e130f0b83cf1ab870f838519ec",
-    "0e6b622d4246caa197e3b749f5408a54",
     "1271dac91d5913977f762770a3e7f5ca",
     "1623c479977b2e211f21f67b42bf89b7",
+    "17b4a5797461de0b70efda0f6f400251",
     "1a1a650d74d72dae126871debf3566bf",
     "1a7e44a48e33a9bd9c186232bb332c13",
     "1b1a6f9b553e83b00e315fb1148ade0c",
     "1d5184d2e7bf06101a3b8743568c4a39",
-    "1de655258b3fe884dbd09741220ca8b0",
     "2156f210615ca80dc4d0c23efb3cba30",
-    "267f92b9ed652ff19f69de3db8bbf8af",
     "26e4ecb3f3a3613ca4aecad9453cd1f0",
-    "277f559d0da5eeb8d52684a46d6671ce",
-    "2b6986fae7ba2fd7d0f05fb59c10513c",
-    "2e162e13e017a215d072b45190ef455b",
     "31749f0995f18808f469e70b634df84e",
-    "33badc6b0f6e4e4a66978253881c3a45",
     "3786957a4751fb8b15819feb4d73d0e3",
     "3ac391949a95826cf9f67cc065ddc0e5",
-    "3b5f4cf8e9024e2ef22e8630772b4def",
-    "3ba3c3576746c64e0030bb1e4bdc8e2f",
     "3bf337db2f72b1825e9d9240c2196c1f",
     "3f57b08fab11ae858f667c57a6aa1800",
     "3fbc094e7184c92abf73787fec3f948c",
+    "4229c9da2e602f2e8cfc215219f3ec26",
     "49680382e1383349753b4667e6a099d5",
     "4b9410fc79c0945446d6fe2d6e3ea8a8",
     "4c602ce981acb4f0e71141a25a9603e1",
     "4cfb30bbe53fbc6f6820e7f22d4129b5",
-    "4f5b7f31b9b09a3e44a4da41eae1c783",
-    "503ac71efd1d33c1d4b4a52116f4c212",
-    "505eafffb45dc96e59ad4734ae269be6",
-    "52f5d23f285e89b3470b630fc05a8957",
-    "5a72b46aab1a325e0fa510b17283523d",
     "5ccd75967e954ca1ddfee2848785c3c1",
     "5d93fd126c758d6c7603ef406050991b",
     "5da4ce3868fa16b8d2b088de42e576c7",
     "60183f738887d5816d1182c4102b3c14",
-    "6022e996c1e0883afec260a03f91845b",
-    "60a67a8e5a36f4f541aefe6fac26321b",
     "61996c2cd528443d8a5ff015d11a9f98",
     "63108461e84efececfb4e7e91754f0de",
     "677b61957bbc1d24021f7100ca709c9d",
-    "6a11766a57927ee6ec0b97063865e2c1",
     "6aa1e7bc06021ebdbdaa1b181dfff60b",
-    "6ad7a6bca372ae8b01b8069789e71c7a",
     "6ad7d80da97f8adc3ed15d2a8ae43f8a",
     "6ca8cb31d5b8e97b46cf5d61e126986d",
     "71e00e124e1a04c1ad320ecd954055fd",
     "7207956b2d5eeebc1bed334066f20fa4",
-    "72f9e1dfc042f25d688eb0c828c63381",
     "748df5d49dd589215be4e99e4163a12c",
     "74a68dd3835f833e3791f528868f837d",
     "75d8732b6b7d9935c2433d636c193d3c",
@@ -71,23 +53,13 @@
     "79c8fa79309e428cc98f7a0677690c6c",
     "79dcc77392e297570ac6f3bd0ba1be8e",
     "7a2f6ff6b37d5c6b6631a13ea5a3b606",
-    "7a99e1037202aa31ec18d04acfc6e325",
-    "7bf3d777130ed21d32f8344b7e9429c9",
-    "804e407a4b1e1d8b3cf530d2ddb18e9c",
     "8219fe4e6db6455d23c92e742699111e",
-    "8226eda9cfa6b4a91b25ce9199dc8b24",
     "87f6b55cce6d6d4d1a8558ec25f6fbe9",
     "8864370de3e20d9802b414a29b117ce4",
     "8a8fb69018be15da82c38645843fa821",
-    "8fa8925435184d592218dcc692149ba9",
     "9013cc0c46463f86ab5e8312221617b9",
     "96e283594e4b4f15725d3771bfa3ca5c",
-    "970c8dc42c1a8a81df82845d17f1014e",
-    "9b55ee91cc766e3bc9c406fc79a95728",
-    "9c9f4ba33e5693944cb72fca1e4f972a",
-    "9e39a62f9b8af9f0bf6bb4880e298834",
-    "a0a971421b75dd74ebc4bc1a386ef7ae",
-    "a13125aabdcaa7d3b080a71b52740108",
+    "9821d9a31b74aab4f0f47222c2c159d3",
     "a35384d69a9f5c8e690b5ec345b5aa26",
     "a4028dddc65468acf10c37d8253c7e90",
     "a495edecdf10eb34922983a824d99398",
@@ -98,43 +70,31 @@
     "ae82b9a4604cc7e36011fa7b3b7d7b1a",
     "aed02b865e7e5aabc9393794ee5c3d1b",
     "b10799dad77d06188875b427960312b0",
-    "b153723a20f011ee9cf2bd2d0e4cf302",
+    "b3d645247e8790028c44574dedb6459c",
     "b3f26c4909cdc523a5ceb7cb43e7d081",
     "b59a43298b11d5489cce87372e29f835",
     "b6209c39bb1407acafb28a21653e36cf",
     "b668023f1125944ee1a972252c700893",
     "b6c4030ccf36716af724b5b554979ad2",
-    "b842d2401fcbd45b19c1a0103ad2ad48",
-    "b95ff1d15384287aaa27839f8288b74f",
     "bd9f33c5bb37b58e4d3c47273b7da34f",
+    "c287f1e0397eb5baf9fbce3edbb2ea77",
     "c607d5884cd542295bb7393effc4118c",
     "c7910faddc93a766a3e259aa41658924",
     "c79519d8a9e0beb01a713e034b948a0f",
-    "ca6e9d1582c6462ce378abf99ae7339e",
-    "caa7dd13f4692ff57e6ec4e653b073d5",
     "cae6af21ec60aea430462790b0749c25",
     "ce14a45a11e043543b7878d838220be1",
     "cf42fc6c1bdad81b9f645e8cf194ab79",
-    "d257a97afa4ab56703ffd36aec81ebf9",
     "d2f5bef5509003e2e784f1549a5d0f43",
-    "d4695b1ff81335c364f3fbb2e5f14b3d",
     "d553c54c6a1166d9c5c4926ba3bcb2b6",
-    "d5eb87c1a36ea6e6d0dda2a0287f54c8",
-    "d67e2089eac27889fd0973918146f2b3",
     "d7e84de9a610474716cc88ef5ff8a195",
     "d83b252d5adaa5e3fd484dbd7517526e",
-    "d93d0cd0cf15555cd409143da140f27c",
     "e1dd8211dc69a2f72663d5e0e9d66426",
     "e4f96ea75753f0f45e1135e31d31b64b",
+    "e5957c20a3ae84938c522a6587cbe3da",
     "e6576270df8559b11678598be2a871e6",
     "e81582592bb56b2d3b764e6ebdab6189",
-    "e959e503e3c6c9d6b3b506fa13828d73",
     "ea0cae352429d1d16632fc70ceb3d392",
-    "ebc9772445f7f38332c3e6094af846a6",
-    "eeafb9a558b48d9997b9a241ed91ee42",
     "f21a45a45277c34faaee51ed8a5ea8c4",
-    "f4ff86266207023953d11cef540709e8",
-    "f65de326299faaf72f4b22de19192760",
     "fb6a2a413294cb2deff3029cae248a67",
     "ff43caa29f83ddae4d310a495683bea1"
   ],
@@ -166,31 +126,10 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/onboarding-seeds-form.tsx",
-        "start_line": 115,
-        "end_line": 125
+        "start_line": 119,
+        "end_line": 129
       },
       "evidence": "Blocco duplicato (11 righe, 61 token) tra eval/reference-app/components/onboarding-section-create-form.tsx e eval/reference-app/components/onboarding-seeds-form.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "0bcb648179b73d9e603004e1c4e1371e": {
-      "fingerprint": "0bcb648179b73d9e603004e1c4e1371e",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts",
-        "start_line": 42,
-        "end_line": 19
-      },
-      "evidence": "Blocco duplicato (7 righe, 76 token) tra eval/reference-app/app/api/projects/[id]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -208,8 +147,8 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/admin-users-dashboard.tsx",
-        "start_line": 225,
-        "end_line": 230
+        "start_line": 213,
+        "end_line": 218
       },
       "evidence": "Blocco duplicato (6 righe, 53 token) tra eval/reference-app/components/admin-users-dashboard.tsx e eval/reference-app/components/admin-users-dashboard.tsx (jscpd).",
       "source_oracle": {
@@ -233,27 +172,6 @@
         "end_line": 12
       },
       "evidence": "Blocco duplicato (8 righe, 60 token) tra eval/reference-app/prisma/migrations/0002_google_ads_credentials/migration.sql e eval/reference-app/prisma/migrations/0010_user_google_sheets_credentials/migration.sql (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "0e6b622d4246caa197e3b749f5408a54": {
-      "fingerprint": "0e6b622d4246caa197e3b749f5408a54",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 13,
-        "end_line": 18
-      },
-      "evidence": "Blocco duplicato (6 righe, 63 token) tra eval/reference-app/components/delete-subproject-button.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -296,6 +214,27 @@
         "end_line": 13
       },
       "evidence": "Blocco duplicato (6 righe, 87 token) tra eval/reference-app/components/login-form.tsx e eval/reference-app/components/register-form.tsx (jscpd).",
+      "source_oracle": {
+        "oracle": "jscpd",
+        "tool_version": "jscpd@4",
+        "rule_id": "duplicate-block"
+      },
+      "fix_state": "detected",
+      "baseline_status": "pre-existing",
+      "run_id": "baseline",
+      "created_at": "1970-01-01T00:00:00.000Z",
+      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
+    },
+    "17b4a5797461de0b70efda0f6f400251": {
+      "fingerprint": "17b4a5797461de0b70efda0f6f400251",
+      "category": "duplication",
+      "severity": "LOW",
+      "location": {
+        "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts",
+        "start_line": 11,
+        "end_line": 19
+      },
+      "evidence": "Blocco duplicato (7 righe, 93 token) tra eval/reference-app/app/api/projects/[id]/default-subproject/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -356,7 +295,7 @@
       "location": {
         "file": "eval/reference-app/components/onboarding-seeds-form.tsx",
         "start_line": 58,
-        "end_line": 33
+        "end_line": 43
       },
       "evidence": "Blocco duplicato (7 righe, 58 token) tra eval/reference-app/components/onboarding-project-targeting-form.tsx e eval/reference-app/components/onboarding-seeds-form.tsx (jscpd).",
       "source_oracle": {
@@ -391,27 +330,6 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
-    "1de655258b3fe884dbd09741220ca8b0": {
-      "fingerprint": "1de655258b3fe884dbd09741220ca8b0",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/onboarding-seeds-form.tsx",
-        "start_line": 64,
-        "end_line": 72
-      },
-      "evidence": "Blocco duplicato (9 righe, 65 token) tra eval/reference-app/components/onboarding-project-create-form.tsx e eval/reference-app/components/onboarding-seeds-form.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
     "2156f210615ca80dc4d0c23efb3cba30": {
       "fingerprint": "2156f210615ca80dc4d0c23efb3cba30",
       "category": "duplication",
@@ -422,27 +340,6 @@
         "end_line": 388
       },
       "evidence": "Blocco duplicato (15 righe, 123 token) tra eval/reference-app/components/subproject-form.tsx e eval/reference-app/components/subproject-form.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "267f92b9ed652ff19f69de3db8bbf8af": {
-      "fingerprint": "267f92b9ed652ff19f69de3db8bbf8af",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/onboarding/welcome/page.tsx",
-        "start_line": 8,
-        "end_line": 25
-      },
-      "evidence": "Blocco duplicato (17 righe, 113 token) tra eval/reference-app/app/onboarding/project-targeting/page.tsx e eval/reference-app/app/onboarding/welcome/page.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -475,100 +372,16 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
-    "277f559d0da5eeb8d52684a46d6671ce": {
-      "fingerprint": "277f559d0da5eeb8d52684a46d6671ce",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts",
-        "start_line": 78,
-        "end_line": 36
-      },
-      "evidence": "Blocco duplicato (15 righe, 107 token) tra eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "2b6986fae7ba2fd7d0f05fb59c10513c": {
-      "fingerprint": "2b6986fae7ba2fd7d0f05fb59c10513c",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/projects/[id]/subprojects/[subprojectId]/page.tsx",
-        "start_line": 48,
-        "end_line": 55
-      },
-      "evidence": "Blocco duplicato (8 righe, 55 token) tra eval/reference-app/app/projects/[id]/sections/page.tsx e eval/reference-app/app/projects/[id]/subprojects/[subprojectId]/page.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "2e162e13e017a215d072b45190ef455b": {
-      "fingerprint": "2e162e13e017a215d072b45190ef455b",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts",
-        "start_line": 16,
-        "end_line": 85
-      },
-      "evidence": "Blocco duplicato (10 righe, 108 token) tra eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
     "31749f0995f18808f469e70b634df84e": {
       "fingerprint": "31749f0995f18808f469e70b634df84e",
       "category": "duplication",
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts",
-        "start_line": 57,
-        "end_line": 64
+        "start_line": 26,
+        "end_line": 33
       },
       "evidence": "Blocco duplicato (8 righe, 56 token) tra eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "33badc6b0f6e4e4a66978253881c3a45": {
-      "fingerprint": "33badc6b0f6e4e4a66978253881c3a45",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/delete-subproject-button.tsx",
-        "start_line": 47,
-        "end_line": 68
-      },
-      "evidence": "Blocco duplicato (23 righe, 144 token) tra eval/reference-app/components/delete-project-button.tsx e eval/reference-app/components/delete-subproject-button.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -611,48 +424,6 @@
         "end_line": 36
       },
       "evidence": "Blocco duplicato (9 righe, 66 token) tra eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "3b5f4cf8e9024e2ef22e8630772b4def": {
-      "fingerprint": "3b5f4cf8e9024e2ef22e8630772b4def",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/run/route.ts",
-        "start_line": 33,
-        "end_line": 43
-      },
-      "evidence": "Blocco duplicato (11 righe, 82 token) tra eval/reference-app/app/api/projects/[id]/route.ts e eval/reference-app/app/api/projects/[id]/run/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "3ba3c3576746c64e0030bb1e4bdc8e2f": {
-      "fingerprint": "3ba3c3576746c64e0030bb1e4bdc8e2f",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 1,
-        "end_line": 7
-      },
-      "evidence": "Blocco duplicato (7 righe, 52 token) tra eval/reference-app/components/section-order-buttons.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -711,11 +482,32 @@
       "category": "duplication",
       "severity": "LOW",
       "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 28,
-        "end_line": 33
+        "file": "eval/reference-app/components/section-order-buttons.tsx",
+        "start_line": 38,
+        "end_line": 43
       },
-      "evidence": "Blocco duplicato (6 righe, 56 token) tra eval/reference-app/components/login-form.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
+      "evidence": "Blocco duplicato (6 righe, 56 token) tra eval/reference-app/components/login-form.tsx e eval/reference-app/components/section-order-buttons.tsx (jscpd).",
+      "source_oracle": {
+        "oracle": "jscpd",
+        "tool_version": "jscpd@4",
+        "rule_id": "duplicate-block"
+      },
+      "fix_state": "detected",
+      "baseline_status": "pre-existing",
+      "run_id": "baseline",
+      "created_at": "1970-01-01T00:00:00.000Z",
+      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
+    },
+    "4229c9da2e602f2e8cfc215219f3ec26": {
+      "fingerprint": "4229c9da2e602f2e8cfc215219f3ec26",
+      "category": "duplication",
+      "severity": "LOW",
+      "location": {
+        "file": "eval/reference-app/app/api/projects/[id]/default-subproject/route.ts",
+        "start_line": 3,
+        "end_line": 19
+      },
+      "evidence": "Blocco duplicato (11 righe, 111 token) tra eval/reference-app/app/api/projects/[id]/default-subproject/route.ts e eval/reference-app/app/api/projects/[id]/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -733,8 +525,8 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/lib/modules/google-sheets-export.ts",
-        "start_line": 218,
-        "end_line": 225
+        "start_line": 219,
+        "end_line": 226
       },
       "evidence": "Blocco duplicato (8 righe, 50 token) tra eval/reference-app/lib/modules/google-sheets-export.ts e eval/reference-app/lib/modules/google-sheets-export.ts (jscpd).",
       "source_oracle": {
@@ -796,115 +588,10 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/admin-users-dashboard.tsx",
-        "start_line": 469,
-        "end_line": 476
+        "start_line": 457,
+        "end_line": 464
       },
       "evidence": "Blocco duplicato (8 righe, 72 token) tra eval/reference-app/components/admin-users-dashboard.tsx e eval/reference-app/components/admin-users-dashboard.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "4f5b7f31b9b09a3e44a4da41eae1c783": {
-      "fingerprint": "4f5b7f31b9b09a3e44a4da41eae1c783",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/projects/[id]/settings/page.tsx",
-        "start_line": 12,
-        "end_line": 47
-      },
-      "evidence": "Blocco duplicato (25 righe, 167 token) tra eval/reference-app/app/projects/[id]/page.tsx e eval/reference-app/app/projects/[id]/settings/page.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "503ac71efd1d33c1d4b4a52116f4c212": {
-      "fingerprint": "503ac71efd1d33c1d4b4a52116f4c212",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/run/route.ts",
-        "start_line": 15,
-        "end_line": 27
-      },
-      "evidence": "Blocco duplicato (13 righe, 122 token) tra eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/run/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "505eafffb45dc96e59ad4734ae269be6": {
-      "fingerprint": "505eafffb45dc96e59ad4734ae269be6",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/route.ts",
-        "start_line": 16,
-        "end_line": 93
-      },
-      "evidence": "Blocco duplicato (16 righe, 123 token) tra eval/reference-app/app/api/projects/[id]/results/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "52f5d23f285e89b3470b630fc05a8957": {
-      "fingerprint": "52f5d23f285e89b3470b630fc05a8957",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/projects/[id]/sections/page.tsx",
-        "start_line": 12,
-        "end_line": 21
-      },
-      "evidence": "Blocco duplicato (10 righe, 82 token) tra eval/reference-app/app/projects/[id]/page.tsx e eval/reference-app/app/projects/[id]/sections/page.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "5a72b46aab1a325e0fa510b17283523d": {
-      "fingerprint": "5a72b46aab1a325e0fa510b17283523d",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/run/route.ts",
-        "start_line": 43,
-        "end_line": 36
-      },
-      "evidence": "Blocco duplicato (10 righe, 60 token) tra eval/reference-app/app/api/projects/[id]/route.ts e eval/reference-app/app/api/projects/[id]/run/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -922,7 +609,7 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/personalization-settings-card.tsx",
-        "start_line": 136,
+        "start_line": 144,
         "end_line": 89
       },
       "evidence": "Blocco duplicato (9 righe, 64 token) tra eval/reference-app/components/auth-settings-card.tsx e eval/reference-app/components/personalization-settings-card.tsx (jscpd).",
@@ -985,52 +672,10 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/lib/auth/credentials.ts",
-        "start_line": 211,
-        "end_line": 221
+        "start_line": 185,
+        "end_line": 195
       },
       "evidence": "Blocco duplicato (11 righe, 63 token) tra eval/reference-app/lib/auth/credentials.ts e eval/reference-app/lib/auth/credentials.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "6022e996c1e0883afec260a03f91845b": {
-      "fingerprint": "6022e996c1e0883afec260a03f91845b",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/onboarding/welcome/page.tsx",
-        "start_line": 8,
-        "end_line": 29
-      },
-      "evidence": "Blocco duplicato (21 righe, 138 token) tra eval/reference-app/app/onboarding/review-export/page.tsx e eval/reference-app/app/onboarding/welcome/page.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "60a67a8e5a36f4f541aefe6fac26321b": {
-      "fingerprint": "60a67a8e5a36f4f541aefe6fac26321b",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/delete-subproject-button.tsx",
-        "start_line": 31,
-        "end_line": 41
-      },
-      "evidence": "Blocco duplicato (11 righe, 57 token) tra eval/reference-app/components/delete-project-button.tsx e eval/reference-app/components/delete-subproject-button.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -1090,31 +735,10 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/lib/auth/credentials.ts",
-        "start_line": 193,
-        "end_line": 200
+        "start_line": 168,
+        "end_line": 175
       },
       "evidence": "Blocco duplicato (7 righe, 55 token) tra eval/reference-app/lib/auth/credentials.ts e eval/reference-app/lib/auth/credentials.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "6a11766a57927ee6ec0b97063865e2c1": {
-      "fingerprint": "6a11766a57927ee6ec0b97063865e2c1",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts",
-        "start_line": 10,
-        "end_line": 18
-      },
-      "evidence": "Blocco duplicato (9 righe, 67 token) tra eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts e eval/reference-app/app/api/projects/[id]/export/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -1136,27 +760,6 @@
         "end_line": 36
       },
       "evidence": "Blocco duplicato (17 righe, 161 token) tra eval/reference-app/app/api/projects/[id]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "6ad7a6bca372ae8b01b8069789e71c7a": {
-      "fingerprint": "6ad7a6bca372ae8b01b8069789e71c7a",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts",
-        "start_line": 11,
-        "end_line": 16
-      },
-      "evidence": "Blocco duplicato (6 righe, 62 token) tra eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -1196,7 +799,7 @@
       "location": {
         "file": "eval/reference-app/components/onboarding-run-step.tsx",
         "start_line": 81,
-        "end_line": 143
+        "end_line": 151
       },
       "evidence": "Blocco duplicato (8 righe, 63 token) tra eval/reference-app/components/branding-settings-card.tsx e eval/reference-app/components/onboarding-run-step.tsx (jscpd).",
       "source_oracle": {
@@ -1217,7 +820,7 @@
       "location": {
         "file": "eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts",
         "start_line": 29,
-        "end_line": 92
+        "end_line": 93
       },
       "evidence": "Blocco duplicato (8 righe, 55 token) tra eval/reference-app/app/api/projects/[id]/run/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts (jscpd).",
       "source_oracle": {
@@ -1237,31 +840,10 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/admin-users-dashboard.tsx",
-        "start_line": 324,
-        "end_line": 332
+        "start_line": 312,
+        "end_line": 320
       },
       "evidence": "Blocco duplicato (9 righe, 62 token) tra eval/reference-app/components/admin-users-dashboard.tsx e eval/reference-app/components/admin-users-dashboard.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "72f9e1dfc042f25d688eb0c828c63381": {
-      "fingerprint": "72f9e1dfc042f25d688eb0c828c63381",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts",
-        "start_line": 13,
-        "end_line": 19
-      },
-      "evidence": "Blocco duplicato (7 righe, 87 token) tra eval/reference-app/app/api/projects/[id]/default-subproject/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -1405,73 +987,10 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/personalization-settings-card.tsx",
-        "start_line": 37,
-        "end_line": 45
+        "start_line": 44,
+        "end_line": 52
       },
       "evidence": "Blocco duplicato (9 righe, 57 token) tra eval/reference-app/components/branding-settings-card.tsx e eval/reference-app/components/personalization-settings-card.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "7a99e1037202aa31ec18d04acfc6e325": {
-      "fingerprint": "7a99e1037202aa31ec18d04acfc6e325",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts",
-        "start_line": 101,
-        "end_line": 109
-      },
-      "evidence": "Blocco duplicato (9 righe, 62 token) tra eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts e eval/reference-app/app/api/projects/[id]/results/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "7bf3d777130ed21d32f8344b7e9429c9": {
-      "fingerprint": "7bf3d777130ed21d32f8344b7e9429c9",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/onboarding-welcome-actions.tsx",
-        "start_line": 36,
-        "end_line": 43
-      },
-      "evidence": "Blocco duplicato (8 righe, 50 token) tra eval/reference-app/components/onboarding-review-export-step.tsx e eval/reference-app/components/onboarding-welcome-actions.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "804e407a4b1e1d8b3cf530d2ddb18e9c": {
-      "fingerprint": "804e407a4b1e1d8b3cf530d2ddb18e9c",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/projects/[id]/results/page.tsx",
-        "start_line": 35,
-        "end_line": 45
-      },
-      "evidence": "Blocco duplicato (11 righe, 97 token) tra eval/reference-app/app/projects/[id]/page.tsx e eval/reference-app/app/projects/[id]/results/page.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -1504,37 +1023,16 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
-    "8226eda9cfa6b4a91b25ce9199dc8b24": {
-      "fingerprint": "8226eda9cfa6b4a91b25ce9199dc8b24",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 1,
-        "end_line": 7
-      },
-      "evidence": "Blocco duplicato (7 righe, 52 token) tra eval/reference-app/components/delete-subproject-button.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
     "87f6b55cce6d6d4d1a8558ec25f6fbe9": {
       "fingerprint": "87f6b55cce6d6d4d1a8558ec25f6fbe9",
       "category": "duplication",
       "severity": "LOW",
       "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 28,
-        "end_line": 33
+        "file": "eval/reference-app/components/section-order-buttons.tsx",
+        "start_line": 38,
+        "end_line": 43
       },
-      "evidence": "Blocco duplicato (6 righe, 55 token) tra eval/reference-app/components/onboarding-seeds-form.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
+      "evidence": "Blocco duplicato (6 righe, 55 token) tra eval/reference-app/components/onboarding-seeds-form.tsx e eval/reference-app/components/section-order-buttons.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -1588,35 +1086,14 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
-    "8fa8925435184d592218dcc692149ba9": {
-      "fingerprint": "8fa8925435184d592218dcc692149ba9",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/settings/integrations/page.tsx",
-        "start_line": 7,
-        "end_line": 16
-      },
-      "evidence": "Blocco duplicato (10 righe, 51 token) tra eval/reference-app/app/settings/integrations/page.tsx e eval/reference-app/app/settings/page.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
     "9013cc0c46463f86ab5e8312221617b9": {
       "fingerprint": "9013cc0c46463f86ab5e8312221617b9",
       "category": "duplication",
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts",
-        "start_line": 94,
-        "end_line": 101
+        "start_line": 63,
+        "end_line": 70
       },
       "evidence": "Blocco duplicato (8 righe, 77 token) tra eval/reference-app/app/api/projects/[id]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts (jscpd).",
       "source_oracle": {
@@ -1651,121 +1128,16 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
-    "970c8dc42c1a8a81df82845d17f1014e": {
-      "fingerprint": "970c8dc42c1a8a81df82845d17f1014e",
+    "9821d9a31b74aab4f0f47222c2c159d3": {
+      "fingerprint": "9821d9a31b74aab4f0f47222c2c159d3",
       "category": "duplication",
       "severity": "LOW",
       "location": {
-        "file": "eval/reference-app/components/onboarding-seeds-form.tsx",
-        "start_line": 64,
-        "end_line": 72
+        "file": "eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts",
+        "start_line": 102,
+        "end_line": 110
       },
-      "evidence": "Blocco duplicato (9 righe, 65 token) tra eval/reference-app/components/onboarding-section-create-form.tsx e eval/reference-app/components/onboarding-seeds-form.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "9b55ee91cc766e3bc9c406fc79a95728": {
-      "fingerprint": "9b55ee91cc766e3bc9c406fc79a95728",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 13,
-        "end_line": 31
-      },
-      "evidence": "Blocco duplicato (8 righe, 87 token) tra eval/reference-app/components/delete-project-button.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "9c9f4ba33e5693944cb72fca1e4f972a": {
-      "fingerprint": "9c9f4ba33e5693944cb72fca1e4f972a",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/onboarding/welcome/page.tsx",
-        "start_line": 8,
-        "end_line": 25
-      },
-      "evidence": "Blocco duplicato (17 righe, 116 token) tra eval/reference-app/app/onboarding/section-create/page.tsx e eval/reference-app/app/onboarding/welcome/page.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "9e39a62f9b8af9f0bf6bb4880e298834": {
-      "fingerprint": "9e39a62f9b8af9f0bf6bb4880e298834",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/delete-subproject-button.tsx",
-        "start_line": 68,
-        "end_line": 74
-      },
-      "evidence": "Blocco duplicato (7 righe, 56 token) tra eval/reference-app/components/delete-project-button.tsx e eval/reference-app/components/delete-subproject-button.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "a0a971421b75dd74ebc4bc1a386ef7ae": {
-      "fingerprint": "a0a971421b75dd74ebc4bc1a386ef7ae",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/projects/[id]/settings/page.tsx",
-        "start_line": 10,
-        "end_line": 22
-      },
-      "evidence": "Blocco duplicato (13 righe, 140 token) tra eval/reference-app/app/projects/[id]/sections/page.tsx e eval/reference-app/app/projects/[id]/settings/page.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "a13125aabdcaa7d3b080a71b52740108": {
-      "fingerprint": "a13125aabdcaa7d3b080a71b52740108",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/onboarding/welcome/page.tsx",
-        "start_line": 8,
-        "end_line": 21
-      },
-      "evidence": "Blocco duplicato (13 righe, 93 token) tra eval/reference-app/app/onboarding/project-create/page.tsx e eval/reference-app/app/onboarding/welcome/page.tsx (jscpd).",
+      "evidence": "Blocco duplicato (9 righe, 56 token) tra eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts e eval/reference-app/app/api/projects/[id]/results/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -1783,8 +1155,8 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/personalization-settings-card.tsx",
-        "start_line": 137,
-        "end_line": 143
+        "start_line": 145,
+        "end_line": 151
       },
       "evidence": "Blocco duplicato (7 righe, 58 token) tra eval/reference-app/components/onboarding-run-step.tsx e eval/reference-app/components/personalization-settings-card.tsx (jscpd).",
       "source_oracle": {
@@ -1909,8 +1281,8 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/personalization-settings-card.tsx",
-        "start_line": 67,
-        "end_line": 76
+        "start_line": 75,
+        "end_line": 84
       },
       "evidence": "Blocco duplicato (10 righe, 69 token) tra eval/reference-app/components/auth-settings-card.tsx e eval/reference-app/components/personalization-settings-card.tsx (jscpd).",
       "source_oracle": {
@@ -1987,16 +1359,16 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
-    "b153723a20f011ee9cf2bd2d0e4cf302": {
-      "fingerprint": "b153723a20f011ee9cf2bd2d0e4cf302",
+    "b3d645247e8790028c44574dedb6459c": {
+      "fingerprint": "b3d645247e8790028c44574dedb6459c",
       "category": "duplication",
       "severity": "LOW",
       "location": {
-        "file": "eval/reference-app/app/onboarding/welcome/page.tsx",
-        "start_line": 8,
-        "end_line": 29
+        "file": "eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts",
+        "start_line": 79,
+        "end_line": 86
       },
-      "evidence": "Blocco duplicato (21 righe, 136 token) tra eval/reference-app/app/onboarding/run/page.tsx e eval/reference-app/app/onboarding/welcome/page.tsx (jscpd).",
+      "evidence": "Blocco duplicato (8 righe, 52 token) tra eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -2014,8 +1386,8 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/lib/auth/credentials.ts",
-        "start_line": 87,
-        "end_line": 94
+        "start_line": 74,
+        "end_line": 81
       },
       "evidence": "Blocco duplicato (8 righe, 54 token) tra eval/reference-app/lib/admin/users.ts e eval/reference-app/lib/auth/credentials.ts (jscpd).",
       "source_oracle": {
@@ -2036,7 +1408,7 @@
       "location": {
         "file": "eval/reference-app/components/onboarding-seeds-form.tsx",
         "start_line": 58,
-        "end_line": 33
+        "end_line": 43
       },
       "evidence": "Blocco duplicato (7 righe, 58 token) tra eval/reference-app/components/admin-users-dashboard.tsx e eval/reference-app/components/onboarding-seeds-form.tsx (jscpd).",
       "source_oracle": {
@@ -2077,8 +1449,8 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/personalization-settings-card.tsx",
-        "start_line": 37,
-        "end_line": 45
+        "start_line": 44,
+        "end_line": 52
       },
       "evidence": "Blocco duplicato (9 righe, 58 token) tra eval/reference-app/components/auth-settings-card.tsx e eval/reference-app/components/personalization-settings-card.tsx (jscpd).",
       "source_oracle": {
@@ -2098,52 +1470,10 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/personalization-settings-card.tsx",
-        "start_line": 67,
-        "end_line": 75
+        "start_line": 75,
+        "end_line": 83
       },
       "evidence": "Blocco duplicato (9 righe, 58 token) tra eval/reference-app/components/branding-settings-card.tsx e eval/reference-app/components/personalization-settings-card.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "b842d2401fcbd45b19c1a0103ad2ad48": {
-      "fingerprint": "b842d2401fcbd45b19c1a0103ad2ad48",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/run/route.ts",
-        "start_line": 29,
-        "end_line": 37
-      },
-      "evidence": "Blocco duplicato (9 righe, 55 token) tra eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/run/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "b95ff1d15384287aaa27839f8288b74f": {
-      "fingerprint": "b95ff1d15384287aaa27839f8288b74f",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/onboarding/welcome/page.tsx",
-        "start_line": 8,
-        "end_line": 16
-      },
-      "evidence": "Blocco duplicato (9 righe, 64 token) tra eval/reference-app/app/onboarding/seeds/page.tsx e eval/reference-app/app/onboarding/welcome/page.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -2161,10 +1491,31 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts",
-        "start_line": 73,
-        "end_line": 80
+        "start_line": 74,
+        "end_line": 81
       },
       "evidence": "Blocco duplicato (8 righe, 67 token) tra eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts e eval/reference-app/app/api/projects/[id]/export/route.ts (jscpd).",
+      "source_oracle": {
+        "oracle": "jscpd",
+        "tool_version": "jscpd@4",
+        "rule_id": "duplicate-block"
+      },
+      "fix_state": "detected",
+      "baseline_status": "pre-existing",
+      "run_id": "baseline",
+      "created_at": "1970-01-01T00:00:00.000Z",
+      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
+    },
+    "c287f1e0397eb5baf9fbce3edbb2ea77": {
+      "fingerprint": "c287f1e0397eb5baf9fbce3edbb2ea77",
+      "category": "duplication",
+      "severity": "LOW",
+      "location": {
+        "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/run/route.ts",
+        "start_line": 12,
+        "end_line": 17
+      },
+      "evidence": "Blocco duplicato (6 righe, 62 token) tra eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/run/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -2202,11 +1553,11 @@
       "category": "duplication",
       "severity": "LOW",
       "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 28,
-        "end_line": 33
+        "file": "eval/reference-app/components/section-order-buttons.tsx",
+        "start_line": 38,
+        "end_line": 43
       },
-      "evidence": "Blocco duplicato (6 righe, 56 token) tra eval/reference-app/components/register-form.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
+      "evidence": "Blocco duplicato (6 righe, 56 token) tra eval/reference-app/components/register-form.tsx e eval/reference-app/components/section-order-buttons.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -2228,48 +1579,6 @@
         "end_line": 36
       },
       "evidence": "Blocco duplicato (8 righe, 56 token) tra eval/reference-app/app/api/projects/[id]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "ca6e9d1582c6462ce378abf99ae7339e": {
-      "fingerprint": "ca6e9d1582c6462ce378abf99ae7339e",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/settings/integrations/page.tsx",
-        "start_line": 1,
-        "end_line": 7
-      },
-      "evidence": "Blocco duplicato (7 righe, 60 token) tra eval/reference-app/app/settings/integrations/page.tsx e eval/reference-app/app/settings/page.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "caa7dd13f4692ff57e6ec4e653b073d5": {
-      "fingerprint": "caa7dd13f4692ff57e6ec4e653b073d5",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/projects/[id]/results/page.tsx",
-        "start_line": 22,
-        "end_line": 29
-      },
-      "evidence": "Blocco duplicato (8 righe, 61 token) tra eval/reference-app/app/projects/[id]/page.tsx e eval/reference-app/app/projects/[id]/results/page.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -2308,8 +1617,8 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/lib/auth/credentials.ts",
-        "start_line": 193,
-        "end_line": 201
+        "start_line": 168,
+        "end_line": 176
       },
       "evidence": "Blocco duplicato (8 righe, 56 token) tra eval/reference-app/lib/auth/credentials.ts e eval/reference-app/lib/auth/credentials.ts (jscpd).",
       "source_oracle": {
@@ -2344,27 +1653,6 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
-    "d257a97afa4ab56703ffd36aec81ebf9": {
-      "fingerprint": "d257a97afa4ab56703ffd36aec81ebf9",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/route.ts",
-        "start_line": 7,
-        "end_line": 23
-      },
-      "evidence": "Blocco duplicato (17 righe, 149 token) tra eval/reference-app/app/api/projects/[id]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
     "d2f5bef5509003e2e784f1549a5d0f43": {
       "fingerprint": "d2f5bef5509003e2e784f1549a5d0f43",
       "category": "duplication",
@@ -2372,30 +1660,9 @@
       "location": {
         "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/run/route.ts",
         "start_line": 15,
-        "end_line": 57
+        "end_line": 26
       },
       "evidence": "Blocco duplicato (13 righe, 131 token) tra eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/run/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "d4695b1ff81335c364f3fbb2e5f14b3d": {
-      "fingerprint": "d4695b1ff81335c364f3fbb2e5f14b3d",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/results/route.ts",
-        "start_line": 52,
-        "end_line": 109
-      },
-      "evidence": "Blocco duplicato (10 righe, 65 token) tra eval/reference-app/app/api/projects/[id]/results/route.ts e eval/reference-app/app/api/projects/[id]/results/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -2413,52 +1680,10 @@
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/admin-users-dashboard.tsx",
-        "start_line": 324,
-        "end_line": 332
+        "start_line": 312,
+        "end_line": 320
       },
       "evidence": "Blocco duplicato (9 righe, 63 token) tra eval/reference-app/components/admin-users-dashboard.tsx e eval/reference-app/components/admin-users-dashboard.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "d5eb87c1a36ea6e6d0dda2a0287f54c8": {
-      "fingerprint": "d5eb87c1a36ea6e6d0dda2a0287f54c8",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/results/route.ts",
-        "start_line": 29,
-        "end_line": 34
-      },
-      "evidence": "Blocco duplicato (6 righe, 67 token) tra eval/reference-app/app/api/projects/[id]/export/route.ts e eval/reference-app/app/api/projects/[id]/results/route.ts (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "d67e2089eac27889fd0973918146f2b3": {
-      "fingerprint": "d67e2089eac27889fd0973918146f2b3",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/api/projects/[id]/subprojects/route.ts",
-        "start_line": 35,
-        "end_line": 48
-      },
-      "evidence": "Blocco duplicato (14 righe, 83 token) tra eval/reference-app/app/api/projects/[id]/subprojects/route.ts e eval/reference-app/app/api/projects/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -2512,37 +1737,16 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
-    "d93d0cd0cf15555cd409143da140f27c": {
-      "fingerprint": "d93d0cd0cf15555cd409143da140f27c",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 1,
-        "end_line": 7
-      },
-      "evidence": "Blocco duplicato (7 righe, 52 token) tra eval/reference-app/components/delete-project-button.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
     "e1dd8211dc69a2f72663d5e0e9d66426": {
       "fingerprint": "e1dd8211dc69a2f72663d5e0e9d66426",
       "category": "duplication",
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts",
-        "start_line": 77,
-        "end_line": 62
+        "start_line": 78,
+        "end_line": 110
       },
-      "evidence": "Blocco duplicato (35 righe, 272 token) tra eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts e eval/reference-app/app/api/projects/[id]/export/route.ts (jscpd).",
+      "evidence": "Blocco duplicato (33 righe, 264 token) tra eval/reference-app/app/api/projects/[id]/export/google-sheets/route.ts e eval/reference-app/app/api/projects/[id]/export/route.ts (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -2575,14 +1779,35 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
+    "e5957c20a3ae84938c522a6587cbe3da": {
+      "fingerprint": "e5957c20a3ae84938c522a6587cbe3da",
+      "category": "duplication",
+      "severity": "LOW",
+      "location": {
+        "file": "eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts",
+        "start_line": 11,
+        "end_line": 16
+      },
+      "evidence": "Blocco duplicato (6 righe, 56 token) tra eval/reference-app/app/api/projects/[id]/subprojects/[subprojectId]/route.ts e eval/reference-app/app/api/projects/[id]/subprojects/reorder/route.ts (jscpd).",
+      "source_oracle": {
+        "oracle": "jscpd",
+        "tool_version": "jscpd@4",
+        "rule_id": "duplicate-block"
+      },
+      "fix_state": "detected",
+      "baseline_status": "pre-existing",
+      "run_id": "baseline",
+      "created_at": "1970-01-01T00:00:00.000Z",
+      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
+    },
     "e6576270df8559b11678598be2a871e6": {
       "fingerprint": "e6576270df8559b11678598be2a871e6",
       "category": "duplication",
       "severity": "LOW",
       "location": {
         "file": "eval/reference-app/components/onboarding-seeds-form.tsx",
-        "start_line": 115,
-        "end_line": 125
+        "start_line": 119,
+        "end_line": 129
       },
       "evidence": "Blocco duplicato (11 righe, 61 token) tra eval/reference-app/components/onboarding-project-targeting-form.tsx e eval/reference-app/components/onboarding-seeds-form.tsx (jscpd).",
       "source_oracle": {
@@ -2617,79 +1842,16 @@
       "created_at": "1970-01-01T00:00:00.000Z",
       "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
     },
-    "e959e503e3c6c9d6b3b506fa13828d73": {
-      "fingerprint": "e959e503e3c6c9d6b3b506fa13828d73",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 33,
-        "end_line": 40
-      },
-      "evidence": "Blocco duplicato (8 righe, 56 token) tra eval/reference-app/components/section-order-buttons.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
     "ea0cae352429d1d16632fc70ceb3d392": {
       "fingerprint": "ea0cae352429d1d16632fc70ceb3d392",
       "category": "duplication",
       "severity": "LOW",
       "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 28,
-        "end_line": 33
+        "file": "eval/reference-app/components/section-order-buttons.tsx",
+        "start_line": 38,
+        "end_line": 43
       },
-      "evidence": "Blocco duplicato (6 righe, 54 token) tra eval/reference-app/components/results-table.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "ebc9772445f7f38332c3e6094af846a6": {
-      "fingerprint": "ebc9772445f7f38332c3e6094af846a6",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/projects/[id]/page.tsx",
-        "start_line": 19,
-        "end_line": 23
-      },
-      "evidence": "Blocco duplicato (6 righe, 51 token) tra eval/reference-app/app/page.tsx e eval/reference-app/app/projects/[id]/page.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "eeafb9a558b48d9997b9a241ed91ee42": {
-      "fingerprint": "eeafb9a558b48d9997b9a241ed91ee42",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/projects/[id]/page.tsx",
-        "start_line": 23,
-        "end_line": 21
-      },
-      "evidence": "Blocco duplicato (11 righe, 92 token) tra eval/reference-app/app/page.tsx e eval/reference-app/app/projects/[id]/page.tsx (jscpd).",
+      "evidence": "Blocco duplicato (6 righe, 54 token) tra eval/reference-app/components/results-table.tsx e eval/reference-app/components/section-order-buttons.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",
@@ -2711,48 +1873,6 @@
         "end_line": 24
       },
       "evidence": "Blocco duplicato (6 righe, 75 token) tra eval/reference-app/components/auth-settings-card.tsx e eval/reference-app/components/personalization-settings-card.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "f4ff86266207023953d11cef540709e8": {
-      "fingerprint": "f4ff86266207023953d11cef540709e8",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/components/set-default-section-button.tsx",
-        "start_line": 28,
-        "end_line": 33
-      },
-      "evidence": "Blocco duplicato (6 righe, 56 token) tra eval/reference-app/components/section-order-buttons.tsx e eval/reference-app/components/set-default-section-button.tsx (jscpd).",
-      "source_oracle": {
-        "oracle": "jscpd",
-        "tool_version": "jscpd@4",
-        "rule_id": "duplicate-block"
-      },
-      "fix_state": "detected",
-      "baseline_status": "pre-existing",
-      "run_id": "baseline",
-      "created_at": "1970-01-01T00:00:00.000Z",
-      "remediation_hint": "Estrarre il blocco duplicato in un modulo condiviso (previo gate umano)."
-    },
-    "f65de326299faaf72f4b22de19192760": {
-      "fingerprint": "f65de326299faaf72f4b22de19192760",
-      "category": "duplication",
-      "severity": "LOW",
-      "location": {
-        "file": "eval/reference-app/app/projects/[id]/settings/page.tsx",
-        "start_line": 24,
-        "end_line": 37
-      },
-      "evidence": "Blocco duplicato (14 righe, 69 token) tra eval/reference-app/app/projects/[id]/sections/page.tsx e eval/reference-app/app/projects/[id]/settings/page.tsx (jscpd).",
       "source_oracle": {
         "oracle": "jscpd",
         "tool_version": "jscpd@4",

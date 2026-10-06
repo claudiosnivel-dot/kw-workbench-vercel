@@ -129,7 +129,7 @@ export function ResultsTable({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <select className="select w-full sm:max-w-xs" value={action} onChange={(event) => setAction(event.target.value as typeof action)}>
+        <select className="select w-full sm:max-w-xs" aria-label="Azione massiva" value={action} onChange={(event) => setAction(event.target.value as typeof action)}>
           {ACTIONS.map((item) => (
             <option key={item.value} value={item.value}>
               {item.label}

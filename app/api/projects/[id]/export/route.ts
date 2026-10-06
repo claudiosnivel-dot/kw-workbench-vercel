@@ -4,12 +4,12 @@ import { withApiErrors } from "@/lib/http/errors";
 import {
   CSV_DIALECT_DEFAULT,
   countExportRows,
-  ExportFormat,
-  ExportScope,
   exportFileInfo,
   isCsvDialect,
   streamExport,
 } from "@/lib/modules/export";
+import { EXPORT_FORMATS, EXPORT_SCOPES } from "@/lib/modules/export-types";
+import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
 import { prisma } from "@/lib/prisma";
@@ -17,8 +17,8 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const VALID_FORMATS = new Set<ExportFormat>(["csv", "xlsx", "json"]);
-const VALID_SCOPES = new Set<ExportScope>(["approved", "selected", "review", "non-excluded", "filtered"]);
+const VALID_FORMATS = new Set<ExportFormat>(EXPORT_FORMATS);
+const VALID_SCOPES = new Set<ExportScope>(EXPORT_SCOPES);
 
 type RouteContext = {
   params: Promise<{ id: string }>;

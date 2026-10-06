@@ -79,7 +79,7 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
       then: "GET è undefined in tutti e tre i moduli, mentre POST, PATCH e DELETE dove esistevano sono ancora funzioni"
     - id: AC-1101-3
       given: "le rimozioni approvate applicate"
-      when: "il test esegue git grep di runQueuedExtractionJobs, getJobStats, GOOGLE_ADS_METRICS_FILE, DEFAULT_METRICS_PROVIDER, api/auth/session, LEGACY_KEYS e getSettingValue su app, components, lib, il file del proxy e .env.example"
+      when: "il test esegue git grep di runQueuedExtractionJobs, getJobStats, GOOGLE_ADS_METRICS_FILE, DEFAULT_METRICS_PROVIDER, api/auth/session, LEGACY_KEYS e getSettingValue su app, components, lib, il file del proxy e .env.example (precisazione del 2026-10-06: api/auth/session come rotta, non seguita da '-', perché /api/auth/session-ended di T-502 resta)"
       then: "ogni ricerca restituisce 0 righe (exit code 1 di git grep)"
     - id: AC-1101-4
       given: "il repository dopo le rimozioni"

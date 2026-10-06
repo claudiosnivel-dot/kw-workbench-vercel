@@ -11,7 +11,6 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/login",
   "/api/auth/register",
   "/api/auth/logout",
-  "/api/auth/session",
   "/api/auth/session-ended",
   // Health check per il monitoraggio esterno (T-603): solo il percorso esatto, nessun prefisso.
   "/api/health",

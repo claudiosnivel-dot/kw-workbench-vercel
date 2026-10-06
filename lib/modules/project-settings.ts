@@ -7,7 +7,7 @@ import {
 } from "@/lib/constants/locale-options";
 import { AutocompleteProvider, MetricsProvider } from "@/lib/generated/prisma/enums";
 import { AppError, ValidationError } from "@/lib/http/errors";
-import { splitLines } from "@/lib/utils";
+import { parseBooleanWord, splitLines } from "@/lib/utils";
 
 export type EffectiveProjectSettings = {
   language_code: string;
@@ -34,16 +34,6 @@ const INT4_MAX = 2_147_483_647;
 const SCORING_PROFILES = ["balanced", "conservative", "aggressive"] as const;
 const AUTOCOMPLETE_PROVIDERS = ["MOCK", "GOOGLE_DIRECT"] as const;
 const METRICS_PROVIDERS = ["NONE", "MOCK", "DATAFORSEO"] as const;
-const BOOLEAN_WORDS = new Map<string, boolean>([
-  ["true", true],
-  ["1", true],
-  ["yes", true],
-  ["on", true],
-  ["false", false],
-  ["0", false],
-  ["no", false],
-  ["off", false],
-]);
 
 /** Override: '' o null significano «eredita dal progetto» e diventano null. */
 function inheritable<T extends z.ZodType>(schema: T) {
@@ -79,7 +69,7 @@ const minVolumeField = z
       .max(INT4_MAX, `intero tra 0 e ${INT4_MAX}`)
   );
 const booleanField = z.union([z.boolean(), z.number(), z.string()]).transform((value, ctx) => {
-  const parsed = typeof value === "boolean" ? value : BOOLEAN_WORDS.get(String(value).trim().toLowerCase());
+  const parsed = parseBooleanWord(typeof value === "boolean" ? value : String(value).trim());
   if (parsed === undefined) {
     ctx.addIssue({ code: "custom", message: "atteso true/false, 1/0, yes/no oppure on/off" });
     return z.NEVER;

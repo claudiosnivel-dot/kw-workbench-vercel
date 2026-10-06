@@ -1,4 +1,5 @@
 import { BrandStatus, KeywordType, Prisma, ReviewStatus, SearchIntent } from "@/lib/generated/prisma/client";
+import { readFlag, readNumber, readParam, type SearchParamsSource } from "@/lib/http/search-params";
 
 export type ResultsFilters = {
   searchText?: string;
@@ -35,46 +36,22 @@ const KEYWORD_TYPES = new Set<KeywordType>([
   "content_topic",
 ]);
 
-export function parseResultsFilters(source: URLSearchParams | Record<string, string | string[] | undefined>): ResultsFilters {
-  const getValue = (key: string): string | undefined => {
-    if (source instanceof URLSearchParams) {
-      return source.get(key) ?? undefined;
-    }
-
-    const value = source[key];
-    if (Array.isArray(value)) {
-      return value[0];
-    }
-
-    return value;
-  };
-
-  const toNumber = (value: string | undefined): number | undefined => {
-    if (!value) return undefined;
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  };
-
-  const toBool = (value: string | undefined): boolean => {
-    if (!value) return false;
-    return ["1", "true", "on", "yes"].includes(value.toLowerCase());
-  };
-
-  const brandStatusValue = getValue("brandStatus");
-  const reviewStatusValue = getValue("reviewStatus");
-  const searchIntentValue = getValue("searchIntent");
-  const keywordTypeValue = getValue("keywordType");
+export function parseResultsFilters(source: SearchParamsSource): ResultsFilters {
+  const brandStatusValue = readParam(source, "brandStatus");
+  const reviewStatusValue = readParam(source, "reviewStatus");
+  const searchIntentValue = readParam(source, "searchIntent");
+  const keywordTypeValue = readParam(source, "keywordType");
 
   return {
-    searchText: getValue("searchText")?.trim() || undefined,
-    minVolume: toNumber(getValue("minVolume")),
-    maxVolume: toNumber(getValue("maxVolume")),
+    searchText: readParam(source, "searchText").trim() || undefined,
+    minVolume: readNumber(source, "minVolume"),
+    maxVolume: readNumber(source, "maxVolume"),
     brandStatus: brandStatusValue && BRAND_STATUS.has(brandStatusValue as BrandStatus) ? (brandStatusValue as BrandStatus) : undefined,
     reviewStatus:
       reviewStatusValue && REVIEW_STATUS.has(reviewStatusValue as ReviewStatus)
         ? (reviewStatusValue as ReviewStatus)
         : undefined,
-    selectedOnly: toBool(getValue("selectedOnly")),
+    selectedOnly: readFlag(source, "selectedOnly"),
     searchIntent:
       searchIntentValue && SEARCH_INTENTS.has(searchIntentValue as SearchIntent)
         ? (searchIntentValue as SearchIntent)
@@ -83,9 +60,9 @@ export function parseResultsFilters(source: URLSearchParams | Record<string, str
       keywordTypeValue && KEYWORD_TYPES.has(keywordTypeValue as KeywordType)
         ? (keywordTypeValue as KeywordType)
         : undefined,
-    questionOnly: toBool(getValue("questionOnly")),
-    toolIntentOnly: toBool(getValue("toolIntentOnly")),
-    commercialOnly: toBool(getValue("commercialOnly")),
+    questionOnly: readFlag(source, "questionOnly"),
+    toolIntentOnly: readFlag(source, "toolIntentOnly"),
+    commercialOnly: readFlag(source, "commercialOnly"),
   };
 }
 

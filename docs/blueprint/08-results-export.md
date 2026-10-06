@@ -42,7 +42,7 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
       then: "il risultato serializzato contiene esattamente una volta page=1, contiene pageSize=50, searchText=scarpe e view=all, e l'oggetto di partenza contiene ancora page=3"
     - id: AC-801-3
       given: "120 candidate con score 50 identico, con le 60 keyword 'kw-001'..'kw-060' presenti sia nella sezione A sia nella sezione B dello stesso progetto, vista tutto il progetto e pageSize 20"
-      when: "si leggono le pagine da 1 a 6 con loadResultsPage e con GET /api/projects/[id]/results?page=N&pageSize=20"
+      when: "si leggono le pagine da 1 a 6 con loadResultsPage e con GET /api/projects/[id]/results?page=N&pageSize=20 (emendato da T-1101 il 2026-10-06: la GET API è rimossa, si legge solo con loadResultsPage e totalPages vale 6)"
       then: "in entrambi i casi l'unione delle 6 pagine contiene 120 id distinti, nessun id compare in due pagine, e la risposta API ha meta.totalPages = 6"
     - id: AC-801-4
       given: "una vista con 205 candidate filtrate, pageSize 100 e spy su prisma.keywordCandidate.count e findMany"

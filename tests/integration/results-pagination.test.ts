@@ -2,12 +2,10 @@
 // keyword (tiebreaker su id) e loadResultsPage esegue 2 count e la findMany in parallelo, ripetendo
 // solo la findMany quando la pagina richiesta supera l'ultima.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as getResults } from "@/app/api/projects/[id]/results/route";
 import { loadResultsPage } from "@/lib/modules/results-query";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
-import { callRoute } from "../helpers/http";
 
 async function createProject(username: string) {
   const owner = await createUserWithSession({ username });
@@ -48,8 +46,9 @@ afterEach(() => {
 
 describe("paginazione stabile a parità di punteggio e keyword", () => {
   // covers: AC-801-3
-  it("6 pagine da 20 della vista progetto coprono 120 id distinti, in lettura e dall'API", async () => {
-    const { cookie, projectId } = await createProject("t801-stable");
+  // impacted-by: T-1101 (GET /api/projects/[id]/results rimossa: la paginazione si legge da loadResultsPage)
+  it("6 pagine da 20 della vista progetto coprono 120 id distinti", async () => {
+    const { projectId } = await createProject("t801-stable");
     const sectionA = await prisma.subproject.create({ data: { project_id: projectId, name: "A", position: 0 } });
     const sectionB = await prisma.subproject.create({ data: { project_id: projectId, name: "B", position: 1 } });
     const keywords = Array.from({ length: 60 }, (_, index) => `kw-${String(index + 1).padStart(3, "0")}`);
@@ -61,27 +60,16 @@ describe("paginazione stabile a parità di punteggio e keyword", () => {
     });
 
     const readIds: string[] = [];
-    const apiIds: string[] = [];
-    let apiTotalPages = 0;
+    let totalPages = 0;
     for (let page = 1; page <= 6; page += 1) {
       const result = await loadResultsPage({ projectId, subprojectId: null, filters: {}, page, pageSize: 20 });
       readIds.push(...result.rows.map((row) => row.id));
-
-      const response = await callRoute(getResults, {
-        url: `/api/projects/${projectId}/results?page=${page}&pageSize=20`,
-        cookie,
-        params: { id: projectId },
-      });
-      const body = (await response.json()) as { data: { id: string }[]; meta: { totalPages: number } };
-      apiIds.push(...body.data.map((row) => row.id));
-      apiTotalPages = body.meta.totalPages;
+      totalPages = result.totalPages;
     }
 
     expect(readIds).toHaveLength(120);
     expect(new Set(readIds).size).toBe(120);
-    expect(apiIds).toHaveLength(120);
-    expect(new Set(apiIds).size).toBe(120);
-    expect(apiTotalPages).toBe(6);
+    expect(totalPages).toBe(6);
   });
 });
 

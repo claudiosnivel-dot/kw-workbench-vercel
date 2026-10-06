@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { AppError, withApiErrors } from "@/lib/http/errors";
 import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
-import { ExportScope } from "@/lib/modules/export";
+import { EXPORT_SCOPES } from "@/lib/modules/export-types";
+import type { ExportScope } from "@/lib/modules/export-types";
 import {
   exportProjectToGoogleSheets,
   GoogleReauthRequiredError,
@@ -15,7 +16,7 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const VALID_SCOPES = new Set<ExportScope>(["approved", "selected", "review", "non-excluded", "filtered"]);
+const VALID_SCOPES = new Set<ExportScope>(EXPORT_SCOPES);
 const INTERNAL_EXPORT_ERROR = "Errore interno durante l'export su Google Sheets";
 
 type RouteContext = {

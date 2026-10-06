@@ -15,23 +15,16 @@ function decryptSetting(setting: { key: string; value_encrypted: string }): stri
   }
 }
 
-export async function getSettingValue(key: string): Promise<string | null> {
-  const setting = await prisma.appSetting.findUnique({ where: { key } });
-  return setting ? decryptSetting(setting) : null;
-}
-
 /** Restituisce la PrismaPromise non ancora eseguita: si può attendere o passare a prisma.$transaction. */
-export function upsertSettingValue(params: { key: string; value: string; isSecret?: boolean }) {
+export function upsertSettingValue(params: { key: string; value: string }) {
   return prisma.appSetting.upsert({
     where: { key: params.key },
     update: {
       value_encrypted: encryptSecret(params.value),
-      is_secret: Boolean(params.isSecret),
     },
     create: {
       key: params.key,
       value_encrypted: encryptSecret(params.value),
-      is_secret: Boolean(params.isSecret),
     },
   });
 }

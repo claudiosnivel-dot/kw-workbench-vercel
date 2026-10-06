@@ -5,6 +5,8 @@
 // Oracolo di non regressione degli upgrade di 04-stack-upgrade (snapshot invariati):
 // covers: AC-401-3
 // covers: AC-403-4
+// Oracolo di T-1102: il consolidamento dei duplicati non cambia il comportamento fotografato.
+// covers: AC-1102-4
 import ExcelJS from "exceljs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";

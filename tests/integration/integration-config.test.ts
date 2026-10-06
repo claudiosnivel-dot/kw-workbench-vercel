@@ -89,7 +89,7 @@ describe("configurazione OAuth di Google Sheets", () => {
 
   // covers: AC-908-4
   it("non restituisce mai il client secret e nessuna rotta riguarda le credenziali del fornitore", async () => {
-    await upsertSettingValue({ key: CLIENT_SECRET_SETTING, value: "SHEETS-SECRET-1", isSecret: true });
+    await upsertSettingValue({ key: CLIENT_SECRET_SETTING, value: "SHEETS-SECRET-1" });
     const root = await createUserWithSession({ role: UserRole.ADMIN, isRootAdmin: true });
 
     const response = await callRoute(getConfig, { url: CONFIG_URL, cookie: root.cookie });
