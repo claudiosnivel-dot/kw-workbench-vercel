@@ -9,7 +9,7 @@
 | **Progetto** | Seo God Mode (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-10-06 |
-| **Sessione corrente** | 2026-10-06 (decima) — BUILD di `google-integrations` (09): T-901…T-910 chiusi dopo le decisioni dell'utente (rimozione Google Ads approvata per elemento, D-19 emendata, baseline d'igiene rinfrescata, baseline visiva approvata); checkpoint VERDE alla terza esecuzione; push del branch e PR verso `master` |
+| **Sessione corrente** | 2026-10-06 (decima) — BUILD di `google-integrations` (09): T-901…T-910 chiusi dopo le decisioni dell'utente; checkpoint VERDE (terza esecuzione), CI verde; PR #23 mergiata su `master` (`d2dbbd8`), deploy di produzione verde con le migrazioni 0016-0021 e smoke verde |
 
 ---
 
@@ -25,7 +25,7 @@
 | `observability-ops` (06) | chiuso | VERDE (2026-10-05, due esecuzioni verdi: prima e dopo la correzione del test AC-601-3, rosso solo in CI) | T-601…T-605 chiusi; PR #15 mergiata su `master` (`d29cfb1`), CI verde, deploy di produzione verde. Decisioni chiuse il 2026-10-05 (§5). Restano all'utente le azioni esterne: DSN Sentry, monitor di uptime, primo backup di produzione |
 | `extraction-fixes` (07) | chiuso | VERDE (2026-10-05, seconda esecuzione; la prima NON-VERDE per 2 falsi positivi di semgrep, §5) | T-701…T-707 chiusi; golden master e test d'impatto approvati dall'utente; PR #17 mergiata su `master` (`9a3d6b4`), CI verde, deploy di produzione verde con la migrazione 0014 |
 | `results-export` (08) | chiuso | VERDE (2026-10-05, seconda esecuzione; la prima NON-VERDE per 11 duplicazioni preesistenti rimodellate, chiuse dal rinfresco della baseline d'igiene deciso dall'utente, §5) | T-801…T-810 chiusi; gate umani approvati dall'utente; PR #21 mergiata su `master` (`b48598e`), CI verde, deploy di produzione verde con la migrazione 0015 |
-| `google-integrations` (09) | chiuso (merge in corso, §3) | VERDE (2026-10-06, terza esecuzione; le prime due NON-VERDE, §4) | T-901…T-910 chiusi; gate umani approvati dall'utente (rimozione per elemento, baseline d'igiene, baseline visiva, scelte confermate); D-19 emendata (AC-910-3) |
+| `google-integrations` (09) | chiuso | VERDE (2026-10-06, terza esecuzione; le prime due NON-VERDE, §4) | T-901…T-910 chiusi; gate umani approvati dall'utente (rimozione per elemento, baseline d'igiene, baseline visiva, scelte confermate); D-19 emendata (AC-910-3); PR #23 mergiata su `master` (`d2dbbd8`), CI verde, deploy di produzione verde con le migrazioni 0016-0021 |
 | `onboarding` (10) | todo | — | |
 | `cleanup` (11) | todo | — | Rimozioni human-gated |
 | `background-jobs` (12) | todo | — | D-10 da confermare |
@@ -38,23 +38,22 @@
 
 ## 2. Macrotask corrente
 
-- **Ultimo chiuso**: `results-export` (08), checkpoint VERDE, mergiato e in produzione.
-- **Chiuso in questa sessione**: `google-integrations` (09), checkpoint VERDE; push, PR, CI e merge su `master` in §3.
+- **Ultimo chiuso**: `google-integrations` (09), checkpoint VERDE, mergiato e in produzione (modulo emendato il 2026-10-06: T-901…T-910).
 - **Prossimo**: `onboarding` (10), dipendenze 03 e 05 chiuse.
-- **Criteri/test di riferimento**: `docs/blueprint/09-google-integrations.md` (emendato il 2026-10-06: T-901…T-910).
+- **Criteri/test di riferimento**: `docs/blueprint/10-onboarding.md`.
 
 ## 3. Stato git
 
 | Campo | Valore |
 |---|---|
-| Branch di lavoro | `trueline/build/google-integrations` (da `master` `743020b`), pushato a checkpoint verde; PR verso `master` (esito in §3, aggiornato alla chiusura successiva) |
-| Commit del branch | `c6fd24a` emendamento (divisione di T-902 e T-905), `a3a5c24` T-901 (contratto), `8c081da` T-902, `3505230` T-909, `8f8d674` T-903, `0c17230` T-904, `c1e095a` T-905, `3c31f85` T-910, `cffc166` T-906, `69fda48` T-907, `ded1f7f` T-908, `3bec7b2` refactor (cloni nuovi tolti prima del checkpoint), `e7e1d32` baseline visiva dei risultati, `23db26b` fonti in `docs/METRICS-PROVIDERS.md`, `be0e858` fix gitleaks (T-908, test), `21b4e01` prima chiusura, `36d0114` decisioni dell'utente e D-19 emendata, `b72c4be` T-910 (AC-910-3), `bbc24de` T-901 (rimozione Google Ads), `cac4438` source-map-js 1.2.2, `97fd39a` baseline d'igiene rinfrescata, poi questa chiusura |
-| CI | da eseguire sulla PR del branch (esito alla chiusura successiva) |
-| Deploy di produzione | invariato: `b48598e` (merge di PR #21) e successivo `743020b` (PR #22, sola documentazione, build annullata dall'Ignored Build Step) |
-| Deploy Preview del branch | al push (con T-202 e `PRODUCTION_DB_HOST` non impostata la Preview non migra) |
-| Merge su `master` | autonomo a checkpoint e CI verdi (D-04 emendata): il deploy di produzione applica le migrazioni 0016-0021, compresa la rimozione di `google_ads_credentials` e delle impostazioni `GOOGLE_ADS_*` approvata dall'utente (D-05). Precedenti: PR #22 (`743020b`), PR #21 (`b48598e`), PR #20 (`129df0f`), PR #19 (`1adc1ba`), PR #18 (`d7afb97`), PR #17 (`9a3d6b4`), PR #16 (`535ab7c`), PR #15 (`d29cfb1`), PR #14 (`cc453c1`), PR #13 (`29dd4fb`), PR #12, PR #11 (`d4e2d00`), PR #10 (`759cef7`), PR #9 (`8b3f5f2`), PR #7 (`3de0e74`), PR #8 (`336a561`), PR #1 (`37d2bd0`), PR #2 (`7b41a41`), PR #5 (`41fc5e1`), PR #6 (`504cb6f`); emendamenti di D-04 e D-20 con PR #3 e PR #4 |
+| Branch di lavoro | `trueline/build/google-integrations` (da `master` `743020b`), pushato a checkpoint verde; PR #23 (https://github.com/claudiosnivel-dot/kw-workbench-vercel/pull/23), mergiata. Questa chiusura arriva su `master` con una PR successiva dallo stesso branch |
+| Commit del branch | `c6fd24a` emendamento (divisione di T-902 e T-905), `a3a5c24` T-901 (contratto), `8c081da` T-902, `3505230` T-909, `8f8d674` T-903, `0c17230` T-904, `c1e095a` T-905, `3c31f85` T-910, `cffc166` T-906, `69fda48` T-907, `ded1f7f` T-908, `3bec7b2` refactor (cloni nuovi tolti prima del checkpoint), `e7e1d32` baseline visiva dei risultati, `23db26b` fonti in `docs/METRICS-PROVIDERS.md`, `be0e858` fix gitleaks (T-908, test), `21b4e01` prima chiusura, `36d0114` decisioni dell'utente e D-19 emendata, `b72c4be` T-910 (AC-910-3), `bbc24de` T-901 (rimozione Google Ads), `cac4438` source-map-js 1.2.2, `97fd39a` baseline d'igiene rinfrescata, `6ef54d8` chiusura a checkpoint verde, poi questa chiusura |
+| CI | PR #23: run 37428740453 verde (checks, integration, e2e, build); `master` dopo il merge: run 37429086305 verde |
+| Deploy di produzione | **verde**: deploy di `d2dbbd8` (merge di PR #23), alias `titanseo.vercel.app`. Log: `[ignore-build] 106 file cambiati, non solo documentazione: build normale`, `[vercel-build] Node v24.21.0`, «Applying migration» da `0016_keyword_metrics_precision` a `0021_remove_google_ads`, «All migrations have been successfully applied», seed eseguito, build riuscito. Smoke: `/api/health` 200 `{"status":"ok","db":"ok","version":"d2dbbd8"}`; `/api/integrations/google-ads`, `/api/admin/metrics-spend` e `/api/projects/x/planner-export` anonimi 401 (il proxy risponde prima dell'instradamento; il 404 della rotta rimossa per un utente autenticato è provato dallo smoke E2E); `/login` 200 |
+| Deploy Preview del branch | Ready (check Vercel della PR #23 verde) |
+| Merge su `master` | PR #23 (`d2dbbd8`, a checkpoint e CI verdi, dopo le decisioni dell'utente). Precedenti: PR #22 (`743020b`), PR #21 (`b48598e`), PR #20 (`129df0f`), PR #19 (`1adc1ba`), PR #18 (`d7afb97`), PR #17 (`9a3d6b4`), PR #16 (`535ab7c`), PR #15 (`d29cfb1`), PR #14 (`cc453c1`), PR #13 (`29dd4fb`), PR #12, PR #11 (`d4e2d00`), PR #10 (`759cef7`), PR #9 (`8b3f5f2`), PR #7 (`3de0e74`), PR #8 (`336a561`), PR #1 (`37d2bd0`), PR #2 (`7b41a41`), PR #5 (`41fc5e1`), PR #6 (`504cb6f`); emendamenti di D-04 e D-20 con PR #3 e PR #4 |
 | Deploy-coupling | `main_deploy_coupled: true` (segnale `vercel.json`): ogni push su `master` va in produzione, salvo i commit di sola documentazione annullati dall'Ignored Build Step (T-605). Merge e push su `master` autonomi a checkpoint verde (D-04 emendata 2026-10-04). Protezione del branch non attiva: rinuncia decisa dall'utente il 2026-10-05 (403 su GitHub Free) |
-| Push dei branch | `trueline/build/google-integrations` pushato a checkpoint verde; contiene T-202 e sei migrazioni nuove: `0016_keyword_metrics_precision`, `0017_metrics_provider_dataforseo`, `0018_metrics_provider_requests` (con RLS), `0019_metrics_provider_planner_csv`, `0020_google_sheets_reauth_required` (additive) e `0021_remove_google_ads` (distruttiva, approvata: dati a NONE, enum ricreato, `DROP TABLE google_ads_credentials`, `DELETE` delle impostazioni `GOOGLE_ADS_*`) |
+| Push dei branch | `trueline/build/google-integrations` pushato a checkpoint verde; conteneva T-202 e le migrazioni 0016-0021, applicate dal deploy di produzione di `d2dbbd8` (la 0021 distruttiva, approvata: `google_ads_credentials` e impostazioni `GOOGLE_ADS_*` cancellate) |
 
 ## 4. Baseline & budget
 
@@ -89,6 +88,7 @@
 - **T-901, rimozione** (`bbc24de`, tutti gli 8 elementi approvati): provider Planner via API e `DisabledMetricsProvider`; `lib/integrations/google-ads*.ts`; le 5 rotte; card admin e suo uso in `/admin`; model `GoogleAdsCredential`; variabili `GOOGLE_ADS_*` (anche nella configurazione degli E2E); migrazione `0021_remove_google_ads` in una transazione (dati a NONE anche in `metrics_provider_requests`, enum ricreato, `DROP TABLE`, `DELETE` con `starts_with`); riferimenti residui (opzioni dei form, `MetricsProviderUnavailableError` e `project-settings-response.ts` con i try/catch delle rotte progetto, avviso `PROVIDER_DISABLED`, test di T-304, voce della baseline knip); README aggiornato. Gate: `tests/integration/google-ads-removal.test.ts` (AC-901-1: instradamento delle rotte come nel router di Next, 404, e `/admin` resa senza «Google Keyword Planner»; AC-901-2: migrazioni 0001-0020 applicate a un DB scratch, dati di prova, poi la 0021) e `tests/tooling/google-ads-removal.test.ts` (AC-901-3), rossi prima; in più uno smoke E2E della rotta rimossa (404 reale di Next).
 - **Verifiche**: `npm test` 273/273 in 84 file; lint e typecheck exit 0; `prisma migrate diff` vuoto; `git ls-files --eol` senza `w/crlf`; `ac_assertion_trace_check` ristretto al 09: OK, 15 target test; E2E Windows 12/12 (3 visivi saltati), E2E Linux 15/15 con la baseline approvata; `validate_blueprint` e `ac_observability_check`: OK.
 - **Checkpoint** terza esecuzione **VERDE** (§4).
+- **Pubblicazione**: branch pushato, PR #23, CI verde (run 37428740453), merge su `master` (`d2dbbd8`), deploy di produzione verde con le migrazioni 0016-0021, smoke verde, CI di `master` verde (run 37429086305) (§3).
 
 ### Sessione 2026-10-06 (decima) — decisioni dell'utente sul macrotask 09
 
