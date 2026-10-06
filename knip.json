@@ -11,6 +11,7 @@
   "entry": [
     "app/**/{page,layout,route}.{ts,tsx}",
     "proxy.ts",
+    "i18n/request.ts",
     "prisma/seed.ts",
     "scripts/**/*.{mjs,ts}",
     "prisma.config.ts",
@@ -23,12 +24,14 @@
     "app/**/*.{ts,tsx}",
     "components/**/*.{ts,tsx}",
     "lib/**/*.{ts,tsx}",
+    "i18n/**/*.ts",
     "prisma/**/*.ts",
     "scripts/**/*.{mjs,ts}",
     "tests/**/*.{ts,tsx}"
   ],
   "ignore": [
     "tests/fixtures/tooling/**",
+    "tests/fixtures/i18n/**",
     "lib/generated/**"
   ],
   "ignoreDependencies": [

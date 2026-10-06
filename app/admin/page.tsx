@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { AdminUsersDashboard } from "@/components/admin-users-dashboard";
 import { BrandingSettingsCard } from "@/components/branding-settings-card";
 import { GoogleSheetsApiConfigCard } from "@/components/google-sheets-api-config-card";
 import { MetricsSpendCard } from "@/components/metrics-spend-card";
+import { PageIntro } from "@/components/page-intro";
 import { isAdminUser } from "@/lib/auth/current-user";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
@@ -18,7 +20,8 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const [branding, googleSheetsConfig, metricsSpend] = await Promise.all([
+  const [t, branding, googleSheetsConfig, metricsSpend] = await Promise.all([
+    getTranslations("admin"),
     getBrandingSnapshot(),
     user.isRootAdmin ? getGoogleSheetsApiConfigSnapshot() : Promise.resolve(null),
     user.isRootAdmin ? getMetricsSpend() : Promise.resolve(null),
@@ -26,12 +29,7 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <section className="card">
-        <h1 className="text-2xl font-semibold">Dashboard Admin</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Qui trovi amministrazione utenti e impostazioni piattaforma. I dati progetto degli utenti restano sempre privati.
-        </p>
-      </section>
+      <PageIntro title={t("title")} intro={t("intro")} />
 
       <BrandingSettingsCard
         initial={{

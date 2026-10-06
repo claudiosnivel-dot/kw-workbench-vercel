@@ -20,10 +20,10 @@ export const POST = withApiErrors(async (request: Request) => {
   const result = await verifyLoginCredentials(username, password);
   if (!result.user) {
     if (result.reason === "SUSPENDED") {
-      return NextResponse.json({ error: "Account sospeso. Contatta l'amministratore." }, { status: 403 });
+      return NextResponse.json({ error: "Account sospeso. Contatta l'amministratore.", code: "ACCOUNT_SUSPENDED" }, { status: 403 });
     }
 
-    return NextResponse.json({ error: "Credenziali non valide" }, { status: 401 });
+    return NextResponse.json({ error: "Credenziali non valide", code: "INVALID_CREDENTIALS" }, { status: 401 });
   }
 
   const response = NextResponse.json({ success: true });

@@ -38,11 +38,11 @@ export const POST = withApiErrors(async (request: Request) => {
   const role = parseUserRole(String(payload.role ?? "")) ?? UserRole.SUBSCRIBER;
 
   if (!username || !password) {
-    return NextResponse.json({ error: "Username e password sono obbligatori" }, { status: 400 });
+    return NextResponse.json({ error: "Username e password sono obbligatori", code: "CREDENTIALS_REQUIRED" }, { status: 400 });
   }
 
   if (password !== confirmPassword) {
-    return NextResponse.json({ error: "Password e conferma non coincidono" }, { status: 400 });
+    return NextResponse.json({ error: "Password e conferma non coincidono", code: "PASSWORD_MISMATCH" }, { status: 400 });
   }
 
   const user = await createUserFromAdmin(actor, {

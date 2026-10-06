@@ -22,7 +22,7 @@ export const PATCH = withApiErrors(async (request: Request, { params }: RouteCon
   const confirmPassword = String(payload.confirmPassword ?? "");
 
   if (newPassword && newPassword !== confirmPassword) {
-    return NextResponse.json({ error: "Password e conferma non coincidono" }, { status: 400 });
+    return NextResponse.json({ error: "Password e conferma non coincidono", code: "PASSWORD_MISMATCH" }, { status: 400 });
   }
 
   const updated = await updateUserFromAdmin(actor, {

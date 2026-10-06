@@ -1,49 +1,34 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { FormEvent, useMemo, useState } from "react";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { postCredentials } from "@/lib/client/auth";
+import { useLeavingAction } from "@/lib/client/use-leaving-action";
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
+  const t = useTranslations("auth");
   const redirectPath = useMemo(() => safeNextPath(nextPath), [nextPath]);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { pending, error, run } = useLeavingAction();
+  const loading = pending !== null;
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ username, password }),
-      });
-
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Accesso non riuscito"));
-      }
-
+    void run(async (tErrors) => {
+      await postCredentials("/api/auth/login", { username, password }, tErrors);
       window.location.assign(redirectPath);
-      return;
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
-      setLoading(false);
-    }
+    });
   };
 
   return (
     <form className="space-y-4" onSubmit={submit}>
       <div>
         <label className="label" htmlFor="username">
-          Username
+          {t("username")}
         </label>
         <input
           id="username"
@@ -57,7 +42,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
 
       <div>
         <label className="label" htmlFor="password">
-          Password
+          {t("password")}
         </label>
         <input
           id="password"
@@ -71,13 +56,13 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       </div>
 
       <button className="btn-primary w-full" disabled={loading} type="submit">
-        {loading ? "Accesso in corso..." : "Accedi"}
+        {loading ? t("login.submitting") : t("login.submit")}
       </button>
 
       <p className="text-sm text-slate-600">
-        Non hai un account?{" "}
+        {t("login.noAccount")}{" "}
         <Link href="/register" className="font-medium underline">
-          Registrati
+          {t("login.registerLink")}
         </Link>
       </p>
 

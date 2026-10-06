@@ -1,8 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { CardIntro } from "@/components/card-intro";
 import { JobProgress } from "@/components/job-progress";
+import { OnboardingBackLink } from "@/components/onboarding-back-link";
 import { readStartedJobId } from "@/lib/client/run-extraction";
 
 type OnboardingRunStepProps = {
@@ -24,6 +26,10 @@ export function OnboardingRunStep({
   resultsHref,
   activeJobId = null,
 }: OnboardingRunStepProps) {
+  const t = useTranslations("onboarding.run");
+  const tJobs = useTranslations("jobs.run");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
   const [starting, setStarting] = useState(false);
   const [jobId, setJobId] = useState<string | null>(activeJobId);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +47,9 @@ export function OnboardingRunStep({
         body: JSON.stringify({ subprojectId }),
       });
 
-      setJobId(await readStartedJobId(response));
+      setJobId(await readStartedJobId(response, { errors: tErrors, failedMessage: tJobs("failed") }));
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
+      setError(submitError instanceof Error ? submitError.message : tCommon("unexpectedError"));
     } finally {
       setStarting(false);
     }
@@ -64,39 +70,42 @@ export function OnboardingRunStep({
       });
 
       if (!onboardingResponse.ok) {
-        throw new Error("Estrazione completata, ma avanzamento onboarding non riuscito.");
+        throw new Error(t("advanceFailed"));
       }
 
-      setSuccess("Estrazione completata. Ora passa alla revisione/export.");
+      setSuccess(t("success"));
       window.setTimeout(() => {
         window.location.assign("/onboarding/review-export");
       }, 450);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
+      setError(submitError instanceof Error ? submitError.message : tCommon("unexpectedError"));
     }
   };
 
   return (
     <section className="card space-y-4">
-      <h2 className="text-xl font-semibold">Step 6: Avvia estrazione</h2>
-      <p className="text-sm text-slate-600">
-        Progetto <span className="font-medium">{projectName}</span> - Sezione{" "}
-        <span className="font-medium">{subprojectName}</span>.
-      </p>
+      <CardIntro
+        variant="step"
+        title={t("title")}
+        intro={
+          <>
+            {t("projectLabel")} <span className="font-medium">{projectName}</span> - {t("sectionLabel")}{" "}
+            <span className="font-medium">{subprojectName}</span>.
+          </>
+        }
+      />
 
       <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4 text-sm text-slate-600">
-        Lanceremo subito un job reale sulla sezione attiva con le seed inserite al passo precedente.
+        {t("info")}
       </div>
 
       {jobId && <JobProgress key={jobId} jobId={jobId} resultsHref={resultsHref} onCompleted={advanceOnboarding} />}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <button className="btn-primary w-full sm:w-auto" type="button" onClick={runExtraction} disabled={starting}>
-          {starting ? "Estrazione in corso..." : "Avvia prima estrazione"}
+          {starting ? tJobs("running") : t("submit")}
         </button>
-        <Link className="btn-secondary w-full text-center sm:w-auto" href="/onboarding/seeds">
-          Torna allo step precedente
-        </Link>
+        <OnboardingBackLink href="/onboarding/seeds" />
       </div>
 
       {error && <p className="text-sm text-red-700">{error}</p>}

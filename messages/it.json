@@ -1,0 +1,806 @@
+{
+  "common": {
+    "locale": {
+      "label": "Lingua",
+      "it": "Italiano",
+      "en": "English"
+    },
+    "unexpectedError": "Errore imprevisto",
+    "saving": "Salvataggio...",
+    "delete": "Elimina",
+    "deleting": "Eliminazione...",
+    "close": "Chiudi",
+    "dangerZone": "Zona pericolosa",
+    "previousPage": "Pagina precedente",
+    "nextPage": "Pagina successiva",
+    "pageOf": "Pagina {page} di {total}"
+  },
+  "metadata": {
+    "description": "Workspace web per keyword research"
+  },
+  "auth": {
+    "username": "Username",
+    "password": "Password",
+    "confirmPassword": "Conferma password",
+    "login": {
+      "title": "Accesso",
+      "subtitle": "Autenticati per accedere al tuo workspace.",
+      "submit": "Accedi",
+      "submitting": "Accesso in corso...",
+      "noAccount": "Non hai un account?",
+      "registerLink": "Registrati",
+      "notices": {
+        "session_ended": "La sessione è terminata. Accedi di nuovo."
+      }
+    },
+    "register": {
+      "title": "Crea account",
+      "subtitle": "Compila i campi per attivare il tuo workspace.",
+      "disabled": "La registrazione pubblica è disabilitata in questo momento.",
+      "goToLogin": "Vai al login",
+      "submit": "Crea account",
+      "submitting": "Registrazione in corso...",
+      "haveAccount": "Hai già un account?",
+      "loginLink": "Accedi"
+    },
+    "logout": {
+      "submit": "Esci",
+      "submitting": "Uscita in corso..."
+    }
+  },
+  "nav": {
+    "overview": "Panoramica",
+    "personalize": "Personalizza",
+    "newProject": "Nuovo progetto",
+    "admin": "Admin",
+    "openMenu": "Apri menu"
+  },
+  "dashboard": {
+    "paused": {
+      "eyebrow": "Onboarding in pausa",
+      "title": "Riprendi il percorso guidato A-Z",
+      "body": "Puoi continuare dal punto in cui hai messo in pausa e arrivare al primo export."
+    },
+    "eyebrow": "Panoramica",
+    "title": "Controlla i tuoi progetti SEO e organizza il lavoro per sezioni",
+    "intro": "Ogni progetto può contenere una o più sezioni: puoi lavorare in blocco unico oppure separare per categoria, cluster o funnel.",
+    "createProject": "Crea progetto",
+    "adminDashboard": "Dashboard admin",
+    "stats": {
+      "projects": "Progetti",
+      "sections": "Sezioni",
+      "keywords": "Keyword"
+    },
+    "projects": {
+      "title": "Progetti",
+      "new": "Nuovo progetto",
+      "columns": {
+        "name": "Nome",
+        "sections": "Sezioni",
+        "seeds": "Seed",
+        "keywords": "Keyword",
+        "updated": "Aggiornato",
+        "actions": "Azioni"
+      },
+      "open": "Apri",
+      "results": "Risultati",
+      "empty": "Nessun progetto al momento."
+    },
+    "jobs": {
+      "title": "Ultimi job",
+      "columns": {
+        "project": "Progetto",
+        "section": "Sezione",
+        "status": "Stato",
+        "started": "Avviato",
+        "completed": "Completato"
+      },
+      "empty": "Nessun job trovato."
+    }
+  },
+  "projects": {
+    "links": {
+      "backToProject": "Torna al progetto",
+      "settings": "Impostazioni progetto"
+    },
+    "new": {
+      "title": "Nuovo progetto",
+      "intro": "Crea il progetto in modo guidato: prima imposti le basi (nome, prima sezione, seed), poi eventuali opzioni avanzate."
+    },
+    "delete": {
+      "confirm": "Eliminare il progetto \"{name}\"? Verranno rimossi in modo permanente progetto, seed, keyword candidate e job."
+    },
+    "form": {
+      "step1": "Step 1: Base progetto",
+      "mainSettings": "Impostazioni principali",
+      "name": "Nome progetto",
+      "nameHint": "Nome del contenitore principale (es. dominio, brand o cliente).",
+      "firstSection": "Prima sezione",
+      "firstSectionHint": "Nome della prima sezione operativa (consigliato: Generale).",
+      "defaultSectionName": "Generale",
+      "seeds": "Seed iniziali della prima sezione",
+      "seedsPlaceholder": "keyword uno\nkeyword due\nkeyword tre",
+      "seedsHint": "Una keyword per riga (supportate anche virgole e punto e virgola). Seed rilevate: {count}.",
+      "step2Title": "Step 2 (obbligatorio): Configura lingua e paese di estrazione",
+      "step2Hint": "Questo step è richiesto: la qualità dell'autocomplete dipende da lingua e paese impostati.",
+      "step2Confirm": "Ho verificato lingua e paese per questo progetto.",
+      "step2Required": "Completa lo Step 2 (lingua e paese) prima di creare il progetto.",
+      "step2RequiredTitle": "Completa prima lo Step 2 obbligatorio",
+      "seedRequiredTitle": "Inserisci almeno una seed per avviare subito",
+      "advancedTitle": "Impostazioni avanzate",
+      "createAndOpen": "Crea e apri progetto",
+      "saveSettings": "Salva impostazioni",
+      "createAndRun": "Crea e avvia prima estrazione",
+      "starting": "Avvio...",
+      "saved": "Impostazioni salvate.",
+      "runFailedAfterCreate": "Progetto creato, ma avvio estrazione automatico non riuscito."
+    },
+    "fields": {
+      "language": "Lingua predefinita",
+      "country": "Paese predefinito",
+      "customCode": "Codice attuale non standard ({code})",
+      "autocompleteProvider": "Provider autocomplete",
+      "autocompleteGoogle": "Google (predefinito)",
+      "mock": "Mock",
+      "metricsProvider": "Provider metriche",
+      "metricsNone": "Nessuna metrica",
+      "dataForSeo": "DataForSEO (a pagamento)",
+      "minVolume": "Volume minimo",
+      "minVolumeHint": "Filtra le keyword con volume inferiore a questo valore (0 = nessun filtro).",
+      "scoringProfile": "Profilo scoring",
+      "scoring": {
+        "balanced": "bilanciato",
+        "aggressive": "aggressivo",
+        "conservative": "conservativo"
+      },
+      "excludeBrands": "Escludi brand",
+      "excludeBrandsHint": "Riduce o marca i termini brandizzati secondo blacklist.",
+      "expandAlpha": "Espansione alfabeto (a-z)",
+      "expandAlphaHint": "Aggiunge varianti con lettere (es. keyword a, keyword b).",
+      "expandNumeric": "Espansione numerica (0-9)",
+      "expandNumericHint": "Aggiunge varianti con numeri (es. keyword 1, keyword 2).",
+      "expandPatterns": "Espansione pattern semantici",
+      "expandPatternsHint": "Amplia la copertura delle query correlate.",
+      "autoClassification": "Classificazione automatica",
+      "autoClassificationHint": "Assegna intento e tipo keyword durante l'analisi."
+    },
+    "detail": {
+      "intro": "Workspace operativo per gestire estrazione, revisione e risultati per sezione.",
+      "sections": "Sezioni:",
+      "keywords": "Keyword totali:",
+      "seeds": "Seed totali:",
+      "jobs": "Job totali:",
+      "runActive": "Avvia estrazione (sezione attiva)",
+      "openSectionResults": "Apri risultati sezione",
+      "projectResults": "Risultati tutto il progetto",
+      "manageSections": "Gestisci sezioni",
+      "noSections": "Nessuna sezione disponibile. Crea la prima sezione per iniziare.",
+      "selectActive": "Seleziona sezione attiva",
+      "activeSection": "Sezione attiva: {name}",
+      "activeCounts": "Seed: {seeds} - Keyword: {keywords} - Job: {jobs}",
+      "lastUpdate": "Ultimo aggiornamento: {date}",
+      "openSectionSettings": "Apri impostazioni sezione",
+      "lastJob": "Ultimo job: {status}",
+      "noJob": "Nessun job avviato"
+    },
+    "settings": {
+      "title": "Impostazioni progetto",
+      "intro": "Qui imposti i default del contenitore. Ogni sezione può ereditare questi valori o usare override dedicati.",
+      "linkedSections": "Sezioni collegate",
+      "deleteWarning": "Eliminando questo progetto verranno rimosse sezioni, seed, keyword candidate e job collegati.",
+      "deleteButton": "Elimina progetto"
+    }
+  },
+  "sections": {
+    "empty": "Nessuna sezione al momento.",
+    "deleteWarning": "Eliminando questa sezione verranno rimossi seed, keyword e job collegati. Il progetto resterà attivo.",
+    "delete": {
+      "confirm": "Eliminare la sezione \"{name}\"? Verranno rimossi seed, keyword e job collegati."
+    },
+    "manage": {
+      "title": "Gestisci sezioni",
+      "projectLabel": "Progetto:",
+      "addTitle": "Aggiungi nuova sezione",
+      "listTitle": "Elenco sezioni",
+      "columns": {
+        "order": "Ordine",
+        "name": "Nome",
+        "seeds": "Seed",
+        "keywords": "Keyword",
+        "lastJob": "Ultimo job",
+        "actions": "Azioni"
+      },
+      "renameSettings": "Rinomina / impostazioni",
+      "results": "Risultati",
+      "run": "Esegui",
+      "running": "Esecuzione..."
+    },
+    "settings": {
+      "title": "Sezione: {name}",
+      "projectLine": "Progetto: {name}",
+      "viewSectionResults": "Vedi risultati sezione",
+      "viewProjectResults": "Vedi risultati tutto progetto",
+      "keywords": "Keyword sezione:",
+      "jobs": "Job:",
+      "effectiveLocale": "Locale effettivo:",
+      "formTitle": "Impostazioni sezione"
+    },
+    "order": {
+      "moveUp": "Sposta in alto la sezione {name}",
+      "moveDown": "Sposta in basso la sezione {name}"
+    },
+    "default": {
+      "isDefault": "Sezione predefinita",
+      "setDefault": "Imposta come predefinita"
+    },
+    "form": {
+      "name": "Nome sezione",
+      "nameHint": "Nome libero (es. categoria, cluster, funnel o qualsiasi logica operativa).",
+      "description": "Descrizione (opzionale)",
+      "descriptionPlaceholder": "Nota interna",
+      "descriptionHint": "Aiuta a distinguere le sezioni quando diventano numerose.",
+      "seeds": "Keyword seed (una per riga, supportate anche virgole e punto e virgola)",
+      "seedsHint": "Seed specifiche della sezione. L'estrazione agirà solo su queste keyword iniziali.",
+      "overridesTitle": "Override impostazioni (opzionale)",
+      "languageOverride": "Lingua override",
+      "countryOverride": "Paese override",
+      "autocompleteOverride": "Provider autocomplete override",
+      "metricsOverride": "Provider metriche override",
+      "minVolumeOverride": "Volume minimo override",
+      "scoringOverride": "Profilo scoring override",
+      "excludeBrandsOverride": "Escludi brand override",
+      "expandAlphaOverride": "Espansione alfabeto override",
+      "expandNumericOverride": "Espansione numerica override",
+      "expandPatternsOverride": "Espansione pattern override",
+      "autoClassificationOverride": "Classificazione automatica override",
+      "useProjectDefault": "Usa default progetto",
+      "on": "Attivo",
+      "off": "Disattivo",
+      "providers": {
+        "googleDirect": "GoogleDirectAutocompleteProvider",
+        "mockAutocomplete": "MockAutocompleteProvider",
+        "noMetrics": "NoMetricsProvider",
+        "mockMetrics": "MockMetricsProvider"
+      },
+      "create": "Crea sezione",
+      "save": "Salva sezione",
+      "saved": "Sezione salvata."
+    }
+  },
+  "jobs": {
+    "status": {
+      "pending": "in attesa",
+      "running": "in corso",
+      "completed": "completato",
+      "failed": "fallito",
+      "canceled": "annullato"
+    },
+    "run": {
+      "start": "Avvia estrazione",
+      "running": "Estrazione in corso...",
+      "endpointMissing": "Endpoint estrazione non configurato",
+      "failed": "Estrazione non riuscita"
+    },
+    "progress": {
+      "ariaLabel": "Avanzamento dell'estrazione",
+      "phase": {
+        "expand": "Espansione query",
+        "autocomplete": "Suggerimenti",
+        "metrics": "Metriche",
+        "store": "Salvataggio",
+        "done": "Completata"
+      },
+      "viewResults": "Vedi risultati",
+      "canceled": "Estrazione annullata",
+      "canceling": "Annullamento...",
+      "cancel": "Annulla"
+    }
+  },
+  "results": {
+    "titleSection": "Risultati - {project} / {section}",
+    "titleAll": "Risultati - {project} / Tutte le sezioni",
+    "activeSection": "Sezione attiva",
+    "wholeProject": "Tutto il progetto",
+    "noClassification": "Classificazione automatica non disponibile per la lingua {language}",
+    "shownSection": "Mostrate {filtered} keyword su {total} nella sezione {section}.",
+    "shownProject": "Mostrate {filtered} keyword su {total} nel progetto. Totale progetto: {total}.",
+    "rows": "Riga {start}-{end} di {filtered} (pagina {page}/{totalPages})",
+    "filters": {
+      "section": "Sezione",
+      "searchText": "Testo ricerca",
+      "minVolume": "Volume minimo",
+      "maxVolume": "Volume massimo",
+      "brandStatus": "Stato brand",
+      "reviewStatus": "Stato revisione",
+      "searchIntent": "Intento di ricerca",
+      "keywordType": "Tipo keyword",
+      "selectedOnly": "solo selezionate",
+      "questionOnly": "solo domande",
+      "toolIntentOnly": "solo intent tool",
+      "commercialOnly": "solo commerciali",
+      "apply": "Applica filtri"
+    },
+    "brand": {
+      "allowed": "consentito",
+      "excluded": "escluso",
+      "review": "da rivedere"
+    },
+    "review": {
+      "pending": "in attesa",
+      "approved": "approvato",
+      "rejected": "rifiutato"
+    },
+    "intent": {
+      "informational": "informativo",
+      "commercial": "commerciale",
+      "transactional": "transazionale",
+      "navigational": "navigazionale",
+      "mixed": "misto"
+    },
+    "type": {
+      "generic": "generica",
+      "question": "domanda",
+      "comparison": "comparazione",
+      "branded": "brand",
+      "local": "locale",
+      "tool": "tool",
+      "service": "servizio",
+      "product": "prodotto",
+      "content_topic": "tema contenuto"
+    },
+    "table": {
+      "actions": {
+        "approve": "Approva",
+        "reject": "Rifiuta",
+        "mark-review": "Segna review",
+        "select": "Seleziona per export",
+        "unselect": "Deseleziona per export"
+      },
+      "bulkLabel": "Azione massiva",
+      "applying": "Applicazione...",
+      "applyTo": "Applica a {count} selezionate",
+      "bulkHint": "Azioni massive: approva, rifiuta, review, seleziona, deseleziona.",
+      "allFilteredSelected": "Selezionate tutte le {count} keyword filtrate.",
+      "onlyThisPage": "Solo le {count} di questa pagina",
+      "pageSelected": "Selezionate le {count} keyword di questa pagina.",
+      "selectAllFiltered": "Seleziona tutte le {count} keyword filtrate",
+      "selectAll": "Seleziona tutto",
+      "selectRow": "Seleziona {keyword}",
+      "columns": {
+        "section": "Sezione",
+        "keyword": "Keyword",
+        "source": "Sorgente",
+        "intent": "Intento",
+        "type": "Tipo",
+        "brand": "Brand",
+        "review": "Review",
+        "volume": "Volume",
+        "competition": "Competizione",
+        "score": "Score"
+      },
+      "empty": "Nessuna keyword candidata per questi filtri."
+    }
+  },
+  "export": {
+    "title": "Export",
+    "hint": "Gli export usano la sezione e i filtri della vista corrente",
+    "links": {
+      "csvApproved": "CSV solo approvate",
+      "xlsxSelected": "XLSX solo selezionate",
+      "jsonReview": "JSON solo review",
+      "csvNonExcluded": "CSV tutte non escluse",
+      "xlsxFiltered": "XLSX vista filtrata corrente"
+    },
+    "scopes": {
+      "approved": "Solo approvate",
+      "selected": "Solo selezionate",
+      "review": "Solo review",
+      "non-excluded": "Tutte non escluse",
+      "filtered": "Vista filtrata corrente"
+    },
+    "sheets": {
+      "open": "Esporta su Google Sheets",
+      "title": "Export Google Sheets",
+      "notConnected": "Per esportare su Google Sheets devi prima collegare il tuo account Google da Personalizza.",
+      "goToPersonalize": "Vai a Personalizza",
+      "fileName": "Nome file Google Sheets",
+      "fileNamePlaceholder": "Piano editoriale keyword",
+      "fileNameRequired": "Inserisci un nome file.",
+      "scope": "Scope export",
+      "hint": "Ogni sezione del progetto con keyword esportate verrà creata come foglio separato nel file.",
+      "exporting": "Esportazione in corso...",
+      "exportNow": "Esporta ora",
+      "completed": "Export completato: {rows} keyword su {sheets} fogli.",
+      "openFile": "Apri file Google Sheets"
+    },
+    "planner": {
+      "title": "Volumi da Keyword Planner",
+      "steps": "1. Scarica i file (una keyword per canonical, al massimo 1000 per file). 2. In Google Ads apri Keyword Planner, «Ottieni volume di ricerca e previsioni», e carica un file alla volta. 3. Scarica il risultato e importalo qui.",
+      "preparing": "Preparazione...",
+      "exportButton": "Esporta per Keyword Planner",
+      "summary": "{canonicals} keyword in {parts} file.",
+      "summaryWithSkipped": "{canonicals} keyword in {parts} file, {skipped} saltate (oltre 80 caratteri o 10 parole, o con un prefisso da formula).",
+      "fileN": "File {n}"
+    },
+    "plannerImport": {
+      "label": "File scaricato da Keyword Planner ({extensions}, massimo {max} MB)",
+      "tooLarge": "File troppo grande: il massimo è {max} MB.",
+      "importing": "Import in corso...",
+      "submit": "Importa volumi",
+      "summary": "{matched} righe abbinate ({rangeRows} con volume a intervallo), {updated} keyword aggiornate, {unmatched} righe senza keyword corrispondente, {withoutVolume} righe senza volume, {skippedRows} righe scartate perché senza keyword o con valori non leggibili."
+    }
+  },
+  "errors": {
+    "VALIDATION_ERROR": "Dati non validi: controlla i campi e riprova.",
+    "INVALID_JSON": "Richiesta non valida: il corpo non è un JSON leggibile.",
+    "AUTH_REQUIRED": "Sessione non valida o scaduta. Effettua di nuovo il login.",
+    "FORBIDDEN": "Operazione non autorizzata.",
+    "NOT_FOUND": "Risorsa non trovata.",
+    "CONFLICT": "Esiste già un elemento con questi dati, per esempio uno username già in uso.",
+    "INTERNAL_ERROR": "Errore interno del server. Riprova tra qualche istante.",
+    "INVALID_CREDENTIALS": "Credenziali non valide",
+    "ACCOUNT_SUSPENDED": "Account sospeso. Contatta l'amministratore.",
+    "REGISTRATION_UNAVAILABLE": "Registrazione non disponibile con autenticazione disabilitata.",
+    "SIGNUP_DISABLED": "Registrazione pubblica disabilitata.",
+    "CREDENTIALS_REQUIRED": "Username e password sono obbligatori.",
+    "PASSWORD_MISMATCH": "Password e conferma non coincidono.",
+    "CURRENT_PASSWORD_REQUIRED": "La password attuale è obbligatoria.",
+    "CURRENT_PASSWORD_INVALID": "La password attuale non è valida.",
+    "NO_CHANGES": "Nessuna modifica da salvare.",
+    "USER_NOT_FOUND": "Utente non trovato.",
+    "SELF_ACTION_FORBIDDEN": "Non puoi modificare o eliminare il tuo account dalla gestione utenti.",
+    "LOCALE_UNSUPPORTED": "Lingua non supportata.",
+    "PROJECT_NOT_FOUND": "Progetto non trovato.",
+    "SECTION_NOT_FOUND": "Sezione non trovata.",
+    "SECTION_NAME_TAKEN": "Esiste già una sezione con questo nome.",
+    "LAST_SECTION": "Non puoi eliminare l'ultima sezione. Ogni progetto deve avere almeno una sezione.",
+    "NO_SECTIONS": "Nessuna sezione disponibile. Crea prima una sezione.",
+    "FORBIDDEN_FIELD": "Questo valore è riservato all'amministratore principale.",
+    "JOB_SIGNATURE_INVALID": "Firma della continuazione non valida.",
+    "CRON_UNAUTHORIZED": "Chiamata del cron non autorizzata.",
+    "JOB_ALREADY_ACTIVE": "Un'estrazione è già in corso per questa sezione.",
+    "JOB_NOT_FOUND": "Estrazione non trovata.",
+    "JOB_NOT_CANCELABLE": "L'estrazione è già terminata.",
+    "ONBOARDING_ENTRY_MODE_FORBIDDEN": "La modalità del percorso guidato non si modifica da qui.",
+    "ONBOARDING_STATUS_FORBIDDEN": "Il percorso guidato si completa con il primo export.",
+    "ONBOARDING_PRECONDITION": "Il passo richiesto non è ancora disponibile.",
+    "INVALID_IDEMPOTENCY_KEY": "Chiave di idempotenza non valida.",
+    "IDEMPOTENCY_KEY_CONFLICT": "La chiave di idempotenza è già stata usata per un'altra operazione.",
+    "EXPORT_FORMAT_INVALID": "Formato di export non valido.",
+    "EXPORT_SCOPE_INVALID": "Scope di export non valido.",
+    "EXPORT_DIALECT_INVALID": "Dialetto CSV non valido: usa excel-it o rfc4180.",
+    "SHEETS_FILE_NAME_REQUIRED": "Nome file obbligatorio.",
+    "SHEETS_NOT_CONNECTED": "Collega Google Sheets in Personalizza prima di esportare.",
+    "SHEETS_OAUTH_CONFIG_MISSING": "Configurazione OAuth Google Sheets mancante. Contatta l'admin principale.",
+    "SHEETS_TIMEOUT": "Google non ha risposto entro 30 secondi o non è raggiungibile.",
+    "SHEETS_NO_ROWS": "Nessuna keyword da esportare con i filtri e lo scope selezionati.",
+    "GOOGLE_SHEETS_EXPORT_ERROR": "Export su Google Sheets non riuscito: Google ha restituito un errore. Riprova.",
+    "GOOGLE_REAUTH_REQUIRED": "Google Sheets va ricollegato: apri Personalizza e collega di nuovo l'account.",
+    "FILE_TOO_LARGE": "File troppo grande: il massimo è 5 MB.",
+    "PLANNER_FILE_REQUIRED": "Allega il file scaricato da Keyword Planner.",
+    "PLANNER_FILE_TYPE_INVALID": "Formato non ammesso: carica un file .csv o .tsv.",
+    "PLANNER_KEYWORD_COLUMN_MISSING": "File non riconosciuto: manca la colonna Keyword.",
+    "PLANNER_TOO_MANY_ROWS": "Il file ha troppe righe per un solo import.",
+    "PLANNER_PART_NOT_FOUND": "Blocco di export non trovato.",
+    "UNKNOWN": "Errore imprevisto (HTTP {status})."
+  },
+  "errorPages": {
+    "error": {
+      "title": "Si è verificato un errore",
+      "body": "Non è stato possibile caricare la pagina. Riprova tra qualche istante.",
+      "code": "Codice errore: {digest}",
+      "retry": "Riprova"
+    },
+    "notFound": {
+      "title": "Pagina non trovata",
+      "body": "La pagina richiesta non esiste o non è accessibile con il tuo account.",
+      "back": "Torna alla dashboard"
+    }
+  },
+  "onboarding": {
+    "eyebrow": "Percorso guidato",
+    "skip": "Salta per ora",
+    "stepOf": "Step {index} di {total} ({label})",
+    "back": "Torna allo step precedente",
+    "continue": "Continua",
+    "activeProject": "Progetto attivo:",
+    "activeSection": "Sezione attiva:",
+    "steps": {
+      "WELCOME": {
+        "shortLabel": "Start",
+        "title": "Benvenuto nel percorso guidato",
+        "description": "Scegli se riprendere dai dati esistenti o ricominciare il percorso."
+      },
+      "PROJECT_CREATE": {
+        "shortLabel": "Progetto",
+        "title": "Crea il progetto padre",
+        "description": "Crea il contenitore principale su cui lavorerai nel wizard."
+      },
+      "PROJECT_TARGETING": {
+        "shortLabel": "Targeting",
+        "title": "Configura lingua e paese",
+        "description": "Imposta il targeting base che guiderà l'estrazione autocomplete."
+      },
+      "SECTION_CREATE": {
+        "shortLabel": "Sezione",
+        "title": "Crea la prima sezione",
+        "description": "Definisci la sezione operativa in cui lancerai la prima estrazione."
+      },
+      "SEEDS": {
+        "shortLabel": "Seed",
+        "title": "Inserisci le keyword seed",
+        "description": "Aggiungi le seed iniziali della sezione per preparare il primo job."
+      },
+      "RUN": {
+        "shortLabel": "Run",
+        "title": "Avvia la prima estrazione",
+        "description": "Esegui un job reale sulla sezione attiva e verifica il risultato."
+      },
+      "REVIEW_EXPORT": {
+        "shortLabel": "Export",
+        "title": "Rivedi e fai il primo export",
+        "description": "Revisione consigliata, poi esporta in qualsiasi formato per completare il percorso."
+      }
+    },
+    "done": {
+      "projectHeading": "Step 2: Progetto creato",
+      "projectLabel": "Progetto attivo",
+      "sectionHeading": "Step 4: Sezione creata",
+      "sectionLabel": "Sezione attiva"
+    },
+    "projectCreate": {
+      "title": "Step 2: Crea progetto",
+      "intro": "Il progetto è il contenitore principale (es. dominio, brand o cliente).",
+      "namePlaceholder": "es. sermonescristiano.com",
+      "nameRequired": "Inserisci il nome progetto.",
+      "creating": "Creazione...",
+      "submit": "Crea progetto e continua"
+    },
+    "targeting": {
+      "title": "Step 3: Targeting progetto",
+      "hint": "Imposta lingua e paese principali.",
+      "submit": "Salva targeting e continua",
+      "advanceFailed": "Targeting salvato, ma avanzamento onboarding non riuscito."
+    },
+    "sectionCreate": {
+      "title": "Step 4: Crea sezione",
+      "hint": "Esempio: categoria blog, cluster tematico, funnel, mercato o qualunque logica operativa.",
+      "nameRequired": "Inserisci il nome sezione.",
+      "submit": "Crea sezione e continua"
+    },
+    "seeds": {
+      "title": "Step 5: Inserisci seed",
+      "label": "Keyword seed",
+      "hint": "Una keyword per riga. Seed rilevate: {count}.",
+      "empty": "Inserisci almeno una seed: il run della sezione parte dalle seed.",
+      "submit": "Salva seed e continua",
+      "advanceFailed": "Seed salvate, ma avanzamento onboarding non riuscito."
+    },
+    "run": {
+      "title": "Step 6: Avvia estrazione",
+      "projectLabel": "Progetto",
+      "sectionLabel": "Sezione",
+      "info": "Lanceremo subito un job reale sulla sezione attiva con le seed inserite al passo precedente.",
+      "submit": "Avvia prima estrazione",
+      "advanceFailed": "Estrazione completata, ma avanzamento onboarding non riuscito.",
+      "success": "Estrazione completata. Ora passa alla revisione/export."
+    },
+    "review": {
+      "title": "Step 7: Revisione (consigliata) + primo export",
+      "intro": "Apri i risultati per rifinire le keyword, poi esegui almeno un export per concludere il percorso.",
+      "sectionKeywords": "Keyword sezione attiva",
+      "projectKeywords": "Keyword progetto",
+      "openResults": "Apri risultati sezione (review consigliata)",
+      "quickExport": "Export rapido",
+      "exporting": "Export {format}...",
+      "csv": "Esporta CSV (non escluse)",
+      "xlsx": "Esporta XLSX (vista corrente)",
+      "json": "Esporta JSON (review)",
+      "completedRedirect": "Export completato. Percorso guidato concluso, reindirizzamento in corso...",
+      "completed": "Export completato. Se non vedi il completamento, aggiorna la pagina.",
+      "goToDashboard": "Vai alla dashboard"
+    },
+    "welcome": {
+      "title": "Seleziona come partire",
+      "existing": "Hai già dati presenti: puoi riprendere dal primo step mancante o ricominciare il percorso guidato.",
+      "fresh": "Iniziamo da zero: il wizard ti accompagna passo dopo passo fino al primo export.",
+      "opening": "Apertura...",
+      "resume": "Riprendi da dove sei",
+      "start": "Inizia percorso guidato",
+      "preparing": "Preparazione...",
+      "restart": "Ricomincia da zero"
+    },
+    "resume": {
+      "opening": "Apertura percorso...",
+      "submit": "Riprendi percorso guidato"
+    }
+  },
+  "settings": {
+    "title": "Personalizza",
+    "intro": "Gestisci preferenze visive, credenziali account e connessioni personali da un unico punto.",
+    "preferences": {
+      "title": "Accessibilità e tema",
+      "intro": "Personalizza l'interfaccia con tema, leggibilità del testo e modalità daltonismo.",
+      "theme": "Tema",
+      "dark": "Scuro",
+      "light": "Chiaro",
+      "largeText": "Testo a leggibilità aumentata (+14%)",
+      "largeTextHint": "Aumenta dimensioni e interlinea degli elementi principali per facilitare la lettura.",
+      "colorVision": "Modalità daltonismo",
+      "colorVisionOptions": {
+        "NONE": "Off",
+        "PROTANOPIA": "Protanopia",
+        "DEUTERANOPIA": "Deuteranopia",
+        "TRITANOPIA": "Tritanopia"
+      },
+      "saving": "Salvataggio preferenze...",
+      "save": "Salva preferenze",
+      "saved": "Preferenze salvate correttamente."
+    },
+    "account": {
+      "title": "Account",
+      "intro": "Aggiorna username e password del tuo account personale.",
+      "activeUsername": "Username attivo:",
+      "newUsername": "Nuovo username",
+      "usernamePlaceholder": "username",
+      "currentPassword": "Password attuale (obbligatoria)",
+      "currentPasswordPlaceholder": "Password attuale",
+      "newPassword": "Nuova password (opzionale)",
+      "newPasswordPlaceholder": "Lascia vuoto per mantenerla",
+      "confirmPassword": "Conferma nuova password",
+      "saving": "Salvataggio account...",
+      "save": "Salva impostazioni account",
+      "saved": "Credenziali aggiornate.",
+      "logoutEverywhereHint": "Chiude la sessione su ogni dispositivo in cui hai effettuato l'accesso, compreso questo.",
+      "logoutEverywhere": "Esci da tutti i dispositivi"
+    },
+    "branding": {
+      "title": "Branding",
+      "intro": "Configura loghi dedicati per tema scuro e chiaro. In navbar viene usato il logo del tema corrente con fallback automatico.",
+      "readOnly": "Il branding è globale: solo il root admin può modificarlo.",
+      "appName": "Nome applicazione",
+      "appNamePlaceholder": "Seo God Mode",
+      "darkLogo": "Logo tema scuro",
+      "darkPlaceholder": "https://miosito.it/logo-dark.svg",
+      "uploadDark": "Carica logo dark",
+      "removeDark": "Rimuovi logo dark",
+      "lightLogo": "Logo tema chiaro",
+      "lightPlaceholder": "https://miosito.it/logo-light.svg",
+      "uploadLight": "Carica logo light",
+      "removeLight": "Rimuovi logo light",
+      "formats": "Formati supportati: URL https://, percorso /logo.svg o immagine PNG, JPG, SVG o WEBP fino a 100 KB. Logo legacy tecnico: {legacy, select, present {presente} other {assente}}.",
+      "saving": "Salvataggio branding...",
+      "save": "Salva branding",
+      "preview": "Anteprima navbar",
+      "darkTheme": "Tema scuro",
+      "lightTheme": "Tema chiaro",
+      "noLogo": "Nessun logo disponibile",
+      "previewAltDark": "{name} dark",
+      "previewAltLight": "{name} light",
+      "fallbackHint": "Fallback automatico: logo tema corrente -> altro logo -> logo legacy.",
+      "fileUnsupported": "File non supportato. Carica un'immagine PNG, JPG, SVG o WEBP.",
+      "tooLarge": "Logo troppo grande. Usa un file massimo da 100 KB.",
+      "readFailed": "Impossibile leggere il file selezionato.",
+      "darkLoaded": "Logo dark caricato localmente. Premi Salva branding per applicarlo.",
+      "lightLoaded": "Logo light caricato localmente. Premi Salva branding per applicarlo.",
+      "darkRemoved": "Logo dark rimosso localmente. Premi Salva branding per confermare.",
+      "lightRemoved": "Logo light rimosso localmente. Premi Salva branding per confermare.",
+      "saved": "Branding salvato con successo."
+    }
+  },
+  "admin": {
+    "title": "Dashboard Admin",
+    "intro": "Qui trovi amministrazione utenti e impostazioni piattaforma. I dati progetto degli utenti restano sempre privati.",
+    "roles": {
+      "ADMIN": "Admin",
+      "SUBSCRIBER": "Sottoscrittore"
+    },
+    "statuses": {
+      "ACTIVE": "Attivo",
+      "SUSPENDED": "Sospeso"
+    },
+    "totals": {
+      "users": "Utenti",
+      "admins": "Admin",
+      "subscribers": "Sottoscrittori",
+      "active": "Attivi",
+      "suspended": "Sospesi"
+    },
+    "filters": {
+      "search": "Cerca username",
+      "searchPlaceholder": "es. mario",
+      "role": "Ruolo",
+      "status": "Stato",
+      "all": "Tutti",
+      "refreshing": "Aggiornamento...",
+      "apply": "Applica filtri"
+    },
+    "create": {
+      "title": "Crea utente",
+      "nonRootHint": "Come admin non-root puoi creare solo utenti Sottoscrittori.",
+      "creating": "Creazione...",
+      "submit": "Crea utente",
+      "created": "Utente creato con successo."
+    },
+    "manage": {
+      "title": "Gestione utenti",
+      "columns": {
+        "username": "Username",
+        "role": "Ruolo",
+        "status": "Stato",
+        "created": "Creato",
+        "lastLogin": "Ultimo login",
+        "actions": "Azioni"
+      },
+      "rootBadge": "Root Admin",
+      "save": "Salva",
+      "newPasswordPlaceholder": "Nuova password",
+      "resetPassword": "Reset password",
+      "empty": "Nessun utente trovato per i filtri correnti.",
+      "pageInfo": "Pagina {page} di {totalPages} · {total} utenti",
+      "previous": "Precedente",
+      "next": "Successiva",
+      "updated": "Utente aggiornato con successo.",
+      "deleteConfirm": "Eliminare definitivamente l'utente \"{username}\"?",
+      "deleted": "Utente eliminato definitivamente."
+    },
+    "spend": {
+      "title": "Spesa fornitore metriche",
+      "body": "Mese {month} (UTC): {spent} su un tetto di {budget}, {requests} richieste per {keywords} keyword. Tetti in METRICS_MONTHLY_BUDGET_USD e METRICS_RUN_BUDGET_USD."
+    }
+  },
+  "integrations": {
+    "sheetsConfig": {
+      "title": "Google Sheets OAuth (globale app)",
+      "intro": "Configurazione tecnica usata per permettere agli utenti di collegare il proprio account Google Sheets.",
+      "clientIdLabel": "OAuth Client ID",
+      "redirectUriLabel": "OAuth Redirect URI",
+      "clientSecretLabel": "OAuth Client Secret",
+      "clientIdPlaceholder": "xxxxxxxx.apps.googleusercontent.com",
+      "redirectUriPlaceholder": "https://tuodominio.com/api/integrations/google-sheets/callback",
+      "secretConfigured": "Configurato (inserisci per sostituire)",
+      "secretPlaceholder": "Inserisci client secret",
+      "fields": {
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "redirectUri": "Redirect URI"
+      },
+      "source": "Fonte: {source, select, db {salvato qui} env {variabile d'ambiente} other {non configurato}}",
+      "removeOverride": "Rimuovi override",
+      "removeOverrideAria": "Rimuovi override {field}",
+      "overrideRemoved": "Override di {field} rimosso: vale la variabile d'ambiente, se presente.",
+      "save": "Salva configurazione Google Sheets",
+      "saved": "Configurazione OAuth Google Sheets salvata.",
+      "saveFailed": "Salvataggio configurazione Google Sheets non riuscito."
+    },
+    "sheetsPersonal": {
+      "title": "Google Sheets personale",
+      "intro": "Collega il tuo account Google per esportare keyword direttamente su file Sheets nel tuo Drive.",
+      "connected": "Account Google Sheets collegato con successo.",
+      "failed": "Connessione Google Sheets non riuscita: {reason}",
+      "reasons": {
+        "accesso_negato": "l'accesso a Google è stato negato o annullato.",
+        "stato_non_valido": "la richiesta di collegamento è scaduta o non è valida. Riprova.",
+        "config_oauth_mancante": "la configurazione OAuth di Google Sheets manca. Contatta l'amministratore principale.",
+        "scope_mancante": "non hai concesso il permesso per Google Sheets. Ricollega e accetta tutti i permessi richiesti.",
+        "scambio_token_fallito": "Google non ha completato il collegamento. Riprova.",
+        "sessione_scaduta": "la sessione è scaduta. Accedi di nuovo e ricollega.",
+        "unknown": "errore sconosciuto."
+      },
+      "statusLabel": "Stato:",
+      "statuses": {
+        "connected": "Connesso",
+        "reauth_required": "Da ricollegare",
+        "disconnected": "Non connesso"
+      },
+      "emailLabel": "Email:",
+      "scopeLabel": "Scope:",
+      "broaderScope": "Il collegamento usa un permesso più ampio di quello che serve: ricollega Google Sheets per passare all'accesso ai soli file creati da questa app.",
+      "reconnect": "Ricollega Google Sheets",
+      "connect": "Connetti a Google Sheets",
+      "disconnecting": "Disconnessione...",
+      "disconnect": "Disconnetti Google Sheets",
+      "disconnectConfirm": "Disconnettere Google Sheets da questo account?"
+    }
+  }
+}

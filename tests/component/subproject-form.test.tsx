@@ -1,7 +1,8 @@
 // Gate di T-808 (AC-808-4, parte del form): in creazione senza redirect il form torna vuoto dopo il 201.
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SubprojectForm } from "@/components/subproject-form";
+import { renderWithIntl } from "./intl";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -27,7 +28,7 @@ describe("SubprojectForm in creazione", () => {
         headers: { "Content-Type": "application/json" },
       })
     );
-    render(<SubprojectForm mode="create" projectId="p1" showAdvanced={false} />);
+    renderWithIntl(<SubprojectForm mode="create" projectId="p1" showAdvanced={false} />);
     const name = screen.getByLabelText("Nome sezione") as HTMLInputElement;
 
     fireEvent.change(name, { target: { value: "Nuova sezione" } });

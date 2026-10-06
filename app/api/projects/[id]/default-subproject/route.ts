@@ -14,7 +14,7 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   const subprojectId = String(payload.subprojectId ?? "").trim();
 
   if (!subprojectId) {
-    return NextResponse.json({ error: "Sezione predefinita mancante" }, { status: 400 });
+    return NextResponse.json({ error: "Sezione predefinita mancante", code: "VALIDATION_ERROR" }, { status: 400 });
   }
 
   const project = await prisma.project.findFirst({
@@ -23,7 +23,7 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   });
 
   if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
 
   const subproject = await prisma.subproject.findFirst({
@@ -32,7 +32,7 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   });
 
   if (!subproject) {
-    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+    return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
   }
 
   const updated = await prisma.project.update({

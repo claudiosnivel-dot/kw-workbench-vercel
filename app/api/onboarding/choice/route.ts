@@ -14,7 +14,7 @@ export const POST = withApiErrors(async (request: NextRequest) => {
   const mode = String(payload.mode ?? "").trim().toLowerCase();
 
   if (mode !== "resume" && mode !== "restart") {
-    return NextResponse.json({ error: "mode non valido" }, { status: 400 });
+    return NextResponse.json({ error: "mode non valido", code: "VALIDATION_ERROR" }, { status: 400 });
   }
 
   const state = await applyOnboardingChoice(user.id, mode);

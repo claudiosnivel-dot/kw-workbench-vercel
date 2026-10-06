@@ -1,8 +1,9 @@
 // Esito dell'import dei volumi (T-910): il messaggio riporta anche le righe senza volume e quelle scartate dal parser,
 // così un file letto male non passa per un file senza corrispondenze (file reale di Keyword Planner, 2026-10-06).
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlannerImportUpload } from "@/components/planner-import-upload";
+import { renderWithIntl } from "./intl";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -29,7 +30,7 @@ describe("PlannerImportUpload", () => {
         { status: 200, headers: { "Content-Type": "application/json" } }
       )
     );
-    render(<PlannerImportUpload projectId="p1" subprojectId="s1" />);
+    renderWithIntl(<PlannerImportUpload projectId="p1" subprojectId="s1" />);
 
     fireEvent.change(screen.getByLabelText(/File scaricato da Keyword Planner/), {
       target: { files: [new File(["Keyword\n"], "keyword-stats.csv", { type: "text/csv" })] },

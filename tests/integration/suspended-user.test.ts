@@ -1,5 +1,6 @@
 // Gate di T-502 (AC-502-1…AC-502-3): sessione firmata di un utente sospeso → redirect pulito nelle pagine, 401 con codice nelle API.
 import { UserStatus } from "@/lib/generated/prisma/enums";
+import { createTranslator } from "next-intl";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as sessionEnded } from "@/app/api/auth/session-ended/route";
 import { GET as onboardingState } from "@/app/api/onboarding/state/route";
@@ -8,6 +9,7 @@ import { requirePageUser } from "@/lib/auth/page-guard";
 import { buildApiErrorMessage, readJsonSafe, type ApiErrorPayload } from "@/lib/client/http";
 import { AuthRequiredError } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma";
+import messages from "@/messages/it.json";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
@@ -21,6 +23,8 @@ vi.mock("next/headers", () => ({
 }));
 
 const SESSION_EXPIRED = "Sessione non valida o scaduta. Effettua di nuovo il login.";
+// impacted-by: T-1303 (buildApiErrorMessage riceve le traduzioni del namespace errors al posto del testo di ripiego)
+const tErrors = createTranslator({ locale: "it", messages, namespace: "errors" });
 
 beforeAll(() => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");
@@ -80,13 +84,13 @@ describe("API con utente sospeso", () => {
       const payload = await readJsonSafe<ApiErrorPayload & { code?: string }>(response);
       expect(response.status).toBe(401);
       expect(payload?.code).toBe("AUTH_REQUIRED");
-      expect(buildApiErrorMessage(response, payload, "Operazione non riuscita")).toBe(SESSION_EXPIRED);
+      expect(buildApiErrorMessage(response, payload, tErrors)).toBe(SESSION_EXPIRED);
     }
   });
 
   it("buildApiErrorMessage preferisce il messaggio di sessione scaduta anche con body 'Unauthorized'", () => {
     const response = new Response(null, { status: 401 });
-    expect(buildApiErrorMessage(response, { error: "Unauthorized" }, "Operazione non riuscita")).toBe(SESSION_EXPIRED);
+    expect(buildApiErrorMessage(response, { error: "Unauthorized" }, tErrors)).toBe(SESSION_EXPIRED);
   });
 });
 

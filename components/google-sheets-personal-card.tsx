@@ -1,8 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { CardIntro } from "@/components/card-intro";
+import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
 
 type GoogleSheetsSnapshot = {
   connected: boolean;
@@ -14,24 +16,25 @@ type GoogleSheetsSnapshot = {
   updatedAt?: string;
 };
 
-// Testi dei codici di errore del collegamento (whitelist di T-906); un codice sconosciuto ha un testo generico.
-const OAUTH_REASON_MESSAGES: Record<string, string> = {
-  accesso_negato: "l'accesso a Google è stato negato o annullato.",
-  stato_non_valido: "la richiesta di collegamento è scaduta o non è valida. Riprova.",
-  config_oauth_mancante: "la configurazione OAuth di Google Sheets manca. Contatta l'amministratore principale.",
-  scope_mancante: "non hai concesso il permesso per Google Sheets. Ricollega e accetta tutti i permessi richiesti.",
-  scambio_token_fallito: "Google non ha completato il collegamento. Riprova.",
-  sessione_scaduta: "la sessione è scaduta. Accedi di nuovo e ricollega.",
-};
-const UNKNOWN_REASON_MESSAGE = "errore sconosciuto.";
+// Codici di errore del collegamento (whitelist di T-906): il testo arriva dal catalogo, un codice sconosciuto ha un
+// testo generico e il valore dell'URL non viene mai mostrato.
+const OAUTH_REASONS = [
+  "accesso_negato",
+  "stato_non_valido",
+  "config_oauth_mancante",
+  "scope_mancante",
+  "scambio_token_fallito",
+  "sessione_scaduta",
+] as const;
 
-const STATUS_LABELS: Record<GoogleSheetsSnapshot["status"], string> = {
-  connected: "Connesso",
-  reauth_required: "Da ricollegare",
-  disconnected: "Non connesso",
-};
+function oauthReasonKey(reason: string | null): (typeof OAUTH_REASONS)[number] | "unknown" {
+  return OAUTH_REASONS.find((allowed) => allowed === reason) ?? "unknown";
+}
 
 export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSnapshot }) {
+  const t = useTranslations("integrations.sheetsPersonal");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -42,7 +45,7 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
   const oauthReason = searchParams.get("reason");
 
   const disconnect = async () => {
-    if (!window.confirm("Disconnettere Google Sheets da questo account?")) {
+    if (!window.confirm(t("disconnectConfirm"))) {
       return;
     }
 
@@ -51,14 +54,11 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
 
     try {
       const response = await fetch("/api/integrations/google-sheets/disconnect", { method: "POST" });
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Disconnessione Google Sheets non riuscita"));
-      }
+      await readApiResponse<ApiErrorPayload>(response, tErrors);
 
       router.refresh();
     } catch (disconnectError) {
-      setError(disconnectError instanceof Error ? disconnectError.message : "Errore imprevisto");
+      setError(disconnectError instanceof Error ? disconnectError.message : tCommon("unexpectedError"));
     } finally {
       setLoading(false);
     }
@@ -66,52 +66,42 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
 
   return (
     <section id="google-sheets" className="card space-y-4 scroll-mt-24">
-      <div>
-        <h2 className="text-lg font-semibold">Google Sheets personale</h2>
-        <p className="text-sm text-slate-600">
-          Collega il tuo account Google per esportare keyword direttamente su file Sheets nel tuo Drive.
-        </p>
-      </div>
+      <CardIntro title={t("title")} intro={t("intro")} />
 
-      {oauthStatus === "connected" && <p className="text-sm text-green-700">Account Google Sheets collegato con successo.</p>}
+      {oauthStatus === "connected" && <p className="text-sm text-green-700">{t("connected")}</p>}
       {oauthStatus === "error" && (
-        <p className="text-sm text-red-700">
-          Connessione Google Sheets non riuscita: {OAUTH_REASON_MESSAGES[oauthReason ?? ""] ?? UNKNOWN_REASON_MESSAGE}
-        </p>
+        <p className="text-sm text-red-700">{t("failed", { reason: t(`reasons.${oauthReasonKey(oauthReason)}`) })}</p>
       )}
 
       <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
         <p>
-          <span className="font-medium">Stato:</span> {STATUS_LABELS[initial.status]}
+          <span className="font-medium">{t("statusLabel")}</span> {t(`statuses.${initial.status}`)}
         </p>
         <p>
-          <span className="font-medium">Email:</span> {initial.connectedEmail ?? "-"}
+          <span className="font-medium">{t("emailLabel")}</span> {initial.connectedEmail ?? "-"}
         </p>
         <p>
-          <span className="font-medium">Scope:</span> {initial.scope ?? "-"}
+          <span className="font-medium">{t("scopeLabel")}</span> {initial.scope ?? "-"}
         </p>
       </div>
 
       {initial.connected && initial.needsReconnect && initial.status === "connected" && (
-        <p className="text-sm text-amber-700">
-          Il collegamento usa un permesso più ampio di quello che serve: ricollega Google Sheets per passare all&apos;accesso
-          ai soli file creati da questa app.
-        </p>
+        <p className="text-sm text-amber-700">{t("broaderScope")}</p>
       )}
 
       {initial.connected && (initial.status === "reauth_required" || initial.needsReconnect) && (
         <a className="btn-primary w-full text-center sm:w-auto" href="/api/integrations/google-sheets/connect">
-          Ricollega Google Sheets
+          {t("reconnect")}
         </a>
       )}
 
       {!initial.connected ? (
         <a className="btn-primary w-full text-center sm:w-auto" href="/api/integrations/google-sheets/connect">
-          Connetti a Google Sheets
+          {t("connect")}
         </a>
       ) : (
         <button className="btn-danger w-full sm:w-auto" type="button" onClick={disconnect} disabled={loading}>
-          {loading ? "Disconnessione..." : "Disconnetti Google Sheets"}
+          {loading ? t("disconnecting") : t("disconnect")}
         </button>
       )}
 

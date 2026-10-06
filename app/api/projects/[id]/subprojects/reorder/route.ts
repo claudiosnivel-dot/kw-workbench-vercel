@@ -21,7 +21,7 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   const direction = payload.direction;
 
   if (!subprojectId || (direction !== "up" && direction !== "down")) {
-    return NextResponse.json({ error: "Dati riordino non validi" }, { status: 400 });
+    return NextResponse.json({ error: "Dati riordino non validi", code: "VALIDATION_ERROR" }, { status: 400 });
   }
 
   const project = await prisma.project.findFirst({
@@ -30,12 +30,12 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   });
 
   if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
 
   const outcome = await moveSection(id, subprojectId, direction);
   if (outcome === "not-found") {
-    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+    return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
   }
 
   return NextResponse.json({ success: true });

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { DangerZoneCard } from "@/components/danger-zone-card";
 import { DeleteEntityButton } from "@/components/delete-entity-button";
 import { ProjectForm } from "@/components/project-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
@@ -14,14 +16,13 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
   const project = await requireOwnedProject(user.id, id, {
     subprojects: { orderBy: [{ position: "asc" }, { created_at: "asc" }], select: { id: true, name: true } },
   });
+  const t = await getTranslations();
 
   return (
     <div className="space-y-6">
       <section className="card space-y-4">
-        <h1 className="text-2xl font-semibold">Impostazioni progetto</h1>
-        <p className="text-sm text-slate-600">
-          Qui imposti i default del contenitore. Ogni sezione puo ereditare questi valori o usare override dedicati.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("projects.settings.title")}</h1>
+        <p className="text-sm text-slate-600">{t("projects.settings.intro")}</p>
         <ProjectForm
           mode="edit"
           projectId={project.id}
@@ -32,7 +33,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
             name: project.name,
             language_code: project.language_code,
             country_code: project.country_code,
-            initial_subproject_name: "Generale",
+            initial_subproject_name: t("projects.form.defaultSectionName"),
             seeds: "",
             autocomplete_provider: project.autocomplete_provider,
             metrics_provider: project.metrics_provider,
@@ -48,7 +49,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
       </section>
 
       <section className="card space-y-3">
-        <h2 className="text-lg font-semibold">Sezioni collegate</h2>
+        <h2 className="text-lg font-semibold">{t("projects.settings.linkedSections")}</h2>
         <div className="flex flex-wrap gap-2">
           {project.subprojects.map((subproject) => (
             <Link key={subproject.id} className="btn-secondary" href={`/projects/${project.id}/subprojects/${subproject.id}`}>
@@ -58,18 +59,14 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
         </div>
       </section>
 
-      <section className="card">
-        <h2 className="mb-3 text-lg font-semibold text-red-700">Zona pericolosa</h2>
-        <p className="mb-4 text-sm text-slate-600">
-          Eliminando questo progetto verranno rimosse sezioni, seed, keyword candidate e job collegati.
-        </p>
+      <DangerZoneCard warning={t("projects.settings.deleteWarning")}>
         <DeleteEntityButton
           {...projectDeleteTarget(project)}
-          buttonLabel="Elimina progetto"
+          buttonLabel={t("projects.settings.deleteButton")}
           buttonClassName="btn btn-danger w-full sm:w-auto"
           redirectTo="/"
         />
-      </section>
+      </DangerZoneCard>
     </div>
   );
 }

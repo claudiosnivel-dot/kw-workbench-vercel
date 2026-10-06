@@ -1,5 +1,13 @@
 import { randomBytes } from "node:crypto";
-import { ColorVisionMode, FontScaleMode, Prisma, ThemeMode, UserRole, UserStatus } from "@/lib/generated/prisma/client";
+import {
+  ColorVisionMode,
+  FontScaleMode,
+  Prisma,
+  ThemeMode,
+  UiLocale,
+  UserRole,
+  UserStatus,
+} from "@/lib/generated/prisma/client";
 import { getAuthPassword, getAuthUsername } from "@/lib/auth/config";
 import { prisma } from "@/lib/prisma";
 import { ConflictError, ValidationError } from "@/lib/http/errors";
@@ -17,6 +25,8 @@ const AUTH_USER_SELECT = {
   theme_mode: true,
   font_scale_mode: true,
   color_vision_mode: true,
+  // Lingua dell'interfaccia (T-1301): arriva con la stessa query che risolve la sessione.
+  ui_locale: true,
   session_version: true,
 } satisfies Prisma.UserSelect;
 
@@ -29,6 +39,7 @@ type AuthUserRow = {
   theme_mode: ThemeMode;
   font_scale_mode: FontScaleMode;
   color_vision_mode: ColorVisionMode;
+  ui_locale: UiLocale | null;
   session_version: number;
 };
 
@@ -41,6 +52,7 @@ export type AuthUser = {
   themeMode: ThemeMode;
   fontScaleMode: FontScaleMode;
   colorVisionMode: ColorVisionMode;
+  uiLocale: UiLocale | null;
   sessionVersion: number;
 };
 
@@ -64,7 +76,7 @@ function isUniqueViolation(error: unknown): boolean {
 
 /** Username già in uso (P2002) come ConflictError (409); ogni altro errore resta invariato. */
 function usernameConflictOr(error: unknown): unknown {
-  return isUniqueViolation(error) ? new ConflictError("Username gia in uso") : error;
+  return isUniqueViolation(error) ? new ConflictError("Username già in uso") : error;
 }
 
 function normalizeUsername(input: string): string {
@@ -81,6 +93,7 @@ function mapAuthUser(row: AuthUserRow): AuthUser {
     themeMode: row.theme_mode,
     fontScaleMode: row.font_scale_mode,
     colorVisionMode: row.color_vision_mode,
+    uiLocale: row.ui_locale,
     sessionVersion: row.session_version,
   };
 }
@@ -254,18 +267,7 @@ export async function verifyLoginCredentials(username: string, password: string)
 
   const user = await prisma.user.findUnique({
     where: { username: normalized },
-    select: {
-      id: true,
-      username: true,
-      role: true,
-      status: true,
-      is_root_admin: true,
-      theme_mode: true,
-      font_scale_mode: true,
-      color_vision_mode: true,
-      session_version: true,
-      password_hash: true,
-    },
+    select: { ...AUTH_USER_SELECT, password_hash: true },
   });
 
   if (!user) {
@@ -288,7 +290,7 @@ export async function verifyLoginCredentials(username: string, password: string)
   });
 
   return {
-    user: mapAuthUser(user as AuthUserRow),
+    user: mapAuthUser(user),
   };
 }
 

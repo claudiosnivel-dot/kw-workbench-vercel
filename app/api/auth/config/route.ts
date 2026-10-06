@@ -16,12 +16,12 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
 
   const currentPassword = String(payload.currentPassword ?? "");
   if (!currentPassword) {
-    return NextResponse.json({ error: "La password attuale e obbligatoria" }, { status: 400 });
+    return NextResponse.json({ error: "La password attuale è obbligatoria", code: "CURRENT_PASSWORD_REQUIRED" }, { status: 400 });
   }
 
   const currentValid = await verifyUserPassword(user.id, currentPassword);
   if (!currentValid) {
-    return NextResponse.json({ error: "La password attuale non e valida" }, { status: 401 });
+    return NextResponse.json({ error: "La password attuale non è valida", code: "CURRENT_PASSWORD_INVALID" }, { status: 401 });
   }
 
   const username = String(payload.username ?? "").trim();
@@ -29,11 +29,11 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
   const confirmPassword = String(payload.confirmPassword ?? "");
 
   if (!username && !newPassword) {
-    return NextResponse.json({ error: "Nessuna modifica da salvare" }, { status: 400 });
+    return NextResponse.json({ error: "Nessuna modifica da salvare", code: "NO_CHANGES" }, { status: 400 });
   }
 
   if (newPassword && newPassword !== confirmPassword) {
-    return NextResponse.json({ error: "Nuova password e conferma non coincidono" }, { status: 400 });
+    return NextResponse.json({ error: "Nuova password e conferma non coincidono", code: "PASSWORD_MISMATCH" }, { status: 400 });
   }
 
   // Errori di validazione (400) e username già in uso (409) arrivano come AppError a withApiErrors.

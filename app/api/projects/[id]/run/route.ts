@@ -46,18 +46,18 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
   });
 
   if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
 
   if (project.subprojects.length === 0) {
-    return NextResponse.json({ error: "Nessuna sezione disponibile. Crea prima una sezione." }, { status: 400 });
+    return NextResponse.json({ error: "Nessuna sezione disponibile. Crea prima una sezione.", code: "NO_SECTIONS" }, { status: 400 });
   }
 
   const targetSubprojectId = requestedSubprojectId || resolveDefaultSectionId(project.subprojects, project.default_subproject_id);
   const targetSubproject = project.subprojects.find((item) => item.id === targetSubprojectId) ?? null;
 
   if (!targetSubproject) {
-    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+    return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
   }
 
   const { job, created } = await enqueueExtractionJob(project.id, targetSubproject.id);

@@ -1,8 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { FormEvent, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { CardIntro } from "@/components/card-intro";
+import { OnboardingBackLink } from "@/components/onboarding-back-link";
+import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
 import {
   type OnboardingProjectSnapshot,
   type OnboardingSubprojectSnapshot,
@@ -23,6 +25,10 @@ function boolOverrideToPayload(value: boolean | null): "inherit" | "true" | "fal
 }
 
 export function OnboardingSeedsForm({ project, subproject, initialSeeds }: OnboardingSeedsFormProps) {
+  const t = useTranslations("onboarding");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
+  const tProject = useTranslations("projects.form");
   const [seeds, setSeeds] = useState(initialSeeds);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,10 +65,7 @@ export function OnboardingSeedsForm({ project, subproject, initialSeeds }: Onboa
         }),
       });
 
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Salvataggio seed non riuscito"));
-      }
+      await readApiResponse<ApiErrorPayload>(response, tErrors);
 
       const onboardingResponse = await fetch("/api/onboarding/state", {
         method: "PATCH",
@@ -76,49 +79,52 @@ export function OnboardingSeedsForm({ project, subproject, initialSeeds }: Onboa
       });
 
       if (!onboardingResponse.ok) {
-        throw new Error("Seed salvate, ma avanzamento onboarding non riuscito.");
+        throw new Error(t("seeds.advanceFailed"));
       }
 
       window.location.assign("/onboarding/run");
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
+      setError(submitError instanceof Error ? submitError.message : tCommon("unexpectedError"));
       setSaving(false);
     }
   };
 
   return (
     <section className="card space-y-4">
-      <h2 className="text-xl font-semibold">Step 5: Inserisci seed</h2>
-      <p className="text-sm text-slate-600">
-        Sezione attiva: <span className="font-medium">{subproject.name}</span>.
-      </p>
+      <CardIntro
+        variant="step"
+        title={t("seeds.title")}
+        intro={
+          <>
+            {t("activeSection")} <span className="font-medium">{subproject.name}</span>.
+          </>
+        }
+      />
 
       <form className="space-y-4" onSubmit={submit}>
         <div>
           <label className="label" htmlFor="onboarding-seeds">
-            Keyword seed
+            {t("seeds.label")}
           </label>
           <textarea
             id="onboarding-seeds"
             className="input min-h-48"
             value={seeds}
             onChange={(event) => setSeeds(event.target.value)}
-            placeholder={"keyword uno\nkeyword due\nkeyword tre"}
+            placeholder={tProject("seedsPlaceholder")}
           />
-          <p className="mt-1 text-xs text-slate-500">Una keyword per riga. Seed rilevate: {seedCount}.</p>
+          <p className="mt-1 text-xs text-slate-500">{t("seeds.hint", { count: seedCount })}</p>
         </div>
 
         {seedCount === 0 && (
-          <p className="text-sm text-slate-600">Inserisci almeno una seed: il run della sezione parte dalle seed.</p>
+          <p className="text-sm text-slate-600">{t("seeds.empty")}</p>
         )}
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button className="btn-primary w-full sm:w-auto" type="submit" disabled={saving || seedCount === 0}>
-            {saving ? "Salvataggio..." : "Salva seed e continua"}
+            {saving ? tCommon("saving") : t("seeds.submit")}
           </button>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href="/onboarding/section-create">
-            Torna allo step precedente
-          </Link>
+          <OnboardingBackLink href="/onboarding/section-create" />
         </div>
 
         {error && <p className="text-sm text-red-700">{error}</p>}

@@ -26,8 +26,11 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
 
   const source = await loadPlannerExportRows({ projectId: id, sectionId, ownerUserId: user.id });
   if ("notFound" in source) {
-    const error = source.notFound === "project" ? "Progetto non trovato" : "Sezione non trovata";
-    return NextResponse.json({ error }, { status: 404 });
+    const body =
+      source.notFound === "project"
+        ? { error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }
+        : { error: "Sezione non trovata", code: "SECTION_NOT_FOUND" };
+    return NextResponse.json(body, { status: 404 });
   }
 
   const plan = buildPlannerExport(source.rows, PLANNER_CHUNK_DEFAULT);
@@ -38,7 +41,7 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
 
   const part = /^\d+$/.test(rawPart) ? Number(rawPart) : 0;
   if (part < 1 || part > plan.parts.length) {
-    return NextResponse.json({ error: "Blocco non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Blocco non trovato", code: "PLANNER_PART_NOT_FOUND" }, { status: 404 });
   }
   return new NextResponse(plannerPartCsv(plan.parts[part - 1]), {
     headers: {

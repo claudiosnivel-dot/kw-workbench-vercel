@@ -38,7 +38,7 @@ export const PATCH = withApiErrors(async (request: NextRequest, context: RouteCo
   });
 
   if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
 
   const payload = parseBulkActionPayload(await request.json());
@@ -52,7 +52,7 @@ export const PATCH = withApiErrors(async (request: NextRequest, context: RouteCo
     });
 
     if (!subproject) {
-      return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+      return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
     }
   }
 

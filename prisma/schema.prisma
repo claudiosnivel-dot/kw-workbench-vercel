@@ -125,6 +125,12 @@ enum ColorVisionMode {
   TRITANOPIA
 }
 
+/// Lingua dell'interfaccia scelta dall'utente (T-1301, D-07).
+enum UiLocale {
+  it
+  en
+}
+
 enum OnboardingStatus {
   NEEDS_CHOICE
   IN_PROGRESS
@@ -164,6 +170,8 @@ model User {
   theme_mode        ThemeMode         @default(DARK)
   font_scale_mode   FontScaleMode     @default(NORMAL)
   color_vision_mode ColorVisionMode   @default(NONE)
+  /// null finché l'utente non sceglie: la lingua si risolve da cookie, Accept-Language e infine it.
+  ui_locale         UiLocale?
   session_version   Int               @default(0)
   created_at        DateTime          @default(now())
   updated_at        DateTime          @updatedAt

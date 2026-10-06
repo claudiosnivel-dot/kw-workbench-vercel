@@ -16,64 +16,41 @@ export type OnboardingStatusKey = (typeof ONBOARDING_STATUS_VALUES)[number];
 export const ONBOARDING_ENTRY_MODE_VALUES = ["NONE", "RESUME", "RESTART"] as const;
 export type OnboardingEntryModeKey = (typeof ONBOARDING_ENTRY_MODE_VALUES)[number];
 
+// Titoli, descrizioni ed etichette brevi dei passi stanno nei cataloghi (onboarding.steps.<STEP>, T-1303).
 export const ONBOARDING_STEP_META: Record<
   OnboardingStepKey,
   {
     index: number;
     path: string;
-    shortLabel: string;
-    title: string;
-    description: string;
   }
 > = {
   WELCOME: {
     index: 1,
     path: "/onboarding/welcome",
-    shortLabel: "Start",
-    title: "Benvenuto nel percorso guidato",
-    description: "Scegli se riprendere dai dati esistenti o ricominciare il percorso.",
   },
   PROJECT_CREATE: {
     index: 2,
     path: "/onboarding/project-create",
-    shortLabel: "Progetto",
-    title: "Crea il progetto padre",
-    description: "Crea il contenitore principale su cui lavorerai nel wizard.",
   },
   PROJECT_TARGETING: {
     index: 3,
     path: "/onboarding/project-targeting",
-    shortLabel: "Targeting",
-    title: "Configura lingua e paese",
-    description: "Imposta il targeting base che guidera l'estrazione autocomplete.",
   },
   SECTION_CREATE: {
     index: 4,
     path: "/onboarding/section-create",
-    shortLabel: "Sezione",
-    title: "Crea la prima sezione",
-    description: "Definisci la sezione operativa in cui lancerai la prima estrazione.",
   },
   SEEDS: {
     index: 5,
     path: "/onboarding/seeds",
-    shortLabel: "Seed",
-    title: "Inserisci le keyword seed",
-    description: "Aggiungi le seed iniziali della sezione per preparare il primo job.",
   },
   RUN: {
     index: 6,
     path: "/onboarding/run",
-    shortLabel: "Run",
-    title: "Avvia la prima estrazione",
-    description: "Esegui un job reale sulla sezione attiva e verifica il risultato.",
   },
   REVIEW_EXPORT: {
     index: 7,
     path: "/onboarding/review-export",
-    shortLabel: "Export",
-    title: "Rivedi e fai il primo export",
-    description: "Revisione consigliata, poi esporta in qualsiasi formato per completare il percorso.",
   },
 };
 

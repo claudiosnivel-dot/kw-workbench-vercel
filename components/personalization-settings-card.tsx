@@ -1,7 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { CardIntro } from "@/components/card-intro";
+import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
 
 type ThemeMode = "DARK" | "LIGHT";
 type FontScaleMode = "NORMAL" | "LARGE";
@@ -24,7 +26,12 @@ function applyPreferenceAttributes(input: PreferencesSnapshot) {
   html.setAttribute("data-color-vision", input.colorVisionMode);
 }
 
+const COLOR_VISION_MODES: ColorVisionMode[] = ["NONE", "PROTANOPIA", "DEUTERANOPIA", "TRITANOPIA"];
+
 export function PersonalizationSettingsCard({ initial }: { initial: PreferencesSnapshot }) {
+  const t = useTranslations("settings.preferences");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
   const [themeMode, setThemeMode] = useState<ThemeMode>(initial.themeMode);
   const [fontScaleMode, setFontScaleMode] = useState<FontScaleMode>(initial.fontScaleMode);
   const [colorVisionMode, setColorVisionMode] = useState<ColorVisionMode>(initial.colorVisionMode);
@@ -59,10 +66,7 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
         }),
       });
 
-      const payload = await readJsonSafe<PreferencesResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Impossibile salvare le preferenze"));
-      }
+      const payload = await readApiResponse<PreferencesResponse>(response, tErrors);
 
       if (payload?.data) {
         saved.current = payload.data;
@@ -72,9 +76,9 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
         applyPreferenceAttributes(payload.data);
       }
 
-      setSuccess("Preferenze salvate correttamente.");
+      setSuccess(t("saved"));
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Errore imprevisto");
+      setError(saveError instanceof Error ? saveError.message : tCommon("unexpectedError"));
     } finally {
       setSaving(false);
     }
@@ -82,29 +86,24 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
 
   return (
     <section className="card space-y-5">
-      <div>
-        <h2 className="text-lg font-semibold">Accessibilita e tema</h2>
-        <p className="text-sm text-slate-600">
-          Personalizza l&apos;interfaccia con tema, leggibilita testo e modalita daltonismo.
-        </p>
-      </div>
+      <CardIntro title={t("title")} intro={t("intro")} />
 
       <div className="space-y-3">
-        <p className="label mb-1">Tema</p>
+        <p className="label mb-1">{t("theme")}</p>
         <div className="grid gap-2 sm:grid-cols-2">
           <button
             type="button"
             className={themeMode === "DARK" ? "btn-primary" : "btn-secondary"}
             onClick={() => setThemeMode("DARK")}
           >
-            Scuro
+            {t("dark")}
           </button>
           <button
             type="button"
             className={themeMode === "LIGHT" ? "btn-primary" : "btn-secondary"}
             onClick={() => setThemeMode("LIGHT")}
           >
-            Chiaro
+            {t("light")}
           </button>
         </div>
       </div>
@@ -116,16 +115,14 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
             checked={fontScaleMode === "LARGE"}
             onChange={(event) => setFontScaleMode(event.target.checked ? "LARGE" : "NORMAL")}
           />
-          <span className="text-sm font-medium">Testo leggibilita aumentata (+14%)</span>
+          <span className="text-sm font-medium">{t("largeText")}</span>
         </label>
-        <p className="mt-2 text-xs text-slate-500">
-          Aumenta dimensioni e interlinea di elementi principali per facilitare la lettura.
-        </p>
+        <p className="mt-2 text-xs text-slate-500">{t("largeTextHint")}</p>
       </div>
 
       <div>
         <label className="label" htmlFor="colorVisionMode">
-          Modalita daltonismo
+          {t("colorVision")}
         </label>
         <select
           id="colorVisionMode"
@@ -133,15 +130,16 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
           value={colorVisionMode}
           onChange={(event) => setColorVisionMode(event.target.value as ColorVisionMode)}
         >
-          <option value="NONE">Off</option>
-          <option value="PROTANOPIA">Protanopia</option>
-          <option value="DEUTERANOPIA">Deuteranopia</option>
-          <option value="TRITANOPIA">Tritanopia</option>
+          {COLOR_VISION_MODES.map((mode) => (
+            <option key={mode} value={mode}>
+              {t(`colorVisionOptions.${mode}`)}
+            </option>
+          ))}
         </select>
       </div>
 
       <button className="btn-primary w-full sm:w-auto" type="button" onClick={save} disabled={saving}>
-        {saving ? "Salvataggio preferenze..." : "Salva preferenze"}
+        {saving ? t("saving") : t("save")}
       </button>
 
       {error && <p className="text-sm text-red-700">{error}</p>}

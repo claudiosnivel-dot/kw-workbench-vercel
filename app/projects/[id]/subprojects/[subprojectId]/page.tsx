@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { DangerZoneCard } from "@/components/danger-zone-card";
 import { DeleteEntityButton } from "@/components/delete-entity-button";
 import { PageHeaderCard } from "@/components/page-header-card";
 import { RunExtractionButton } from "@/components/run-extraction-button";
@@ -49,18 +51,18 @@ export default async function SubprojectSettingsPage({
     project: subproject.project,
     subproject,
   });
-  const activeJobId = await findActiveJobId(subproject.id);
+  const [activeJobId, t] = await Promise.all([findActiveJobId(subproject.id), getTranslations()]);
 
   return (
     <div className="space-y-6">
       <PageHeaderCard
-        title={`Sezione: ${subproject.name}`}
-        subtitle={`Progetto: ${subproject.project.name}`}
+        title={t("sections.settings.title", { name: subproject.name })}
+        subtitle={t("sections.settings.projectLine", { name: subproject.project.name })}
         action={
           <RunExtractionButton
             runPath={`/api/projects/${subproject.project_id}/subprojects/${subproject.id}/run`}
-            label="Avvia estrazione"
-            runningLabel="Estrazione in corso..."
+            label={t("jobs.run.start")}
+            runningLabel={t("jobs.run.running")}
             resultsHref={resultsHref(subproject.project_id, { subprojectId: subproject.id })}
             activeJobId={activeJobId}
           />
@@ -68,31 +70,31 @@ export default async function SubprojectSettingsPage({
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${subproject.project_id}`}>
-            Torna al progetto
+            {t("projects.links.backToProject")}
           </Link>
           <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(subproject.project_id, { subprojectId: subproject.id })}>
-            Vedi risultati sezione
+            {t("sections.settings.viewSectionResults")}
           </Link>
           <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(subproject.project_id, { view: "all" })}>
-            Vedi risultati tutto progetto
+            {t("sections.settings.viewProjectResults")}
           </Link>
         </div>
 
         <div className="grid gap-3 text-sm md:grid-cols-3">
           <p>
-            <span className="font-medium">Keyword sezione:</span> {subproject._count.keyword_candidates}
+            <span className="font-medium">{t("sections.settings.keywords")}</span> {subproject._count.keyword_candidates}
           </p>
           <p>
-            <span className="font-medium">Job:</span> {subproject._count.jobs}
+            <span className="font-medium">{t("sections.settings.jobs")}</span> {subproject._count.jobs}
           </p>
           <p>
-            <span className="font-medium">Locale effettivo:</span> {effective.language_code}-{effective.country_code}
+            <span className="font-medium">{t("sections.settings.effectiveLocale")}</span> {effective.language_code}-{effective.country_code}
           </p>
         </div>
       </PageHeaderCard>
 
       <section className="card space-y-4">
-        <h2 className="text-lg font-semibold">Impostazioni sezione</h2>
+        <h2 className="text-lg font-semibold">{t("sections.settings.formTitle")}</h2>
         <SubprojectForm
           mode="edit"
           projectId={subproject.project_id}
@@ -132,17 +134,13 @@ export default async function SubprojectSettingsPage({
         />
       </section>
 
-      <section className="card">
-        <h2 className="mb-3 text-lg font-semibold text-red-700">Zona pericolosa</h2>
-        <p className="mb-4 text-sm text-slate-600">
-          Eliminando questa sezione verranno rimossi seed, keyword e job collegati. Il progetto restera attivo.
-        </p>
+      <DangerZoneCard warning={t("sections.deleteWarning")}>
         <DeleteEntityButton
           {...sectionDeleteTarget(subproject.project_id, subproject)}
           buttonClassName="btn btn-danger w-full sm:w-auto"
           redirectTo={`/projects/${subproject.project_id}`}
         />
-      </section>
+      </DangerZoneCard>
     </div>
   );
 }

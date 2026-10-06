@@ -66,7 +66,7 @@ export const GET = withApiErrors(async (request: NextRequest) => {
   });
 
   if (!snapshot) {
-    return NextResponse.json({ error: "Utente non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Utente non trovato", code: "USER_NOT_FOUND" }, { status: 404 });
   }
 
   return NextResponse.json({
@@ -87,7 +87,7 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
   const colorVisionMode = parseColorVisionMode(payload.colorVisionMode);
 
   if (!themeMode && !fontScaleMode && !colorVisionMode) {
-    return NextResponse.json({ error: "Nessuna preferenza da aggiornare" }, { status: 400 });
+    return NextResponse.json({ error: "Nessuna preferenza da aggiornare", code: "NO_CHANGES" }, { status: 400 });
   }
 
   const updated = await prisma.user.update({

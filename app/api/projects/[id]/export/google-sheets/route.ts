@@ -62,7 +62,7 @@ export const POST = withApiErrors(async (request: NextRequest, context: RouteCon
   try {
     payload = (await request.json()) as ExportGoogleSheetsPayload;
   } catch {
-    return NextResponse.json({ error: "Body JSON non valido" }, { status: 400 });
+    return NextResponse.json({ error: "Body JSON non valido", code: "INVALID_JSON" }, { status: 400 });
   }
 
   const fileName = String(payload.fileName ?? "").trim();
@@ -71,11 +71,11 @@ export const POST = withApiErrors(async (request: NextRequest, context: RouteCon
   const subprojectId = rawSubprojectId || null;
 
   if (!fileName) {
-    return NextResponse.json({ error: "Nome file obbligatorio" }, { status: 400 });
+    return NextResponse.json({ error: "Nome file obbligatorio", code: "SHEETS_FILE_NAME_REQUIRED" }, { status: 400 });
   }
 
   if (!VALID_SCOPES.has(scope)) {
-    return NextResponse.json({ error: "Scope non valido" }, { status: 400 });
+    return NextResponse.json({ error: "Scope non valido", code: "EXPORT_SCOPE_INVALID" }, { status: 400 });
   }
 
   const project = await prisma.project.findFirst({
@@ -87,7 +87,7 @@ export const POST = withApiErrors(async (request: NextRequest, context: RouteCon
   });
 
   if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
 
   if (subprojectId) {
@@ -103,7 +103,7 @@ export const POST = withApiErrors(async (request: NextRequest, context: RouteCon
     });
 
     if (!subproject) {
-      return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+      return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
     }
   }
 

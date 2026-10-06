@@ -1,14 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
-import {
-  COUNTRY_CODES,
-  LANGUAGE_OPTIONS,
-  isSupportedCountryCode,
-  isSupportedLanguageCode,
-} from "@/lib/constants/locale-options";
+import { useTranslations } from "next-intl";
+import { FormEvent, useState } from "react";
+import { CardIntro } from "@/components/card-intro";
+import { OnboardingBackLink } from "@/components/onboarding-back-link";
+import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
+import { useLocaleOptions } from "@/lib/client/use-locale-options";
+import { isSupportedCountryCode, isSupportedLanguageCode } from "@/lib/constants/locale-options";
 import { type OnboardingProjectSnapshot } from "@/lib/onboarding/types";
 
 type ProjectTargetingFormProps = {
@@ -16,27 +14,16 @@ type ProjectTargetingFormProps = {
 };
 
 export function OnboardingProjectTargetingForm({ project }: ProjectTargetingFormProps) {
+  const t = useTranslations("onboarding");
+  const tFields = useTranslations("projects.fields");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
   const [languageCode, setLanguageCode] = useState(project.language_code);
   const [countryCode, setCountryCode] = useState(project.country_code);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const regionNames = useMemo(() => {
-    try {
-      return new Intl.DisplayNames(["it"], { type: "region" });
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const countryOptions = useMemo(
-    () =>
-      COUNTRY_CODES.map((code) => {
-        const label = regionNames?.of(code) ?? code;
-        return { code, label: `${label} (${code})` };
-      }),
-    [regionNames]
-  );
+  const { languageOptions, countryOptions } = useLocaleOptions();
 
   const normalizedLanguage = languageCode.trim().toLowerCase() || "en";
   const normalizedCountry = countryCode.trim().toUpperCase() || "US";
@@ -69,10 +56,7 @@ export function OnboardingProjectTargetingForm({ project }: ProjectTargetingForm
         }),
       });
 
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Aggiornamento targeting non riuscito"));
-      }
+      await readApiResponse<ApiErrorPayload>(response, tErrors);
 
       const onboardingResponse = await fetch("/api/onboarding/state", {
         method: "PATCH",
@@ -85,28 +69,33 @@ export function OnboardingProjectTargetingForm({ project }: ProjectTargetingForm
       });
 
       if (!onboardingResponse.ok) {
-        throw new Error("Targeting salvato, ma avanzamento onboarding non riuscito.");
+        throw new Error(t("targeting.advanceFailed"));
       }
 
       window.location.assign("/onboarding/section-create");
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
+      setError(submitError instanceof Error ? submitError.message : tCommon("unexpectedError"));
       setSaving(false);
     }
   };
 
   return (
     <section className="card space-y-4">
-      <h2 className="text-xl font-semibold">Step 3: Targeting progetto</h2>
-      <p className="text-sm text-slate-600">
-        Progetto attivo: <span className="font-medium">{project.name}</span>. Imposta lingua e paese principali.
-      </p>
+      <CardIntro
+        variant="step"
+        title={t("targeting.title")}
+        intro={
+          <>
+            {t("activeProject")} <span className="font-medium">{project.name}</span>. {t("targeting.hint")}
+          </>
+        }
+      />
 
       <form className="space-y-4" onSubmit={submit}>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="label" htmlFor="onboarding-language">
-              Lingua predefinita
+              {tFields("language")}
             </label>
             <select
               id="onboarding-language"
@@ -115,10 +104,10 @@ export function OnboardingProjectTargetingForm({ project }: ProjectTargetingForm
               onChange={(event) => setLanguageCode(event.target.value)}
               required
             >
-              {hasCustomLanguage && <option value={normalizedLanguage}>Codice attuale non standard ({normalizedLanguage})</option>}
-              {LANGUAGE_OPTIONS.map((option) => (
+              {hasCustomLanguage && <option value={normalizedLanguage}>{tFields("customCode", { code: normalizedLanguage })}</option>}
+              {languageOptions.map((option) => (
                 <option key={option.code} value={option.code}>
-                  {option.label} ({option.code})
+                  {option.label}
                 </option>
               ))}
             </select>
@@ -126,7 +115,7 @@ export function OnboardingProjectTargetingForm({ project }: ProjectTargetingForm
 
           <div>
             <label className="label" htmlFor="onboarding-country">
-              Paese predefinito
+              {tFields("country")}
             </label>
             <select
               id="onboarding-country"
@@ -135,7 +124,7 @@ export function OnboardingProjectTargetingForm({ project }: ProjectTargetingForm
               onChange={(event) => setCountryCode(event.target.value)}
               required
             >
-              {hasCustomCountry && <option value={normalizedCountry}>Codice attuale non standard ({normalizedCountry})</option>}
+              {hasCustomCountry && <option value={normalizedCountry}>{tFields("customCode", { code: normalizedCountry })}</option>}
               {countryOptions.map((option) => (
                 <option key={option.code} value={option.code}>
                   {option.label}
@@ -147,11 +136,9 @@ export function OnboardingProjectTargetingForm({ project }: ProjectTargetingForm
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button className="btn-primary w-full sm:w-auto" type="submit" disabled={saving}>
-            {saving ? "Salvataggio..." : "Salva targeting e continua"}
+            {saving ? tCommon("saving") : t("targeting.submit")}
           </button>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href="/onboarding/project-create">
-            Torna allo step precedente
-          </Link>
+          <OnboardingBackLink href="/onboarding/project-create" />
         </div>
 
         {error && <p className="text-sm text-red-700">{error}</p>}

@@ -1,52 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { CardIntro } from "@/components/card-intro";
+import { openOnboardingPath } from "@/lib/client/onboarding";
+import { useLeavingAction } from "@/lib/client/use-leaving-action";
 
 type OnboardingWelcomeActionsProps = {
   hasExistingData: boolean;
 };
 
 export function OnboardingWelcomeActions({ hasExistingData }: OnboardingWelcomeActionsProps) {
-  const [loadingMode, setLoadingMode] = useState<"resume" | "restart" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("onboarding.welcome");
+  const { pending: loadingMode, error, run } = useLeavingAction<"resume" | "restart">();
 
-  const choose = async (mode: "resume" | "restart") => {
-    setLoadingMode(mode);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/onboarding/choice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as
-        | { meta?: { nextPath?: string }; error?: string }
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.error || "Scelta percorso non riuscita.");
-      }
-
-      const nextPath = payload?.meta?.nextPath || "/onboarding/project-create";
-      window.location.assign(nextPath);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
-      setLoadingMode(null);
-    }
-  };
+  const choose = (mode: "resume" | "restart") =>
+    run((tErrors) => openOnboardingPath("/api/onboarding/choice", { mode }, "/onboarding/project-create", tErrors), mode);
 
   return (
     <section className="card space-y-5">
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold">Seleziona come partire</h2>
-        <p className="text-sm text-slate-600">
-          {hasExistingData
-            ? "Hai gia dati presenti: puoi riprendere dal primo step mancante o ricominciare il percorso guidato."
-            : "Iniziamo da zero: il wizard ti accompagna passo dopo passo fino al primo export."}
-        </p>
-      </div>
+      <CardIntro variant="stepGroup" title={t("title")} intro={hasExistingData ? t("existing") : t("fresh")} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <button
@@ -55,7 +27,7 @@ export function OnboardingWelcomeActions({ hasExistingData }: OnboardingWelcomeA
           onClick={() => choose("resume")}
           disabled={Boolean(loadingMode)}
         >
-          {loadingMode === "resume" ? "Apertura..." : hasExistingData ? "Riprendi da dove sei" : "Inizia percorso guidato"}
+          {loadingMode === "resume" ? t("opening") : hasExistingData ? t("resume") : t("start")}
         </button>
         <button
           type="button"
@@ -63,7 +35,7 @@ export function OnboardingWelcomeActions({ hasExistingData }: OnboardingWelcomeA
           onClick={() => choose("restart")}
           disabled={Boolean(loadingMode)}
         >
-          {loadingMode === "restart" ? "Preparazione..." : "Ricomincia da zero"}
+          {loadingMode === "restart" ? t("preparing") : t("restart")}
         </button>
       </div>
 

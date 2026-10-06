@@ -34,15 +34,15 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   const subprojectId = rawSubprojectId ? rawSubprojectId.trim() : "";
 
   if (!VALID_FORMATS.has(format)) {
-    return NextResponse.json({ error: "Formato non valido" }, { status: 400 });
+    return NextResponse.json({ error: "Formato non valido", code: "EXPORT_FORMAT_INVALID" }, { status: 400 });
   }
 
   if (!VALID_SCOPES.has(scope)) {
-    return NextResponse.json({ error: "Scope non valido" }, { status: 400 });
+    return NextResponse.json({ error: "Scope non valido", code: "EXPORT_SCOPE_INVALID" }, { status: 400 });
   }
 
   if (!isCsvDialect(csvDialect)) {
-    return NextResponse.json({ error: "Dialetto CSV non valido: usa excel-it o rfc4180" }, { status: 400 });
+    return NextResponse.json({ error: "Dialetto CSV non valido: usa excel-it o rfc4180", code: "EXPORT_DIALECT_INVALID" }, { status: 400 });
   }
 
   const project = await prisma.project.findFirst({
@@ -54,7 +54,7 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
   });
 
   if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
 
   if (subprojectId) {
@@ -70,7 +70,7 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
     });
 
     if (!subproject) {
-      return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+      return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
     }
   }
 

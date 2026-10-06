@@ -27,7 +27,7 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   });
 
   if (!existing) {
-    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+    return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
   }
 
   // Aggiornamento parziale (T-809): seeds assente lascia le seed, seeds vuoto le cancella.
@@ -81,7 +81,7 @@ export const DELETE = withApiErrors(async (request: Request, context: RouteConte
   });
 
   if (!existing) {
-    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+    return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
   }
 
   await deleteSection(id, subprojectId);

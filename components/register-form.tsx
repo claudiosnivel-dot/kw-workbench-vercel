@@ -1,50 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { FormEvent, useMemo, useState } from "react";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { postCredentials } from "@/lib/client/auth";
+import { useLeavingAction } from "@/lib/client/use-leaving-action";
 
 export function RegisterForm({ nextPath }: { nextPath: string }) {
+  const t = useTranslations("auth");
   const redirectPath = useMemo(() => safeNextPath(nextPath), [nextPath]);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { pending, error, run } = useLeavingAction();
+  const loading = pending !== null;
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ username, password, confirmPassword }),
-      });
-
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Registrazione non riuscita"));
-      }
-
+    void run(async (tErrors) => {
+      await postCredentials("/api/auth/register", { username, password, confirmPassword }, tErrors);
       window.location.assign(redirectPath);
-      return;
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
-      setLoading(false);
-    }
+    });
   };
 
   return (
     <form className="space-y-4" onSubmit={submit}>
       <div>
         <label className="label" htmlFor="username">
-          Username
+          {t("username")}
         </label>
         <input
           id="username"
@@ -58,7 +43,7 @@ export function RegisterForm({ nextPath }: { nextPath: string }) {
 
       <div>
         <label className="label" htmlFor="password">
-          Password
+          {t("password")}
         </label>
         <input
           id="password"
@@ -73,7 +58,7 @@ export function RegisterForm({ nextPath }: { nextPath: string }) {
 
       <div>
         <label className="label" htmlFor="confirmPassword">
-          Conferma password
+          {t("confirmPassword")}
         </label>
         <input
           id="confirmPassword"
@@ -87,13 +72,13 @@ export function RegisterForm({ nextPath }: { nextPath: string }) {
       </div>
 
       <button className="btn-primary w-full" disabled={loading} type="submit">
-        {loading ? "Registrazione in corso..." : "Crea account"}
+        {loading ? t("register.submitting") : t("register.submit")}
       </button>
 
       <p className="text-sm text-slate-600">
-        Hai gia un account?{" "}
+        {t("register.haveAccount")}{" "}
         <Link href="/login" className="font-medium underline">
-          Accedi
+          {t("register.loginLink")}
         </Link>
       </p>
 

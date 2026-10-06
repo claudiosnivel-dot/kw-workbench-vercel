@@ -1,5 +1,7 @@
+import { getTranslations } from "next-intl/server";
 import { AuthSettingsCard } from "@/components/auth-settings-card";
 import { GoogleSheetsPersonalCard } from "@/components/google-sheets-personal-card";
+import { PageIntro } from "@/components/page-intro";
 import { PersonalizationSettingsCard } from "@/components/personalization-settings-card";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
@@ -8,16 +10,11 @@ export const dynamic = "force-dynamic";
 
 export default async function PersonalizzaPage() {
   const user = await requirePageUser();
-  const googleSheets = await getGoogleSheetsCredentialSnapshot(user.id);
+  const [googleSheets, t] = await Promise.all([getGoogleSheetsCredentialSnapshot(user.id), getTranslations("settings")]);
 
   return (
     <div className="space-y-6">
-      <section className="card">
-        <h1 className="text-2xl font-semibold">Personalizza</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Gestisci preferenze visive, credenziali account e connessioni personali da un unico punto.
-        </p>
-      </section>
+      <PageIntro title={t("title")} intro={t("intro")} />
 
       <PersonalizationSettingsCard
         initial={{

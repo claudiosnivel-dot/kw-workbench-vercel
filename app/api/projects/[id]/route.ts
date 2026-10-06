@@ -24,7 +24,7 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   });
 
   if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
 
   // Aggiornamento parziale (T-809): solo i campi inviati, validati da uno schema strict.
@@ -51,7 +51,7 @@ export const DELETE = withApiErrors(async (request: Request, context: RouteConte
   });
 
   if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
 
   await prisma.project.delete({ where: { id } });

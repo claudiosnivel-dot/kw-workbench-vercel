@@ -38,13 +38,13 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
 
   const currentStepRaw = payload.currentStep === undefined ? undefined : String(payload.currentStep).trim().toUpperCase();
   if (currentStepRaw && !isOnboardingStep(currentStepRaw)) {
-    return NextResponse.json({ error: "currentStep non valido" }, { status: 400 });
+    return NextResponse.json({ error: "currentStep non valido", code: "VALIDATION_ERROR" }, { status: 400 });
   }
   const currentStep = currentStepRaw as OnboardingStepKey | undefined;
 
   const statusRaw = payload.status === undefined ? undefined : String(payload.status).trim().toUpperCase();
   if (statusRaw && !isOnboardingStatus(statusRaw)) {
-    return NextResponse.json({ error: "status non valido" }, { status: 400 });
+    return NextResponse.json({ error: "status non valido", code: "VALIDATION_ERROR" }, { status: 400 });
   }
   const status = statusRaw as OnboardingStatusKey | undefined;
 

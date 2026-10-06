@@ -1,9 +1,10 @@
 // Gate di T-1205 (AC-1205-1…AC-1205-3): avanzamento con polling e backoff, esito finale esplicito e onboarding che
 // avanza solo a job completed.
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { JobProgress } from "@/components/job-progress";
 import { OnboardingRunStep } from "@/components/onboarding-run-step";
+import { renderWithIntl } from "./intl";
 
 const RESULTS_HREF = "/projects/p1/results?subprojectId=s1";
 
@@ -38,7 +39,7 @@ describe("JobProgress", () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse(200, jobState("running", "autocomplete", 3, 10)))
       .mockResolvedValueOnce(jsonResponse(200, jobState("completed", "done", 10, 10)));
-    render(<JobProgress jobId="job-1" resultsHref={RESULTS_HREF} />);
+    renderWithIntl(<JobProgress jobId="job-1" resultsHref={RESULTS_HREF} />);
 
     await advance(2000);
     const bar = screen.getByRole("progressbar");
@@ -63,7 +64,7 @@ describe("JobProgress", () => {
         ? jsonResponse(503, { error: "Servizio non disponibile" })
         : jsonResponse(200, jobState("running", "autocomplete", 1, 10));
     });
-    render(<JobProgress jobId="job-1" resultsHref={RESULTS_HREF} />);
+    renderWithIntl(<JobProgress jobId="job-1" resultsHref={RESULTS_HREF} />);
 
     await advance(32000);
 
@@ -80,7 +81,7 @@ describe("OnboardingRunStep con JobProgress", () => {
       }
       return jsonResponse(200, jobState("failed", "expand", 0, 0, "Nessuna seed nella sezione"));
     });
-    render(
+    renderWithIntl(
       <OnboardingRunStep
         projectId="p1"
         subprojectId="s1"

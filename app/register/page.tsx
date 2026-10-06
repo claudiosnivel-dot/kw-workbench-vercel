@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { LocaleSwitcher } from "@/components/locale-switcher";
+import { NarrowCard } from "@/components/narrow-card";
 import { RegisterForm } from "@/components/register-form";
 import { isPublicSignupEnabled } from "@/lib/auth/config";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
@@ -21,25 +24,23 @@ export default async function RegisterPage({
   const nextValue = params.next;
   const nextPath = safeNextPath(Array.isArray(nextValue) ? nextValue[0] : nextValue);
   const signupEnabled = isPublicSignupEnabled();
+  const t = await getTranslations("auth.register");
 
   return (
-    <div className="mx-auto max-w-lg">
-      <div className="card space-y-4">
-        <h1 className="text-2xl font-semibold">Crea account</h1>
-        {signupEnabled ? (
-          <>
-            <p className="text-sm text-slate-600">Compila i campi per attivare il tuo workspace.</p>
-            <RegisterForm nextPath={nextPath} />
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-slate-600">La registrazione pubblica e disabilitata in questo momento.</p>
-            <Link href="/login" className="btn-secondary w-full text-center sm:w-auto">
-              Vai al login
-            </Link>
-          </>
-        )}
-      </div>
-    </div>
+    <NarrowCard title={t("title")} action={<LocaleSwitcher />}>
+      {signupEnabled ? (
+        <>
+          <p className="text-sm text-slate-600">{t("subtitle")}</p>
+          <RegisterForm nextPath={nextPath} />
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-slate-600">{t("disabled")}</p>
+          <Link href="/login" className="btn-secondary w-full text-center sm:w-auto">
+            {t("goToLogin")}
+          </Link>
+        </>
+      )}
+    </NarrowCard>
   );
 }

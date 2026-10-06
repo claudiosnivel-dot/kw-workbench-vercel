@@ -31,7 +31,7 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
   });
 
   if (!subproject) {
-    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+    return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
   }
 
   const { job, created } = await enqueueExtractionJob(subproject.project_id, subproject.id);

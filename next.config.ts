@@ -1,5 +1,9 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+// Lingua per richiesta senza prefisso negli URL (T-1301): il plugin collega i18n/request.ts.
+const withNextIntl = createNextIntlPlugin();
 
 // Header di sicurezza su tutte le risposte (T-505), come mappa nome → valore. La Content-Security-Policy
 // a nonce la imposta il proxy.
@@ -29,7 +33,7 @@ const nextConfig: NextConfig = {
 
 // Sentry (T-601): SENTRY_AUTH_TOKEN serve solo in build per caricare le source map (senza token il caricamento
 // si salta e la build prosegue); niente telemetria dell'SDK verso Sentry.
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withNextIntl(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,

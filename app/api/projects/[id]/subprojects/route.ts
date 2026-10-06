@@ -24,7 +24,7 @@ export const POST = withApiErrors(async (request: Request, context: RouteContext
   });
 
   if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
 
   const parsed = parseSubprojectCreate(await request.json(), user);

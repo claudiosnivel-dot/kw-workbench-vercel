@@ -55,7 +55,7 @@ export const POST = withApiErrors(async (request: NextRequest, { params }: Route
 
   const owned = await resolvePlannerScope({ projectId: id, ownerUserId: user.id });
   if ("notFound" in owned) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }, { status: 404 });
   }
   if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) {
     return tooLarge();
@@ -72,29 +72,32 @@ export const POST = withApiErrors(async (request: NextRequest, { params }: Route
     .catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: "Allega il file scaricato da Keyword Planner nel campo file" }, { status: 400 });
+    return NextResponse.json({ error: "Allega il file scaricato da Keyword Planner nel campo file", code: "PLANNER_FILE_REQUIRED" }, { status: 400 });
   }
   if (file.size > PLANNER_IMPORT_MAX_BYTES) {
     return tooLarge();
   }
   if (!PLANNER_IMPORT_EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension))) {
-    return NextResponse.json({ error: "Formato non ammesso: carica un file .csv o .tsv" }, { status: 400 });
+    return NextResponse.json({ error: "Formato non ammesso: carica un file .csv o .tsv", code: "PLANNER_FILE_TYPE_INVALID" }, { status: 400 });
   }
 
   const rawSectionId = form?.get("sectionId");
   const sectionId = typeof rawSectionId === "string" && rawSectionId.trim() ? rawSectionId.trim() : null;
   if (sectionId && !owned.sections.some((section) => section.id === sectionId)) {
-    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+    return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
   }
 
   let parsed;
   try {
     parsed = parsePlannerCsv(new Uint8Array(await file.arrayBuffer()));
   } catch {
-    return NextResponse.json({ error: "File non riconosciuto: manca la colonna Keyword" }, { status: 400 });
+    return NextResponse.json({ error: "File non riconosciuto: manca la colonna Keyword", code: "PLANNER_KEYWORD_COLUMN_MISSING" }, { status: 400 });
   }
   if (parsed.rows.length > PLANNER_IMPORT_MAX_ROWS) {
-    return NextResponse.json({ error: `Troppe righe: il massimo è ${PLANNER_IMPORT_MAX_ROWS}` }, { status: 413 });
+    return NextResponse.json(
+      { error: `Troppe righe: il massimo è ${PLANNER_IMPORT_MAX_ROWS}`, code: "PLANNER_TOO_MANY_ROWS" },
+      { status: 413 }
+    );
   }
 
   const summary = await applyPlannerImport(id, sectionId, parsed.rows);

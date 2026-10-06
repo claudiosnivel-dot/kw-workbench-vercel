@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -8,6 +9,7 @@ type LogoutButtonProps = {
 };
 
 export function LogoutButton({ className }: LogoutButtonProps) {
+  const t = useTranslations("auth.logout");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +27,7 @@ export function LogoutButton({ className }: LogoutButtonProps) {
       onClick={logout}
       disabled={loading}
     >
-      {loading ? "Uscita in corso..." : "Esci"}
+      {loading ? t("submitting") : t("submit")}
     </button>
   );
 }
