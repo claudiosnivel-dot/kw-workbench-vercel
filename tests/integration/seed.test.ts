@@ -87,7 +87,9 @@ describe("seed dei default globali", () => {
 
   // covers: AC-204-3
   it("non tocca le righe globali aggiunte a mano né quelle di progetto", async () => {
-    const project = await prisma.project.create({ data: { name: "progetto seed" } });
+    const project = await prisma.project.create({
+      data: { name: "progetto seed", workspace: { create: { name: "seed", slug: "ws-seed" } } },
+    });
     const manual = await prisma.brandBlacklist.create({ data: { project_id: null, brand: "ebay" } });
     const scoped = await prisma.brandBlacklist.create({ data: { project_id: project.id, brand: "acme" } });
 

@@ -11,7 +11,7 @@ import ExcelJS from "exceljs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";
 
@@ -81,7 +81,7 @@ async function createOwnerProject(onboardingStatus?: "IN_PROGRESS") {
   if (onboardingStatus) {
     await prisma.userOnboardingProgress.create({ data: { user_id: owner.user.id, status: onboardingStatus } });
   }
-  const project = await prisma.project.create({ data: { name: "Export", owner_user_id: owner.user.id } });
+  const project = await prisma.project.create({ data: { name: "Export", workspace_id: await personalWorkspaceId(owner.user.id) } });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   return { owner, projectId: project.id, sectionId: section.id };
 }

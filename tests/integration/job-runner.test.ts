@@ -5,7 +5,7 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { advanceJob } from "@/lib/modules/jobs/advance-job";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 // I passi del job restano quelli veri; AC-706-3 e AC-706-4 sostituiscono un solo passo.
@@ -37,7 +37,7 @@ async function createSection(seeds: string[]) {
   const project = await prisma.project.create({
     data: {
       name: "Job T-706",
-      owner_user_id: user.id,
+      workspace_id: await personalWorkspaceId(user.id),
       language_code: "it",
       country_code: "IT",
       autocomplete_provider: "MOCK",

@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
 import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -53,7 +53,7 @@ beforeAll(async () => {
   const owner = await createUserWithSession({ displayName: "t805-owner" });
   ownerCookie = owner.cookie;
   const project = await prisma.project.create({
-    data: { name: "Streaming", owner_user_id: owner.user.id, language_code: "it", country_code: "IT" },
+    data: { name: "Streaming", workspace_id: await personalWorkspaceId(owner.user.id), language_code: "it", country_code: "IT" },
   });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   projectId = project.id;

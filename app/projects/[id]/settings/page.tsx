@@ -4,7 +4,8 @@ import { DangerZoneCard } from "@/components/danger-zone-card";
 import { DeleteEntityButton } from "@/components/delete-entity-button";
 import { ProjectForm } from "@/components/project-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
-import { requireOwnedProject } from "@/lib/modules/project-pages";
+import { canPerform } from "@/lib/authz/permissions";
+import { requireProjectPage } from "@/lib/modules/project-pages";
 import { projectDeleteTarget } from "@/lib/view/delete-targets";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
   const user = await requirePageUser();
   const { id } = await params;
 
-  const project = await requireOwnedProject(user.id, id, {
+  const project = await requireProjectPage(user.id, id, {
     subprojects: { orderBy: [{ position: "asc" }, { created_at: "asc" }], select: { id: true, name: true } },
   });
   const t = await getTranslations();
@@ -59,14 +60,17 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
         </div>
       </section>
 
-      <DangerZoneCard warning={t("projects.settings.deleteWarning")}>
-        <DeleteEntityButton
-          {...projectDeleteTarget(project)}
-          buttonLabel={t("projects.settings.deleteButton")}
-          buttonClassName="btn btn-danger w-full sm:w-auto"
-          redirectTo="/"
-        />
-      </DangerZoneCard>
+      {/* Eliminazione del progetto solo per chi ha project.delete (ADMIN e OWNER, D-08); la rotta la riverifica. */}
+      {canPerform(project.role, "project.delete") && (
+        <DangerZoneCard warning={t("projects.settings.deleteWarning")}>
+          <DeleteEntityButton
+            {...projectDeleteTarget(project)}
+            buttonLabel={t("projects.settings.deleteButton")}
+            buttonClassName="btn btn-danger w-full sm:w-auto"
+            redirectTo="/"
+          />
+        </DangerZoneCard>
+      )}
     </div>
   );
 }

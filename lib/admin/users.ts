@@ -332,7 +332,24 @@ export async function updateUserFromAdmin(
   return toAdminUserRecord(row as AdminUserRow);
 }
 
+/**
+ * Eliminazione di un utente dall'admin. Il suo workspace personale va via in cascata con i progetti; un workspace di
+ * altri di cui è l'unico OWNER non può restare senza proprietario (T-1503): 409 LAST_OWNER finché non trasferisce.
+ */
 export async function deleteUserFromAdmin(actor: AuthUser, targetUserId: string): Promise<void> {
   const target = await findManageableTarget(actor, targetUserId);
+  const ownedWithoutHeir = await prisma.membership.count({
+    where: {
+      user_id: target.id,
+      role: "OWNER",
+      workspace: {
+        OR: [{ personal_for_user_id: null }, { personal_for_user_id: { not: target.id } }],
+        memberships: { none: { role: "OWNER", user_id: { not: target.id } } },
+      },
+    },
+  });
+  if (ownedWithoutHeir > 0) {
+    throw new AdminActionError("L'utente è l'unico proprietario di un workspace di altri", 409, "LAST_OWNER");
+  }
   await prisma.user.delete({ where: { id: target.id } });
 }

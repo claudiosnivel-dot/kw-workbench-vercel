@@ -71,7 +71,8 @@ describe("errore imprevisto del DB", () => {
   // covers: AC-503-2
   it("risponde 500 INTERNAL_ERROR con il requestId dell'header, senza dettagli interni, e scrive una riga di log", async () => {
     await createUserWithSession({ displayName: "utente-esistente" });
-    vi.spyOn(prisma.user, "create").mockRejectedValueOnce(
+    // impacted-by: T-1501 (utente e workspace personale nascono in una transazione: l'errore arriva da lì)
+    vi.spyOn(prisma, "$transaction").mockRejectedValueOnce(
       new Error("connect ECONNREFUSED db.example.supabase.co:5432 (prisma)")
     );
     // impacted-by: T-602 (la riga di log del 500 la scrive il logger JSON su stdout, non console.error)

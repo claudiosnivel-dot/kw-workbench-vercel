@@ -1,19 +1,37 @@
 import { Prisma } from "@/lib/generated/prisma/client";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { requireRequestWorkspace, requireWorkspaceRole } from "@/lib/authz/workspace";
 import { withApiErrors } from "@/lib/http/errors";
 import { parseProjectCreate } from "@/lib/modules/project-settings";
 import { prisma } from "@/lib/prisma";
 
-export const POST = withApiErrors(async (request: Request) => {
+/** workspaceId facoltativo del body (T-1502), separato dai campi del progetto validati dallo schema strict. */
+function splitWorkspaceId(payload: unknown): { workspaceId: unknown; fields: unknown } {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload) || !("workspaceId" in payload)) {
+    return { workspaceId: undefined, fields: payload };
+  }
+  const { workspaceId, ...fields } = payload as Record<string, unknown>;
+  return { workspaceId, fields };
+}
+
+/**
+ * Nuovo progetto (T-1502, T-1504): nel workspace di workspaceId se indicato (membro con project.create, altrimenti 404
+ * WORKSPACE_NOT_FOUND), altrimenti nel workspace attivo del cookie kwb_workspace riverificato; l'autore è l'utente.
+ */
+export const POST = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);
 
-  const payload: unknown = await request.json();
-  const input = parseProjectCreate(payload, user);
+  const { workspaceId, fields } = splitWorkspaceId(await request.json());
+  const input = parseProjectCreate(fields, user);
+  const workspace =
+    workspaceId === undefined
+      ? await requireRequestWorkspace(user, request, "project.create")
+      : await requireWorkspaceRole(user, workspaceId, "project.create");
 
   const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const created = await tx.project.create({
-      data: { owner_user_id: user.id, ...input.data },
+      data: { workspace_id: workspace.id, created_by_user_id: user.id, ...input.data },
     });
 
     let initialSubprojectId: string | null = null;
@@ -29,8 +47,8 @@ export const POST = withApiErrors(async (request: Request) => {
 
       initialSubprojectId = initialSubproject.id;
 
-      await tx.project.update({
-        where: { id: created.id },
+      await tx.project.updateMany({
+        where: { id: created.id, workspace_id: workspace.id },
         data: { default_subproject_id: initialSubproject.id },
       });
 
@@ -53,4 +71,3 @@ export const POST = withApiErrors(async (request: Request) => {
 
   return NextResponse.json({ data: result }, { status: 201 });
 });
-

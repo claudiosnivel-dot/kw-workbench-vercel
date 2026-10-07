@@ -9,7 +9,7 @@ import { advanceJob } from "@/lib/modules/jobs/advance-job";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { runJobStep } from "@/lib/modules/jobs/job-step";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -21,7 +21,7 @@ const pipeline = vi.mocked(advanceJob);
 
 async function createOwnedSections() {
   const { user, cookie } = await createUserWithSession({ displayName: "t305-owner" });
-  const project = await prisma.project.create({ data: { name: "Progetto T-305", owner_user_id: user.id } });
+  const project = await prisma.project.create({ data: { name: "Progetto T-305", workspace_id: await personalWorkspaceId(user.id) } });
   const first = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   const second = await prisma.subproject.create({ data: { project_id: project.id, name: "Seconda", position: 1 } });
   return { cookie, projectId: project.id, sectionId: first.id, secondSectionId: second.id };

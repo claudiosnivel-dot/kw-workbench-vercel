@@ -1,22 +1,41 @@
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { canPerform, type WorkspaceAction } from "@/lib/authz/permissions";
+import { projectAccessWhere } from "@/lib/authz/workspace";
 import type { Job, JobStatus } from "@/lib/generated/prisma/client";
-import { AppError, JOB_ERROR_CODES } from "@/lib/http/errors";
+import { AppError, ForbiddenError, JOB_ERROR_CODES } from "@/lib/http/errors";
 import { ACTIVE_JOB_STATUSES } from "@/lib/modules/jobs/job-state";
 import { prisma } from "@/lib/prisma";
 
+/** Job autorizzato per un'azione, con il perimetro delle scritture sul suo progetto (T-1502). */
+export type AuthorizedJob = { job: Job; perimeter: ReturnType<typeof projectAccessWhere> };
+
 /**
- * Job del progetto dell'utente della sessione in una sola query (T-1204, CWE-639): id e proprietario nello stesso
- * where. Sessione assente -> 401; job di altri utenti o inesistente -> 404 JOB_NOT_FOUND, mai 403. Con T-1502 il
- * proprietario diventa la membership del workspace.
+ * Job di un progetto di un workspace dell'utente della sessione in una sola query (T-1204, T-1502, CWE-639): id e
+ * membership nello stesso where. Sessione assente -> 401; non membro o job inesistente -> 404 JOB_NOT_FOUND;
+ * membro senza il ruolo dell'azione -> 403 FORBIDDEN.
  */
-export async function requireOwnedJob(request: Request, params: Promise<{ id: string }>): Promise<Job> {
+export async function requireJobAccess(
+  request: Request,
+  params: Promise<{ id: string }>,
+  action: WorkspaceAction
+): Promise<AuthorizedJob> {
   const user = await requireAuthenticatedUserFromRequest(request);
   const { id } = await params;
-  const job = await prisma.job.findFirst({ where: { id, project: { owner_user_id: user.id } } });
-  if (!job) {
+  const row = await prisma.job.findFirst({
+    where: { id, project: projectAccessWhere(user.id) },
+    include: {
+      project: { select: { workspace_id: true, workspace: { select: { memberships: { where: { user_id: user.id }, select: { role: true } } } } } },
+    },
+  });
+  if (!row) {
     throw new AppError(404, JOB_ERROR_CODES.notFound, "Job non trovato");
   }
-  return job;
+
+  const { project, ...job } = row;
+  if (!canPerform(project.workspace.memberships[0].role, action)) {
+    throw new ForbiddenError();
+  }
+  return { job, perimeter: { workspace_id: project.workspace_id, ...projectAccessWhere(user.id, action) } };
 }
 
 /** Body dello stato: result solo a completed, error solo il messaggio pubblico salvato (mai stack, CWE-209). */
@@ -38,9 +57,11 @@ export function jobStatusBody(job: Job) {
  * (T-1202); già terminato -> 409 JOB_NOT_CANCELABLE. Ogni passaggio è un updateMany condizionale sullo stato, così
  * un job partito nel frattempo riceve la richiesta invece di essere chiuso a metà batch.
  */
-export async function cancelOwnedJob(jobId: string): Promise<"canceled" | "running"> {
+export async function cancelAuthorizedJob({ job, perimeter }: AuthorizedJob): Promise<"canceled" | "running"> {
+  // Perimetro del workspace nel where (T-1502): una membership revocata nel frattempo non annulla il job.
+  const jobId = job.id;
   const pending = await prisma.job.updateMany({
-    where: { id: jobId, status: "pending" },
+    where: { id: jobId, status: "pending", project: perimeter },
     data: { status: "canceled", completed_at: new Date() },
   });
   if (pending.count === 1) {
@@ -48,7 +69,7 @@ export async function cancelOwnedJob(jobId: string): Promise<"canceled" | "runni
   }
 
   const running = await prisma.job.updateMany({
-    where: { id: jobId, status: "running" },
+    where: { id: jobId, status: "running", project: perimeter },
     data: { cancel_requested: true },
   });
   if (running.count === 1) {

@@ -1,6 +1,6 @@
 import { Prisma, type Job, type JobStatus } from "@/lib/generated/prisma/client";
 import { NoSeedsError } from "@/lib/modules/pipeline/errors";
-import { touchProjectActivity } from "@/lib/modules/project-activity";
+import { jobProject, touchProjectActivity } from "@/lib/modules/project-activity";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -42,7 +42,7 @@ export async function failActiveJob(job: Pick<Job, "id" | "project_id">, message
     }
     await tx.jobSuggestion.deleteMany({ where: { job_id: job.id } });
     await tx.jobMetric.deleteMany({ where: { job_id: job.id } });
-    await touchProjectActivity(tx, job.project_id, now);
+    await touchProjectActivity(tx, jobProject(job), now);
     return true;
   });
   return failed;

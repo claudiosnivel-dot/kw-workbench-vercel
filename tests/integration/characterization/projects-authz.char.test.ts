@@ -15,7 +15,7 @@ import { POST as runProject } from "@/app/api/projects/[id]/run/route";
 import { POST as createSection } from "@/app/api/projects/[id]/subprojects/route";
 import { DELETE as deleteSection, PATCH as patchSection } from "@/app/api/projects/[id]/subprojects/[subprojectId]/route";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";
 
@@ -28,7 +28,7 @@ type Fixture = {
 };
 
 async function createProjectWithCandidates(ownerId: string, name: string, seeds: string[], candidates: number) {
-  const project = await prisma.project.create({ data: { name, owner_user_id: ownerId } });
+  const project = await prisma.project.create({ data: { name, workspace_id: await personalWorkspaceId(ownerId) } });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   await prisma.project.update({ where: { id: project.id }, data: { default_subproject_id: section.id } });
   await prisma.seed.createMany({

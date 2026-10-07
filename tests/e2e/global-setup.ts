@@ -54,7 +54,7 @@ export default async function globalSetup(): Promise<void> {
   const project = await prisma.project.create({
     data: {
       name: "Progetto E2E",
-      owner_user_id: user.id,
+      workspace_id: user.workspaceId,
       language_code: "it",
       country_code: "IT",
       created_at: FIXED_AT,

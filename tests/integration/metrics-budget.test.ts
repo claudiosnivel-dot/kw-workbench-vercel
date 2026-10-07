@@ -6,7 +6,7 @@ import { GET as getMetricsSpend } from "@/app/api/admin/metrics-spend/route";
 import { UserRole } from "@/lib/generated/prisma/client";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -56,7 +56,7 @@ async function createDataForSeoSection(ownerId: string, seed: string, count: num
   const project = await prisma.project.create({
     data: {
       name: `Budget ${seed}`,
-      owner_user_id: ownerId,
+      workspace_id: await personalWorkspaceId(ownerId),
       language_code: "it",
       country_code: "IT",
       autocomplete_provider: "MOCK",

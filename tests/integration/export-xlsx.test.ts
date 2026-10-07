@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -76,7 +76,7 @@ afterAll(() => {
 beforeEach(async () => {
   await resetDatabase();
   const owner = await createUserWithSession({ displayName: "xlsx-owner" });
-  const project = await prisma.project.create({ data: { name: "Export XLSX", owner_user_id: owner.user.id } });
+  const project = await prisma.project.create({ data: { name: "Export XLSX", workspace_id: await personalWorkspaceId(owner.user.id) } });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   cookie = owner.cookie;
   projectId = project.id;

@@ -1,12 +1,13 @@
 // Gate di T-810 (AC-810-1…4): la dashboard pagina i progetti a 20 per pagina in ordine di ultima attività
 // reale (estrazioni, sezioni, revisione), sempre dentro i progetti dell'utente della sessione.
+// impacted-by: T-1504 (la dashboard elenca il workspace attivo: qui il workspace personale dell'utente)
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH as patchResults } from "@/app/api/projects/[id]/results/route";
 import { POST as createSection } from "@/app/api/projects/[id]/subprojects/route";
 import { listDashboardProjects } from "@/lib/modules/dashboard";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -20,7 +21,7 @@ async function createProjects(ownerId: string, count: number, prefix = "P") {
     const project = await prisma.project.create({
       data: {
         name: `${prefix}${String(index).padStart(2, "0")}`,
-        owner_user_id: ownerId,
+        workspace_id: await personalWorkspaceId(ownerId),
         language_code: "it",
         country_code: "IT",
         autocomplete_provider: "MOCK",
@@ -36,11 +37,16 @@ async function createProjects(ownerId: string, count: number, prefix = "P") {
   return ids;
 }
 
+/** Pagina della dashboard sul workspace personale dell'utente, quello attivo senza cookie. */
+async function dashboardPage(userId: string, page: number) {
+  return listDashboardProjects(await personalWorkspaceId(userId), page);
+}
+
 async function allPages(userId: string) {
-  const first = await listDashboardProjects(userId, 1);
+  const first = await dashboardPage(userId, 1);
   const rest = [];
   for (let page = 2; page <= first.totalPages; page += 1) {
-    rest.push(await listDashboardProjects(userId, page));
+    rest.push(await dashboardPage(userId, page));
   }
   return [first, ...rest];
 }
@@ -63,8 +69,8 @@ describe("paginazione della dashboard", () => {
     const { user } = await createUserWithSession({ displayName: "t810-pages" });
     await createProjects(user.id, 45);
 
-    const pages = await Promise.all([1, 2, 3].map((page) => listDashboardProjects(user.id, page)));
-    const beyond = await listDashboardProjects(user.id, 99);
+    const pages = await Promise.all([1, 2, 3].map((page) => dashboardPage(user.id, page)));
+    const beyond = await dashboardPage(user.id, 99);
 
     const ids = pages.flatMap((result) => result.items.map((item) => item.id));
     expect(pages.map((result) => result.items.length)).toEqual([20, 20, 5]);
@@ -86,7 +92,7 @@ describe("attività reale", () => {
     const { job } = await enqueueExtractionJob(p01, section.id);
 
     const finished = await runJobById(job.id);
-    const first = await listDashboardProjects(user.id, 1);
+    const first = await dashboardPage(user.id, 1);
     const project = await prisma.project.findUniqueOrThrow({ where: { id: p01 } });
 
     expect(finished?.status).toBe("completed");
@@ -127,7 +133,7 @@ describe("attività reale", () => {
       params: { id: p03 },
       body: { action: "approve", filters: {} },
     });
-    const first = await listDashboardProjects(owner.user.id, 1);
+    const first = await dashboardPage(owner.user.id, 1);
 
     expect(before[2].items.map((item) => item.id)).toEqual(expect.arrayContaining([p02, p03]));
     expect(created.status).toBe(201);

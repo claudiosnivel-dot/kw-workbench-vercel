@@ -14,6 +14,7 @@ import { getAdminEmail } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { AppError, ConflictError, ValidationError } from "@/lib/http/errors";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
+import { createPersonalWorkspace } from "@/lib/workspaces/personal";
 
 const MAX_DISPLAY_NAME_LENGTH = 60;
 // Caratteri di controllo (CR, LF, tab...): il nome finisce nelle email e nelle pagine admin.
@@ -104,13 +105,6 @@ function mapAuthUser(row: AuthUserRow): AuthUser {
   };
 }
 
-async function assignOrphanDataToUser(userId: string) {
-  await prisma.project.updateMany({
-    where: { owner_user_id: null },
-    data: { owner_user_id: userId },
-  });
-}
-
 /**
  * Senza root admin promuove l'utente di APP_ADMIN_EMAIL (T-1401), solo se la sua email è verificata: chi registra
  * per primo quell'indirizzo senza possederlo non diventa root admin. Mai più il nome 'admin' o il primo utente.
@@ -181,28 +175,36 @@ async function findResolvedUser(userId: string): Promise<AuthUser> {
 }
 
 /**
+ * Utente nuovo con il suo workspace personale e la membership OWNER in una sola transazione (T-1501): se la creazione
+ * del workspace fallisce non resta un utente senza workspace (CWE-460).
+ */
+async function createUserWithPersonalWorkspace(data: Prisma.UserCreateInput): Promise<AuthUser> {
+  const created = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({ data, select: AUTH_USER_SELECT });
+    await createPersonalWorkspace(tx, user);
+    return user;
+  });
+  return mapAuthUser(created);
+}
+
+/**
  * Root admin iniziale con la tabella users vuota (T-1401): email APP_ADMIN_EMAIL già verificata, password casuale
- * mai comunicata (il primo accesso passa dal recupero password di T-1404). Nessuna credenziale di default.
+ * mai comunicata (il primo accesso passa dal recupero password di T-1404). Nessuna credenziale di default. Nasce con il
+ * suo workspace personale come ogni utente (T-1501).
  */
 async function createRootAdmin(): Promise<AuthUser> {
   const email = getRootAdminEmail();
 
   try {
-    const created = await prisma.user.create({
-      data: {
-        email,
-        email_verified_at: new Date(),
-        display_name: defaultDisplayName(email),
-        password_hash: await hashPassword(randomBytes(32).toString("hex")),
-        role: UserRole.ADMIN,
-        status: UserStatus.ACTIVE,
-        is_root_admin: true,
-      },
-      select: { id: true },
+    return await createUserWithPersonalWorkspace({
+      email,
+      email_verified_at: new Date(),
+      display_name: defaultDisplayName(email),
+      password_hash: await hashPassword(randomBytes(32).toString("hex")),
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+      is_root_admin: true,
     });
-
-    await assignOrphanDataToUser(created.id);
-    return findResolvedUser(created.id);
   } catch (error) {
     if (!isUniqueViolation(error)) {
       throw error;
@@ -292,7 +294,8 @@ export async function verifyLoginCredentials(emailInput: string, password: strin
  * locale dell'email, email non verificata. L'hash della password si calcola prima dell'inserimento anche quando
  * l'email esiste già (EmailTakenError), così il costo non dipende dall'esistenza dell'account. Con
  * acceptedTermsVersion registra la versione dei termini accettata e l'istante (T-1405); uiLocale è la lingua già
- * scelta col selettore prima della registrazione.
+ * scelta col selettore prima della registrazione. Utente, workspace personale e membership OWNER nascono nella stessa
+ * transazione (T-1501).
  */
 export async function registerUser(input: {
   email: string;
@@ -309,26 +312,21 @@ export async function registerUser(input: {
   const passwordHash = await hashPassword(validatePassword(input.password));
 
   try {
-    const created = await prisma.user.create({
-      data: {
-        email,
-        display_name: displayName,
-        password_hash: passwordHash,
-        role: input.role ?? UserRole.SUBSCRIBER,
-        status: UserStatus.ACTIVE,
-        is_root_admin: false,
-        theme_mode: ThemeMode.DARK,
-        font_scale_mode: FontScaleMode.NORMAL,
-        color_vision_mode: ColorVisionMode.NONE,
-        ui_locale: input.uiLocale ?? null,
-        ...(input.acceptedTermsVersion
-          ? { accepted_terms_version: input.acceptedTermsVersion, accepted_terms_at: new Date() }
-          : {}),
-      },
-      select: AUTH_USER_SELECT,
+    return await createUserWithPersonalWorkspace({
+      email,
+      display_name: displayName,
+      password_hash: passwordHash,
+      role: input.role ?? UserRole.SUBSCRIBER,
+      status: UserStatus.ACTIVE,
+      is_root_admin: false,
+      theme_mode: ThemeMode.DARK,
+      font_scale_mode: FontScaleMode.NORMAL,
+      color_vision_mode: ColorVisionMode.NONE,
+      ui_locale: input.uiLocale ?? null,
+      ...(input.acceptedTermsVersion
+        ? { accepted_terms_version: input.acceptedTermsVersion, accepted_terms_at: new Date() }
+        : {}),
     });
-
-    return mapAuthUser(created);
   } catch (error) {
     throw isUniqueViolation(error) ? new EmailTakenError(email) : error;
   }

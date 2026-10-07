@@ -103,7 +103,7 @@ const projectFields = {
   scoring_profile: z.enum(SCORING_PROFILES),
 };
 
-// Schemi strict: un campo non dichiarato (owner_user_id, default_subproject_id, id...) è un 400 (CWE-915).
+// Schemi strict: un campo non dichiarato (workspace_id, default_subproject_id, id...) è un 400 (CWE-915).
 const projectCreateSchema = z
   .strictObject({
     ...projectFields,

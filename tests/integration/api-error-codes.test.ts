@@ -9,7 +9,7 @@ import { API_ERROR_CODES, JOB_ERROR_CODES } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma";
 import en from "@/messages/en.json";
 import it_ from "@/messages/it.json";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -91,7 +91,7 @@ describe("risposte d'errore con un code dell'elenco", () => {
   it("JSON malformato 400, progetto di un altro utente 404 e lingua non supportata 400 LOCALE_UNSUPPORTED", async () => {
     const a = await createUserWithSession({ displayName: "t1303-a" });
     const b = await createUserWithSession({ displayName: "t1303-b" });
-    const projectOfA = await prisma.project.create({ data: { name: "Progetto di A", owner_user_id: a.user.id } });
+    const projectOfA = await prisma.project.create({ data: { name: "Progetto di A", workspace_id: await personalWorkspaceId(a.user.id) } });
 
     const malformed = await callRoute(createProject, {
       method: "POST",

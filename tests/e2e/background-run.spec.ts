@@ -23,7 +23,7 @@ test.beforeAll(async () => {
   const project = await prisma.project.create({
     data: {
       name: "Estrazione in background",
-      owner_user_id: user.id,
+      workspace_id: user.workspaceId,
       language_code: "it",
       country_code: "IT",
       autocomplete_provider: "MOCK",

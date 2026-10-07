@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { POST as createOnboardingProject } from "@/app/api/onboarding/project/route";
 import { POST as createOnboardingSection } from "@/app/api/onboarding/section/route";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -76,7 +76,7 @@ describe("POST /api/onboarding/project", () => {
     expect(first.status).toBe(201);
     expect(second.status).toBe(200);
     expect(secondBody.data.projectId).toBe(firstBody.data.projectId);
-    expect(await prisma.project.count({ where: { owner_user_id: user.id } })).toBe(1);
+    expect(await prisma.project.count({ where: { workspace_id: await personalWorkspaceId(user.id) } })).toBe(1);
     const progress = await prisma.userOnboardingProgress.findUniqueOrThrow({ where: { user_id: user.id } });
     expect(progress.current_step).toBe("PROJECT_TARGETING");
     expect(progress.active_project_id).toBe(firstBody.data.projectId);
@@ -108,7 +108,7 @@ describe("POST /api/onboarding/project", () => {
     expect(body.error).toBe("Errore interno");
     expect(JSON.stringify(body)).not.toContain("errore forzato");
     expect(logged.filter((line) => line.includes("api_internal_error"))).toHaveLength(1);
-    expect(await prisma.project.count({ where: { owner_user_id: user.id } })).toBe(0);
+    expect(await prisma.project.count({ where: { workspace_id: await personalWorkspaceId(user.id) } })).toBe(0);
   });
 
   it("una chiave che non è un UUID v4 riceve 400 con code", async () => {
@@ -170,7 +170,7 @@ describe("/onboarding/project-create con un progetto attivo", () => {
   // covers: AC-1001-4
   it("in RESTART al passo PROJECT_TARGETING mostra il progetto e 'Continua' invece del form", async () => {
     const { user } = await createUserWithSession({ displayName: "t1001-page" });
-    const project = await prisma.project.create({ data: { name: "Blog", owner_user_id: user.id } });
+    const project = await prisma.project.create({ data: { name: "Blog", workspace_id: await personalWorkspaceId(user.id) } });
     await prisma.userOnboardingProgress.create({
       data: {
         user_id: user.id,

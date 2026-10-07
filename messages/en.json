@@ -510,6 +510,14 @@
     "LAST_SECTION": "You cannot delete the last section. Every project needs at least one section.",
     "NO_SECTIONS": "No sections available. Create a section first.",
     "FORBIDDEN_FIELD": "This value is reserved for the main administrator.",
+    "WORKSPACE_NOT_FOUND": "Workspace not found.",
+    "MEMBER_NOT_FOUND": "Member not found.",
+    "INVITE_NOT_FOUND": "Invitation not found.",
+    "INVITE_PENDING": "There is already a pending invitation for this email.",
+    "ALREADY_MEMBER": "This person is already a member of the workspace.",
+    "INVITE_INVALID": "The invitation is not valid: it may have expired, been revoked or already been used.",
+    "INVITE_EMAIL_MISMATCH": "The invitation is for another email: sign in with the account it was sent to.",
+    "LAST_OWNER": "The workspace must have an owner: transfer ownership first.",
     "JOB_SIGNATURE_INVALID": "Invalid continuation signature.",
     "CRON_UNAUTHORIZED": "Unauthorized cron call.",
     "JOB_ALREADY_ACTIVE": "An extraction is already running for this section.",
@@ -741,6 +749,92 @@
       "darkRemoved": "Dark logo removed locally. Press Save branding to confirm.",
       "lightRemoved": "Light logo removed locally. Press Save branding to confirm.",
       "saved": "Branding saved."
+    }
+  },
+  "workspace": {
+    "switcher": {
+      "label": "Active workspace",
+      "personal": "{name} (personal)"
+    },
+    "roles": {
+      "OWNER": "Owner",
+      "ADMIN": "Admin",
+      "MEMBER": "Member"
+    },
+    "page": {
+      "heading": "Workspace: {name}",
+      "intro": "Name, members, roles and invitations of the active workspace. Switch workspace from the selector at the top.",
+      "personal": "This is your personal workspace: you can invite other people, but you cannot leave it.",
+      "yourRole": "Your role: {role}",
+      "sheetsNote": "Google Sheets export uses the personal Google connection of whoever exports: each member connects their own account from Personalize."
+    },
+    "name": {
+      "title": "Workspace name",
+      "label": "Name",
+      "save": "Save name",
+      "saving": "Saving...",
+      "saved": "Name updated."
+    },
+    "members": {
+      "title": "Members",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "joined": "Joined",
+      "actions": "Actions",
+      "you": "{name} (you)",
+      "changeRole": "Role of {name}",
+      "roleChanged": "Role updated.",
+      "remove": "Remove",
+      "removing": "Removing...",
+      "removeConfirm": "Remove {name} from the workspace?"
+    },
+    "invites": {
+      "title": "Pending invitations",
+      "empty": "No pending invitations.",
+      "email": "Email",
+      "role": "Role",
+      "expires": "Expires",
+      "revoke": "Revoke",
+      "revoking": "Revoking...",
+      "revokeConfirm": "Revoke the invitation for {email}?",
+      "formTitle": "Invite someone",
+      "formIntro": "The invitation lasts 7 days and can only be accepted with the account that has this email, verified.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "name@example.com",
+      "roleLabel": "Role",
+      "send": "Send invitation",
+      "sending": "Sending...",
+      "sent": "Invitation sent."
+    },
+    "transfer": {
+      "title": "Transfer ownership",
+      "intro": "The chosen member becomes the owner and you become an admin.",
+      "label": "New owner",
+      "submit": "Transfer",
+      "submitting": "Transferring...",
+      "confirm": "Transfer ownership of the workspace to {name}?"
+    },
+    "leave": {
+      "title": "Leave the workspace",
+      "intro": "You will lose access to this workspace's projects until someone invites you again.",
+      "submit": "Leave",
+      "submitting": "Leaving...",
+      "confirm": "Leave the workspace {name}?"
+    },
+    "accept": {
+      "title": "Workspace invitation",
+      "intro": "Accept the invitation to join the workspace with the account it was sent to.",
+      "submit": "Accept invitation",
+      "submitting": "Accepting...",
+      "success": "Invitation accepted: the workspace is now the active one.",
+      "missingToken": "The invitation link is incomplete: open it again from the email.",
+      "goToApp": "Go to the dashboard"
+    },
+    "settingsLink": {
+      "title": "Workspace and members",
+      "intro": "Name of the active workspace, members, roles and invitations.",
+      "open": "Manage the workspace"
     }
   },
   "admin": {

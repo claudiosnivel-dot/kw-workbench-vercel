@@ -4,13 +4,13 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadResultsPage } from "@/lib/modules/results-query";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 async function createProject(username: string) {
   const owner = await createUserWithSession({ displayName: username });
   const project = await prisma.project.create({
-    data: { name: "Paginazione", owner_user_id: owner.user.id, language_code: "it", country_code: "IT" },
+    data: { name: "Paginazione", workspace_id: await personalWorkspaceId(owner.user.id), language_code: "it", country_code: "IT" },
   });
   return { cookie: owner.cookie, projectId: project.id };
 }

@@ -7,12 +7,12 @@ const DASHBOARD_PAGE_SIZE = 20;
 const DASHBOARD_ORDER: Prisma.ProjectOrderByWithRelationInput[] = [{ last_activity_at: "desc" }, { id: "asc" }];
 
 /**
- * Pagina della dashboard (T-810): solo i progetti dell'utente della sessione (owner_user_id; membership
- * di workspace da T-1502), in ordine di ultima attività. Una page vuota, non numerica o minore di 1 vale 1;
- * oltre l'ultima pagina si ricade sull'ultima.
+ * Pagina della dashboard (T-810): solo i progetti del workspace attivo (T-1504), la cui membership è già verificata
+ * da getPageWorkspace, in ordine di ultima attività. Una page vuota, non numerica o minore di 1 vale 1; oltre l'ultima
+ * pagina si ricade sull'ultima.
  */
-export async function listDashboardProjects(userId: string, page: string | number | undefined) {
-  const where: Prisma.ProjectWhereInput = { owner_user_id: userId };
+export async function listDashboardProjects(workspaceId: string, page: string | number | undefined) {
+  const where: Prisma.ProjectWhereInput = { workspace_id: workspaceId };
   const parsed = Math.trunc(Number(page));
   const requestedPage = Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
   const readPage = (pageNumber: number) =>

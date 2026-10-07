@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { GET as plannerExport } from "@/app/api/projects/[id]/planner-export/route";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -15,7 +15,7 @@ describe("GET /api/projects/[id]/planner-export", () => {
   it("dà al proprietario il riepilogo e il blocco CSV richiesto, 404 a un altro utente", async () => {
     const owner = await createUserWithSession();
     const other = await createUserWithSession();
-    const project = await prisma.project.create({ data: { name: "Planner", owner_user_id: owner.user.id, language_code: "it" } });
+    const project = await prisma.project.create({ data: { name: "Planner", workspace_id: await personalWorkspaceId(owner.user.id), language_code: "it" } });
     const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
     await prisma.keywordCandidate.createMany({
       data: Array.from({ length: 1500 }, (_, index) => ({

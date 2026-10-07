@@ -9,7 +9,7 @@ import { POST as exportToSheets } from "@/app/api/projects/[id]/export/google-sh
 import { resetEnvForTests } from "@/lib/env";
 import { upsertGoogleSheetsCredential } from "@/lib/integrations/google-sheets";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -123,7 +123,7 @@ describe("Google Sheets con scope drive.file", () => {
       refreshToken: randomBytes(8).toString("hex"),
       scope: `openid email ${DRIVE_FILE_SCOPE}`,
     });
-    const project = await prisma.project.create({ data: { name: "Sheets", owner_user_id: user.id } });
+    const project = await prisma.project.create({ data: { name: "Sheets", workspace_id: await personalWorkspaceId(user.id) } });
     const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
     await prisma.keywordCandidate.create({
       data: {

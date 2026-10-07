@@ -396,8 +396,9 @@ a {
   padding-right: 2.1rem;
 }
 
-/* Selettore della lingua (T-1301): compatto, alto come i link della navbar. */
-.select.locale-switcher {
+/* Selettori della lingua (T-1301) e del workspace (T-1504): compatti, alti come i link della navbar. */
+.select.locale-switcher,
+.select.workspace-switcher {
   width: auto;
   padding: 0.5rem 2.1rem 0.5rem 0.75rem;
   font-size: 0.875rem;

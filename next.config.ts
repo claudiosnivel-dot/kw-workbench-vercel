@@ -19,7 +19,8 @@ const securityHeaders: Record<string, string> = {
     : {}),
 };
 
-const TOKEN_LINK_PAGES = ["/verify-email", "/forgot-password", "/reset-password"];
+// Pagine con un token nell'URL: verifica dell'email e recupero password (T-1403, T-1404), invito in un workspace (T-1503).
+const TOKEN_LINK_PAGES = ["/verify-email", "/forgot-password", "/reset-password", "/invites/accept"];
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,

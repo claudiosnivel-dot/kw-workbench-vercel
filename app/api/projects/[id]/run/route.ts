@@ -3,7 +3,8 @@ import { errorResponse } from "@/lib/http/errors";
 import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
 import { enqueueExtractionJob } from "@/lib/modules/jobs/job-runner";
 import { startedJobResponse } from "@/lib/modules/jobs/run-response";
-import { findOwnedProjectOr404, SectionNotFoundError } from "@/lib/modules/project-access";
+import { requireProjectAccess } from "@/lib/authz/workspace";
+import { SectionNotFoundError } from "@/lib/modules/project-access";
 import { resolveDefaultSectionId } from "@/lib/modules/results-view";
 
 export const runtime = "nodejs";
@@ -28,7 +29,7 @@ export const POST = withUserRoute(async (request: Request, user, { id }: Project
   const payload = await readRunPayload(request);
   const requestedSubprojectId = String(payload.subprojectId ?? "").trim();
 
-  const project = await findOwnedProjectOr404(user.id, id, {
+  const project = await requireProjectAccess(user, id, "extraction.run", {
     id: true,
     default_subproject_id: true,
     subprojects: {

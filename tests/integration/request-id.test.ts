@@ -5,7 +5,7 @@ import { advanceJob } from "@/lib/modules/jobs/advance-job";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
 import { proxy } from "@/proxy";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 // impacted-by: T-1202 (runJobById esegue il job con advanceJob, non più con runExtractionPipeline)
@@ -59,7 +59,7 @@ describe("job di estrazione fallito", () => {
   // covers: AC-602-4
   it("termina failed e il logger emette job_failed con jobId e lo stack dell'errore", async () => {
     const { user } = await createUserWithSession({ displayName: "t602-owner" });
-    const project = await prisma.project.create({ data: { name: "Progetto T-602", owner_user_id: user.id } });
+    const project = await prisma.project.create({ data: { name: "Progetto T-602", workspace_id: await personalWorkspaceId(user.id) } });
     const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
     const { job } = await enqueueExtractionJob(project.id, section.id);
     vi.mocked(advanceJob).mockRejectedValueOnce(new Error("provider down"));

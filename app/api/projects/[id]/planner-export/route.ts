@@ -14,12 +14,13 @@ export const runtime = "nodejs";
 
 /**
  * Export per Keyword Planner (T-904): senza `part` il riepilogo {canonicals, parts, skipped}, con `part=N` il
- * blocco N come CSV da scaricare. Progetto e sezione filtrati per proprietario: agli altri 404 (CWE-639).
+ * blocco N come CSV da scaricare. Progetto nel workspace dell'utente (export.run, T-1502) e sezione del progetto:
+ * agli altri 404 (CWE-639).
  */
 export const GET = withUserRoute(async (request: NextRequest, user, { id }: ProjectParams) => {
   const sectionId = request.nextUrl.searchParams.get("sectionId")?.trim() || null;
 
-  const source = await loadPlannerExportRows({ projectId: id, sectionId, ownerUserId: user.id });
+  const source = await loadPlannerExportRows({ projectId: id, sectionId, user });
   if ("notFound" in source) {
     throw source.notFound === "project" ? new ProjectNotFoundError() : new SectionNotFoundError();
   }

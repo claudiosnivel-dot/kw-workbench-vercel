@@ -10,7 +10,7 @@ import {
 } from "@/lib/modules/export";
 import { EXPORT_FORMATS, EXPORT_SCOPES } from "@/lib/modules/export-types";
 import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
-import { assertOwnedScope } from "@/lib/modules/project-access";
+import { requireProjectScope } from "@/lib/authz/workspace";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
 
@@ -39,7 +39,7 @@ export const GET = withUserRoute(async (request: NextRequest, user, { id }: Proj
     return errorResponse(400, "EXPORT_DIALECT_INVALID", "Dialetto CSV non valido: usa excel-it o rfc4180");
   }
 
-  await assertOwnedScope(user.id, id, subprojectId || null);
+  await requireProjectScope(user, id, subprojectId || null, "export.run");
 
   const filters = parseResultsFilters(request.nextUrl.searchParams);
 

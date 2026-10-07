@@ -90,6 +90,11 @@ const I18N_MIGRATED_FILES = [
   "components/token-link-card.tsx",
   "components/submit-button.tsx",
   "components/form-done.tsx",
+  // T-1503, T-1504: workspace, membri, inviti e selettore nascono già con il catalogo.
+  "app/workspace/page.tsx",
+  "app/invites/accept/page.tsx",
+  "components/workspace-controls.tsx",
+  "components/workspace-switcher.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { LogoutButton } from "@/components/logout-button";
+import { type WorkspaceOption, WorkspaceSwitcher } from "@/components/workspace-switcher";
 
 // Pagine di accesso e dei link delle email (T-1403…T-1405): la navbar mostra solo il marchio.
 const AUTH_ROUTE_PREFIXES = [
@@ -85,6 +86,8 @@ export function TopNav({
   themeMode,
   showAdminLink = false,
   user = null,
+  workspaces = [],
+  activeWorkspaceId = null,
 }: {
   brandName: string;
   brandLogoUrlDark?: string;
@@ -93,6 +96,9 @@ export function TopNav({
   themeMode: "DARK" | "LIGHT";
   showAdminLink?: boolean;
   user?: { displayName: string; email: string | null } | null;
+  /** Workspace dell'utente (T-1504): il selettore compare solo se ce n'è più d'uno tra cui scegliere. */
+  workspaces?: WorkspaceOption[];
+  activeWorkspaceId?: string | null;
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
@@ -118,6 +124,10 @@ export function TopNav({
   const hasCustomLogo = resolvedLogoUrl.length > 0;
   const navLinks = useMemo(() => buildNavLinks(showAdminLink), [showAdminLink]);
   const authView = isAuthRoute(pathname);
+  const switcher =
+    workspaces.length > 1 && activeWorkspaceId
+      ? (className?: string) => <WorkspaceSwitcher workspaces={workspaces} activeId={activeWorkspaceId} className={className} />
+      : null;
 
   useEffect(() => {
     setMenuOpen(false);
@@ -207,6 +217,8 @@ export function TopNav({
                   );
                 })}
                 {user && <UserIdentity user={user} className="hidden max-w-[12rem] text-right xl:flex" />}
+                {/* Nomi scelti dagli utenti (T-1504): il selettore non allarga la barra oltre 14rem. */}
+                {switcher?.("max-w-56")}
                 <LocaleSwitcher />
                 <LogoutButton className="px-4 py-2" />
               </nav>
@@ -232,6 +244,7 @@ export function TopNav({
                 </Link>
               );
             })}
+            {switcher?.("w-full")}
             <LocaleSwitcher className="w-full" />
             <LogoutButton className="w-full justify-center rounded-xl px-4 py-2" />
           </nav>

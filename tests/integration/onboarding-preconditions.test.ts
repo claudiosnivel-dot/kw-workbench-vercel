@@ -4,7 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
 import { PATCH as patchOnboardingState } from "@/app/api/onboarding/state/route";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -21,7 +21,7 @@ vi.mock("next/navigation", async (importOriginal) => ({
 /** Utente con onboarding IN_PROGRESS su un progetto attivo con una sezione attiva. */
 async function createActiveSection(username: string, currentStep: "SEEDS" | "REVIEW_EXPORT") {
   const session = await createUserWithSession({ displayName: username });
-  const project = await prisma.project.create({ data: { name: "Blog", owner_user_id: session.user.id } });
+  const project = await prisma.project.create({ data: { name: "Blog", workspace_id: await personalWorkspaceId(session.user.id) } });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   await prisma.userOnboardingProgress.create({
     data: {
@@ -147,7 +147,7 @@ describe("completamento", () => {
   it("solo un export non vuoto del progetto attivo completa l'onboarding", async () => {
     const { user, cookie, projectId, sectionId } = await createActiveSection("t1003-export", "REVIEW_EXPORT");
     await insertKeyword(projectId, sectionId, "scarpe running");
-    const other = await prisma.project.create({ data: { name: "Altro", owner_user_id: user.id } });
+    const other = await prisma.project.create({ data: { name: "Altro", workspace_id: await personalWorkspaceId(user.id) } });
     const otherSection = await prisma.subproject.create({ data: { project_id: other.id, name: "Generale", position: 0 } });
     await insertKeyword(other.id, otherSection.id, "scarpe trail");
 

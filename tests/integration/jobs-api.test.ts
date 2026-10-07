@@ -6,7 +6,7 @@ import { GET as getJob } from "@/app/api/jobs/[id]/route";
 import { POST as runProject } from "@/app/api/projects/[id]/run/route";
 import { scheduleJobContinuation } from "@/lib/modules/jobs/continuation";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -22,7 +22,7 @@ type Owner = { cookie: string; projectId: string; sectionId: string };
 async function createOwner(username: string): Promise<Owner> {
   const { user, cookie } = await createUserWithSession({ displayName: username });
   const project = await prisma.project.create({
-    data: { name: `Progetto ${username}`, owner_user_id: user.id, autocomplete_provider: "MOCK", metrics_provider: "MOCK" },
+    data: { name: `Progetto ${username}`, workspace_id: await personalWorkspaceId(user.id), autocomplete_provider: "MOCK", metrics_provider: "MOCK" },
   });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   await prisma.seed.createMany({
