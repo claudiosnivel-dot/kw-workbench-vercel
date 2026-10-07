@@ -54,9 +54,9 @@ Il risultato è un raggio d'azione ridotto per qualunque errore di configurazion
       when: "si chiama envInt('AUTOCOMPLETE_CONCURRENCY', 6, 1, 20)"
       then: "restituisce 6, poi lancia un errore il cui messaggio contiene AUTOCOMPLETE_CONCURRENCY, poi restituisce 20; una scansione dei file in lib/ trova 0 occorrenze di Number(process.env."
     - id: AC-201-4
-      given: "users vuota, NODE_ENV=production simulato con vi.stubEnv, APP_AUTH_PASSWORD=changeme e APP_AUTH_ENABLED=ture"
-      when: "si chiamano GET /api/auth/session da anonimo e POST /api/auth/login con APP_AUTH_USERNAME e changeme, poi lo stesso login con APP_AUTH_PASSWORD di 16 caratteri (emendato da T-1101 il 2026-10-06: la richiesta anonima va a GET /api/onboarding/state, la rotta della sessione è rimossa)"
-      then: "la sessione risponde 401, il primo login non risponde 200 né emette Set-Cookie e users conta 0 righe; il secondo login risponde 200 e users conta 1 riga con is_root_admin true"
+      given: "users vuota, NODE_ENV=production simulato con vi.stubEnv, APP_ADMIN_EMAIL='root@example.test' e APP_AUTH_ENABLED=ture (emendato da T-1401 il 2026-10-07: il bootstrap usa APP_ADMIN_EMAIL e una password casuale mai comunicata, non più APP_AUTH_USERNAME e APP_AUTH_PASSWORD)"
+      when: "si chiamano GET /api/onboarding/state da anonimo e POST /api/auth/login con APP_ADMIN_EMAIL e changeme (emendato da T-1101 il 2026-10-06: la richiesta anonima va a GET /api/onboarding/state, la rotta della sessione è rimossa)"
+      then: "la richiesta anonima risponde 401; il login non risponde 200 né emette Set-Cookie e users conta 1 riga, il root admin con email 'root@example.test' e is_root_admin true"
 
   target_tests:
     - file: "tests/unit/env.test.ts"

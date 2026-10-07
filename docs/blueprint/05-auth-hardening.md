@@ -156,9 +156,9 @@ L'isolamento resta applicativo (ecosistema `postgres-jsts`, D-02): ogni controll
       when: "si chiama POST /api/auth/register con dati validi e header x-request-id 'req-test-0001'"
       then: "la risposta è 500 con code 'INTERNAL_ERROR' e requestId 'req-test-0001', il body non contiene 'supabase', 'prisma' né righe di stack, e console.error è chiamato una volta con un argomento che contiene 'req-test-0001'"
     - id: AC-503-3
-      given: "root admin autenticato e utente esistente 'mario'"
-      when: "invia POST /api/admin/users per creare di nuovo 'mario' e poi un utente con username 'A!'"
-      then: "la prima risposta è 409 con code 'CONFLICT' e la seconda è 400 con code 'VALIDATION_ERROR' (oggi entrambe 500)"
+      given: "root admin autenticato e utente esistente 'mario@example.test' (emendato da T-1401 il 2026-10-07: identità via email)"
+      when: "invia POST /api/admin/users per creare di nuovo 'mario@example.test' e poi un utente con nome mostrato di 61 caratteri"
+      then: "la prima risposta è 409 con code 'EMAIL_TAKEN' e la seconda è 400 con code 'VALIDATION_ERROR' (oggi entrambe 500)"
     - id: AC-503-4
       given: "root admin autenticato e upsert su app_settings forzato a lanciare un errore Prisma imprevisto"
       when: "invia PATCH /api/settings/branding con un appName valido"
