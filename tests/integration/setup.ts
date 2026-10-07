@@ -9,6 +9,13 @@ beforeEach(() => {
   clearNextCache();
 });
 
+// next-intl senza la configurazione per richiesta del plugin (T-1302): catalogo italiano, lingua di default, sia
+// per le API server sia per gli hook dei Client Component resi con renderToStaticMarkup.
+vi.mock("next-intl/server", () => import("../helpers/next-intl-server"));
+vi.mock("next-intl", async (importOriginal) =>
+  (await import("../helpers/next-intl-client")).withItalianCatalog(await importOriginal())
+);
+
 // Va eseguito prima di qualunque import di lib/prisma.ts: il client è un singleton creato all'import.
 const url = assertLocalTestDatabase(process.env.TEST_DATABASE_URL);
 process.env.DATABASE_URL = url;

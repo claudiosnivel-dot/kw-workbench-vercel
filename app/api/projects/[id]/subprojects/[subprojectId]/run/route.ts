@@ -1,38 +1,13 @@
-import { NextResponse } from "next/server";
-import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { withApiErrors } from "@/lib/http/errors";
+import { type SectionParams, withUserRoute } from "@/lib/http/user-route";
 import { enqueueExtractionJob } from "@/lib/modules/jobs/job-runner";
 import { startedJobResponse } from "@/lib/modules/jobs/run-response";
-import { prisma } from "@/lib/prisma";
+import { findOwnedSectionOr404 } from "@/lib/modules/project-access";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-type RouteContext = {
-  params: Promise<{ id: string; subprojectId: string }>;
-};
-
-export const POST = withApiErrors(async (request: Request, context: RouteContext) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-  const { id, subprojectId } = await context.params;
-
-  const subproject = await prisma.subproject.findFirst({
-    where: {
-      id: subprojectId,
-      project_id: id,
-      project: {
-        owner_user_id: user.id,
-      },
-    },
-    select: {
-      id: true,
-      project_id: true,
-    },
-  });
-
-  if (!subproject) {
-    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
-  }
+export const POST = withUserRoute(async (request: Request, user, { id, subprojectId }: SectionParams) => {
+  const subproject = await findOwnedSectionOr404(user.id, id, subprojectId, { id: true, project_id: true });
 
   const { job, created } = await enqueueExtractionJob(subproject.project_id, subproject.id);
   return startedJobResponse(job, created, subproject.id);

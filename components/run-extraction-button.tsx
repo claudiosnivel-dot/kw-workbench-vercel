@@ -1,8 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { JobProgress } from "@/components/job-progress";
+import { messageOf } from "@/lib/client/http";
 import { readStartedJobId } from "@/lib/client/run-extraction";
 
 type RunExtractionButtonProps = {
@@ -21,11 +23,14 @@ export function RunExtractionButton({
   projectId,
   runPath,
   subprojectId = null,
-  label = "Avvia estrazione",
-  runningLabel = "Estrazione in corso...",
+  label,
+  runningLabel,
   resultsHref,
   activeJobId = null,
 }: RunExtractionButtonProps) {
+  const t = useTranslations("jobs.run");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [starting, setStarting] = useState(false);
   const [jobId, setJobId] = useState<string | null>(activeJobId);
@@ -35,7 +40,7 @@ export function RunExtractionButton({
 
   const run = async () => {
     if (!endpoint) {
-      setError("Endpoint estrazione non configurato");
+      setError(t("endpointMissing"));
       return;
     }
 
@@ -54,9 +59,9 @@ export function RunExtractionButton({
 
       const response = await fetch(endpoint, requestInit);
       // 202 per un job nuovo, 409 JOB_ALREADY_ACTIVE per quello già in corso: in entrambi i casi se ne segue lo stato.
-      setJobId(await readStartedJobId(response));
+      setJobId(await readStartedJobId(response, { errors: tErrors, failedMessage: t("failed") }));
     } catch (runError) {
-      setError(runError instanceof Error ? runError.message : "Errore imprevisto");
+      setError(messageOf(runError, tCommon("unexpectedError")));
     } finally {
       setStarting(false);
     }
@@ -65,7 +70,7 @@ export function RunExtractionButton({
   return (
     <div className="w-full space-y-2 sm:w-auto">
       <button type="button" className="btn-primary w-full sm:w-auto" onClick={run} disabled={starting || !endpoint}>
-        {starting ? runningLabel : label}
+        {starting ? (runningLabel ?? t("running")) : (label ?? t("start"))}
       </button>
       {error && <p className="text-sm text-red-700">{error}</p>}
       {jobId && <JobProgress key={jobId} jobId={jobId} resultsHref={resultsHref} onCompleted={() => router.refresh()} />}

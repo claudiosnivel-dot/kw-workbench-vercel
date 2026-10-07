@@ -396,6 +396,14 @@ a {
   padding-right: 2.1rem;
 }
 
+/* Selettore della lingua (T-1301): compatto, alto come i link della navbar. */
+.select.locale-switcher {
+  width: auto;
+  padding: 0.5rem 2.1rem 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
 .label {
   display: block;
   margin-bottom: 0.4rem;

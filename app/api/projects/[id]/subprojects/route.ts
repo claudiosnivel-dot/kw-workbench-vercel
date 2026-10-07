@@ -1,31 +1,14 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { withApiErrors } from "@/lib/http/errors";
+import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
+import { findOwnedProjectOr404 } from "@/lib/modules/project-access";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { parseSubprojectCreate } from "@/lib/modules/project-settings";
 import { guardSectionName } from "@/lib/modules/sections";
 import { prisma } from "@/lib/prisma";
 
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
-
-export const POST = withApiErrors(async (request: Request, context: RouteContext) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-  const { id } = await context.params;
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      owner_user_id: user.id,
-    },
-    select: { id: true, default_subproject_id: true },
-  });
-
-  if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
-  }
+export const POST = withUserRoute(async (request: Request, user, { id }: ProjectParams) => {
+  const project = await findOwnedProjectOr404(user.id, id, { id: true, default_subproject_id: true });
 
   const parsed = parseSubprojectCreate(await request.json(), user);
 

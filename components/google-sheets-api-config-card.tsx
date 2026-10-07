@@ -1,7 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { CardIntro } from "@/components/card-intro";
 import { type ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
 type ConfigField = "clientId" | "clientSecret" | "redirectUri";
@@ -13,15 +15,10 @@ type GoogleSheetsApiConfigSnapshot = {
   sources: Record<ConfigField, "db" | "env" | "none">;
 };
 
-const SOURCE_LABELS = { db: "salvato qui", env: "variabile d'ambiente", none: "non configurato" } as const;
-
-const FIELD_LABELS: Record<ConfigField, string> = {
-  clientId: "Client ID",
-  clientSecret: "Client Secret",
-  redirectUri: "Redirect URI",
-};
-
 export function GoogleSheetsApiConfigCard({ initial }: { initial: GoogleSheetsApiConfigSnapshot }) {
+  const t = useTranslations("integrations.sheetsConfig");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [clientId, setClientId] = useState(initial.clientId);
   const [redirectUri, setRedirectUri] = useState(initial.redirectUri);
@@ -45,8 +42,7 @@ export function GoogleSheetsApiConfigCard({ initial }: { initial: GoogleSheetsAp
     setSaving(false);
 
     if (!response?.ok) {
-      const fallback = "Salvataggio configurazione Google Sheets non riuscito";
-      setOutcome({ failed: true, text: response ? buildApiErrorMessage(response, payload, fallback) : fallback });
+      setOutcome({ failed: true, text: response ? buildApiErrorMessage(response, payload, tErrors) : t("saveFailed") });
       return;
     }
     if (payload?.data) {
@@ -65,24 +61,24 @@ export function GoogleSheetsApiConfigCard({ initial }: { initial: GoogleSheetsAp
         ...(clientSecret ? { clientSecret } : {}),
         ...(redirectUri !== initial.redirectUri ? { redirectUri } : {}),
       },
-      "Configurazione OAuth Google Sheets salvata."
+      t("saved")
     );
 
   const removeOverride = (field: ConfigField) =>
-    send({ [field]: null }, `Override di ${FIELD_LABELS[field]} rimosso: vale la variabile d'ambiente, se presente.`);
+    send({ [field]: null }, t("overrideRemoved", { field: t(`fields.${field}`) }));
 
   const sourceNote = (field: ConfigField) => (
     <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-      Fonte: {SOURCE_LABELS[initial.sources[field]]}
+      {t("source", { source: initial.sources[field] })}
       {initial.sources[field] === "db" && (
         <button
           className="btn-secondary px-2 py-0.5 text-xs"
           type="button"
           onClick={() => removeOverride(field)}
           disabled={saving}
-          aria-label={`Rimuovi override ${FIELD_LABELS[field]}`}
+          aria-label={t("removeOverrideAria", { field: t(`fields.${field}`) })}
         >
-          Rimuovi override
+          {t("removeOverride")}
         </button>
       )}
     </p>
@@ -90,45 +86,40 @@ export function GoogleSheetsApiConfigCard({ initial }: { initial: GoogleSheetsAp
 
   return (
     <section className="card space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Google Sheets OAuth (globale app)</h2>
-        <p className="text-sm text-slate-600">
-          Configurazione tecnica usata per permettere agli utenti di collegare il proprio account Google Sheets.
-        </p>
-      </div>
+      <CardIntro title={t("title")} intro={t("intro")} />
 
       <div className="grid gap-3 md:grid-cols-2">
         <div>
           <label className="label" htmlFor="google-sheets-client-id">
-            OAuth Client ID
+            {t("clientIdLabel")}
           </label>
           <input
             id="google-sheets-client-id"
             className="input"
             value={clientId}
             onChange={(event) => setClientId(event.target.value)}
-            placeholder="xxxxxxxx.apps.googleusercontent.com"
+            placeholder={t("clientIdPlaceholder")}
           />
           {sourceNote("clientId")}
         </div>
 
         <div>
           <label className="label" htmlFor="google-sheets-redirect-uri">
-            OAuth Redirect URI
+            {t("redirectUriLabel")}
           </label>
           <input
             id="google-sheets-redirect-uri"
             className="input"
             value={redirectUri}
             onChange={(event) => setRedirectUri(event.target.value)}
-            placeholder="https://tuodominio.com/api/integrations/google-sheets/callback"
+            placeholder={t("redirectUriPlaceholder")}
           />
           {sourceNote("redirectUri")}
         </div>
 
         <div className="md:col-span-2">
           <label className="label" htmlFor="google-sheets-client-secret">
-            OAuth Client Secret
+            {t("clientSecretLabel")}
           </label>
           <input
             id="google-sheets-client-secret"
@@ -136,14 +127,14 @@ export function GoogleSheetsApiConfigCard({ initial }: { initial: GoogleSheetsAp
             type="password"
             value={clientSecret}
             onChange={(event) => setClientSecret(event.target.value)}
-            placeholder={initial.hasClientSecret ? "Configurato (inserisci per sostituire)" : "Inserisci client secret"}
+            placeholder={initial.hasClientSecret ? t("secretConfigured") : t("secretPlaceholder")}
           />
           {sourceNote("clientSecret")}
         </div>
       </div>
 
       <button className="btn-primary w-full sm:w-auto" type="button" onClick={save} disabled={saving}>
-        {saving ? "Salvataggio..." : "Salva configurazione Google Sheets"}
+        {saving ? tCommon("saving") : t("save")}
       </button>
 
       {outcome?.failed && (

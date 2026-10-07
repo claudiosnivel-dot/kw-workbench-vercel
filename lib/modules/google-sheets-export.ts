@@ -21,10 +21,13 @@ const INCOMPLETE_PREFIX = "[INCOMPLETO] ";
 const MAX_SHEET_TITLE_LENGTH = 100;
 const MAX_SPREADSHEET_TITLE_LENGTH = 120;
 
-/** Errore dell'export verso Google Sheets: status e messaggio pubblico nel formato di T-503. */
+/**
+ * Errore dell'export verso Google Sheets: status e messaggio pubblico nel formato di T-503. Le cause che l'utente
+ * può risolvere hanno un code proprio (T-1303); gli errori restituiti da Google restano GOOGLE_SHEETS_EXPORT_ERROR.
+ */
 export class GoogleSheetsExportError extends AppError {
-  constructor(message: string, status = 400) {
-    super(status, "GOOGLE_SHEETS_EXPORT_ERROR", message);
+  constructor(message: string, status = 400, code = "GOOGLE_SHEETS_EXPORT_ERROR") {
+    super(status, code, message);
     this.name = "GoogleSheetsExportError";
   }
 }
@@ -167,7 +170,7 @@ async function googleFetch(url: string, init: RequestInit): Promise<Response> {
   try {
     return await fetch(url, { ...init, cache: "no-store", signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS) });
   } catch {
-    throw new GoogleSheetsExportError("Google non ha risposto entro 30 secondi o non è raggiungibile.", 502);
+    throw new GoogleSheetsExportError("Google non ha risposto entro 30 secondi o non è raggiungibile.", 502, "SHEETS_TIMEOUT");
   }
 }
 
@@ -178,12 +181,16 @@ async function refreshUserAccessToken(userId: string): Promise<string> {
     if (await getGoogleSheetsCredentialRecord(userId)) {
       throw new GoogleReauthRequiredError();
     }
-    throw new GoogleSheetsExportError("Collega Google Sheets in Personalizza prima di esportare.", 400);
+    throw new GoogleSheetsExportError("Collega Google Sheets in Personalizza prima di esportare.", 400, "SHEETS_NOT_CONNECTED");
   }
 
   const config = await getGoogleSheetsApiConfig();
   if (!config.clientId || !config.clientSecret) {
-    throw new GoogleSheetsExportError("Configurazione OAuth Google Sheets mancante. Contatta l'admin principale.", 400);
+    throw new GoogleSheetsExportError(
+      "Configurazione OAuth Google Sheets mancante. Contatta l'admin principale.",
+      400,
+      "SHEETS_OAUTH_CONFIG_MISSING"
+    );
   }
 
   const tokenResponse = await googleFetch(GOOGLE_TOKEN_ENDPOINT, {
@@ -350,7 +357,7 @@ export async function exportProjectToGoogleSheets(params: {
   const groups = await buildGroupedSheets(params.projectId, where);
 
   if (groups.length === 0) {
-    throw new GoogleSheetsExportError("Nessuna keyword da esportare con i filtri e scope selezionati.", 400);
+    throw new GoogleSheetsExportError("Nessuna keyword da esportare con i filtri e scope selezionati.", 400, "SHEETS_NO_ROWS");
   }
 
   const accessToken = await refreshUserAccessToken(params.userId);
@@ -381,7 +388,8 @@ export async function exportProjectToGoogleSheets(params: {
       leftUrl
         ? `${error.message} Il file incompleto è rimasto su Google Drive con il prefisso «${INCOMPLETE_PREFIX.trim()}»: ${leftUrl}`
         : `${error.message} Il file incompleto è stato eliminato.`,
-      error.status
+      error.status,
+      error.code
     );
   }
 

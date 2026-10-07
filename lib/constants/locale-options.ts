@@ -1,64 +1,9 @@
-export type LanguageOption = {
-  code: string;
-  label: string;
-};
-
-export const LANGUAGE_OPTIONS: LanguageOption[] = [
-  { code: "en", label: "Inglese" },
-  { code: "es", label: "Spagnolo" },
-  { code: "fr", label: "Francese" },
-  { code: "de", label: "Tedesco" },
-  { code: "it", label: "Italiano" },
-  { code: "pt", label: "Portoghese" },
-  { code: "ru", label: "Russo" },
-  { code: "zh", label: "Cinese (Mandarino)" },
-  { code: "ja", label: "Giapponese" },
-  { code: "ko", label: "Coreano" },
-  { code: "ar", label: "Arabo" },
-  { code: "hi", label: "Hindi" },
-  { code: "bn", label: "Bengalese" },
-  { code: "ur", label: "Urdu" },
-  { code: "pa", label: "Punjabi" },
-  { code: "id", label: "Indonesiano" },
-  { code: "ms", label: "Malese" },
-  { code: "vi", label: "Vietnamita" },
-  { code: "tr", label: "Turco" },
-  { code: "nl", label: "Olandese" },
-  { code: "pl", label: "Polacco" },
-  { code: "uk", label: "Ucraino" },
-  { code: "ro", label: "Rumeno" },
-  { code: "sv", label: "Svedese" },
-  { code: "no", label: "Norvegese" },
-  { code: "da", label: "Danese" },
-  { code: "fi", label: "Finlandese" },
-  { code: "el", label: "Greco" },
-  { code: "cs", label: "Ceco" },
-  { code: "hu", label: "Ungherese" },
-  { code: "he", label: "Ebraico" },
-  { code: "th", label: "Thailandese" },
-  { code: "fa", label: "Persiano" },
-  { code: "ta", label: "Tamil" },
-  { code: "te", label: "Telugu" },
-  { code: "mr", label: "Marathi" },
-  { code: "gu", label: "Gujarati" },
-  { code: "kn", label: "Kannada" },
-  { code: "ml", label: "Malayalam" },
-  { code: "si", label: "Singalese" },
-  { code: "sk", label: "Slovacco" },
-  { code: "bg", label: "Bulgaro" },
-  { code: "hr", label: "Croato" },
-  { code: "sr", label: "Serbo" },
-  { code: "sl", label: "Sloveno" },
-  { code: "lt", label: "Lituano" },
-  { code: "lv", label: "Lettone" },
-  { code: "et", label: "Estone" },
-  { code: "ca", label: "Catalano" },
-  { code: "eu", label: "Basco" },
-  { code: "gl", label: "Galiziano" },
-  { code: "af", label: "Afrikaans" },
-  { code: "sw", label: "Swahili" },
-  { code: "am", label: "Amarico" },
-  { code: "fil", label: "Filippino" },
+// Lingue di estrazione nell'ordine del selettore; i nomi arrivano da Intl.DisplayNames nella lingua dell'interfaccia (T-1302).
+export const LANGUAGE_CODES: string[] = [
+  "en", "es", "fr", "de", "it", "pt", "ru", "zh", "ja", "ko", "ar", "hi", "bn", "ur", "pa", "id", "ms", "vi",
+  "tr", "nl", "pl", "uk", "ro", "sv", "no", "da", "fi", "el", "cs", "hu", "he", "th", "fa", "ta", "te", "mr",
+  "gu", "kn", "ml", "si", "sk", "bg", "hr", "sr", "sl", "lt", "lv", "et", "ca", "eu", "gl", "af", "sw", "am",
+  "fil",
 ];
 
 export const COUNTRY_CODES: string[] = [
@@ -89,7 +34,7 @@ export const COUNTRY_CODES: string[] = [
   "ZA", "ZM", "ZW",
 ];
 
-const LANGUAGE_CODES_SET = new Set(LANGUAGE_OPTIONS.map((option) => option.code));
+const LANGUAGE_CODES_SET = new Set(LANGUAGE_CODES);
 const COUNTRY_CODES_SET = new Set(COUNTRY_CODES);
 
 export function isSupportedLanguageCode(code: string): boolean {

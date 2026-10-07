@@ -1,15 +1,15 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { NarrowCard } from "@/components/narrow-card";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getTranslations("errorPages.notFound");
   return (
-    <div className="mx-auto max-w-lg">
-      <div className="card space-y-4">
-        <h1 className="text-2xl font-semibold">Pagina non trovata</h1>
-        <p className="text-sm text-slate-600">La pagina richiesta non esiste o non è accessibile con il tuo account.</p>
-        <Link href="/" className="btn-primary inline-block">
-          Torna alla dashboard
-        </Link>
-      </div>
-    </div>
+    <NarrowCard title={t("title")}>
+      <p className="text-sm text-slate-600">{t("body")}</p>
+      <Link href="/" className="btn-primary inline-block">
+        {t("back")}
+      </Link>
+    </NarrowCard>
   );
 }

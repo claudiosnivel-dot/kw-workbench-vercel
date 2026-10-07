@@ -1,15 +1,13 @@
 "use client";
 
-import type { MetricsProvider } from "@/lib/generated/prisma/enums";
-import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
-import {
-  COUNTRY_CODES,
-  LANGUAGE_OPTIONS,
-  isSupportedCountryCode,
-  isSupportedLanguageCode,
-} from "@/lib/constants/locale-options";
+import { FormFeedback } from "@/components/form-feedback";
+import { LocaleCodeOptions } from "@/components/locale-code-options";
+import { ApiErrorPayload, readApiResponse, sendJson } from "@/lib/client/http";
+import { useFormValues } from "@/lib/client/use-form-values";
+import { useSaveAction } from "@/lib/client/use-save-action";
+import type { MetricsProvider } from "@/lib/generated/prisma/enums";
 
 type BooleanOverride = "inherit" | "true" | "false";
 
@@ -29,6 +27,13 @@ type SubprojectFormValues = {
   auto_classification_override: BooleanOverride;
   scoring_profile_override: string;
 };
+
+type BooleanOverrideKey =
+  | "exclude_brands_override"
+  | "expand_alpha_override"
+  | "expand_numeric_override"
+  | "expand_patterns_override"
+  | "auto_classification_override";
 
 type SubprojectFormResponse = ApiErrorPayload & {
   data?: {
@@ -63,6 +68,15 @@ const defaultValues: SubprojectFormValues = {
   auto_classification_override: "inherit",
   scoring_profile_override: "",
 };
+
+// Override booleani: campo del form, id del select e chiave dell'etichetta nel catalogo.
+const BOOLEAN_OVERRIDES = [
+  { field: "exclude_brands_override", id: "subproject-exclude-brands-override", label: "excludeBrandsOverride" },
+  { field: "expand_alpha_override", id: "subproject-expand-alpha-override", label: "expandAlphaOverride" },
+  { field: "expand_numeric_override", id: "subproject-expand-numeric-override", label: "expandNumericOverride" },
+  { field: "expand_patterns_override", id: "subproject-expand-patterns-override", label: "expandPatternsOverride" },
+  { field: "auto_classification_override", id: "subproject-auto-classification-override", label: "autoClassificationOverride" },
+] as const satisfies ReadonlyArray<{ field: BooleanOverrideKey; id: string; label: string }>;
 
 function parseBooleanOverride(value: BooleanOverride): boolean | null {
   if (value === "true") {
@@ -100,53 +114,20 @@ export function SubprojectForm({
   redirectTo = null,
   submitLabel,
 }: SubprojectFormProps) {
+  const t = useTranslations("sections.form");
+  const tFields = useTranslations("projects.fields");
+  const tProject = useTranslations("projects.form");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const initialFormValues: SubprojectFormValues = { ...defaultValues, ...initialValues };
-  const [values, setValues] = useState<SubprojectFormValues>(initialFormValues);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const regionNames = useMemo(() => {
-    try {
-      return new Intl.DisplayNames(["it"], { type: "region" });
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const countryOptions = useMemo(
-    () =>
-      COUNTRY_CODES.map((code) => {
-        const name = regionNames?.of(code) ?? code;
-        return {
-          code,
-          label: `${name} (${code})`,
-        };
-      }),
-    [regionNames]
-  );
-
-  const hasCustomLanguage = values.language_code_override
-    ? !isSupportedLanguageCode(values.language_code_override)
-    : false;
-
-  const hasCustomCountry = values.country_code_override
-    ? !isSupportedCountryCode(values.country_code_override)
-    : false;
-
-  const update = <K extends keyof SubprojectFormValues>(key: K, value: SubprojectFormValues[K]) => {
-    setValues((current) => ({ ...current, [key]: value }));
-  };
+  const { values, setValues, update } = useFormValues<SubprojectFormValues>(initialFormValues);
+  const { saving, error, success: message, save } = useSaveAction();
 
   const endpoint = mode === "create" ? `/api/projects/${projectId}/subprojects` : `/api/projects/${projectId}/subprojects/${subprojectId}`;
   const method = mode === "create" ? "POST" : "PATCH";
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSaving(true);
-    setMessage(null);
-    setError(null);
 
     const payload = {
       name: values.name,
@@ -165,34 +146,20 @@ export function SubprojectForm({
       scoring_profile_override: values.scoring_profile_override.trim() || null,
     };
 
-    try {
-      const response = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await readJsonSafe<SubprojectFormResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, json, "Impossibile salvare la sezione"));
-      }
-
+    void save(async (tErrors) => {
+      const json = await readApiResponse<SubprojectFormResponse>(await sendJson(method, endpoint, payload), tErrors);
       if (mode === "create" && redirectTo && json?.data?.id) {
         router.push(redirectTo.replace(":subprojectId", json.data.id));
         router.refresh();
-        return;
+        return "";
       }
 
       if (mode === "create") {
         setValues(initialFormValues);
       }
-      setMessage("Sezione salvata.");
       router.refresh();
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
-    } finally {
-      setSaving(false);
-    }
+      return t("saved");
+    });
   };
 
   return (
@@ -200,7 +167,7 @@ export function SubprojectForm({
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="label" htmlFor="subproject-name">
-            Nome sezione
+            {t("name")}
           </label>
           <input
             id="subproject-name"
@@ -209,46 +176,46 @@ export function SubprojectForm({
             onChange={(event) => update("name", event.target.value)}
             required
           />
-          <p className="mt-1 text-xs text-slate-500">Nome libero (es. categoria, cluster, funnel o qualsiasi logica operativa).</p>
+          <p className="mt-1 text-xs text-slate-500">{t("nameHint")}</p>
         </div>
 
         <div>
           <label className="label" htmlFor="subproject-description">
-            Descrizione (opzionale)
+            {t("description")}
           </label>
           <input
             id="subproject-description"
             className="input"
             value={values.description}
             onChange={(event) => update("description", event.target.value)}
-            placeholder="Nota interna"
+            placeholder={t("descriptionPlaceholder")}
           />
-          <p className="mt-1 text-xs text-slate-500">Aiuta a distinguere le sezioni quando diventano numerosi.</p>
+          <p className="mt-1 text-xs text-slate-500">{t("descriptionHint")}</p>
         </div>
       </div>
 
       <div>
         <label className="label" htmlFor="subproject-seeds">
-          Keyword seed (una per riga, supportate anche virgole e punto e virgola)
+          {t("seeds")}
         </label>
         <textarea
           id="subproject-seeds"
           className="input min-h-40"
           value={values.seeds}
           onChange={(event) => update("seeds", event.target.value)}
-          placeholder="keyword uno\nkeyword due\nkeyword tre"
+          placeholder={tProject("seedsPlaceholder")}
         />
-        <p className="mt-1 text-xs text-slate-500">Seed specifiche della sezione. L&apos;estrazione agira solo su queste keyword iniziali.</p>
+        <p className="mt-1 text-xs text-slate-500">{t("seedsHint")}</p>
       </div>
 
       {showAdvanced && (
         <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Override impostazioni (opzionale)</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t("overridesTitle")}</h2>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="label" htmlFor="subproject-language-override">
-                Lingua override
+                {t("languageOverride")}
               </label>
               <select
                 id="subproject-language-override"
@@ -256,21 +223,14 @@ export function SubprojectForm({
                 value={values.language_code_override}
                 onChange={(event) => update("language_code_override", event.target.value)}
               >
-                <option value="">Usa default progetto</option>
-                {hasCustomLanguage && (
-                  <option value={values.language_code_override}>Codice attuale non standard ({values.language_code_override})</option>
-                )}
-                {LANGUAGE_OPTIONS.map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {option.label} ({option.code})
-                  </option>
-                ))}
+                <option value="">{t("useProjectDefault")}</option>
+                <LocaleCodeOptions kind="language" current={values.language_code_override} />
               </select>
             </div>
 
             <div>
               <label className="label" htmlFor="subproject-country-override">
-                Paese override
+                {t("countryOverride")}
               </label>
               <select
                 id="subproject-country-override"
@@ -278,22 +238,15 @@ export function SubprojectForm({
                 value={values.country_code_override}
                 onChange={(event) => update("country_code_override", event.target.value)}
               >
-                <option value="">Usa default progetto</option>
-                {hasCustomCountry && (
-                  <option value={values.country_code_override}>Codice attuale non standard ({values.country_code_override})</option>
-                )}
-                {countryOptions.map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {option.label}
-                  </option>
-                ))}
+                <option value="">{t("useProjectDefault")}</option>
+                <LocaleCodeOptions kind="country" current={values.country_code_override} />
               </select>
             </div>
 
             {canEditAutocompleteProvider && (
               <div>
                 <label className="label" htmlFor="subproject-autocomplete-override">
-                  Provider autocomplete override
+                  {t("autocompleteOverride")}
                 </label>
                 <select
                   id="subproject-autocomplete-override"
@@ -303,16 +256,16 @@ export function SubprojectForm({
                     update("autocomplete_provider_override", event.target.value as SubprojectFormValues["autocomplete_provider_override"])
                   }
                 >
-                  <option value="">Usa default progetto</option>
-                  <option value="GOOGLE_DIRECT">GoogleDirectAutocompleteProvider</option>
-                  <option value="MOCK">MockAutocompleteProvider</option>
+                  <option value="">{t("useProjectDefault")}</option>
+                  <option value="GOOGLE_DIRECT">{t("providers.googleDirect")}</option>
+                  <option value="MOCK">{t("providers.mockAutocomplete")}</option>
                 </select>
               </div>
             )}
 
             <div>
               <label className="label" htmlFor="subproject-metrics-override">
-                Provider metriche override
+                {t("metricsOverride")}
               </label>
               <select
                 id="subproject-metrics-override"
@@ -322,19 +275,19 @@ export function SubprojectForm({
                   update("metrics_provider_override", event.target.value as SubprojectFormValues["metrics_provider_override"])
                 }
               >
-                <option value="">Usa default progetto</option>
-                <option value="NONE">NoMetricsProvider</option>
-                <option value="MOCK">MockMetricsProvider</option>
+                <option value="">{t("useProjectDefault")}</option>
+                <option value="NONE">{t("providers.noMetrics")}</option>
+                <option value="MOCK">{t("providers.mockMetrics")}</option>
                 {/* A pagamento (T-902): solo il root admin, o la sezione che lo ha già. */}
                 {(canEditAutocompleteProvider || initialValues?.metrics_provider_override === "DATAFORSEO") && (
-                  <option value="DATAFORSEO">DataForSEO (a pagamento)</option>
+                  <option value="DATAFORSEO">{tFields("dataForSeo")}</option>
                 )}
               </select>
             </div>
 
             <div>
               <label className="label" htmlFor="subproject-min-volume-override">
-                Volume minimo override
+                {t("minVolumeOverride")}
               </label>
               <input
                 id="subproject-min-volume-override"
@@ -343,13 +296,13 @@ export function SubprojectForm({
                 min={0}
                 value={values.min_volume_override}
                 onChange={(event) => update("min_volume_override", event.target.value)}
-                placeholder="Usa default progetto"
+                placeholder={t("useProjectDefault")}
               />
             </div>
 
             <div>
               <label className="label" htmlFor="subproject-scoring-override">
-                Profilo scoring override
+                {t("scoringOverride")}
               </label>
               <select
                 id="subproject-scoring-override"
@@ -357,121 +310,45 @@ export function SubprojectForm({
                 value={values.scoring_profile_override}
                 onChange={(event) => update("scoring_profile_override", event.target.value)}
               >
-                <option value="">Usa default progetto</option>
-                <option value="balanced">bilanciato</option>
-                <option value="aggressive">aggressivo</option>
-                <option value="conservative">conservativo</option>
+                <option value="">{t("useProjectDefault")}</option>
+                <option value="balanced">{tFields("scoring.balanced")}</option>
+                <option value="aggressive">{tFields("scoring.aggressive")}</option>
+                <option value="conservative">{tFields("scoring.conservative")}</option>
               </select>
             </div>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="label" htmlFor="subproject-exclude-brands-override">
-                Escludi brand override
-              </label>
-              <select
-                id="subproject-exclude-brands-override"
-                className="select"
-                value={values.exclude_brands_override}
-                onChange={(event) =>
-                  update("exclude_brands_override", event.target.value as SubprojectFormValues["exclude_brands_override"])
-                }
+            {BOOLEAN_OVERRIDES.map((override) => (
+              <div
+                key={override.field}
+                className={override.field === "auto_classification_override" ? "md:col-span-2" : undefined}
               >
-                <option value="inherit">Usa default progetto</option>
-                <option value="true">Attivo</option>
-                <option value="false">Disattivo</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="label" htmlFor="subproject-expand-alpha-override">
-                Espansione alfabeto override
-              </label>
-              <select
-                id="subproject-expand-alpha-override"
-                className="select"
-                value={values.expand_alpha_override}
-                onChange={(event) =>
-                  update("expand_alpha_override", event.target.value as SubprojectFormValues["expand_alpha_override"])
-                }
-              >
-                <option value="inherit">Usa default progetto</option>
-                <option value="true">Attivo</option>
-                <option value="false">Disattivo</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="label" htmlFor="subproject-expand-numeric-override">
-                Espansione numerica override
-              </label>
-              <select
-                id="subproject-expand-numeric-override"
-                className="select"
-                value={values.expand_numeric_override}
-                onChange={(event) =>
-                  update("expand_numeric_override", event.target.value as SubprojectFormValues["expand_numeric_override"])
-                }
-              >
-                <option value="inherit">Usa default progetto</option>
-                <option value="true">Attivo</option>
-                <option value="false">Disattivo</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="label" htmlFor="subproject-expand-patterns-override">
-                Espansione pattern override
-              </label>
-              <select
-                id="subproject-expand-patterns-override"
-                className="select"
-                value={values.expand_patterns_override}
-                onChange={(event) =>
-                  update("expand_patterns_override", event.target.value as SubprojectFormValues["expand_patterns_override"])
-                }
-              >
-                <option value="inherit">Usa default progetto</option>
-                <option value="true">Attivo</option>
-                <option value="false">Disattivo</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="label" htmlFor="subproject-auto-classification-override">
-                Classificazione automatica override
-              </label>
-              <select
-                id="subproject-auto-classification-override"
-                className="select"
-                value={values.auto_classification_override}
-                onChange={(event) =>
-                  update(
-                    "auto_classification_override",
-                    event.target.value as SubprojectFormValues["auto_classification_override"]
-                  )
-                }
-              >
-                <option value="inherit">Usa default progetto</option>
-                <option value="true">Attivo</option>
-                <option value="false">Disattivo</option>
-              </select>
-            </div>
+                <label className="label" htmlFor={override.id}>
+                  {t(override.label)}
+                </label>
+                <select
+                  id={override.id}
+                  className="select"
+                  value={values[override.field]}
+                  onChange={(event) => update(override.field, event.target.value as BooleanOverride)}
+                >
+                  <option value="inherit">{t("useProjectDefault")}</option>
+                  <option value="true">{t("on")}</option>
+                  <option value="false">{t("off")}</option>
+                </select>
+              </div>
+            ))}
           </div>
         </section>
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
         <button className="btn-primary w-full sm:w-auto" disabled={saving} type="submit">
-          {saving ? "Salvataggio..." : (submitLabel ?? (mode === "create" ? "Crea sezione" : "Salva sezione"))}
+          {saving ? tCommon("saving") : (submitLabel ?? (mode === "create" ? t("create") : t("save")))}
         </button>
-        {message && <p className="text-sm text-green-700">{message}</p>}
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        <FormFeedback error={error} success={message} />
       </div>
     </form>
   );
 }
-
-
-

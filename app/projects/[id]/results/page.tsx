@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
 import { PaginationLinks } from "@/components/pagination-links";
 import { PlannerExportDownload } from "@/components/planner-export-download";
@@ -23,6 +24,28 @@ import {
 } from "@/lib/modules/results-view";
 
 export const dynamic = "force-dynamic";
+
+// Filtri a scelta della vista: nome del parametro, valori ammessi e gruppo delle etichette nel catalogo (T-1302).
+const FILTER_SELECTS = [
+  { name: "brandStatus", labels: "brand", values: ["allowed", "excluded", "review"] },
+  { name: "reviewStatus", labels: "review", values: ["pending", "approved", "rejected"] },
+  { name: "searchIntent", labels: "intent", values: ["informational", "commercial", "transactional", "navigational", "mixed"] },
+  {
+    name: "keywordType",
+    labels: "type",
+    values: ["generic", "question", "comparison", "branded", "local", "tool", "service", "product", "content_topic"],
+  },
+] as const;
+
+const FILTER_CHECKBOXES = ["selectedOnly", "questionOnly", "toolIntentOnly", "commercialOnly"] as const;
+
+const EXPORT_LINKS = [
+  { label: "csvApproved", format: "csv", scope: "approved" },
+  { label: "xlsxSelected", format: "xlsx", scope: "selected" },
+  { label: "jsonReview", format: "json", scope: "review" },
+  { label: "csvNonExcluded", format: "csv", scope: "non-excluded" },
+  { label: "xlsxFiltered", format: "xlsx", scope: "filtered" },
+] as const satisfies ReadonlyArray<{ label: string; format: ExportFormat; scope: ExportScope }>;
 
 function buildDefaultSheetsFileName(projectName: string, subprojectName?: string): string {
   const date = new Date().toISOString().slice(0, 10);
@@ -95,21 +118,23 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
   );
   const exportHref = (format: ExportFormat, scope: ExportScope) =>
     buildResultsExportHref(project.id, view, resolvedSearchParams, format, scope);
+  const t = await getTranslations();
 
   return (
     <div className="space-y-6">
       <section className="card space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-semibold">
-            Risultati - {project.name}
-            {selectedSubproject ? ` / ${selectedSubproject.name}` : " / Tutte le sezioni"}
+            {selectedSubproject
+              ? t("results.titleSection", { project: project.name, section: selectedSubproject.name })
+              : t("results.titleAll", { project: project.name })}
           </h1>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
             <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}`}>
-              Torna al progetto
+              {t("projects.links.backToProject")}
             </Link>
             <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/settings`}>
-              Impostazioni progetto
+              {t("projects.links.settings")}
             </Link>
           </div>
         </div>
@@ -117,24 +142,24 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
         <div className="flex flex-wrap gap-2">
           {sectionViewHref && (
             <Link className={view.kind === "section" ? "btn-primary" : "btn-secondary"} href={sectionViewHref}>
-              Sezione attiva
+              {t("results.activeSection")}
             </Link>
           )}
           <Link className={view.kind === "all" ? "btn-primary" : "btn-secondary"} href={allViewHref}>
-            Tutto il progetto
+            {t("results.wholeProject")}
           </Link>
         </div>
 
         {unclassifiedLanguages.map((languageCode) => (
           <p key={languageCode} className="text-sm text-slate-600">
-            Classificazione automatica non disponibile per la lingua {languageCode}
+            {t("results.noClassification", { language: languageCode })}
           </p>
         ))}
 
         <p className="text-sm text-slate-600">
-          Mostrate {filteredCount} keyword su {scopeTotalCount}
-          {selectedSubproject ? ` nella sezione ${selectedSubproject.name}.` : " nel progetto."}
-          {!selectedSubproject && ` Totale progetto: ${scopeTotalCount}.`}
+          {selectedSubproject
+            ? t("results.shownSection", { filtered: filteredCount, total: scopeTotalCount, section: selectedSubproject.name })
+            : t("results.shownProject", { filtered: filteredCount, total: scopeTotalCount })}
         </p>
 
         <form method="get" className="grid gap-3 md:grid-cols-4">
@@ -143,7 +168,7 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
           <input type="hidden" name="pageSize" value={String(pageSize)} />
 
           {view.kind === "section" && (
-            <select className="select" name="subprojectId" aria-label="Sezione" defaultValue={selectedSubproject?.id ?? ""}>
+            <select className="select" name="subprojectId" aria-label={t("results.filters.section")} defaultValue={selectedSubproject?.id ?? ""}>
               {project.subprojects.map((subproject) => (
                 <option key={subproject.id} value={subproject.id}>
                   {subproject.name}
@@ -152,71 +177,62 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
             </select>
           )}
 
-          <input className="input" name="searchText" placeholder="Testo ricerca" defaultValue={filterValue("searchText")} />
-          <input className="input" name="minVolume" type="number" placeholder="Volume minimo" defaultValue={filterValue("minVolume")} />
-          <input className="input" name="maxVolume" type="number" placeholder="Volume massimo" defaultValue={filterValue("maxVolume")} />
+          <input
+            className="input"
+            name="searchText"
+            placeholder={t("results.filters.searchText")}
+            defaultValue={filterValue("searchText")}
+          />
+          <input
+            className="input"
+            name="minVolume"
+            type="number"
+            placeholder={t("results.filters.minVolume")}
+            defaultValue={filterValue("minVolume")}
+          />
+          <input
+            className="input"
+            name="maxVolume"
+            type="number"
+            placeholder={t("results.filters.maxVolume")}
+            defaultValue={filterValue("maxVolume")}
+          />
 
-          <select className="select" name="brandStatus" aria-label="Stato brand" defaultValue={filterValue("brandStatus")}>
-            <option value="">Stato brand</option>
-            <option value="allowed">consentito</option>
-            <option value="excluded">escluso</option>
-            <option value="review">da rivedere</option>
-          </select>
-
-          <select className="select" name="reviewStatus" aria-label="Stato revisione" defaultValue={filterValue("reviewStatus")}>
-            <option value="">Stato revisione</option>
-            <option value="pending">in attesa</option>
-            <option value="approved">approvato</option>
-            <option value="rejected">rifiutato</option>
-          </select>
-
-          <select className="select" name="searchIntent" aria-label="Intento di ricerca" defaultValue={filterValue("searchIntent")}>
-            <option value="">Intento di ricerca</option>
-            <option value="informational">informativo</option>
-            <option value="commercial">commerciale</option>
-            <option value="transactional">transazionale</option>
-            <option value="navigational">navigazionale</option>
-            <option value="mixed">misto</option>
-          </select>
-
-          <select className="select" name="keywordType" aria-label="Tipo keyword" defaultValue={filterValue("keywordType")}>
-            <option value="">Tipo keyword</option>
-            <option value="generic">generica</option>
-            <option value="question">domanda</option>
-            <option value="comparison">comparazione</option>
-            <option value="branded">brand</option>
-            <option value="local">locale</option>
-            <option value="tool">tool</option>
-            <option value="service">servizio</option>
-            <option value="product">prodotto</option>
-            <option value="content_topic">tema contenuto</option>
-          </select>
+          {FILTER_SELECTS.map((select) => (
+            <select
+              key={select.name}
+              className="select"
+              name={select.name}
+              aria-label={t(`results.filters.${select.name}`)}
+              defaultValue={filterValue(select.name)}
+            >
+              <option value="">{t(`results.filters.${select.name}`)}</option>
+              {select.values.map((value) => (
+                <option key={value} value={value}>
+                  {t(`results.${select.labels}.${value}` as Parameters<typeof t>[0])}
+                </option>
+              ))}
+            </select>
+          ))}
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm md:col-span-2">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="selectedOnly" defaultChecked={filterChecked("selectedOnly")} /> solo selezionate
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="questionOnly" defaultChecked={filterChecked("questionOnly")} /> solo domande
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="toolIntentOnly" defaultChecked={filterChecked("toolIntentOnly")} /> solo intent tool
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="commercialOnly" defaultChecked={filterChecked("commercialOnly")} /> solo commerciali
-            </label>
+            {FILTER_CHECKBOXES.map((name) => (
+              <label key={name} className="flex items-center gap-2">
+                <input type="checkbox" name={name} defaultChecked={filterChecked(name)} /> {t(`results.filters.${name}`)}
+              </label>
+            ))}
           </div>
 
           <div className="md:col-span-2">
             <button className="btn-primary w-full sm:w-auto" type="submit">
-              Applica filtri
+              {t("results.filters.apply")}
             </button>
           </div>
         </form>
 
         <div className="flex flex-col gap-3 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-slate-600">
-            Riga {pageStart}-{pageEnd} di {filteredCount} (pagina {page}/{totalPages})
+            {t("results.rows", { start: pageStart, end: pageEnd, filtered: filteredCount, page, totalPages })}
           </p>
           <PaginationLinks
             previousHref={page > 1 ? prevPageHref : null}
@@ -226,8 +242,8 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
       </section>
 
       <section className="card space-y-3">
-        <h2 className="text-lg font-semibold">Export</h2>
-        <p className="text-sm text-slate-600">Gli export usano la sezione e i filtri della vista corrente</p>
+        <h2 className="text-lg font-semibold">{t("export.title")}</h2>
+        <p className="text-sm text-slate-600">{t("export.hint")}</p>
         <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap">
           <GoogleSheetsExportButton
             projectId={project.id}
@@ -236,26 +252,16 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
             defaultFileName={buildDefaultSheetsFileName(project.name, selectedSubproject?.name)}
             filters={resolvedSearchParams}
           />
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("csv", "approved")}>
-            CSV solo approvate
-          </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("xlsx", "selected")}>
-            XLSX solo selezionate
-          </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("json", "review")}>
-            JSON solo review
-          </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("csv", "non-excluded")}>
-            CSV tutte non escluse
-          </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={exportHref("xlsx", "filtered")}>
-            XLSX vista filtrata corrente
-          </Link>
+          {EXPORT_LINKS.map((link) => (
+            <Link key={link.label} className="btn-secondary w-full text-center sm:w-auto" href={exportHref(link.format, link.scope)}>
+              {t(`export.links.${link.label}`)}
+            </Link>
+          ))}
         </div>
       </section>
 
       <section className="card space-y-3">
-        <h2 className="text-lg font-semibold">Volumi da Keyword Planner</h2>
+        <h2 className="text-lg font-semibold">{t("export.planner.title")}</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <PlannerExportDownload projectId={project.id} subprojectId={selectedSubproject?.id ?? null} />
           <PlannerImportUpload projectId={project.id} subprojectId={selectedSubproject?.id ?? null} />

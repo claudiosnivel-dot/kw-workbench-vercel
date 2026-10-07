@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { withApiErrors } from "@/lib/http/errors";
+import { errorResponse, withApiErrors } from "@/lib/http/errors";
 import { parsePlannerCsv } from "@/lib/modules/planner/csv-parser";
 import { applyPlannerImport, PLANNER_IMPORT_MAX_ROWS } from "@/lib/modules/planner/import";
 import { PLANNER_IMPORT_EXTENSIONS, PLANNER_IMPORT_MAX_BYTES } from "@/lib/modules/planner/import-limits";
 import { resolvePlannerScope } from "@/lib/modules/planner/scope";
+import { ProjectNotFoundError, SectionNotFoundError } from "@/lib/modules/project-access";
 
 export const runtime = "nodejs";
 
@@ -17,7 +18,7 @@ type RouteContext = {
 };
 
 const tooLarge = () =>
-  NextResponse.json({ error: "File troppo grande: il massimo è 5 MB", code: "FILE_TOO_LARGE" }, { status: 413 });
+  errorResponse(413, "FILE_TOO_LARGE", "File troppo grande: il massimo è 5 MB");
 
 /** Corpo della richiesta letto fino al limite (CWE-400): null appena lo supera, senza leggere il resto. */
 async function readBodyWithin(request: NextRequest, limit: number): Promise<Uint8Array<ArrayBuffer> | null> {
@@ -55,7 +56,7 @@ export const POST = withApiErrors(async (request: NextRequest, { params }: Route
 
   const owned = await resolvePlannerScope({ projectId: id, ownerUserId: user.id });
   if ("notFound" in owned) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
+    throw new ProjectNotFoundError();
   }
   if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) {
     return tooLarge();
@@ -72,29 +73,29 @@ export const POST = withApiErrors(async (request: NextRequest, { params }: Route
     .catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: "Allega il file scaricato da Keyword Planner nel campo file" }, { status: 400 });
+    return errorResponse(400, "PLANNER_FILE_REQUIRED", "Allega il file scaricato da Keyword Planner nel campo file");
   }
   if (file.size > PLANNER_IMPORT_MAX_BYTES) {
     return tooLarge();
   }
   if (!PLANNER_IMPORT_EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension))) {
-    return NextResponse.json({ error: "Formato non ammesso: carica un file .csv o .tsv" }, { status: 400 });
+    return errorResponse(400, "PLANNER_FILE_TYPE_INVALID", "Formato non ammesso: carica un file .csv o .tsv");
   }
 
   const rawSectionId = form?.get("sectionId");
   const sectionId = typeof rawSectionId === "string" && rawSectionId.trim() ? rawSectionId.trim() : null;
   if (sectionId && !owned.sections.some((section) => section.id === sectionId)) {
-    return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
+    throw new SectionNotFoundError();
   }
 
   let parsed;
   try {
     parsed = parsePlannerCsv(new Uint8Array(await file.arrayBuffer()));
   } catch {
-    return NextResponse.json({ error: "File non riconosciuto: manca la colonna Keyword" }, { status: 400 });
+    return errorResponse(400, "PLANNER_KEYWORD_COLUMN_MISSING", "File non riconosciuto: manca la colonna Keyword");
   }
   if (parsed.rows.length > PLANNER_IMPORT_MAX_ROWS) {
-    return NextResponse.json({ error: `Troppe righe: il massimo è ${PLANNER_IMPORT_MAX_ROWS}` }, { status: 413 });
+    return errorResponse(413, "PLANNER_TOO_MANY_ROWS", `Troppe righe: il massimo è ${PLANNER_IMPORT_MAX_ROWS}`);
   }
 
   const summary = await applyPlannerImport(id, sectionId, parsed.rows);

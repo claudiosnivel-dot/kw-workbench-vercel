@@ -14,6 +14,9 @@ vi.mock("@/lib/auth/current-user", () => ({
   getOptionalAuthenticatedUserFromCookies: async () => null,
 }));
 
+// impacted-by: T-1302 (le pagine leggono i testi con getTranslations: fuori da Next, il catalogo italiano)
+vi.mock("next-intl/server", () => import("../helpers/next-intl-server"));
+
 const FILES_USING_NEXT = [
   "app/login/page.tsx",
   "app/register/page.tsx",

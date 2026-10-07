@@ -3,6 +3,15 @@ import { AppError } from "@/lib/http/errors";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { prisma } from "@/lib/prisma";
 
+/** Imposta la sezione predefinita del progetto: proprietà di progetto e sezione già verificate dalla rotta. */
+export function setDefaultSection(projectId: string, sectionId: string) {
+  return prisma.project.update({
+    where: { id: projectId },
+    data: { default_subproject_id: sectionId },
+    select: { id: true, default_subproject_id: true },
+  });
+}
+
 /** Nome di sezione già usato nel progetto (vincolo project_id + name): 409 con codice stabile (T-808). */
 class SectionNameTakenError extends AppError {
   constructor() {

@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { LoginForm } from "@/components/login-form";
+import { NarrowCard } from "@/components/narrow-card";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 
@@ -18,34 +21,27 @@ export default async function LoginPage({
   const params = await searchParams;
   const nextValue = params.next;
   const nextPath = safeNextPath(Array.isArray(nextValue) ? nextValue[0] : nextValue);
+  const t = await getTranslations("auth.login");
+  const noticeCode = loginNoticeCode(params.reason);
 
   return (
-    <div className="mx-auto max-w-lg">
-      <div className="card space-y-4">
-        <h1 className="text-2xl font-semibold">Accesso</h1>
-        <p className="text-sm text-slate-600">Autenticati per accedere al tuo workspace.</p>
-        <LoginNotice reason={params.reason} />
-        <LoginForm nextPath={nextPath} />
-      </div>
-    </div>
+    <NarrowCard title={t("title")} action={<LocaleSwitcher />}>
+      <p className="text-sm text-slate-600">{t("subtitle")}</p>
+      {noticeCode && (
+        <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          {t(`notices.${noticeCode}`)}
+        </p>
+      )}
+      <LoginForm nextPath={nextPath} />
+    </NarrowCard>
   );
 }
 
-// Codici ammessi in ?reason=: il testo arriva solo da qui, il valore dell'URL non viene mai mostrato (T-502).
-const LOGIN_NOTICES: Record<string, string> = {
-  session_ended: "La sessione è terminata. Accedi di nuovo.",
-};
+// Codici ammessi in ?reason=: il testo arriva solo dal catalogo, il valore dell'URL non viene mai mostrato (T-502).
+const LOGIN_NOTICE_CODES = ["session_ended"] as const;
+type LoginNoticeCode = (typeof LOGIN_NOTICE_CODES)[number];
 
-function LoginNotice({ reason }: { reason: string | string[] | undefined }) {
+function loginNoticeCode(reason: string | string[] | undefined): LoginNoticeCode | null {
   const code = Array.isArray(reason) ? reason[0] : reason;
-  const message = code && Object.hasOwn(LOGIN_NOTICES, code) ? LOGIN_NOTICES[code] : null;
-  if (!message) {
-    return null;
-  }
-
-  return (
-    <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-      {message}
-    </p>
-  );
+  return LOGIN_NOTICE_CODES.find((allowed) => allowed === code) ?? null;
 }

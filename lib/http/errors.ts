@@ -8,10 +8,11 @@
  * - error: messaggio pubblico, scritto apposta in un AppError; mai il messaggio di un'eccezione
  *   non prevista (Prisma, host del DB, stack).
  * - code: codice stabile (VALIDATION_ERROR, INVALID_JSON, AUTH_REQUIRED, FORBIDDEN, NOT_FOUND,
- *   CONFLICT, INTERNAL_ERROR o un code esplicito di un AppError, come quelli dei job in JOB_ERROR_CODES).
+ *   CONFLICT, INTERNAL_ERROR o un code esplicito di un AppError, come quelli dei job in JOB_ERROR_CODES), sempre
+ *   uno di API_ERROR_CODES (T-1303), anche nelle risposte d'errore scritte direttamente dalle rotte.
  * - requestId: x-request-id assegnato dal proxy (getRequestId, T-602): quello in ingresso se conforme a
  *   ^[A-Za-z0-9-]{8,64}$, altrimenti un UUID.
- * Il client (lib/client/http.ts) continua a leggere error.
+ * Il client (lib/client/http.ts) mostra il testo del catalogo per il code, non error (T-1303).
  */
 import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
@@ -19,6 +20,9 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { AUTH_REQUIRED_CODE, AUTH_REQUIRED_MESSAGE, authRequiredResponse } from "@/lib/http/auth-required";
 import { logger } from "@/lib/observability/logger";
 import { getRequestId } from "@/lib/observability/request-id";
+
+export { API_ERROR_CODES } from "@/lib/http/error-codes";
+import type { ApiErrorCode } from "@/lib/http/error-codes";
 
 /** Code dei job in background (T-1203, T-1204), con lo status HTTP con cui li usano le rotte. */
 export const JOB_ERROR_CODES = {
@@ -82,6 +86,14 @@ export class ForbiddenError extends AppError {
     super(403, "FORBIDDEN", message);
     this.name = "ForbiddenError";
   }
+}
+
+/**
+ * Risposta d'errore restituita da una rotta senza eccezione (T-1303): body { error, code } con lo status. Il code è
+ * uno di API_ERROR_CODES per costruzione, così il client trova sempre il testo nel catalogo.
+ */
+export function errorResponse(status: number, code: ApiErrorCode, error: string): Response {
+  return NextResponse.json({ error, code }, { status });
 }
 
 function errorJson(

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { buildApiErrorMessage, readJsonSafe, type ApiErrorPayload } from "@/lib/client/http";
 
@@ -23,14 +24,6 @@ type JobProgressProps = {
 const POLL_INTERVAL_MS = 2_000;
 const MAX_POLL_INTERVAL_MS = 16_000;
 const TERMINAL_STATUSES = new Set<JobStatus>(["completed", "failed", "canceled"]);
-const PHASE_LABELS: Record<JobPhase, string> = {
-  expand: "Espansione query",
-  autocomplete: "Suggerimenti",
-  metrics: "Metriche",
-  store: "Salvataggio",
-  done: "Completata",
-};
-const FAILED_FALLBACK = "Estrazione non riuscita";
 
 /**
  * Avanzamento di un job di estrazione (T-1205): polling di GET /api/jobs/{jobId} ogni 2 s; a ogni errore consecutivo
@@ -38,6 +31,8 @@ const FAILED_FALLBACK = "Estrazione non riuscita";
  * terminato e allo smontaggio. Il messaggio d'errore del job è reso come testo (CWE-79).
  */
 export function JobProgress({ jobId, resultsHref, onCompleted }: JobProgressProps) {
+  const t = useTranslations("jobs");
+  const tErrors = useTranslations("errors");
   const [job, setJob] = useState<JobSnapshot>({ status: "pending", phase: "expand", progress: { done: 0, total: 0 }, error: null });
   const [pollError, setPollError] = useState<string | null>(null);
   const [canceling, setCanceling] = useState(false);
@@ -79,7 +74,7 @@ export function JobProgress({ jobId, resultsHref, onCompleted }: JobProgressProp
       if (controller.signal.aborted) return;
       if (!response.ok || !payload?.data) {
         // 4xx (sessione scaduta, job non trovato): nessun nuovo tentativo, solo il messaggio.
-        setPollError(buildApiErrorMessage(response, payload, "Stato dell'estrazione non disponibile"));
+        setPollError(buildApiErrorMessage(response, payload, tErrors));
         return;
       }
 
@@ -101,7 +96,7 @@ export function JobProgress({ jobId, resultsHref, onCompleted }: JobProgressProp
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [jobId]);
+  }, [jobId, tErrors]);
 
   const { done, total } = job.progress;
   const percent = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
@@ -132,7 +127,7 @@ export function JobProgress({ jobId, resultsHref, onCompleted }: JobProgressProp
     <div className="w-full space-y-2" aria-live="polite">
       <div
         role="progressbar"
-        aria-label="Avanzamento dell'estrazione"
+        aria-label={t("progress.ariaLabel")}
         aria-valuemin={0}
         aria-valuenow={done}
         aria-valuemax={total}
@@ -141,22 +136,22 @@ export function JobProgress({ jobId, resultsHref, onCompleted }: JobProgressProp
         <div ref={barRef} className="h-full w-0 bg-[var(--brand-500)] transition-[width]" />
       </div>
       <p className="flex flex-wrap gap-2 text-sm text-slate-600">
-        <span>{PHASE_LABELS[job.phase]}</span>
+        <span>{t(`progress.phase.${job.phase}`)}</span>
         <span>
           {done} / {total}
         </span>
       </p>
       {job.status === "completed" && (
         <Link className="btn-secondary inline-block w-full text-center sm:w-auto" href={resultsHref}>
-          Vedi risultati
+          {t("progress.viewResults")}
         </Link>
       )}
-      {job.status === "failed" && <p className="text-sm text-red-700">{job.error?.trim() || FAILED_FALLBACK}</p>}
-      {job.status === "canceled" && <p className="text-sm text-slate-600">Estrazione annullata</p>}
+      {job.status === "failed" && <p className="text-sm text-red-700">{job.error?.trim() || t("run.failed")}</p>}
+      {job.status === "canceled" && <p className="text-sm text-slate-600">{t("progress.canceled")}</p>}
       {pollError && <p className="text-sm text-red-700">{pollError}</p>}
       {active && (
         <button type="button" className="btn-secondary w-full sm:w-auto" onClick={cancel} disabled={canceling}>
-          {canceling ? "Annullamento..." : "Annulla"}
+          {canceling ? t("progress.canceling") : t("progress.cancel")}
         </button>
       )}
     </div>

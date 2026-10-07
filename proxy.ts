@@ -16,6 +16,8 @@ const PUBLIC_PATHS = new Set([
   "/api/health",
   // Cron di Vercel per i job bloccati (T-1203): protetto da CRON_SECRET nella rotta.
   "/api/cron/reap-jobs",
+  // Scelta della lingua (T-1301): anche dalle pagine di login e registrazione; aggiorna l'utente solo con sessione valida.
+  "/api/locale",
 ]);
 
 // Passi dei job in background (T-1203): nessuna sessione, solo la firma HMAC verificata dalla rotta.

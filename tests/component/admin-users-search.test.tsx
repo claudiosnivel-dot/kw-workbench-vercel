@@ -1,7 +1,8 @@
 // Gate di T-507 (AC-507-4): ricerca con debounce di 300 ms e richieste superate annullate.
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AdminUsersDashboard } from "@/components/admin-users-dashboard";
+import { renderWithIntl } from "./intl";
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -25,7 +26,7 @@ describe("ricerca utenti nella dashboard admin", () => {
   it("con 6 caratteri a 50 ms l'uno chiama fetch una sola volta dopo 300 ms e annulla la richiesta in corso", async () => {
     // Nessuna risposta arriva: il caricamento iniziale resta in corso quando parte la ricerca.
     fetchMock.mockImplementation(() => new Promise<Response>(() => undefined));
-    render(<AdminUsersDashboard viewer={{ id: "root", username: "root", isRootAdmin: true }} />);
+    renderWithIntl(<AdminUsersDashboard viewer={{ id: "root", username: "root", isRootAdmin: true }} />);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const initialSignal = fetchMock.mock.calls[0][1]?.signal;
 

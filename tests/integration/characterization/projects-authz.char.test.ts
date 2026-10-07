@@ -109,6 +109,7 @@ beforeEach(async () => {
   fixture = await createFixture();
 });
 
+// impacted-by: T-1303 (i 404 passano da withApiErrors: code PROJECT_NOT_FOUND o SECTION_NOT_FOUND e requestId, T-503)
 describe("caratterizzazione: isolamento dei progetti", () => {
   // covers: AC-105-1
   // impacted-by: T-1101 (GET di progetto, sezione ed elenco delle sezioni rimossi: senza chiamanti)
@@ -123,7 +124,7 @@ describe("caratterizzazione: isolamento dei progetti", () => {
     ] as const) {
       const response = await callRoute(handler, { method, url, body, cookie: cookieB, params });
       expect(response.status).toBe(404);
-      expect(await response.json()).toEqual({ error: "Progetto non trovato" });
+      expect(await response.json()).toEqual({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND", requestId: expect.any(String) });
       expect(await snapshotOfA(projectA)).toEqual(UNCHANGED_A);
     }
   });
@@ -142,7 +143,7 @@ describe("caratterizzazione: isolamento di sezioni, export ed estrazione", () =>
     ] as const) {
       const response = await callRoute(handler, { method, url: sectionUrl, body, cookie: cookieB, params: sectionParams });
       expect(response.status).toBe(404);
-      expect(await response.json()).toEqual({ error: "Sezione non trovata" });
+      expect(await response.json()).toEqual({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND", requestId: expect.any(String) });
       expect(await snapshotOfA(projectA)).toEqual(UNCHANGED_A);
     }
 
@@ -152,7 +153,7 @@ describe("caratterizzazione: isolamento di sezioni, export ed estrazione", () =>
       params: { id: projectA },
     });
     expect(exported.status).toBe(404);
-    expect(await exported.json()).toEqual({ error: "Progetto non trovato" });
+    expect(await exported.json()).toEqual({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND", requestId: expect.any(String) });
 
     const run = await callRoute(runProject, {
       method: "POST",
@@ -162,7 +163,7 @@ describe("caratterizzazione: isolamento di sezioni, export ed estrazione", () =>
       params: { id: projectA },
     });
     expect(run.status).toBe(404);
-    expect(await run.json()).toEqual({ error: "Progetto non trovato" });
+    expect(await run.json()).toEqual({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND", requestId: expect.any(String) });
     expect(await prisma.job.count({ where: { project_id: projectA } })).toBe(0);
     expect(await snapshotOfA(projectA)).toEqual(UNCHANGED_A);
   });
@@ -176,7 +177,7 @@ describe("caratterizzazione: isolamento di sezioni, export ed estrazione", () =>
     ] as const) {
       const response = await callRoute(handler, { method, url, body, cookie: cookieB, params: { id: projectA } });
       expect(response.status).toBe(404);
-      expect(await response.json()).toEqual({ error: "Progetto non trovato" });
+      expect(await response.json()).toEqual({ error: "Progetto non trovato", code: "PROJECT_NOT_FOUND", requestId: expect.any(String) });
       expect(await snapshotOfA(projectA)).toEqual(UNCHANGED_A);
     }
   });

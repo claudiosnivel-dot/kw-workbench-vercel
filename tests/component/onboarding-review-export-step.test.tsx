@@ -1,7 +1,8 @@
 // Gate di T-1003 (AC-1003-4): dopo un export riuscito senza completamento dell'onboarding i pulsanti tornano attivi.
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingReviewExportStep } from "@/components/onboarding-review-export-step";
+import { renderWithIntl } from "./intl";
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -32,7 +33,7 @@ describe("OnboardingReviewExportStep", () => {
         headers: { "Content-Type": "text/csv", "Content-Disposition": 'attachment; filename="export.csv"' },
       });
     });
-    render(
+    renderWithIntl(
       <OnboardingReviewExportStep
         projectId="p1"
         subprojectId="s1"

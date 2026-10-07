@@ -1,38 +1,24 @@
 import { UserRole } from "@/lib/generated/prisma/enums";
 import { NextResponse } from "next/server";
-import { isAuthEnabled, isPublicSignupEnabled } from "@/lib/auth/config";
 import { registerUser } from "@/lib/auth/credentials";
+import { credentialsInputError, readCredentialsInput, registrationClosed } from "@/lib/auth/credentials-input";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
 import { withApiErrors } from "@/lib/http/errors";
 
 export const POST = withApiErrors(async (request: Request) => {
-  if (!isAuthEnabled()) {
-    return NextResponse.json({ error: "Registrazione non disponibile con autenticazione disabilitata" }, { status: 400 });
+  const closed = registrationClosed();
+  if (closed) {
+    return closed;
   }
 
-  if (!isPublicSignupEnabled()) {
-    return NextResponse.json({ error: "Registrazione pubblica disabilitata" }, { status: 403 });
-  }
-
-  const payload = (await request.json()) as {
-    username?: string;
-    password?: string;
-    confirmPassword?: string;
-  };
-
-  const username = String(payload.username ?? "").trim();
-  const password = String(payload.password ?? "");
-  const confirmPassword = String(payload.confirmPassword ?? "");
-
-  if (!username || !password) {
-    return NextResponse.json({ error: "Username e password sono obbligatori" }, { status: 400 });
-  }
-
-  if (password !== confirmPassword) {
-    return NextResponse.json({ error: "Password e conferma non coincidono" }, { status: 400 });
+  const credentials = readCredentialsInput((await request.json()) as Record<string, unknown>);
+  const invalid = credentialsInputError(credentials);
+  if (invalid) {
+    return invalid;
   }
 
   // Username non valido (400) o già in uso (409): AppError gestiti da withApiErrors, mai error.message grezzo.
+  const { username, password } = credentials;
   const user = await registerUser({ username, password, role: UserRole.SUBSCRIBER });
   const response = NextResponse.json({ success: true });
   await setSessionCookie(response, user);

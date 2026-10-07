@@ -1,7 +1,9 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { FormFeedback } from "@/components/form-feedback";
+import { ApiErrorPayload, messageOf, readApiResponse } from "@/lib/client/http";
 import { formatDate } from "@/lib/view/format";
 
 type UserRole = "ADMIN" | "SUBSCRIBER";
@@ -39,22 +41,39 @@ type AdminUsersResponse = ApiErrorPayload & {
 const PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
 
-const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
-  { value: "ADMIN", label: "Admin" },
-  { value: "SUBSCRIBER", label: "Sottoscrittore" },
-];
+// Etichette di ruoli e stati nei cataloghi (admin.roles, admin.statuses, T-1303).
+const ROLE_OPTIONS: UserRole[] = ["ADMIN", "SUBSCRIBER"];
+const STATUS_OPTIONS: UserStatus[] = ["ACTIVE", "SUSPENDED"];
 
-const STATUS_OPTIONS: Array<{ value: UserStatus; label: string }> = [
-  { value: "ACTIVE", label: "Attivo" },
-  { value: "SUSPENDED", label: "Sospeso" },
-];
-
-function roleLabel(value: UserRole): string {
-  return value === "ADMIN" ? "Admin" : "Sottoscrittore";
-}
-
-function statusLabel(value: UserStatus): string {
-  return value === "ACTIVE" ? "Attivo" : "Sospeso";
+/** Filtro a scelta della lista utenti: «Tutti» più i valori dell'elenco. */
+function FilterSelect<V extends string>(props: {
+  id: string;
+  label: string;
+  allLabel: string;
+  value: "ALL" | V;
+  options: { value: V; label: string }[];
+  onChange: (value: "ALL" | V) => void;
+}) {
+  return (
+    <div className="w-full lg:max-w-xs">
+      <label className="label" htmlFor={props.id}>
+        {props.label}
+      </label>
+      <select
+        id={props.id}
+        className="select"
+        value={props.value}
+        onChange={(event) => props.onChange(event.target.value as "ALL" | V)}
+      >
+        <option value="ALL">{props.allLabel}</option>
+        {props.options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 }
 
 export function AdminUsersDashboard({
@@ -62,6 +81,11 @@ export function AdminUsersDashboard({
 }: {
   viewer: { id: string; username: string; isRootAdmin: boolean };
 }) {
+  const t = useTranslations("admin");
+  const tAuth = useTranslations("auth");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
+  const format = useFormatter();
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [totals, setTotals] = useState<AdminUsersTotals | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +115,7 @@ export function AdminUsersDashboard({
   const [passwordDrafts, setPasswordDrafts] = useState<Record<string, string>>({});
 
   const availableCreateRoles = useMemo(
-    () => (viewer.isRootAdmin ? ROLE_OPTIONS : ROLE_OPTIONS.filter((item) => item.value === "SUBSCRIBER")),
+    () => (viewer.isRootAdmin ? ROLE_OPTIONS : ROLE_OPTIONS.filter((role) => role === "SUBSCRIBER")),
     [viewer.isRootAdmin]
   );
 
@@ -116,10 +140,7 @@ export function AdminUsersDashboard({
         signal: controller.signal,
       });
 
-      const payload = await readJsonSafe<AdminUsersResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Impossibile caricare gli utenti"));
-      }
+      const payload = await readApiResponse<AdminUsersResponse>(response, tErrors);
 
       const nextUsers = payload?.data?.users ?? [];
       setUsers(nextUsers);
@@ -138,13 +159,13 @@ export function AdminUsersDashboard({
       if (controller.signal.aborted) {
         return;
       }
-      setError(loadError instanceof Error ? loadError.message : "Errore imprevisto");
+      setError(messageOf(loadError, tCommon("unexpectedError")));
     } finally {
       if (inFlight.current === controller) {
         setLoading(false);
       }
     }
-  }, [debouncedSearch, page, roleFilter, statusFilter]);
+  }, [debouncedSearch, page, roleFilter, statusFilter, tCommon, tErrors]);
 
   useEffect(() => {
     void loadUsers();
@@ -178,19 +199,16 @@ export function AdminUsersDashboard({
         }),
       });
 
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Creazione utente non riuscita"));
-      }
+      await readApiResponse<ApiErrorPayload>(response, tErrors);
 
       setCreateUsername("");
       setCreatePassword("");
       setCreateConfirmPassword("");
       setCreateRole("SUBSCRIBER");
-      setFeedback("Utente creato con successo.");
+      setFeedback(t("create.created"));
       await loadUsers();
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Errore imprevisto");
+      setError(messageOf(createError, tCommon("unexpectedError")));
     } finally {
       setCreating(false);
     }
@@ -213,23 +231,20 @@ export function AdminUsersDashboard({
         }),
       });
 
-      const body = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, body, "Aggiornamento utente non riuscito"));
-      }
+      await readApiResponse<ApiErrorPayload>(response, tErrors);
 
-      setFeedback("Utente aggiornato con successo.");
+      setFeedback(t("manage.updated"));
       setPasswordDrafts((current) => ({ ...current, [userId]: "" }));
       await loadUsers();
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : "Errore imprevisto");
+      setError(messageOf(updateError, tCommon("unexpectedError")));
     } finally {
       setUpdatingId(null);
     }
   };
 
   const deleteUser = async (user: AdminUserRecord) => {
-    const confirmed = window.confirm(`Eliminare definitivamente l'utente "${user.username}"?`);
+    const confirmed = window.confirm(t("manage.deleteConfirm", { username: user.username }));
     if (!confirmed) return;
 
     setDeletingId(user.id);
@@ -241,15 +256,12 @@ export function AdminUsersDashboard({
         method: "DELETE",
       });
 
-      const body = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, body, "Eliminazione utente non riuscita"));
-      }
+      await readApiResponse<ApiErrorPayload>(response, tErrors);
 
-      setFeedback("Utente eliminato definitivamente.");
+      setFeedback(t("manage.deleted"));
       await loadUsers();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Errore imprevisto");
+      setError(messageOf(deleteError, tCommon("unexpectedError")));
     } finally {
       setDeletingId(null);
     }
@@ -259,23 +271,23 @@ export function AdminUsersDashboard({
     <div className="space-y-6">
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Utenti</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">{t("totals.users")}</p>
           <p className="mt-1 text-2xl font-semibold">{totals?.totalUsers ?? "-"}</p>
         </article>
         <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Admin</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">{t("totals.admins")}</p>
           <p className="mt-1 text-2xl font-semibold">{totals?.totalAdmins ?? "-"}</p>
         </article>
         <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Sottoscrittori</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">{t("totals.subscribers")}</p>
           <p className="mt-1 text-2xl font-semibold">{totals?.totalSubscribers ?? "-"}</p>
         </article>
         <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Attivi</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">{t("totals.active")}</p>
           <p className="mt-1 text-2xl font-semibold">{totals?.totalActive ?? "-"}</p>
         </article>
         <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Sospesi</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">{t("totals.suspended")}</p>
           <p className="mt-1 text-2xl font-semibold">{totals?.totalSuspended ?? "-"}</p>
         </article>
       </section>
@@ -284,77 +296,55 @@ export function AdminUsersDashboard({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
           <div className="w-full lg:max-w-sm">
             <label className="label" htmlFor="admin-search">
-              Cerca username
+              {t("filters.search")}
             </label>
             <input
               id="admin-search"
               className="input"
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
-              placeholder="es. mario"
+              placeholder={t("filters.searchPlaceholder")}
             />
           </div>
 
-          <div className="w-full lg:max-w-xs">
-            <label className="label" htmlFor="admin-role-filter">
-              Ruolo
-            </label>
-            <select
-              id="admin-role-filter"
-              className="select"
-              value={roleFilter}
-              onChange={(event) => {
-                setRoleFilter(event.target.value as "ALL" | UserRole);
-                setPage(1);
-              }}
-            >
-              <option value="ALL">Tutti</option>
-              {ROLE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FilterSelect
+            id="admin-role-filter"
+            label={t("filters.role")}
+            allLabel={t("filters.all")}
+            value={roleFilter}
+            options={ROLE_OPTIONS.map((role) => ({ value: role, label: t(`roles.${role}`) }))}
+            onChange={(role) => {
+              setRoleFilter(role);
+              setPage(1);
+            }}
+          />
 
-          <div className="w-full lg:max-w-xs">
-            <label className="label" htmlFor="admin-status-filter">
-              Stato
-            </label>
-            <select
-              id="admin-status-filter"
-              className="select"
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value as "ALL" | UserStatus);
-                setPage(1);
-              }}
-            >
-              <option value="ALL">Tutti</option>
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FilterSelect
+            id="admin-status-filter"
+            label={t("filters.status")}
+            allLabel={t("filters.all")}
+            value={statusFilter}
+            options={STATUS_OPTIONS.map((status) => ({ value: status, label: t(`statuses.${status}`) }))}
+            onChange={(status) => {
+              setStatusFilter(status);
+              setPage(1);
+            }}
+          />
 
           <button className="btn-secondary w-full lg:w-auto" type="button" onClick={() => void loadUsers()} disabled={loading}>
-            {loading ? "Aggiornamento..." : "Applica filtri"}
+            {loading ? t("filters.refreshing") : t("filters.apply")}
           </button>
         </div>
       </section>
 
       <section className="card space-y-4">
-        <h2 className="text-lg font-semibold">Crea utente</h2>
-        {!viewer.isRootAdmin && (
-          <p className="text-sm text-slate-600">Come admin non-root puoi creare solo utenti Sottoscrittori.</p>
-        )}
+        <h2 className="text-lg font-semibold">{t("create.title")}</h2>
+        {!viewer.isRootAdmin && <p className="text-sm text-slate-600">{t("create.nonRootHint")}</p>}
 
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             <label className="label" htmlFor="new-username">
-              Username
+              {tAuth("username")}
             </label>
             <input
               id="new-username"
@@ -366,12 +356,12 @@ export function AdminUsersDashboard({
 
           <div>
             <label className="label" htmlFor="new-role">
-              Ruolo
+              {t("filters.role")}
             </label>
             <select id="new-role" className="select" value={createRole} onChange={(event) => setCreateRole(event.target.value as UserRole)}>
-              {availableCreateRoles.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              {availableCreateRoles.map((role) => (
+                <option key={role} value={role}>
+                  {t(`roles.${role}`)}
                 </option>
               ))}
             </select>
@@ -379,7 +369,7 @@ export function AdminUsersDashboard({
 
           <div>
             <label className="label" htmlFor="new-password">
-              Password
+              {tAuth("password")}
             </label>
             <input
               id="new-password"
@@ -392,7 +382,7 @@ export function AdminUsersDashboard({
 
           <div>
             <label className="label" htmlFor="new-confirm-password">
-              Conferma password
+              {tAuth("confirmPassword")}
             </label>
             <input
               id="new-confirm-password"
@@ -405,26 +395,25 @@ export function AdminUsersDashboard({
         </div>
 
         <button className="btn-primary w-full sm:w-auto" type="button" onClick={onCreateUser} disabled={creating}>
-          {creating ? "Creazione..." : "Crea utente"}
+          {creating ? t("create.creating") : t("create.submit")}
         </button>
       </section>
 
       <section className="card space-y-4">
-        <h2 className="text-lg font-semibold">Gestione utenti</h2>
+        <h2 className="text-lg font-semibold">{t("manage.title")}</h2>
 
-        {error && <p className="text-sm text-red-700">{error}</p>}
-        {feedback && <p className="text-sm text-green-700">{feedback}</p>}
+        <FormFeedback error={error} success={feedback} />
 
         <div className="table-shell">
           <table className="table-enterprise min-w-[1240px] text-left text-sm sm:min-w-full">
             <thead>
               <tr>
-                <th className="px-3 py-2">Username</th>
-                <th className="px-3 py-2">Ruolo</th>
-                <th className="px-3 py-2">Stato</th>
-                <th className="px-3 py-2">Creato</th>
-                <th className="px-3 py-2">Ultimo login</th>
-                <th className="px-3 py-2">Azioni</th>
+                <th className="px-3 py-2">{t("manage.columns.username")}</th>
+                <th className="px-3 py-2">{t("manage.columns.role")}</th>
+                <th className="px-3 py-2">{t("manage.columns.status")}</th>
+                <th className="px-3 py-2">{t("manage.columns.created")}</th>
+                <th className="px-3 py-2">{t("manage.columns.lastLogin")}</th>
+                <th className="px-3 py-2">{t("manage.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -438,7 +427,7 @@ export function AdminUsersDashboard({
                     <td className="px-3 py-3 font-medium">
                       <div className="flex items-center gap-2">
                         <span>{user.username}</span>
-                        {user.isRootAdmin && <span className="status-chip border-emerald-400/40 bg-emerald-500/15 text-emerald-200">Root Admin</span>}
+                        {user.isRootAdmin && <span className="status-chip border-emerald-400/40 bg-emerald-500/15 text-emerald-200">{t("manage.rootBadge")}</span>}
                       </div>
                     </td>
 
@@ -454,14 +443,14 @@ export function AdminUsersDashboard({
                             }))
                           }
                         >
-                          {ROLE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
+                          {ROLE_OPTIONS.map((role) => (
+                            <option key={role} value={role}>
+                              {t(`roles.${role}`)}
                             </option>
                           ))}
                         </select>
                       ) : (
-                        <span className="status-chip">{roleLabel(user.role)}</span>
+                        <span className="status-chip">{t(`roles.${user.role}`)}</span>
                       )}
                     </td>
 
@@ -477,19 +466,19 @@ export function AdminUsersDashboard({
                             }))
                           }
                         >
-                          {STATUS_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
+                          {STATUS_OPTIONS.map((status) => (
+                            <option key={status} value={status}>
+                              {t(`statuses.${status}`)}
                             </option>
                           ))}
                         </select>
                       ) : (
-                        <span className="status-chip">{statusLabel(user.status)}</span>
+                        <span className="status-chip">{t(`statuses.${user.status}`)}</span>
                       )}
                     </td>
 
-                    <td className="px-3 py-3">{formatDate(user.createdAt)}</td>
-                    <td className="px-3 py-3">{formatDate(user.lastLoginAt)}</td>
+                    <td className="px-3 py-3">{formatDate(user.createdAt, format)}</td>
+                    <td className="px-3 py-3">{formatDate(user.lastLoginAt, format)}</td>
 
                     <td className="px-3 py-3">
                       <div className="flex min-w-[380px] flex-wrap items-center gap-2">
@@ -504,13 +493,13 @@ export function AdminUsersDashboard({
                             })
                           }
                         >
-                          {updatingId === user.id ? "Salvataggio..." : "Salva"}
+                          {updatingId === user.id ? tCommon("saving") : t("manage.save")}
                         </button>
 
                         <input
                           className="input min-w-[180px]"
                           type="password"
-                          placeholder="Nuova password"
+                          placeholder={t("manage.newPasswordPlaceholder")}
                           value={passwordDrafts[user.id] ?? ""}
                           onChange={(event) =>
                             setPasswordDrafts((current) => ({
@@ -530,7 +519,7 @@ export function AdminUsersDashboard({
                             })
                           }
                         >
-                          Reset password
+                          {t("manage.resetPassword")}
                         </button>
 
                         <button
@@ -539,7 +528,7 @@ export function AdminUsersDashboard({
                           disabled={!canDelete || deletingId === user.id}
                           onClick={() => void deleteUser(user)}
                         >
-                          {deletingId === user.id ? "Eliminazione..." : "Elimina"}
+                          {deletingId === user.id ? tCommon("deleting") : tCommon("delete")}
                         </button>
                       </div>
                     </td>
@@ -550,7 +539,7 @@ export function AdminUsersDashboard({
               {!loading && users.length === 0 && (
                 <tr>
                   <td className="px-3 py-6 text-sm text-slate-500" colSpan={6}>
-                    Nessun utente trovato per i filtri correnti.
+                    {t("manage.empty")}
                   </td>
                 </tr>
               )}
@@ -559,9 +548,7 @@ export function AdminUsersDashboard({
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-600">
-            Pagina {page} di {totalPages} · {total} utenti
-          </p>
+          <p className="text-sm text-slate-600">{t("manage.pageInfo", { page, totalPages, total })}</p>
           <div className="flex gap-2">
             <button
               className="btn-secondary"
@@ -569,7 +556,7 @@ export function AdminUsersDashboard({
               disabled={loading || page <= 1}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
             >
-              Precedente
+              {t("manage.previous")}
             </button>
             <button
               className="btn-secondary"
@@ -577,7 +564,7 @@ export function AdminUsersDashboard({
               disabled={loading || page >= totalPages}
               onClick={() => setPage((current) => current + 1)}
             >
-              Successiva
+              {t("manage.next")}
             </button>
           </div>
         </div>

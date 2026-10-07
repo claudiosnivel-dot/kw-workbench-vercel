@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { useTranslations } from "next-intl";
+import { useRefreshAction } from "@/lib/client/use-refresh-action";
 
 type SectionOrderButtonsProps = {
   projectId: string;
@@ -19,36 +18,21 @@ export function SectionOrderButtons({
   disableUp = false,
   disableDown = false,
 }: SectionOrderButtonsProps) {
-  const router = useRouter();
-  const [loadingDirection, setLoadingDirection] = useState<"up" | "down" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("sections.order");
+  const { loading, error, run } = useRefreshAction();
 
   const move = async (direction: "up" | "down") => {
-    if (loadingDirection || (direction === "up" ? disableUp : disableDown)) {
+    if (loading || (direction === "up" ? disableUp : disableDown)) {
       return;
     }
 
-    setLoadingDirection(direction);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/projects/${projectId}/subprojects/reorder`, {
+    await run(() =>
+      fetch(`/api/projects/${projectId}/subprojects/reorder`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subprojectId, direction }),
-      });
-
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Riordino sezioni non riuscito"));
-      }
-
-      router.refresh();
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Errore imprevisto");
-    } finally {
-      setLoadingDirection(null);
-    }
+      })
+    );
   };
 
   return (
@@ -58,25 +42,24 @@ export function SectionOrderButtons({
           type="button"
           className="btn-secondary"
           onClick={() => move("up")}
-          disabled={disableUp || loadingDirection !== null}
-          aria-label={`Sposta in alto la sezione ${subprojectName}`}
-          title={`Sposta in alto la sezione ${subprojectName}`}
+          disabled={disableUp || loading}
+          aria-label={t("moveUp", { name: subprojectName })}
+          title={t("moveUp", { name: subprojectName })}
         >
-          {"\u2191"}
+          {"↑"}
         </button>
         <button
           type="button"
           className="btn-secondary"
           onClick={() => move("down")}
-          disabled={disableDown || loadingDirection !== null}
-          aria-label={`Sposta in basso la sezione ${subprojectName}`}
-          title={`Sposta in basso la sezione ${subprojectName}`}
+          disabled={disableDown || loading}
+          aria-label={t("moveDown", { name: subprojectName })}
+          title={t("moveDown", { name: subprojectName })}
         >
-          {"\u2193"}
+          {"↓"}
         </button>
       </div>
       {error && <p className="text-sm text-red-700">{error}</p>}
     </div>
   );
 }
-

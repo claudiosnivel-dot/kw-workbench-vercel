@@ -1,8 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { pauseOnboardingAndOpenDashboard } from "@/lib/client/onboarding";
+import { useLeavingAction } from "@/lib/client/use-leaving-action";
 import {
   ONBOARDING_STEP_META,
   ONBOARDING_TOTAL_STEPS,
@@ -14,48 +16,41 @@ import {
 const PROGRESS_WIDTH_CLASSES = ["w-0", "w-1/7", "w-2/7", "w-3/7", "w-4/7", "w-5/7", "w-6/7", "w-full"];
 
 export function OnboardingProgressHeader() {
+  const t = useTranslations("onboarding");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
-  const [skipping, setSkipping] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { pending, error, run } = useLeavingAction();
 
   const currentStep = useMemo(() => pathToStep(pathname) ?? "WELCOME", [pathname]);
   const meta = ONBOARDING_STEP_META[currentStep];
   const progressPercent = Math.round((meta.index / ONBOARDING_TOTAL_STEPS) * 100);
 
-  const skip = async () => {
-    setSkipping(true);
-    setError(null);
-
-    try {
-      await pauseOnboardingAndOpenDashboard();
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
-      setSkipping(false);
-    }
-  };
-
   return (
     <section className="card space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Percorso guidato</p>
-          <h1 className="text-2xl font-semibold">{meta.title}</h1>
-          <p className="text-sm text-slate-600">{meta.description}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">{t("eyebrow")}</p>
+          <h1 className="text-2xl font-semibold">{t(`steps.${currentStep}.title`)}</h1>
+          <p className="text-sm text-slate-600">{t(`steps.${currentStep}.description`)}</p>
         </div>
         <button
           type="button"
           className="btn-secondary w-full sm:w-auto"
-          onClick={skip}
-          disabled={skipping}
+          onClick={() => run(pauseOnboardingAndOpenDashboard)}
+          disabled={pending !== null}
         >
-          {skipping ? "Salvataggio..." : "Salta per ora"}
+          {pending ? tCommon("saving") : t("skip")}
         </button>
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs text-slate-500">
           <span>
-            Step {meta.index} di {ONBOARDING_TOTAL_STEPS} ({meta.shortLabel})
+            {t("stepOf", {
+              index: meta.index,
+              total: ONBOARDING_TOTAL_STEPS,
+              label: t(`steps.${currentStep}.shortLabel`),
+            })}
           </span>
           <span>{progressPercent}%</span>
         </div>

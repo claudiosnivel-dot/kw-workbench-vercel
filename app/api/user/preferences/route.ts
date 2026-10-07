@@ -1,7 +1,7 @@
 import { ColorVisionMode, FontScaleMode, ThemeMode } from "@/lib/generated/prisma/enums";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { ValidationError, withApiErrors } from "@/lib/http/errors";
+import { errorResponse, ValidationError, withApiErrors } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma";
 
 const THEME_VALUES = new Set<ThemeMode>(Object.values(ThemeMode));
@@ -66,7 +66,7 @@ export const GET = withApiErrors(async (request: NextRequest) => {
   });
 
   if (!snapshot) {
-    return NextResponse.json({ error: "Utente non trovato" }, { status: 404 });
+    return errorResponse(404, "USER_NOT_FOUND", "Utente non trovato");
   }
 
   return NextResponse.json({
@@ -87,7 +87,7 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
   const colorVisionMode = parseColorVisionMode(payload.colorVisionMode);
 
   if (!themeMode && !fontScaleMode && !colorVisionMode) {
-    return NextResponse.json({ error: "Nessuna preferenza da aggiornare" }, { status: 400 });
+    return errorResponse(400, "NO_CHANGES", "Nessuna preferenza da aggiornare");
   }
 
   const updated = await prisma.user.update({

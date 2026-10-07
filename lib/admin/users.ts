@@ -158,7 +158,7 @@ function assertCanManageTarget(actor: AuthUser, target: {
   is_root_admin: boolean;
 }) {
   if (target.is_root_admin) {
-    throw new AdminActionError("Il root admin non puo essere modificato", 403, "FORBIDDEN");
+    throw new AdminActionError("Il root admin non può essere modificato", 403, "FORBIDDEN");
   }
 
   if (!actor.isRootAdmin && target.role === UserRole.ADMIN) {
@@ -258,7 +258,7 @@ export async function createUserFromAdmin(
 ): Promise<AdminUserRecord> {
   const role = input.role ?? UserRole.SUBSCRIBER;
   if (role === UserRole.ADMIN && !actor.isRootAdmin) {
-    throw new AdminActionError("Solo il root admin puo creare altri admin", 403, "FORBIDDEN");
+    throw new AdminActionError("Solo il root admin può creare altri admin", 403, "FORBIDDEN");
   }
 
   const username = validateUsername(input.username);
@@ -286,7 +286,7 @@ export async function updateUserFromAdmin(
   const target = await findManageableTarget(actor, input.targetUserId);
 
   if (input.role === UserRole.ADMIN && !actor.isRootAdmin) {
-    throw new AdminActionError("Solo il root admin puo promuovere ad admin", 403, "FORBIDDEN");
+    throw new AdminActionError("Solo il root admin può promuovere ad admin", 403, "FORBIDDEN");
   }
 
   const updatePayload: {

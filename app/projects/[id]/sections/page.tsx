@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { DeleteEntityButton } from "@/components/delete-entity-button";
 import { PageHeaderCard } from "@/components/page-header-card";
 import { RunExtractionButton } from "@/components/run-extraction-button";
@@ -19,40 +20,41 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
   const { id } = await params;
 
   const project = await requireOwnedProject(user.id, id, { subprojects: SECTIONS_WITH_STATS });
+  const t = await getTranslations();
 
   return (
     <div className="space-y-6">
       <PageHeaderCard
-        title="Gestisci sezioni"
+        title={t("sections.manage.title")}
         subtitle={
           <>
-            Progetto: <span className="font-medium">{project.name}</span>
+            {t("sections.manage.projectLabel")} <span className="font-medium">{project.name}</span>
           </>
         }
         action={
           <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}`}>
-            Torna al progetto
+            {t("projects.links.backToProject")}
           </Link>
         }
       />
 
       <section className="card space-y-3">
-        <h2 className="text-base font-semibold">Aggiungi nuova sezione</h2>
+        <h2 className="text-base font-semibold">{t("sections.manage.addTitle")}</h2>
         <SubprojectForm mode="create" projectId={project.id} canEditAutocompleteProvider={user.isRootAdmin} showAdvanced={false} />
       </section>
 
       <section className="card">
-        <h2 className="mb-3 text-base font-semibold">Elenco sezioni</h2>
+        <h2 className="mb-3 text-base font-semibold">{t("sections.manage.listTitle")}</h2>
         <div className="table-shell">
           <table className="table-enterprise min-w-[980px] text-left text-sm sm:min-w-full">
             <thead>
               <tr>
-                <th className="px-3 py-2">Ordine</th>
-                <th className="px-3 py-2">Nome</th>
-                <th className="px-3 py-2">Seed</th>
-                <th className="px-3 py-2">Keyword</th>
-                <th className="px-3 py-2">Ultimo job</th>
-                <th className="px-3 py-2">Azioni</th>
+                <th className="px-3 py-2">{t("sections.manage.columns.order")}</th>
+                <th className="px-3 py-2">{t("sections.manage.columns.name")}</th>
+                <th className="px-3 py-2">{t("sections.manage.columns.seeds")}</th>
+                <th className="px-3 py-2">{t("sections.manage.columns.keywords")}</th>
+                <th className="px-3 py-2">{t("sections.manage.columns.lastJob")}</th>
+                <th className="px-3 py-2">{t("sections.manage.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -75,7 +77,7 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                     <td className="px-3 py-3">{section._count.keyword_candidates}</td>
                     <td className="px-3 py-3">
                       {latestJob ? (
-                        <span className={`status-chip ${jobStatusTone(latestJob.status)}`}>{latestJob.status}</span>
+                        <span className={`status-chip ${jobStatusTone(latestJob.status)}`}>{t(`jobs.status.${latestJob.status}`)}</span>
                       ) : (
                         <span className="text-slate-500">-</span>
                       )}
@@ -83,10 +85,10 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                     <td className="px-3 py-3">
                       <div className="flex flex-wrap gap-2">
                         <Link className="btn-secondary" href={`/projects/${project.id}/subprojects/${section.id}`}>
-                          Rinomina / impostazioni
+                          {t("sections.manage.renameSettings")}
                         </Link>
                         <Link className="btn-secondary" href={resultsHref(project.id, { subprojectId: section.id })}>
-                          Risultati
+                          {t("sections.manage.results")}
                         </Link>
                         <SetDefaultSectionButton
                           projectId={project.id}
@@ -95,8 +97,8 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                         />
                         <RunExtractionButton
                           runPath={`/api/projects/${project.id}/subprojects/${section.id}/run`}
-                          label="Esegui"
-                          runningLabel="Esecuzione..."
+                          label={t("sections.manage.run")}
+                          runningLabel={t("sections.manage.running")}
                           resultsHref={resultsHref(project.id, { subprojectId: section.id })}
                           activeJobId={activeJobIdOf(latestJob)}
                         />
@@ -108,7 +110,7 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
               })}
             </tbody>
           </table>
-          {project.subprojects.length === 0 && <p className="px-3 py-6 text-sm text-slate-500">Nessuna sezione al momento.</p>}
+          {project.subprojects.length === 0 && <p className="px-3 py-6 text-sm text-slate-500">{t("sections.empty")}</p>}
         </div>
       </section>
     </div>

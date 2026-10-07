@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRefreshAction } from "@/lib/client/use-refresh-action";
 
 type SetDefaultSectionButtonProps = {
@@ -9,6 +10,8 @@ type SetDefaultSectionButtonProps = {
 };
 
 export function SetDefaultSectionButton({ projectId, subprojectId, isDefault }: SetDefaultSectionButtonProps) {
+  const t = useTranslations("sections.default");
+  const tCommon = useTranslations("common");
   const { loading, error, run } = useRefreshAction();
 
   const submit = async () => {
@@ -20,8 +23,7 @@ export function SetDefaultSectionButton({ projectId, subprojectId, isDefault }: 
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ subprojectId }),
-        }),
-      { failureMessage: "Salvataggio sezione predefinita non riuscito" }
+        })
     );
   };
 
@@ -33,7 +35,7 @@ export function SetDefaultSectionButton({ projectId, subprojectId, isDefault }: 
         onClick={submit}
         disabled={isDefault || loading}
       >
-        {isDefault ? "Sezione predefinita" : loading ? "Salvataggio..." : "Imposta come predefinita"}
+        {isDefault ? t("isDefault") : loading ? tCommon("saving") : t("setDefault")}
       </button>
       {error && <p className="text-sm text-red-700">{error}</p>}
     </div>

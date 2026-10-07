@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isAuthEnabled } from "@/lib/auth/config";
 import { verifyLoginCredentials } from "@/lib/auth/credentials";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
-import { withApiErrors } from "@/lib/http/errors";
+import { errorResponse, withApiErrors } from "@/lib/http/errors";
 
 export const POST = withApiErrors(async (request: Request) => {
   if (!isAuthEnabled()) {
@@ -20,10 +20,10 @@ export const POST = withApiErrors(async (request: Request) => {
   const result = await verifyLoginCredentials(username, password);
   if (!result.user) {
     if (result.reason === "SUSPENDED") {
-      return NextResponse.json({ error: "Account sospeso. Contatta l'amministratore." }, { status: 403 });
+      return errorResponse(403, "ACCOUNT_SUSPENDED", "Account sospeso. Contatta l'amministratore.");
     }
 
-    return NextResponse.json({ error: "Credenziali non valide" }, { status: 401 });
+    return errorResponse(401, "INVALID_CREDENTIALS", "Credenziali non valide");
   }
 
   const response = NextResponse.json({ success: true });

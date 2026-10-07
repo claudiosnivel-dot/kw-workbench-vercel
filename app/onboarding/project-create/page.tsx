@@ -10,14 +10,7 @@ export default async function OnboardingProjectCreatePage() {
   // Progetto già creato (anche dopo Ricomincia): il back del browser non porta a una seconda creazione (T-1001).
   const continuePath = continuePathAfter(state, "PROJECT_CREATE");
   if (state.activeProject && continuePath) {
-    return (
-      <OnboardingStepDone
-        heading="Step 2: Progetto creato"
-        label="Progetto attivo"
-        name={state.activeProject.name}
-        continuePath={continuePath}
-      />
-    );
+    return <OnboardingStepDone kind="project" name={state.activeProject.name} continuePath={continuePath} />;
   }
 
   return <OnboardingProjectCreateForm />;

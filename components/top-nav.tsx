@@ -1,23 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { LogoutButton } from "@/components/logout-button";
 
 function isAuthRoute(pathname: string): boolean {
   return pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/onboarding");
 }
 
+type NavLabelKey = "overview" | "personalize" | "newProject" | "admin";
+
 function buildNavLinks(showAdminLink: boolean) {
-  const links = [
-    { href: "/", label: "Panoramica" },
-    { href: "/personalizza", label: "Personalizza" },
-    { href: "/projects/new", label: "Nuovo progetto" },
+  const links: { href: string; labelKey: NavLabelKey }[] = [
+    { href: "/", labelKey: "overview" },
+    { href: "/personalizza", labelKey: "personalize" },
+    { href: "/projects/new", labelKey: "newProject" },
   ];
 
   if (showAdminLink) {
-    links.push({ href: "/admin", label: "Admin" });
+    links.push({ href: "/admin", labelKey: "admin" });
   }
 
   return links;
@@ -67,6 +71,7 @@ export function TopNav({
   themeMode: "DARK" | "LIGHT";
   showAdminLink?: boolean;
 }) {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeThemeMode, setActiveThemeMode] = useState<"DARK" | "LIGHT">(themeMode);
@@ -156,7 +161,7 @@ export function TopNav({
                 onClick={() => setMenuOpen((current) => !current)}
                 aria-expanded={menuOpen}
                 aria-controls="mobile-nav"
-                aria-label="Apri menu"
+                aria-label={t("openMenu")}
               >
                 <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden="true">
                   <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -174,10 +179,11 @@ export function TopNav({
                         active ? "is-active" : ""
                       }`}
                     >
-                      {item.label}
+                      {t(item.labelKey)}
                     </Link>
                   );
                 })}
+                <LocaleSwitcher />
                 <LogoutButton className="px-4 py-2" />
               </nav>
             </>
@@ -197,10 +203,11 @@ export function TopNav({
                     active ? "is-active" : ""
                   }`}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}
+            <LocaleSwitcher className="w-full" />
             <LogoutButton className="w-full justify-center rounded-xl px-4 py-2" />
           </nav>
         )}

@@ -1,8 +1,9 @@
 // Gate di T-803 (AC-803-3, AC-803-4): dopo «Seleziona tutto» la tabella offre l'intero set filtrato e
 // la PATCH parte con i filtri invece degli id; la selezione si azzera quando cambiano le righe ricevute.
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ResultsTable } from "@/components/results-table";
+import { renderWithIntl } from "./intl";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 
@@ -53,7 +54,7 @@ describe("ResultsTable, selezione", () => {
         headers: { "Content-Type": "application/json" },
       })
     );
-    render(
+    renderWithIntl(
       <ResultsTable projectId="p1" activeSubprojectId="s1" rows={FIRST_PAGE} filteredCount={1234} filters={FILTERS} />
     );
 
@@ -73,7 +74,7 @@ describe("ResultsTable, selezione", () => {
 
   // covers: AC-803-4
   it("al cambio di pagina la selezione si azzera", () => {
-    const { rerender } = render(
+    const { rerender } = renderWithIntl(
       <ResultsTable projectId="p1" activeSubprojectId="s1" rows={FIRST_PAGE} filteredCount={6} filters={FILTERS} />
     );
     fireEvent.click(screen.getByRole("checkbox", { name: "Seleziona tutto" }));

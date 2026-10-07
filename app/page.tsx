@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { DeleteEntityButton } from "@/components/delete-entity-button";
 import { PaginationLinks } from "@/components/pagination-links";
 import { ResumeOnboardingButton } from "@/components/resume-onboarding-button";
@@ -27,7 +28,9 @@ export default async function DashboardPage({
     redirect("/onboarding");
   }
 
-  const [dashboard, recentJobs, totalKeywords, totalSubprojects] = await Promise.all([
+  const [t, format, dashboard, recentJobs, totalKeywords, totalSubprojects] = await Promise.all([
+    getTranslations(),
+    getFormatter(),
     // Tutti i progetti raggiungibili: pagine da 20 in ordine di ultima attività (T-810).
     listDashboardProjects(user.id, Array.isArray(rawPage) ? rawPage[0] : rawPage),
     prisma.job.findMany({
@@ -70,11 +73,9 @@ export default async function DashboardPage({
         <section className="card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Onboarding in pausa</p>
-              <h2 className="mt-1 text-xl font-semibold">Riprendi il percorso guidato A-Z</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Puoi continuare dal punto in cui hai messo in pausa e arrivare al primo export.
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">{t("dashboard.paused.eyebrow")}</p>
+              <h2 className="mt-1 text-xl font-semibold">{t("dashboard.paused.title")}</h2>
+              <p className="mt-1 text-sm text-slate-600">{t("dashboard.paused.body")}</p>
             </div>
             <ResumeOnboardingButton className="w-full sm:w-auto" />
           </div>
@@ -84,20 +85,16 @@ export default async function DashboardPage({
       <section className="card overflow-hidden">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Panoramica</p>
-            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl sm:leading-10">
-              Controlla i tuoi progetti SEO e organizza il lavoro per sezioni
-            </h1>
-            <p className="text-sm text-slate-600 sm:text-base">
-              Ogni progetto puo contenere una o piu sezioni: puoi lavorare in blocco unico oppure separare per categoria, cluster o funnel.
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">{t("dashboard.eyebrow")}</p>
+            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl sm:leading-10">{t("dashboard.title")}</h1>
+            <p className="text-sm text-slate-600 sm:text-base">{t("dashboard.intro")}</p>
             <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
               <Link href="/projects/new" className="btn-primary w-full text-center sm:w-auto">
-                Crea progetto
+                {t("dashboard.createProject")}
               </Link>
               {user.role === "ADMIN" && (
                 <Link href="/admin" className="btn-secondary w-full text-center sm:w-auto">
-                  Dashboard admin
+                  {t("dashboard.adminDashboard")}
                 </Link>
               )}
             </div>
@@ -105,15 +102,15 @@ export default async function DashboardPage({
 
           <div className="grid w-full gap-3 sm:grid-cols-3 lg:max-w-xl">
             <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Progetti</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">{t("dashboard.stats.projects")}</p>
               <p className="mt-1 text-2xl font-semibold">{totalProjects}</p>
             </article>
             <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Sezioni</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">{t("dashboard.stats.sections")}</p>
               <p className="mt-1 text-2xl font-semibold">{totalSubprojects}</p>
             </article>
             <article className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Keyword</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">{t("dashboard.stats.keywords")}</p>
               <p className="mt-1 text-2xl font-semibold">{totalKeywords}</p>
             </article>
           </div>
@@ -122,9 +119,9 @@ export default async function DashboardPage({
 
       <section className="card">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold">Progetti</h2>
+          <h2 className="text-lg font-semibold">{t("dashboard.projects.title")}</h2>
           <Link href="/projects/new" className="btn-primary w-full text-center sm:w-auto">
-            Nuovo progetto
+            {t("dashboard.projects.new")}
           </Link>
         </div>
 
@@ -132,12 +129,12 @@ export default async function DashboardPage({
           <table className="table-enterprise min-w-[820px] text-left text-sm sm:min-w-full">
             <thead>
               <tr>
-                <th className="px-3 py-2">Nome</th>
-                <th className="px-3 py-2">Sezioni</th>
-                <th className="px-3 py-2">Seed</th>
-                <th className="px-3 py-2">Keyword</th>
-                <th className="px-3 py-2">Aggiornato</th>
-                <th className="px-3 py-2">Azioni</th>
+                <th className="px-3 py-2">{t("dashboard.projects.columns.name")}</th>
+                <th className="px-3 py-2">{t("dashboard.projects.columns.sections")}</th>
+                <th className="px-3 py-2">{t("dashboard.projects.columns.seeds")}</th>
+                <th className="px-3 py-2">{t("dashboard.projects.columns.keywords")}</th>
+                <th className="px-3 py-2">{t("dashboard.projects.columns.updated")}</th>
+                <th className="px-3 py-2">{t("dashboard.projects.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -147,14 +144,14 @@ export default async function DashboardPage({
                   <td className="px-3 py-3">{project._count.subprojects}</td>
                   <td className="px-3 py-3">{project._count.seeds}</td>
                   <td className="px-3 py-3">{project._count.keyword_candidates}</td>
-                  <td className="px-3 py-3">{formatDate(project.last_activity_at)}</td>
+                  <td className="px-3 py-3">{formatDate(project.last_activity_at, format)}</td>
                   <td className="px-3 py-3">
                     <div className="flex flex-wrap gap-2">
                       <Link className="btn-secondary" href={`/projects/${project.id}`}>
-                        Apri
+                        {t("dashboard.projects.open")}
                       </Link>
                       <Link className="btn-secondary" href={resultsHref(project.id, { view: "all" })}>
-                        Risultati
+                        {t("dashboard.projects.results")}
                       </Link>
                       <DeleteEntityButton {...projectDeleteTarget(project)} showInlineError={false} />
                     </div>
@@ -163,13 +160,11 @@ export default async function DashboardPage({
               ))}
             </tbody>
           </table>
-          {projects.length === 0 && <p className="px-3 py-6 text-sm text-slate-500">Nessun progetto al momento.</p>}
+          {projects.length === 0 && <p className="px-3 py-6 text-sm text-slate-500">{t("dashboard.projects.empty")}</p>}
         </div>
 
         <div className="mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-slate-600">
-            Pagina {page} di {totalPages}
-          </p>
+          <p className="text-slate-600">{t("common.pageOf", { page, total: totalPages })}</p>
           <PaginationLinks
             previousHref={page > 1 ? `/?page=${page - 1}` : null}
             nextHref={page < totalPages ? `/?page=${page + 1}` : null}
@@ -178,17 +173,17 @@ export default async function DashboardPage({
       </section>
 
       <section className="card">
-        <h2 className="mb-4 text-lg font-semibold">Ultimi job</h2>
+        <h2 className="mb-4 text-lg font-semibold">{t("dashboard.jobs.title")}</h2>
 
         <div className="table-shell">
           <table className="table-enterprise min-w-[680px] text-left text-sm sm:min-w-full">
             <thead>
               <tr>
-                <th className="px-3 py-2">Progetto</th>
-                <th className="px-3 py-2">Sezione</th>
-                <th className="px-3 py-2">Stato</th>
-                <th className="px-3 py-2">Avviato</th>
-                <th className="px-3 py-2">Completato</th>
+                <th className="px-3 py-2">{t("dashboard.jobs.columns.project")}</th>
+                <th className="px-3 py-2">{t("dashboard.jobs.columns.section")}</th>
+                <th className="px-3 py-2">{t("dashboard.jobs.columns.status")}</th>
+                <th className="px-3 py-2">{t("dashboard.jobs.columns.started")}</th>
+                <th className="px-3 py-2">{t("dashboard.jobs.columns.completed")}</th>
               </tr>
             </thead>
             <tbody>
@@ -208,15 +203,15 @@ export default async function DashboardPage({
                     </Link>
                   </td>
                   <td className="px-3 py-3 uppercase">
-                    <span className={`status-chip ${jobStatusTone(job.status)}`}>{job.status}</span>
+                    <span className={`status-chip ${jobStatusTone(job.status)}`}>{t(`jobs.status.${job.status}`)}</span>
                   </td>
-                  <td className="px-3 py-3">{formatDate(job.started_at)}</td>
-                  <td className="px-3 py-3">{formatDate(job.completed_at)}</td>
+                  <td className="px-3 py-3">{formatDate(job.started_at, format)}</td>
+                  <td className="px-3 py-3">{formatDate(job.completed_at, format)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {recentJobs.length === 0 && <p className="px-3 py-6 text-sm text-slate-500">Nessun job trovato.</p>}
+          {recentJobs.length === 0 && <p className="px-3 py-6 text-sm text-slate-500">{t("dashboard.jobs.empty")}</p>}
         </div>
       </section>
     </div>

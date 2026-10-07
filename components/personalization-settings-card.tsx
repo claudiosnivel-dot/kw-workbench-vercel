@@ -1,7 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { SettingsCard } from "@/components/settings-card";
+import { ApiErrorPayload, readApiResponse, sendJson } from "@/lib/client/http";
+import { useSaveAction } from "@/lib/client/use-save-action";
 
 type ThemeMode = "DARK" | "LIGHT";
 type FontScaleMode = "NORMAL" | "LARGE";
@@ -24,13 +27,14 @@ function applyPreferenceAttributes(input: PreferencesSnapshot) {
   html.setAttribute("data-color-vision", input.colorVisionMode);
 }
 
+const COLOR_VISION_MODES: ColorVisionMode[] = ["NONE", "PROTANOPIA", "DEUTERANOPIA", "TRITANOPIA"];
+
 export function PersonalizationSettingsCard({ initial }: { initial: PreferencesSnapshot }) {
+  const t = useTranslations("settings.preferences");
   const [themeMode, setThemeMode] = useState<ThemeMode>(initial.themeMode);
   const [fontScaleMode, setFontScaleMode] = useState<FontScaleMode>(initial.fontScaleMode);
   const [colorVisionMode, setColorVisionMode] = useState<ColorVisionMode>(initial.colorVisionMode);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { saving, error, success, save } = useSaveAction();
   // Preferenze salvate: l'anteprima non salvata non sopravvive all'uscita dalla pagina (T-1104).
   const saved = useRef<PreferencesSnapshot>(initial);
 
@@ -43,27 +47,10 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
     return () => applyPreferenceAttributes(savedPreferences.current);
   }, []);
 
-  const save = async () => {
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const response = await fetch("/api/user/preferences", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          themeMode,
-          fontScaleMode,
-          colorVisionMode,
-        }),
-      });
-
-      const payload = await readJsonSafe<PreferencesResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Impossibile salvare le preferenze"));
-      }
-
+  const savePreferences = () =>
+    save(async (tErrors) => {
+      const response = await sendJson("PATCH", "/api/user/preferences", { themeMode, fontScaleMode, colorVisionMode });
+      const payload = await readApiResponse<PreferencesResponse>(response, tErrors);
       if (payload?.data) {
         saved.current = payload.data;
         setThemeMode(payload.data.themeMode);
@@ -71,40 +58,35 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
         setColorVisionMode(payload.data.colorVisionMode);
         applyPreferenceAttributes(payload.data);
       }
-
-      setSuccess("Preferenze salvate correttamente.");
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Errore imprevisto");
-    } finally {
-      setSaving(false);
-    }
-  };
+      return t("saved");
+    });
 
   return (
-    <section className="card space-y-5">
-      <div>
-        <h2 className="text-lg font-semibold">Accessibilita e tema</h2>
-        <p className="text-sm text-slate-600">
-          Personalizza l&apos;interfaccia con tema, leggibilita testo e modalita daltonismo.
-        </p>
-      </div>
+    <SettingsCard
+      title={t("title")}
+      intro={t("intro")}
+      className="space-y-5"
+      error={error}
+      success={success}
+      save={{ onClick: savePreferences, pending: saving, label: t("save"), pendingLabel: t("saving") }}
+    >
 
       <div className="space-y-3">
-        <p className="label mb-1">Tema</p>
+        <p className="label mb-1">{t("theme")}</p>
         <div className="grid gap-2 sm:grid-cols-2">
           <button
             type="button"
             className={themeMode === "DARK" ? "btn-primary" : "btn-secondary"}
             onClick={() => setThemeMode("DARK")}
           >
-            Scuro
+            {t("dark")}
           </button>
           <button
             type="button"
             className={themeMode === "LIGHT" ? "btn-primary" : "btn-secondary"}
             onClick={() => setThemeMode("LIGHT")}
           >
-            Chiaro
+            {t("light")}
           </button>
         </div>
       </div>
@@ -116,16 +98,14 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
             checked={fontScaleMode === "LARGE"}
             onChange={(event) => setFontScaleMode(event.target.checked ? "LARGE" : "NORMAL")}
           />
-          <span className="text-sm font-medium">Testo leggibilita aumentata (+14%)</span>
+          <span className="text-sm font-medium">{t("largeText")}</span>
         </label>
-        <p className="mt-2 text-xs text-slate-500">
-          Aumenta dimensioni e interlinea di elementi principali per facilitare la lettura.
-        </p>
+        <p className="mt-2 text-xs text-slate-500">{t("largeTextHint")}</p>
       </div>
 
       <div>
         <label className="label" htmlFor="colorVisionMode">
-          Modalita daltonismo
+          {t("colorVision")}
         </label>
         <select
           id="colorVisionMode"
@@ -133,19 +113,13 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
           value={colorVisionMode}
           onChange={(event) => setColorVisionMode(event.target.value as ColorVisionMode)}
         >
-          <option value="NONE">Off</option>
-          <option value="PROTANOPIA">Protanopia</option>
-          <option value="DEUTERANOPIA">Deuteranopia</option>
-          <option value="TRITANOPIA">Tritanopia</option>
+          {COLOR_VISION_MODES.map((mode) => (
+            <option key={mode} value={mode}>
+              {t(`colorVisionOptions.${mode}`)}
+            </option>
+          ))}
         </select>
       </div>
-
-      <button className="btn-primary w-full sm:w-auto" type="button" onClick={save} disabled={saving}>
-        {saving ? "Salvataggio preferenze..." : "Salva preferenze"}
-      </button>
-
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      {success && <p className="text-sm text-green-700">{success}</p>}
-    </section>
+    </SettingsCard>
   );
 }

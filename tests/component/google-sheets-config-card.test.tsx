@@ -1,8 +1,9 @@
 // Gate di T-908 (AC-908-3): la card della configurazione OAuth di Google Sheets aggiorna i dati dopo il
 // salvataggio, mostra l'esito in un elemento role=status e rimuove un override inviando null.
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GoogleSheetsApiConfigCard } from "@/components/google-sheets-api-config-card";
+import { renderWithIntl } from "./intl";
 
 const refresh = vi.fn();
 
@@ -37,7 +38,7 @@ afterEach(() => {
 describe("GoogleSheetsApiConfigCard", () => {
   // covers: AC-908-3
   it("dopo il salvataggio aggiorna la pagina e mostra l'esito; «Rimuovi override» invia null", async () => {
-    render(<GoogleSheetsApiConfigCard initial={INITIAL} />);
+    renderWithIntl(<GoogleSheetsApiConfigCard initial={INITIAL} />);
 
     fireEvent.change(screen.getByLabelText("OAuth Client ID"), { target: { value: "nuovo-id.apps.googleusercontent.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Salva configurazione Google Sheets" }));

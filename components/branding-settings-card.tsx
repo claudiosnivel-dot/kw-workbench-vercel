@@ -1,8 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ChangeEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { CardIntro } from "@/components/card-intro";
+import { FormFeedback } from "@/components/form-feedback";
+import { ApiErrorPayload, messageOf, readApiResponse } from "@/lib/client/http";
 
 type BrandingSnapshot = {
   appName: string;
@@ -23,6 +26,9 @@ const LOGO_ACCEPT = ALLOWED_LOGO_TYPES.join(",");
 type LogoTarget = "dark" | "light";
 
 export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSnapshot; canEdit: boolean }) {
+  const t = useTranslations("settings.branding");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
   const router = useRouter();
 
   const [appName, setAppName] = useState(initial.appName);
@@ -51,31 +57,31 @@ export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSn
     setSuccess(null);
 
     if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
-      setError("File non supportato. Carica un'immagine PNG, JPG, SVG o WEBP.");
+      setError(t("fileUnsupported"));
       return;
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setError("Logo troppo grande. Usa un file massimo da 100 KB.");
+      setError(t("tooLarge"));
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result !== "string") {
-        setError("Impossibile leggere il file selezionato.");
+        setError(t("readFailed"));
         return;
       }
 
       if (target === "dark") {
         setLogoUrlDark(reader.result);
-        setSuccess("Logo dark caricato localmente. Premi Salva branding per applicarlo.");
+        setSuccess(t("darkLoaded"));
       } else {
         setLogoUrlLight(reader.result);
-        setSuccess("Logo light caricato localmente. Premi Salva branding per applicarlo.");
+        setSuccess(t("lightLoaded"));
       }
     };
-    reader.onerror = () => setError("Impossibile leggere il file selezionato.");
+    reader.onerror = () => setError(t("readFailed"));
     reader.readAsDataURL(file);
 
     event.target.value = "";
@@ -97,10 +103,7 @@ export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSn
         }),
       });
 
-      const payload = await readJsonSafe<BrandingResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Impossibile salvare il branding"));
-      }
+      const payload = await readApiResponse<BrandingResponse>(response, tErrors);
 
       const snapshot = payload?.data;
       if (snapshot) {
@@ -110,10 +113,10 @@ export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSn
         setLegacyLogoUrl(snapshot.logoUrl);
       }
 
-      setSuccess("Branding salvato con successo.");
+      setSuccess(t("saved"));
       router.refresh();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Errore imprevisto");
+      setError(messageOf(saveError, tCommon("unexpectedError")));
     } finally {
       setSaving(false);
     }
@@ -122,10 +125,10 @@ export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSn
   const clearThemeLogo = (target: LogoTarget) => {
     if (target === "dark") {
       setLogoUrlDark("");
-      setSuccess("Logo dark rimosso localmente. Premi Salva branding per confermare.");
+      setSuccess(t("darkRemoved"));
     } else {
       setLogoUrlLight("");
-      setSuccess("Logo light rimosso localmente. Premi Salva branding per confermare.");
+      setSuccess(t("lightRemoved"));
     }
 
     setError(null);
@@ -133,111 +136,103 @@ export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSn
 
   return (
     <section className="card space-y-5">
-      <div>
-        <h2 className="text-lg font-semibold">Branding</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Configura loghi dedicati per tema scuro e chiaro. In navbar viene usato il logo del tema corrente con fallback automatico.
-        </p>
-      </div>
+      <CardIntro title={t("title")} intro={t("intro")} />
 
       {!canEdit && (
-        <p className="text-sm text-slate-600">Il branding è globale: solo il root admin può modificarlo.</p>
+        <p className="text-sm text-slate-600">{t("readOnly")}</p>
       )}
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <fieldset className="min-w-0 space-y-5" disabled={!canEdit}>
           <div>
             <label className="label" htmlFor="appName">
-              Nome applicazione
+              {t("appName")}
             </label>
             <input
               id="appName"
               className="input"
               value={appName}
               onChange={(event) => setAppName(event.target.value)}
-              placeholder="Seo God Mode"
+              placeholder={t("appNamePlaceholder")}
               maxLength={80}
             />
           </div>
 
           <div className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
-            <h3 className="text-sm font-semibold">Logo tema scuro</h3>
+            <h3 className="text-sm font-semibold">{t("darkLogo")}</h3>
             <input
               id="logoUrlDark"
               className="input"
               value={logoUrlDark}
               onChange={(event) => setLogoUrlDark(event.target.value)}
-              placeholder="https://miosito.it/logo-dark.svg"
+              placeholder={t("darkPlaceholder")}
             />
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <label className="btn-secondary w-full cursor-pointer text-center sm:w-auto">
-                Carica logo dark
+                {t("uploadDark")}
                 <input type="file" accept={LOGO_ACCEPT} className="hidden" onChange={onFileSelect("dark")} />
               </label>
               <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => clearThemeLogo("dark")}>
-                Rimuovi logo dark
+                {t("removeDark")}
               </button>
             </div>
           </div>
 
           <div className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
-            <h3 className="text-sm font-semibold">Logo tema chiaro</h3>
+            <h3 className="text-sm font-semibold">{t("lightLogo")}</h3>
             <input
               id="logoUrlLight"
               className="input"
               value={logoUrlLight}
               onChange={(event) => setLogoUrlLight(event.target.value)}
-              placeholder="https://miosito.it/logo-light.svg"
+              placeholder={t("lightPlaceholder")}
             />
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <label className="btn-secondary w-full cursor-pointer text-center sm:w-auto">
-                Carica logo light
+                {t("uploadLight")}
                 <input type="file" accept={LOGO_ACCEPT} className="hidden" onChange={onFileSelect("light")} />
               </label>
               <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => clearThemeLogo("light")}>
-                Rimuovi logo light
+                {t("removeLight")}
               </button>
             </div>
           </div>
 
-          <p className="text-xs text-slate-500">
-            Formati supportati: URL `https://`, percorso `/logo.svg` o immagine PNG, JPG, SVG o WEBP fino a 100 KB. Logo legacy tecnico: {legacyLogoUrl ? "presente" : "assente"}.
-          </p>
+          <p className="text-xs text-slate-500">{t("formats", { legacy: legacyLogoUrl ? "present" : "absent" })}</p>
 
           <button className="btn-primary w-full sm:w-auto" type="button" onClick={save} disabled={saving}>
-            {saving ? "Salvataggio branding..." : "Salva branding"}
+            {saving ? t("saving") : t("save")}
           </button>
         </fieldset>
 
         <div className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Anteprima navbar</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t("preview")}</p>
 
           <div className="rounded-2xl border border-white/10 bg-[#020617] px-4 py-3">
-            <p className="mb-2 text-xs uppercase tracking-wide text-slate-400">Tema scuro</p>
+            <p className="mb-2 text-xs uppercase tracking-wide text-slate-400">{t("darkTheme")}</p>
             {previewDarkLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewDarkLogo} alt={`${effectiveName} dark`} className="h-11 w-auto max-w-full object-contain" />
+              <img src={previewDarkLogo} alt={t("previewAltDark", { name: effectiveName })} className="h-11 w-auto max-w-full object-contain" />
             ) : (
-              <span className="text-sm text-slate-400">Nessun logo disponibile</span>
+              <span className="text-sm text-slate-400">{t("noLogo")}</span>
             )}
           </div>
 
           <div className="rounded-2xl border border-slate-300 bg-white px-4 py-3">
-            <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">Tema chiaro</p>
+            <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">{t("lightTheme")}</p>
             {previewLightLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewLightLogo} alt={`${effectiveName} light`} className="h-11 w-auto max-w-full object-contain" />
+              <img src={previewLightLogo} alt={t("previewAltLight", { name: effectiveName })} className="h-11 w-auto max-w-full object-contain" />
             ) : (
-              <span className="text-sm text-slate-500">Nessun logo disponibile</span>
+              <span className="text-sm text-slate-500">{t("noLogo")}</span>
             )}
           </div>
 
-          <p className="text-xs text-slate-500">Fallback automatico: logo tema corrente -&gt; altro logo -&gt; logo legacy.</p>
+          <p className="text-xs text-slate-500">{t("fallbackHint")}</p>
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      {success && <p className="text-sm text-green-700">{success}</p>}
+      <FormFeedback error={error} success={success} />
     </section>
   );
 }

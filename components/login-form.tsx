@@ -1,87 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { CredentialsForm } from "@/components/credentials-form";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
 
+/** Accesso (T-303, T-1303): dopo il login si torna solo a un percorso della stessa origine. */
 export function LoginForm({ nextPath }: { nextPath: string }) {
-  const redirectPath = useMemo(() => safeNextPath(nextPath), [nextPath]);
-
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ username, password }),
-      });
-
-      const payload = await readJsonSafe<ApiErrorPayload>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Accesso non riuscito"));
-      }
-
-      window.location.assign(redirectPath);
-      return;
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Errore imprevisto");
-      setLoading(false);
-    }
-  };
-
-  return (
-    <form className="space-y-4" onSubmit={submit}>
-      <div>
-        <label className="label" htmlFor="username">
-          Username
-        </label>
-        <input
-          id="username"
-          className="input"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
-          autoComplete="username"
-          required
-        />
-      </div>
-
-      <div>
-        <label className="label" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          className="input"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          autoComplete="current-password"
-          required
-        />
-      </div>
-
-      <button className="btn-primary w-full" disabled={loading} type="submit">
-        {loading ? "Accesso in corso..." : "Accedi"}
-      </button>
-
-      <p className="text-sm text-slate-600">
-        Non hai un account?{" "}
-        <Link href="/register" className="font-medium underline">
-          Registrati
-        </Link>
-      </p>
-
-      {error && <p className="text-sm text-red-700">{error}</p>}
-    </form>
-  );
+  return <CredentialsForm mode="login" redirectPath={safeNextPath(nextPath)} />;
 }

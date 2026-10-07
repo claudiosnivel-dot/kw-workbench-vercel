@@ -100,7 +100,8 @@ describe("caratterizzazione: login", () => {
       body: { username: "char-active", password: "password-errata" },
     });
     expect(wrong.status).toBe(401);
-    expect(await wrong.json()).toEqual({ error: "Credenziali non valide" });
+    // impacted-by: T-1303 (ogni risposta d'errore ha un code di API_ERROR_CODES)
+    expect(await wrong.json()).toEqual({ error: "Credenziali non valide", code: "INVALID_CREDENTIALS" });
 
     const suspended = await callRoute(login, {
       method: "POST",
@@ -131,8 +132,9 @@ describe("caratterizzazione: registrazione e logout", () => {
 
     const duplicate = await callRoute(register, { method: "POST", url: "/api/auth/register", body });
     // impacted-by: T-503 (aggiornata da T-503: username già in uso è un ConflictError, 409 CONFLICT)
+    // impacted-by: T-1302 (accento corretto nel messaggio del server)
     expect(duplicate.status).toBe(409);
-    expect(await duplicate.json()).toMatchObject({ error: "Username gia in uso", code: "CONFLICT" });
+    expect(await duplicate.json()).toMatchObject({ error: "Username già in uso", code: "CONFLICT" });
 
     const out = await callRoute(logout, { method: "POST", url: "/api/auth/logout" });
     const cleared = out.headers.get("set-cookie") ?? "";

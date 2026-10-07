@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { AppError, withApiErrors } from "@/lib/http/errors";
+import { AppError, errorResponse } from "@/lib/http/errors";
+import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
+import { assertOwnedScope } from "@/lib/modules/project-access";
 import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
 import { EXPORT_SCOPES } from "@/lib/modules/export-types";
 import type { ExportScope } from "@/lib/modules/export-types";
@@ -11,17 +12,12 @@ import {
 } from "@/lib/modules/google-sheets-export";
 import { logger } from "@/lib/observability/logger";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
-import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const VALID_SCOPES = new Set<ExportScope>(EXPORT_SCOPES);
 const INTERNAL_EXPORT_ERROR = "Errore interno durante l'export su Google Sheets";
-
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
 
 type ExportGoogleSheetsPayload = {
   fileName?: unknown;
@@ -54,15 +50,12 @@ function parseBodyFilters(input: unknown): Record<string, string | string[] | un
   return out;
 }
 
-export const POST = withApiErrors(async (request: NextRequest, context: RouteContext) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-  const { id } = await context.params;
-
+export const POST = withUserRoute(async (request: NextRequest, user, { id }: ProjectParams) => {
   let payload: ExportGoogleSheetsPayload;
   try {
     payload = (await request.json()) as ExportGoogleSheetsPayload;
   } catch {
-    return NextResponse.json({ error: "Body JSON non valido" }, { status: 400 });
+    return errorResponse(400, "INVALID_JSON", "Body JSON non valido");
   }
 
   const fileName = String(payload.fileName ?? "").trim();
@@ -71,41 +64,14 @@ export const POST = withApiErrors(async (request: NextRequest, context: RouteCon
   const subprojectId = rawSubprojectId || null;
 
   if (!fileName) {
-    return NextResponse.json({ error: "Nome file obbligatorio" }, { status: 400 });
+    return errorResponse(400, "SHEETS_FILE_NAME_REQUIRED", "Nome file obbligatorio");
   }
 
   if (!VALID_SCOPES.has(scope)) {
-    return NextResponse.json({ error: "Scope non valido" }, { status: 400 });
+    return errorResponse(400, "EXPORT_SCOPE_INVALID", "Scope non valido");
   }
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      owner_user_id: user.id,
-    },
-    select: { id: true },
-  });
-
-  if (!project) {
-    return NextResponse.json({ error: "Progetto non trovato" }, { status: 404 });
-  }
-
-  if (subprojectId) {
-    const subproject = await prisma.subproject.findFirst({
-      where: {
-        id: subprojectId,
-        project_id: id,
-        project: {
-          owner_user_id: user.id,
-        },
-      },
-      select: { id: true },
-    });
-
-    if (!subproject) {
-      return NextResponse.json({ error: "Sezione non trovata" }, { status: 404 });
-    }
-  }
+  await assertOwnedScope(user.id, id, subprojectId);
 
   const filters = parseResultsFilters(parseBodyFilters(payload.filters));
 

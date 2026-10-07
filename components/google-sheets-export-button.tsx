@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { ApiErrorPayload, buildApiErrorMessage, readJsonSafe } from "@/lib/client/http";
+import { ApiErrorPayload, messageOf, readApiResponse } from "@/lib/client/http";
 import type { ExportScope } from "@/lib/modules/export-types";
 
 type ExportModalResponse = ApiErrorPayload & {
@@ -43,13 +44,7 @@ function keepFocusInside(event: KeyboardEvent, dialog: HTMLElement): void {
   }
 }
 
-const EXPORT_SCOPE_OPTIONS: Array<{ value: ExportScope; label: string }> = [
-  { value: "approved", label: "Solo approvate" },
-  { value: "selected", label: "Solo selezionate" },
-  { value: "review", label: "Solo review" },
-  { value: "non-excluded", label: "Tutte non escluse" },
-  { value: "filtered", label: "Vista filtrata corrente" },
-];
+const EXPORT_SCOPE_OPTIONS = ["approved", "selected", "review", "non-excluded", "filtered"] as const satisfies ReadonlyArray<ExportScope>;
 
 type GoogleSheetsExportButtonProps = {
   projectId: string;
@@ -66,6 +61,9 @@ export function GoogleSheetsExportButton({
   defaultFileName,
   filters,
 }: GoogleSheetsExportButtonProps) {
+  const t = useTranslations("export");
+  const tErrors = useTranslations("errors");
+  const tCommon = useTranslations("common");
   const [isOpen, setIsOpen] = useState(false);
   const [scope, setScope] = useState<ExportScope>("non-excluded");
   const [fileName, setFileName] = useState(defaultFileName);
@@ -130,7 +128,7 @@ export function GoogleSheetsExportButton({
   const runExport = async () => {
     const trimmedFileName = fileName.trim();
     if (!trimmedFileName) {
-      setError("Inserisci un nome file.");
+      setError(t("sheets.fileNameRequired"));
       return;
     }
 
@@ -150,14 +148,11 @@ export function GoogleSheetsExportButton({
         }),
       });
 
-      const payload = await readJsonSafe<ExportModalResponse>(response);
-      if (!response.ok) {
-        throw new Error(buildApiErrorMessage(response, payload, "Esportazione Google Sheets non riuscita"));
-      }
+      const payload = await readApiResponse<ExportModalResponse>(response, tErrors);
 
       setResult(payload?.data ?? null);
     } catch (exportError) {
-      setError(exportError instanceof Error ? exportError.message : "Errore imprevisto");
+      setError(messageOf(exportError, tCommon("unexpectedError")));
     } finally {
       setLoading(false);
     }
@@ -166,7 +161,7 @@ export function GoogleSheetsExportButton({
   return (
     <>
       <button ref={openerRef} className="btn-primary w-full sm:w-auto" type="button" onClick={openModal}>
-        Esporta su Google Sheets
+        {t("sheets.open")}
       </button>
 
       {isOpen && (
@@ -185,41 +180,39 @@ export function GoogleSheetsExportButton({
             >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h3 id="google-sheets-export-title" className="text-lg font-semibold">
-                  Export Google Sheets
+                  {t("sheets.title")}
                 </h3>
                 <button className="btn-secondary w-full sm:w-auto" type="button" onClick={closeModal} disabled={loading}>
-                  Chiudi
+                  {tCommon("close")}
                 </button>
               </div>
 
               <div className="mt-4 space-y-4">
                 {!connected ? (
                   <div className="space-y-3">
-                    <p className="text-sm text-slate-600">
-                      Per esportare su Google Sheets devi prima collegare il tuo account Google da Personalizza.
-                    </p>
+                    <p className="text-sm text-slate-600">{t("sheets.notConnected")}</p>
                     <Link className="btn-primary w-full text-center sm:w-auto" href="/personalizza#google-sheets">
-                      Vai a Personalizza
+                      {t("sheets.goToPersonalize")}
                     </Link>
                   </div>
                 ) : (
                   <>
                     <div>
                       <label className="label" htmlFor="google-sheets-file-name">
-                        Nome file Google Sheets
+                        {t("sheets.fileName")}
                       </label>
                       <input
                         id="google-sheets-file-name"
                         className="input"
                         value={fileName}
                         onChange={(event) => setFileName(event.target.value)}
-                        placeholder="Piano editoriale keyword"
+                        placeholder={t("sheets.fileNamePlaceholder")}
                       />
                     </div>
 
                     <div>
                       <label className="label" htmlFor="google-sheets-scope">
-                        Scope export
+                        {t("sheets.scope")}
                       </label>
                       <select
                         id="google-sheets-scope"
@@ -228,33 +221,29 @@ export function GoogleSheetsExportButton({
                         onChange={(event) => setScope(event.target.value as ExportScope)}
                       >
                         {EXPORT_SCOPE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
+                          <option key={option} value={option}>
+                            {t(`scopes.${option}`)}
                           </option>
                         ))}
                       </select>
                     </div>
 
-                    <p className="text-xs text-slate-500">
-                      Ogni sezione del progetto con keyword esportate verra creata come foglio separato nel file.
-                    </p>
+                    <p className="text-xs text-slate-500">{t("sheets.hint")}</p>
 
                     <button className="btn-primary w-full sm:w-auto" type="button" onClick={runExport} disabled={loading}>
-                      {loading ? "Esportazione in corso..." : "Esporta ora"}
+                      {loading ? t("sheets.exporting") : t("sheets.exportNow")}
                     </button>
 
                     {result?.spreadsheetUrl && (
                       <div className="space-y-2 rounded-xl border border-emerald-400/40 bg-emerald-500/15 p-3 text-sm text-emerald-200">
-                        <p>
-                          Export completato: {result.exportedRows} keyword su {result.sheetCount} fogli.
-                        </p>
+                        <p>{t("sheets.completed", { rows: result.exportedRows, sheets: result.sheetCount })}</p>
                         <a
                           className="btn-secondary w-full text-center sm:w-auto"
                           href={result.spreadsheetUrl}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          Apri file Google Sheets
+                          {t("sheets.openFile")}
                         </a>
                       </div>
                     )}

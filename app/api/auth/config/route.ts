@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { updateAuthCredentials, verifyUserPassword } from "@/lib/auth/credentials";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
-import { withApiErrors } from "@/lib/http/errors";
+import { errorResponse, withApiErrors } from "@/lib/http/errors";
 
 export const PATCH = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);
@@ -16,12 +16,12 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
 
   const currentPassword = String(payload.currentPassword ?? "");
   if (!currentPassword) {
-    return NextResponse.json({ error: "La password attuale e obbligatoria" }, { status: 400 });
+    return errorResponse(400, "CURRENT_PASSWORD_REQUIRED", "La password attuale è obbligatoria");
   }
 
   const currentValid = await verifyUserPassword(user.id, currentPassword);
   if (!currentValid) {
-    return NextResponse.json({ error: "La password attuale non e valida" }, { status: 401 });
+    return errorResponse(401, "CURRENT_PASSWORD_INVALID", "La password attuale non è valida");
   }
 
   const username = String(payload.username ?? "").trim();
@@ -29,11 +29,11 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
   const confirmPassword = String(payload.confirmPassword ?? "");
 
   if (!username && !newPassword) {
-    return NextResponse.json({ error: "Nessuna modifica da salvare" }, { status: 400 });
+    return errorResponse(400, "NO_CHANGES", "Nessuna modifica da salvare");
   }
 
   if (newPassword && newPassword !== confirmPassword) {
-    return NextResponse.json({ error: "Nuova password e conferma non coincidono" }, { status: 400 });
+    return errorResponse(400, "PASSWORD_MISMATCH", "Nuova password e conferma non coincidono");
   }
 
   // Errori di validazione (400) e username già in uso (409) arrivano come AppError a withApiErrors.
