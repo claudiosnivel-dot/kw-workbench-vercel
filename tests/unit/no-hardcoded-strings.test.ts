@@ -65,6 +65,18 @@ const I18N_MIGRATED_FILES = [
   "components/google-sheets-personal-card.tsx",
   "app/error.tsx",
   "app/not-found.tsx",
+  // Componenti condivisi estratti dalle pagine e dai form migrati (consolidamento dei cloni di T-1302 e T-1303).
+  "components/credentials-form.tsx",
+  "components/card-intro.tsx",
+  "components/page-intro.tsx",
+  "components/narrow-card.tsx",
+  "components/danger-zone-card.tsx",
+  "components/onboarding-back-link.tsx",
+  "components/onboarding-step-card.tsx",
+  "components/form-feedback.tsx",
+  "components/settings-card.tsx",
+  "components/locale-code-options.tsx",
+  "components/project-advanced-fields.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

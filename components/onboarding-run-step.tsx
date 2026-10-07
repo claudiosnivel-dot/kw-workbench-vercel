@@ -3,8 +3,10 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { CardIntro } from "@/components/card-intro";
+import { FormFeedback } from "@/components/form-feedback";
 import { JobProgress } from "@/components/job-progress";
 import { OnboardingBackLink } from "@/components/onboarding-back-link";
+import { messageOf } from "@/lib/client/http";
 import { readStartedJobId } from "@/lib/client/run-extraction";
 
 type OnboardingRunStepProps = {
@@ -49,7 +51,7 @@ export function OnboardingRunStep({
 
       setJobId(await readStartedJobId(response, { errors: tErrors, failedMessage: tJobs("failed") }));
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : tCommon("unexpectedError"));
+      setError(messageOf(submitError, tCommon("unexpectedError")));
     } finally {
       setStarting(false);
     }
@@ -78,7 +80,7 @@ export function OnboardingRunStep({
         window.location.assign("/onboarding/review-export");
       }, 450);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : tCommon("unexpectedError"));
+      setError(messageOf(submitError, tCommon("unexpectedError")));
     }
   };
 
@@ -108,8 +110,7 @@ export function OnboardingRunStep({
         <OnboardingBackLink href="/onboarding/seeds" />
       </div>
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      {success && <p className="text-sm text-green-700">{success}</p>}
+      <FormFeedback error={error} success={success} />
     </section>
   );
 }

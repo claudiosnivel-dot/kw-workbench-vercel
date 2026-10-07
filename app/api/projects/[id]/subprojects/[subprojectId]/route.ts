@@ -1,34 +1,14 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { withApiErrors } from "@/lib/http/errors";
+import { type SectionParams, withUserRoute } from "@/lib/http/user-route";
+import { findOwnedSectionOr404 } from "@/lib/modules/project-access";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { parseSubprojectPatch } from "@/lib/modules/project-settings";
 import { deleteSection, guardSectionName } from "@/lib/modules/sections";
 import { prisma } from "@/lib/prisma";
 
-type RouteContext = {
-  params: Promise<{ id: string; subprojectId: string }>;
-};
-
-export const PATCH = withApiErrors(async (request: Request, context: RouteContext) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-  const { id, subprojectId } = await context.params;
-
-  const existing = await prisma.subproject.findFirst({
-    where: {
-      id: subprojectId,
-      project_id: id,
-      project: {
-        owner_user_id: user.id,
-      },
-    },
-    select: { id: true, metrics_provider_override: true },
-  });
-
-  if (!existing) {
-    return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
-  }
+export const PATCH = withUserRoute(async (request: Request, user, { id, subprojectId }: SectionParams) => {
+  const existing = await findOwnedSectionOr404(user.id, id, subprojectId, { id: true, metrics_provider_override: true });
 
   // Aggiornamento parziale (T-809): seeds assente lascia le seed, seeds vuoto le cancella.
   const parsed = parseSubprojectPatch(await request.json(), user, existing);
@@ -65,24 +45,8 @@ export const PATCH = withApiErrors(async (request: Request, context: RouteContex
   return NextResponse.json({ data: updated });
 });
 
-export const DELETE = withApiErrors(async (request: Request, context: RouteContext) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-  const { id, subprojectId } = await context.params;
-
-  const existing = await prisma.subproject.findFirst({
-    where: {
-      id: subprojectId,
-      project_id: id,
-      project: {
-        owner_user_id: user.id,
-      },
-    },
-    select: { id: true },
-  });
-
-  if (!existing) {
-    return NextResponse.json({ error: "Sezione non trovata", code: "SECTION_NOT_FOUND" }, { status: 404 });
-  }
+export const DELETE = withUserRoute(async (request: Request, user, { id, subprojectId }: SectionParams) => {
+  await findOwnedSectionOr404(user.id, id, subprojectId, { id: true });
 
   await deleteSection(id, subprojectId);
 

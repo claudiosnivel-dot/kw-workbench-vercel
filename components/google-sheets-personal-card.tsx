@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CardIntro } from "@/components/card-intro";
-import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
+import { ApiErrorPayload, messageOf, readApiResponse } from "@/lib/client/http";
 
 type GoogleSheetsSnapshot = {
   connected: boolean;
@@ -58,7 +58,7 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
 
       router.refresh();
     } catch (disconnectError) {
-      setError(disconnectError instanceof Error ? disconnectError.message : tCommon("unexpectedError"));
+      setError(messageOf(disconnectError, tCommon("unexpectedError")));
     } finally {
       setLoading(false);
     }

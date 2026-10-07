@@ -84,6 +84,34 @@ export function useOnboardingCreation(options: { url: string; storageKey: string
 }
 
 /**
+ * Salva un passo del percorso guidato (PATCH di url con body) e passa al successivo: avanzamento dello stato
+ * dell'onboarding e apertura di nextPath (T-1303). Errore della PATCH: testo del catalogo; avanzamento non riuscito:
+ * advanceFailed.
+ */
+export async function saveStepAndAdvance(
+  step: { url: string; body: unknown; state: Record<string, string>; nextPath: string; advanceFailed: string },
+  tErrors: ErrorTranslator
+): Promise<void> {
+  const patch = (url: string, body: unknown) =>
+    fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+  await readApiResponse(await patch(step.url, step.body), tErrors);
+  if (!(await patch("/api/onboarding/state", step.state)).ok) {
+    throw new Error(step.advanceFailed);
+  }
+  window.location.assign(step.nextPath);
+}
+
+/** Salvataggio di un passo con avanzamento (T-1303): in corso, errore e saveStep per il submit del form. */
+export function useStepSave() {
+  const { pending, error, run } = useLeavingAction();
+  const saveStep = (step: Parameters<typeof saveStepAndAdvance>[0]) => {
+    void run((tErrors) => saveStepAndAdvance(step, tErrors));
+  };
+  return { saving: pending !== null, error, saveStep };
+}
+
+/**
  * Scelta o ripresa del percorso guidato (POST a url, con body JSON se presente): apre il nextPath indicato dal server
  * o fallbackPath; con una risposta non riuscita lancia l'errore del catalogo per il code (T-1303).
  */

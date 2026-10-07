@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { CardIntro } from "@/components/card-intro";
 import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
 import { OnboardingBackLink } from "@/components/onboarding-back-link";
-import { buildApiErrorMessage, readJsonSafe, type ApiErrorPayload } from "@/lib/client/http";
+import { type ApiErrorPayload, buildApiErrorMessage, messageOf, readJsonSafe } from "@/lib/client/http";
 import { pauseOnboardingAndOpenDashboard } from "@/lib/client/onboarding";
 import { useLeavingAction } from "@/lib/client/use-leaving-action";
 import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
@@ -96,7 +96,7 @@ export function OnboardingReviewExportStep({
 
       setMessage(t("review.completed"));
     } catch (exportError) {
-      setError(exportError instanceof Error ? exportError.message : tCommon("unexpectedError"));
+      setError(messageOf(exportError, tCommon("unexpectedError")));
     } finally {
       // Su ogni ramo, anche export riuscito senza completamento: i pulsanti non restano bloccati (T-1003).
       setLoading(null);

@@ -3,28 +3,11 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiErrorPayload, buildApiErrorMessage, readApiResponse, readJsonSafe } from "@/lib/client/http";
-import { type LocaleOption, useLocaleOptions } from "@/lib/client/use-locale-options";
-import type { MetricsProvider } from "@/lib/generated/prisma/enums";
-import { isSupportedCountryCode, isSupportedLanguageCode } from "@/lib/constants/locale-options";
-
-type ProjectFormValues = {
-  name: string;
-  language_code: string;
-  country_code: string;
-  initial_subproject_name: string;
-  seeds: string;
-  autocomplete_provider: "MOCK" | "GOOGLE_DIRECT";
-  // Tipo dell'enum: PLANNER_CSV (T-910) marca le righe importate e non è tra le opzioni del form.
-  metrics_provider: MetricsProvider;
-  min_volume: number;
-  exclude_brands: boolean;
-  expand_alpha: boolean;
-  expand_numeric: boolean;
-  expand_patterns: boolean;
-  auto_classification: boolean;
-  scoring_profile: string;
-};
+import { FormFeedback } from "@/components/form-feedback";
+import { AdvancedProjectFields, type ProjectFormValues } from "@/components/project-advanced-fields";
+import { ApiErrorPayload, buildApiErrorMessage, type ErrorTranslator, readApiResponse, readJsonSafe, sendJson } from "@/lib/client/http";
+import { useFormValues } from "@/lib/client/use-form-values";
+import { useSaveAction } from "@/lib/client/use-save-action";
 
 type ProjectCreateResponse = ApiErrorPayload & {
   data?: {
@@ -69,13 +52,12 @@ export function ProjectForm({
   showInitialSubprojectName = true,
 }: ProjectFormProps) {
   const t = useTranslations("projects.form");
-  const tErrors = useTranslations("errors");
   const tCommon = useTranslations("common");
   const router = useRouter();
   // DataForSEO ha un costo per richiesta: lo sceglie solo il root admin (lo stesso che sceglie l'autocomplete),
   // chi lo ha già lo vede selezionato (T-902).
   const showLicensedProvider = canEditAutocompleteProvider || initialValues?.metrics_provider === "DATAFORSEO";
-  const [values, setValues] = useState<ProjectFormValues>(() => {
+  const { values, update: setField } = useFormValues<ProjectFormValues>(() => {
     const base = initialValues ?? { ...defaultValues, initial_subproject_name: t("defaultSectionName") };
     if (canEditAutocompleteProvider) {
       return base;
@@ -87,18 +69,12 @@ export function ProjectForm({
     };
   });
 
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { saving, error, success: message, setError, save } = useSaveAction();
   const [submitIntent, setSubmitIntent] = useState<"save" | "save-and-run">("save");
   const [stepTwoCompleted, setStepTwoCompleted] = useState(mode !== "create");
 
-  const { languageOptions, countryOptions } = useLocaleOptions();
-
   const languageValue = values.language_code.trim().toLowerCase() || "en";
   const countryValue = values.country_code.trim().toUpperCase() || "US";
-  const hasCustomLanguage = !isSupportedLanguageCode(languageValue);
-  const hasCustomCountry = !isSupportedCountryCode(countryValue);
   const seedCount = values.seeds
     .split(/[\n,;]+/)
     .map((item) => item.trim())
@@ -109,20 +85,28 @@ export function ProjectForm({
       setStepTwoCompleted(false);
     }
 
-    setValues((current) => ({ ...current, [key]: value }));
+    setField(key, value);
   };
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  // Prima estrazione subito dopo la creazione: un errore non blocca l'apertura del progetto creato.
+  const startFirstRun = async (createdProjectId: string, subprojectId: string, tErrors: ErrorTranslator) => {
+    try {
+      const runResponse = await sendJson("POST", `/api/projects/${createdProjectId}/run`, { subprojectId });
+      if (!runResponse.ok) {
+        window.alert(buildApiErrorMessage(runResponse, await readJsonSafe<ApiErrorPayload>(runResponse), tErrors));
+      }
+    } catch {
+      window.alert(t("runFailedAfterCreate"));
+    }
+  };
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (mode === "create" && !stepTwoCompleted) {
       setError(t("step2Required"));
       return;
     }
-
-    setSaving(true);
-    setMessage(null);
-    setError(null);
 
     const endpoint = mode === "create" ? "/api/projects" : `/api/projects/${projectId}`;
     const method = mode === "create" ? "POST" : "PATCH";
@@ -147,51 +131,22 @@ export function ProjectForm({
       body.seeds = showSeeds ? values.seeds : "";
     }
 
-    try {
-      const response = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const payload = await readApiResponse<ProjectCreateResponse>(response, tErrors);
-
-      if (mode === "create") {
-        const createdProjectId = payload?.data?.project?.id ?? payload?.data?.id;
+    void save(async (tErrors) => {
+      const payload = await readApiResponse<ProjectCreateResponse>(await sendJson(method, endpoint, body), tErrors);
+      const createdProjectId = mode === "create" ? (payload?.data?.project?.id ?? payload?.data?.id) : undefined;
+      if (createdProjectId) {
         const initialSubprojectId = payload?.data?.initial_subproject_id;
-
-        if (createdProjectId) {
-          if (submitIntent === "save-and-run" && initialSubprojectId && seedCount > 0) {
-            try {
-              const runResponse = await fetch(`/api/projects/${createdProjectId}/run`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ subprojectId: initialSubprojectId }),
-              });
-
-              if (!runResponse.ok) {
-                const runPayload = await readJsonSafe<ApiErrorPayload>(runResponse);
-                const runErrorMessage = buildApiErrorMessage(runResponse, runPayload, tErrors);
-                window.alert(runErrorMessage);
-              }
-            } catch {
-              window.alert(t("runFailedAfterCreate"));
-            }
-          }
-
-          router.push(`/projects/${createdProjectId}`);
-          router.refresh();
-          return;
+        if (submitIntent === "save-and-run" && initialSubprojectId && seedCount > 0) {
+          await startFirstRun(createdProjectId, initialSubprojectId, tErrors);
         }
+        router.push(`/projects/${createdProjectId}`);
+        router.refresh();
+        return "";
       }
 
-      setMessage(t("saved"));
       router.refresh();
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : tCommon("unexpectedError"));
-    } finally {
-      setSaving(false);
-    }
+      return t("saved");
+    });
   };
 
   const showCreateFlow = mode === "create";
@@ -202,10 +157,6 @@ export function ProjectForm({
       update={update}
       languageValue={languageValue}
       countryValue={countryValue}
-      hasCustomLanguage={hasCustomLanguage}
-      hasCustomCountry={hasCustomCountry}
-      languageOptions={languageOptions}
-      countryOptions={countryOptions}
       canEditAutocompleteProvider={canEditAutocompleteProvider}
       showLicensedProvider={showLicensedProvider}
     />
@@ -312,173 +263,8 @@ export function ProjectForm({
           </button>
         )}
 
-        {message && <p className="text-sm text-green-700">{message}</p>}
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        <FormFeedback error={error} success={message} />
       </div>
     </form>
-  );
-}
-
-type AdvancedProjectFieldsProps = {
-  values: ProjectFormValues;
-  update: <K extends keyof ProjectFormValues>(key: K, value: ProjectFormValues[K]) => void;
-  languageValue: string;
-  countryValue: string;
-  hasCustomLanguage: boolean;
-  hasCustomCountry: boolean;
-  languageOptions: ReadonlyArray<LocaleOption>;
-  countryOptions: ReadonlyArray<LocaleOption>;
-  canEditAutocompleteProvider: boolean;
-  showLicensedProvider: boolean;
-};
-
-// Opzioni booleane del progetto: campo del form e chiavi di etichetta e spiegazione nel catalogo (projects.fields).
-const TOGGLE_FIELDS = [
-  { field: "exclude_brands", label: "excludeBrands" },
-  { field: "expand_alpha", label: "expandAlpha" },
-  { field: "expand_numeric", label: "expandNumeric" },
-  { field: "expand_patterns", label: "expandPatterns" },
-  { field: "auto_classification", label: "autoClassification" },
-] as const;
-
-function AdvancedProjectFields({
-  values,
-  update,
-  languageValue,
-  countryValue,
-  hasCustomLanguage,
-  hasCustomCountry,
-  languageOptions,
-  countryOptions,
-  canEditAutocompleteProvider,
-  showLicensedProvider,
-}: AdvancedProjectFieldsProps) {
-  const t = useTranslations("projects.fields");
-
-  return (
-    <>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="label" htmlFor="language_code">
-            {t("language")}
-          </label>
-          <select
-            id="language_code"
-            className="select"
-            value={languageValue}
-            onChange={(event) => update("language_code", event.target.value)}
-            required
-          >
-            {hasCustomLanguage && <option value={languageValue}>{t("customCode", { code: languageValue })}</option>}
-            {languageOptions.map((option) => (
-              <option key={option.code} value={option.code}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="label" htmlFor="country_code">
-            {t("country")}
-          </label>
-          <select
-            id="country_code"
-            className="select"
-            value={countryValue}
-            onChange={(event) => update("country_code", event.target.value)}
-            required
-          >
-            {hasCustomCountry && <option value={countryValue}>{t("customCode", { code: countryValue })}</option>}
-            {countryOptions.map((option) => (
-              <option key={option.code} value={option.code}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {canEditAutocompleteProvider && (
-          <div>
-            <label className="label" htmlFor="autocomplete_provider">
-              {t("autocompleteProvider")}
-            </label>
-            <select
-              id="autocomplete_provider"
-              className="select"
-              value={values.autocomplete_provider}
-              onChange={(event) => update("autocomplete_provider", event.target.value as ProjectFormValues["autocomplete_provider"])}
-            >
-              <option value="GOOGLE_DIRECT">{t("autocompleteGoogle")}</option>
-              <option value="MOCK">{t("mock")}</option>
-            </select>
-          </div>
-        )}
-
-        <div>
-          <label className="label" htmlFor="metrics_provider">
-            {t("metricsProvider")}
-          </label>
-          <select
-            id="metrics_provider"
-            className="select"
-            value={values.metrics_provider}
-            onChange={(event) => update("metrics_provider", event.target.value as ProjectFormValues["metrics_provider"])}
-          >
-            <option value="NONE">{t("metricsNone")}</option>
-            <option value="MOCK">{t("mock")}</option>
-            {showLicensedProvider && <option value="DATAFORSEO">{t("dataForSeo")}</option>}
-          </select>
-        </div>
-
-        <div>
-          <label className="label" htmlFor="min_volume">
-            {t("minVolume")}
-          </label>
-          <input
-            id="min_volume"
-            className="input"
-            type="number"
-            min={0}
-            value={values.min_volume}
-            onChange={(event) => update("min_volume", Number(event.target.value) || 0)}
-          />
-          <p className="mt-1 text-xs text-slate-500">{t("minVolumeHint")}</p>
-        </div>
-
-        <div>
-          <label className="label" htmlFor="scoring_profile">
-            {t("scoringProfile")}
-          </label>
-          <select
-            id="scoring_profile"
-            className="select"
-            value={values.scoring_profile}
-            onChange={(event) => update("scoring_profile", event.target.value)}
-          >
-            <option value="balanced">{t("scoring.balanced")}</option>
-            <option value="aggressive">{t("scoring.aggressive")}</option>
-            <option value="conservative">{t("scoring.conservative")}</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        {TOGGLE_FIELDS.map(({ field, label }) => (
-          <div
-            key={field}
-            className={`rounded-xl border border-[var(--surface-border)] bg-[var(--surface-background)] p-3${
-              field === "auto_classification" ? " md:col-span-2" : ""
-            }`}
-          >
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input type="checkbox" checked={values[field]} onChange={(event) => update(field, event.target.checked)} />
-              {t(label)}
-            </label>
-            <p className="mt-1 text-xs text-slate-500">{t(`${label}Hint`)}</p>
-          </div>
-        ))}
-      </div>
-    </>
   );
 }

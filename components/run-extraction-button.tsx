@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { JobProgress } from "@/components/job-progress";
+import { messageOf } from "@/lib/client/http";
 import { readStartedJobId } from "@/lib/client/run-extraction";
 
 type RunExtractionButtonProps = {
@@ -60,7 +61,7 @@ export function RunExtractionButton({
       // 202 per un job nuovo, 409 JOB_ALREADY_ACTIVE per quello già in corso: in entrambi i casi se ne segue lo stato.
       setJobId(await readStartedJobId(response, { errors: tErrors, failedMessage: t("failed") }));
     } catch (runError) {
-      setError(runError instanceof Error ? runError.message : tCommon("unexpectedError"));
+      setError(messageOf(runError, tCommon("unexpectedError")));
     } finally {
       setStarting(false);
     }

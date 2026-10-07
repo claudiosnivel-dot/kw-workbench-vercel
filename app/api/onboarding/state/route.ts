@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { AppError, withApiErrors } from "@/lib/http/errors";
+import { AppError, errorResponse, withApiErrors } from "@/lib/http/errors";
 import {
   type OnboardingStatusKey,
   type OnboardingStepKey,
@@ -38,13 +38,13 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
 
   const currentStepRaw = payload.currentStep === undefined ? undefined : String(payload.currentStep).trim().toUpperCase();
   if (currentStepRaw && !isOnboardingStep(currentStepRaw)) {
-    return NextResponse.json({ error: "currentStep non valido", code: "VALIDATION_ERROR" }, { status: 400 });
+    return errorResponse(400, "VALIDATION_ERROR", "currentStep non valido");
   }
   const currentStep = currentStepRaw as OnboardingStepKey | undefined;
 
   const statusRaw = payload.status === undefined ? undefined : String(payload.status).trim().toUpperCase();
   if (statusRaw && !isOnboardingStatus(statusRaw)) {
-    return NextResponse.json({ error: "status non valido", code: "VALIDATION_ERROR" }, { status: 400 });
+    return errorResponse(400, "VALIDATION_ERROR", "status non valido");
   }
   const status = statusRaw as OnboardingStatusKey | undefined;
 

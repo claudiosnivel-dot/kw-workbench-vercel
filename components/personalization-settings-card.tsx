@@ -2,8 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { CardIntro } from "@/components/card-intro";
-import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
+import { SettingsCard } from "@/components/settings-card";
+import { ApiErrorPayload, readApiResponse, sendJson } from "@/lib/client/http";
+import { useSaveAction } from "@/lib/client/use-save-action";
 
 type ThemeMode = "DARK" | "LIGHT";
 type FontScaleMode = "NORMAL" | "LARGE";
@@ -30,14 +31,10 @@ const COLOR_VISION_MODES: ColorVisionMode[] = ["NONE", "PROTANOPIA", "DEUTERANOP
 
 export function PersonalizationSettingsCard({ initial }: { initial: PreferencesSnapshot }) {
   const t = useTranslations("settings.preferences");
-  const tErrors = useTranslations("errors");
-  const tCommon = useTranslations("common");
   const [themeMode, setThemeMode] = useState<ThemeMode>(initial.themeMode);
   const [fontScaleMode, setFontScaleMode] = useState<FontScaleMode>(initial.fontScaleMode);
   const [colorVisionMode, setColorVisionMode] = useState<ColorVisionMode>(initial.colorVisionMode);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { saving, error, success, save } = useSaveAction();
   // Preferenze salvate: l'anteprima non salvata non sopravvive all'uscita dalla pagina (T-1104).
   const saved = useRef<PreferencesSnapshot>(initial);
 
@@ -50,24 +47,10 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
     return () => applyPreferenceAttributes(savedPreferences.current);
   }, []);
 
-  const save = async () => {
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const response = await fetch("/api/user/preferences", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          themeMode,
-          fontScaleMode,
-          colorVisionMode,
-        }),
-      });
-
+  const savePreferences = () =>
+    save(async (tErrors) => {
+      const response = await sendJson("PATCH", "/api/user/preferences", { themeMode, fontScaleMode, colorVisionMode });
       const payload = await readApiResponse<PreferencesResponse>(response, tErrors);
-
       if (payload?.data) {
         saved.current = payload.data;
         setThemeMode(payload.data.themeMode);
@@ -75,18 +58,18 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
         setColorVisionMode(payload.data.colorVisionMode);
         applyPreferenceAttributes(payload.data);
       }
-
-      setSuccess(t("saved"));
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : tCommon("unexpectedError"));
-    } finally {
-      setSaving(false);
-    }
-  };
+      return t("saved");
+    });
 
   return (
-    <section className="card space-y-5">
-      <CardIntro title={t("title")} intro={t("intro")} />
+    <SettingsCard
+      title={t("title")}
+      intro={t("intro")}
+      className="space-y-5"
+      error={error}
+      success={success}
+      save={{ onClick: savePreferences, pending: saving, label: t("save"), pendingLabel: t("saving") }}
+    >
 
       <div className="space-y-3">
         <p className="label mb-1">{t("theme")}</p>
@@ -137,13 +120,6 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
           ))}
         </select>
       </div>
-
-      <button className="btn-primary w-full sm:w-auto" type="button" onClick={save} disabled={saving}>
-        {saving ? t("saving") : t("save")}
-      </button>
-
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      {success && <p className="text-sm text-green-700">{success}</p>}
-    </section>
+    </SettingsCard>
   );
 }

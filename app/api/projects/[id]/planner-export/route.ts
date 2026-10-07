@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
-import { withApiErrors } from "@/lib/http/errors";
+import { errorResponse } from "@/lib/http/errors";
+import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
 import {
   buildPlannerExport,
   PLANNER_CHUNK_DEFAULT,
@@ -8,29 +8,20 @@ import {
   plannerPartFileName,
 } from "@/lib/modules/planner/export-keywords";
 import { loadPlannerExportRows } from "@/lib/modules/planner/export-source";
+import { ProjectNotFoundError, SectionNotFoundError } from "@/lib/modules/project-access";
 
 export const runtime = "nodejs";
-
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
 
 /**
  * Export per Keyword Planner (T-904): senza `part` il riepilogo {canonicals, parts, skipped}, con `part=N` il
  * blocco N come CSV da scaricare. Progetto e sezione filtrati per proprietario: agli altri 404 (CWE-639).
  */
-export const GET = withApiErrors(async (request: NextRequest, context: RouteContext) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
-  const { id } = await context.params;
+export const GET = withUserRoute(async (request: NextRequest, user, { id }: ProjectParams) => {
   const sectionId = request.nextUrl.searchParams.get("sectionId")?.trim() || null;
 
   const source = await loadPlannerExportRows({ projectId: id, sectionId, ownerUserId: user.id });
   if ("notFound" in source) {
-    const body =
-      source.notFound === "project"
-        ? { error: "Progetto non trovato", code: "PROJECT_NOT_FOUND" }
-        : { error: "Sezione non trovata", code: "SECTION_NOT_FOUND" };
-    return NextResponse.json(body, { status: 404 });
+    throw source.notFound === "project" ? new ProjectNotFoundError() : new SectionNotFoundError();
   }
 
   const plan = buildPlannerExport(source.rows, PLANNER_CHUNK_DEFAULT);
@@ -41,7 +32,7 @@ export const GET = withApiErrors(async (request: NextRequest, context: RouteCont
 
   const part = /^\d+$/.test(rawPart) ? Number(rawPart) : 0;
   if (part < 1 || part > plan.parts.length) {
-    return NextResponse.json({ error: "Blocco non trovato", code: "PLANNER_PART_NOT_FOUND" }, { status: 404 });
+    return errorResponse(404, "PLANNER_PART_NOT_FOUND", "Blocco non trovato");
   }
   return new NextResponse(plannerPartCsv(plan.parts[part - 1]), {
     headers: {

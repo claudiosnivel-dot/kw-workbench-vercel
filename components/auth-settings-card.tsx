@@ -2,9 +2,10 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { CardIntro } from "@/components/card-intro";
-import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
+import { SettingsCard } from "@/components/settings-card";
+import { ApiErrorPayload, readApiResponse, sendJson } from "@/lib/client/http";
 import { useRefreshAction } from "@/lib/client/use-refresh-action";
+import { useSaveAction } from "@/lib/client/use-save-action";
 
 type AuthSnapshot = {
   username: string;
@@ -16,53 +17,33 @@ type AuthSettingsResponse = ApiErrorPayload & {
 
 export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
   const t = useTranslations("settings.account");
-  const tErrors = useTranslations("errors");
-  const tCommon = useTranslations("common");
   const [username, setUsername] = useState(initial.username);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { saving, error, success, save } = useSaveAction();
 
-  const save = async () => {
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const response = await fetch("/api/auth/config", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword,
-          username,
-          newPassword,
-          confirmPassword,
-        }),
-      });
-
-      const payload = await readApiResponse<AuthSettingsResponse>(response, tErrors);
-
+  const saveCredentials = () =>
+    save(async (tErrors) => {
+      const body = { currentPassword, username, newPassword, confirmPassword };
+      const payload = await readApiResponse<AuthSettingsResponse>(await sendJson("PATCH", "/api/auth/config", body), tErrors);
       if (payload?.data?.username) {
         setUsername(payload.data.username);
       }
-
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setSuccess(t("saved"));
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : tCommon("unexpectedError"));
-    } finally {
-      setSaving(false);
-    }
-  };
+      return t("saved");
+    });
 
   return (
-    <section className="card space-y-4">
-      <CardIntro title={t("title")} intro={t("intro")} />
+    <SettingsCard
+      title={t("title")}
+      intro={t("intro")}
+      error={error}
+      success={success}
+      save={{ onClick: saveCredentials, pending: saving, label: t("save"), pendingLabel: t("saving") }}
+    >
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
         <p>
@@ -127,14 +108,7 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
           />
         </div>
       </div>
-
-      <button className="btn-primary w-full sm:w-auto" type="button" onClick={save} disabled={saving}>
-        {saving ? t("saving") : t("save")}
-      </button>
-
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      {success && <p className="text-sm text-green-700">{success}</p>}
-    </section>
+    </SettingsCard>
   );
 }
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
+import { ApiErrorPayload, messageOf, readApiResponse } from "@/lib/client/http";
 import type { ExportScope } from "@/lib/modules/export-types";
 
 type ExportModalResponse = ApiErrorPayload & {
@@ -152,7 +152,7 @@ export function GoogleSheetsExportButton({
 
       setResult(payload?.data ?? null);
     } catch (exportError) {
-      setError(exportError instanceof Error ? exportError.message : tCommon("unexpectedError"));
+      setError(messageOf(exportError, tCommon("unexpectedError")));
     } finally {
       setLoading(false);
     }

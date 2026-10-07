@@ -1,12 +1,13 @@
 "use client";
 
-import type { MetricsProvider } from "@/lib/generated/prisma/enums";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
-import { useLocaleOptions } from "@/lib/client/use-locale-options";
-import { isSupportedCountryCode, isSupportedLanguageCode } from "@/lib/constants/locale-options";
+import { FormFeedback } from "@/components/form-feedback";
+import { LocaleCodeOptions } from "@/components/locale-code-options";
+import { ApiErrorPayload, readApiResponse, sendJson } from "@/lib/client/http";
+import { useFormValues } from "@/lib/client/use-form-values";
+import { useSaveAction } from "@/lib/client/use-save-action";
+import type { MetricsProvider } from "@/lib/generated/prisma/enums";
 
 type BooleanOverride = "inherit" | "true" | "false";
 
@@ -114,39 +115,19 @@ export function SubprojectForm({
   submitLabel,
 }: SubprojectFormProps) {
   const t = useTranslations("sections.form");
-  const tErrors = useTranslations("errors");
   const tFields = useTranslations("projects.fields");
   const tProject = useTranslations("projects.form");
   const tCommon = useTranslations("common");
   const router = useRouter();
   const initialFormValues: SubprojectFormValues = { ...defaultValues, ...initialValues };
-  const [values, setValues] = useState<SubprojectFormValues>(initialFormValues);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const { languageOptions, countryOptions } = useLocaleOptions();
-
-  const hasCustomLanguage = values.language_code_override
-    ? !isSupportedLanguageCode(values.language_code_override)
-    : false;
-
-  const hasCustomCountry = values.country_code_override
-    ? !isSupportedCountryCode(values.country_code_override)
-    : false;
-
-  const update = <K extends keyof SubprojectFormValues>(key: K, value: SubprojectFormValues[K]) => {
-    setValues((current) => ({ ...current, [key]: value }));
-  };
+  const { values, setValues, update } = useFormValues<SubprojectFormValues>(initialFormValues);
+  const { saving, error, success: message, save } = useSaveAction();
 
   const endpoint = mode === "create" ? `/api/projects/${projectId}/subprojects` : `/api/projects/${projectId}/subprojects/${subprojectId}`;
   const method = mode === "create" ? "POST" : "PATCH";
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSaving(true);
-    setMessage(null);
-    setError(null);
 
     const payload = {
       name: values.name,
@@ -165,31 +146,20 @@ export function SubprojectForm({
       scoring_profile_override: values.scoring_profile_override.trim() || null,
     };
 
-    try {
-      const response = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await readApiResponse<SubprojectFormResponse>(response, tErrors);
-
+    void save(async (tErrors) => {
+      const json = await readApiResponse<SubprojectFormResponse>(await sendJson(method, endpoint, payload), tErrors);
       if (mode === "create" && redirectTo && json?.data?.id) {
         router.push(redirectTo.replace(":subprojectId", json.data.id));
         router.refresh();
-        return;
+        return "";
       }
 
       if (mode === "create") {
         setValues(initialFormValues);
       }
-      setMessage(t("saved"));
       router.refresh();
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : tCommon("unexpectedError"));
-    } finally {
-      setSaving(false);
-    }
+      return t("saved");
+    });
   };
 
   return (
@@ -254,16 +224,7 @@ export function SubprojectForm({
                 onChange={(event) => update("language_code_override", event.target.value)}
               >
                 <option value="">{t("useProjectDefault")}</option>
-                {hasCustomLanguage && (
-                  <option value={values.language_code_override}>
-                    {tFields("customCode", { code: values.language_code_override })}
-                  </option>
-                )}
-                {languageOptions.map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {option.label}
-                  </option>
-                ))}
+                <LocaleCodeOptions kind="language" current={values.language_code_override} />
               </select>
             </div>
 
@@ -278,16 +239,7 @@ export function SubprojectForm({
                 onChange={(event) => update("country_code_override", event.target.value)}
               >
                 <option value="">{t("useProjectDefault")}</option>
-                {hasCustomCountry && (
-                  <option value={values.country_code_override}>
-                    {tFields("customCode", { code: values.country_code_override })}
-                  </option>
-                )}
-                {countryOptions.map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {option.label}
-                  </option>
-                ))}
+                <LocaleCodeOptions kind="country" current={values.country_code_override} />
               </select>
             </div>
 
@@ -395,8 +347,7 @@ export function SubprojectForm({
         <button className="btn-primary w-full sm:w-auto" disabled={saving} type="submit">
           {saving ? tCommon("saving") : (submitLabel ?? (mode === "create" ? t("create") : t("save")))}
         </button>
-        {message && <p className="text-sm text-green-700">{message}</p>}
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        <FormFeedback error={error} success={message} />
       </div>
     </form>
   );

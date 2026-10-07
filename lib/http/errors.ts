@@ -22,6 +22,7 @@ import { logger } from "@/lib/observability/logger";
 import { getRequestId } from "@/lib/observability/request-id";
 
 export { API_ERROR_CODES } from "@/lib/http/error-codes";
+import type { ApiErrorCode } from "@/lib/http/error-codes";
 
 /** Code dei job in background (T-1203, T-1204), con lo status HTTP con cui li usano le rotte. */
 export const JOB_ERROR_CODES = {
@@ -85,6 +86,14 @@ export class ForbiddenError extends AppError {
     super(403, "FORBIDDEN", message);
     this.name = "ForbiddenError";
   }
+}
+
+/**
+ * Risposta d'errore restituita da una rotta senza eccezione (T-1303): body { error, code } con lo status. Il code è
+ * uno di API_ERROR_CODES per costruzione, così il client trova sempre il testo nel catalogo.
+ */
+export function errorResponse(status: number, code: ApiErrorCode, error: string): Response {
+  return NextResponse.json({ error, code }, { status });
 }
 
 function errorJson(

@@ -2,7 +2,8 @@
 
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
+import { FormFeedback } from "@/components/form-feedback";
+import { ApiErrorPayload, messageOf, readApiResponse } from "@/lib/client/http";
 import { formatDate } from "@/lib/view/format";
 
 type UserRole = "ADMIN" | "SUBSCRIBER";
@@ -43,6 +44,37 @@ const SEARCH_DEBOUNCE_MS = 300;
 // Etichette di ruoli e stati nei cataloghi (admin.roles, admin.statuses, T-1303).
 const ROLE_OPTIONS: UserRole[] = ["ADMIN", "SUBSCRIBER"];
 const STATUS_OPTIONS: UserStatus[] = ["ACTIVE", "SUSPENDED"];
+
+/** Filtro a scelta della lista utenti: «Tutti» più i valori dell'elenco. */
+function FilterSelect<V extends string>(props: {
+  id: string;
+  label: string;
+  allLabel: string;
+  value: "ALL" | V;
+  options: { value: V; label: string }[];
+  onChange: (value: "ALL" | V) => void;
+}) {
+  return (
+    <div className="w-full lg:max-w-xs">
+      <label className="label" htmlFor={props.id}>
+        {props.label}
+      </label>
+      <select
+        id={props.id}
+        className="select"
+        value={props.value}
+        onChange={(event) => props.onChange(event.target.value as "ALL" | V)}
+      >
+        <option value="ALL">{props.allLabel}</option>
+        {props.options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 export function AdminUsersDashboard({
   viewer,
@@ -127,7 +159,7 @@ export function AdminUsersDashboard({
       if (controller.signal.aborted) {
         return;
       }
-      setError(loadError instanceof Error ? loadError.message : tCommon("unexpectedError"));
+      setError(messageOf(loadError, tCommon("unexpectedError")));
     } finally {
       if (inFlight.current === controller) {
         setLoading(false);
@@ -176,7 +208,7 @@ export function AdminUsersDashboard({
       setFeedback(t("create.created"));
       await loadUsers();
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : tCommon("unexpectedError"));
+      setError(messageOf(createError, tCommon("unexpectedError")));
     } finally {
       setCreating(false);
     }
@@ -205,7 +237,7 @@ export function AdminUsersDashboard({
       setPasswordDrafts((current) => ({ ...current, [userId]: "" }));
       await loadUsers();
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : tCommon("unexpectedError"));
+      setError(messageOf(updateError, tCommon("unexpectedError")));
     } finally {
       setUpdatingId(null);
     }
@@ -229,7 +261,7 @@ export function AdminUsersDashboard({
       setFeedback(t("manage.deleted"));
       await loadUsers();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : tCommon("unexpectedError"));
+      setError(messageOf(deleteError, tCommon("unexpectedError")));
     } finally {
       setDeletingId(null);
     }
@@ -275,49 +307,29 @@ export function AdminUsersDashboard({
             />
           </div>
 
-          <div className="w-full lg:max-w-xs">
-            <label className="label" htmlFor="admin-role-filter">
-              {t("filters.role")}
-            </label>
-            <select
-              id="admin-role-filter"
-              className="select"
-              value={roleFilter}
-              onChange={(event) => {
-                setRoleFilter(event.target.value as "ALL" | UserRole);
-                setPage(1);
-              }}
-            >
-              <option value="ALL">{t("filters.all")}</option>
-              {ROLE_OPTIONS.map((role) => (
-                <option key={role} value={role}>
-                  {t(`roles.${role}`)}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FilterSelect
+            id="admin-role-filter"
+            label={t("filters.role")}
+            allLabel={t("filters.all")}
+            value={roleFilter}
+            options={ROLE_OPTIONS.map((role) => ({ value: role, label: t(`roles.${role}`) }))}
+            onChange={(role) => {
+              setRoleFilter(role);
+              setPage(1);
+            }}
+          />
 
-          <div className="w-full lg:max-w-xs">
-            <label className="label" htmlFor="admin-status-filter">
-              {t("filters.status")}
-            </label>
-            <select
-              id="admin-status-filter"
-              className="select"
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value as "ALL" | UserStatus);
-                setPage(1);
-              }}
-            >
-              <option value="ALL">{t("filters.all")}</option>
-              {STATUS_OPTIONS.map((status) => (
-                <option key={status} value={status}>
-                  {t(`statuses.${status}`)}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FilterSelect
+            id="admin-status-filter"
+            label={t("filters.status")}
+            allLabel={t("filters.all")}
+            value={statusFilter}
+            options={STATUS_OPTIONS.map((status) => ({ value: status, label: t(`statuses.${status}`) }))}
+            onChange={(status) => {
+              setStatusFilter(status);
+              setPage(1);
+            }}
+          />
 
           <button className="btn-secondary w-full lg:w-auto" type="button" onClick={() => void loadUsers()} disabled={loading}>
             {loading ? t("filters.refreshing") : t("filters.apply")}
@@ -390,8 +402,7 @@ export function AdminUsersDashboard({
       <section className="card space-y-4">
         <h2 className="text-lg font-semibold">{t("manage.title")}</h2>
 
-        {error && <p className="text-sm text-red-700">{error}</p>}
-        {feedback && <p className="text-sm text-green-700">{feedback}</p>}
+        <FormFeedback error={error} success={feedback} />
 
         <div className="table-shell">
           <table className="table-enterprise min-w-[1240px] text-left text-sm sm:min-w-full">

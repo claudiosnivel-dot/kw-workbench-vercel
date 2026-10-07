@@ -2,8 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { CardIntro } from "@/components/card-intro";
 import { OnboardingBackLink } from "@/components/onboarding-back-link";
+import { OnboardingStepCard } from "@/components/onboarding-step-card";
 import { useOnboardingCreation } from "@/lib/client/onboarding";
 
 type OnboardingSectionCreateFormProps = {
@@ -24,16 +24,7 @@ export function OnboardingSectionCreateForm({ projectId, projectName }: Onboardi
   });
 
   return (
-    <section className="card space-y-4">
-      <CardIntro
-        variant="step"
-        title={t("sectionCreate.title")}
-        intro={
-          <>
-            {t("activeProject")} <span className="font-medium">{projectName}</span>.
-          </>
-        }
-      />
+    <OnboardingStepCard title={t("sectionCreate.title")} contextLabel={t("activeProject")} contextName={projectName}>
 
       <form
         className="space-y-4"
@@ -65,6 +56,6 @@ export function OnboardingSectionCreateForm({ projectId, projectName }: Onboardi
 
         {error && <p className="text-sm text-red-700">{error}</p>}
       </form>
-    </section>
+    </OnboardingStepCard>
   );
 }

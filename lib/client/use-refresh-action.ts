@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
+import { ApiErrorPayload, messageOf, readApiResponse } from "@/lib/client/http";
 
 type RefreshActionOptions = {
   redirectTo?: string | null;
@@ -39,7 +39,7 @@ export function useRefreshAction() {
       }
       return null;
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : tCommon("unexpectedError");
+      const message = messageOf(requestError, tCommon("unexpectedError"));
       setError(message);
       setLoading(false);
       return message;

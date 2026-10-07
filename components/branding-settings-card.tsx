@@ -4,7 +4,8 @@ import { useTranslations } from "next-intl";
 import { ChangeEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CardIntro } from "@/components/card-intro";
-import { ApiErrorPayload, readApiResponse } from "@/lib/client/http";
+import { FormFeedback } from "@/components/form-feedback";
+import { ApiErrorPayload, messageOf, readApiResponse } from "@/lib/client/http";
 
 type BrandingSnapshot = {
   appName: string;
@@ -115,7 +116,7 @@ export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSn
       setSuccess(t("saved"));
       router.refresh();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : tCommon("unexpectedError"));
+      setError(messageOf(saveError, tCommon("unexpectedError")));
     } finally {
       setSaving(false);
     }
@@ -231,8 +232,7 @@ export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSn
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      {success && <p className="text-sm text-green-700">{success}</p>}
+      <FormFeedback error={error} success={success} />
     </section>
   );
 }

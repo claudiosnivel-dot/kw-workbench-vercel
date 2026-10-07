@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteUserFromAdmin, parseUserRole, parseUserStatus, updateUserFromAdmin } from "@/lib/admin/users";
 import { requireAdminUserFromRequest } from "@/lib/auth/current-user";
-import { withApiErrors } from "@/lib/http/errors";
+import { errorResponse, withApiErrors } from "@/lib/http/errors";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -22,7 +22,7 @@ export const PATCH = withApiErrors(async (request: Request, { params }: RouteCon
   const confirmPassword = String(payload.confirmPassword ?? "");
 
   if (newPassword && newPassword !== confirmPassword) {
-    return NextResponse.json({ error: "Password e conferma non coincidono", code: "PASSWORD_MISMATCH" }, { status: 400 });
+    return errorResponse(400, "PASSWORD_MISMATCH", "Password e conferma non coincidono");
   }
 
   const updated = await updateUserFromAdmin(actor, {

@@ -36,6 +36,7 @@ const CODE_PATTERNS = [
   /new GoogleSheetsExportError\([^;]*?,\s*\d+,\s*"([A-Z_]+)"\s*\)/gs,
   /code = "([A-Z_]+)"/g,
   /\bcode: "([A-Z_]+)"/g,
+  /errorResponse\(\s*\d+,\s*"([A-Z_]+)"/g,
 ];
 
 function emittedCodes(): string[] {

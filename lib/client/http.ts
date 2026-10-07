@@ -24,6 +24,16 @@ export async function readJsonSafe<T>(response: Response): Promise<T | null> {
   }
 }
 
+/** Richiesta con body JSON verso un'API dell'app. */
+export function sendJson(method: "POST" | "PATCH", url: string, body: unknown): Promise<Response> {
+  return fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+}
+
+/** Messaggio di un errore catturato: quello dell'Error (già tradotto per le risposte API), altrimenti fallback. */
+export function messageOf(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 /** Body letto di una risposta riuscita; se la risposta non è ok lancia un Error con il testo del catalogo (T-1303). */
 export async function readApiResponse<T>(response: Response, t: ErrorTranslator): Promise<T | null> {
   const payload = await readJsonSafe<T & ApiErrorPayload>(response);

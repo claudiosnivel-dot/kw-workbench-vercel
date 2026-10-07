@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import type { ErrorTranslator } from "@/lib/client/http";
+import { type ErrorTranslator, messageOf } from "@/lib/client/http";
 
 /**
  * Azione che si conclude aprendo un'altra pagina: accesso, registrazione e passi del percorso guidato (T-1303). Resta
@@ -19,7 +19,7 @@ export function useLeavingAction<K extends string = "default">() {
     try {
       await action(tErrors);
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : tCommon("unexpectedError"));
+      setError(messageOf(actionError, tCommon("unexpectedError")));
       setPending(null);
     }
   };
