@@ -497,6 +497,7 @@
     "EMAIL_TAKEN": "Email già registrata.",
     "EMAIL_NOT_VERIFIED": "Verifica la tua email prima di avviare un'estrazione.",
     "EMAIL_ALREADY_VERIFIED": "La tua email è già verificata.",
+    "EMAIL_UNAVAILABLE": "L'invio delle email non è disponibile in questo momento: riprova più tardi.",
     "VERIFICATION_TOKEN_INVALID": "Link di verifica non valido o scaduto: chiedi un nuovo invio.",
     "RESET_TOKEN_INVALID": "Link di reimpostazione non valido o scaduto: richiedine uno nuovo.",
     "TERMS_NOT_ACCEPTED": "Per continuare accetta termini di servizio e informativa sulla privacy.",

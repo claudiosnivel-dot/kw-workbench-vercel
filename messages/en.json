@@ -497,6 +497,7 @@
     "EMAIL_TAKEN": "Email already registered.",
     "EMAIL_NOT_VERIFIED": "Verify your email before starting an extraction.",
     "EMAIL_ALREADY_VERIFIED": "Your email is already verified.",
+    "EMAIL_UNAVAILABLE": "Sending emails is not available right now: try again later.",
     "VERIFICATION_TOKEN_INVALID": "Invalid or expired verification link: request a new one.",
     "RESET_TOKEN_INVALID": "Invalid or expired reset link: request a new one.",
     "TERMS_NOT_ACCEPTED": "To continue, accept the terms of service and the privacy policy.",

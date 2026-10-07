@@ -57,6 +57,7 @@ beforeEach(async () => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
   resetEnvForTests();
 });
 
@@ -164,6 +165,26 @@ describe("nuovo invio dell'email di verifica", () => {
     expect(retryAfter).toBeLessThanOrEqual(60);
     expect(later.map((response) => response.status)).toEqual([200, 200, 200, 429]);
     expect(await prisma.emailVerificationToken.count({ where: { user_id: user.id } })).toBe(5);
+  });
+});
+
+describe("nuovo invio con Resend non configurato (D-11 emendata il 2026-10-07)", () => {
+  it("risponde 503 EMAIL_UNAVAILABLE e la registrazione resta 202", async () => {
+    vi.stubEnv("EMAIL_TRANSPORT", "resend");
+    vi.stubEnv("RESEND_API_KEY", "");
+    vi.stubEnv("EMAIL_FROM", "");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { cookie } = await createUserWithSession({ displayName: "t1403-senza-resend", emailVerified: false });
+
+    const resend = await callRoute(resendVerification, { method: "POST", url: "/api/auth/verify-email/resend", cookie });
+    const registered = await callRoute(register, registration("senza-resend@example.com"));
+    await flushAfter();
+
+    expect(resend.status).toBe(503);
+    expect(((await resend.json()) as { code: string }).code).toBe("EMAIL_UNAVAILABLE");
+    expect(registered.status).toBe(202);
+    expect(await prisma.user.count({ where: { email: "senza-resend@example.com" } })).toBe(1);
+    expect(await prisma.emailOutbox.count()).toBe(0);
   });
 });
 

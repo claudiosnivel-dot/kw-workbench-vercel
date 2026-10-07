@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Resend } from "resend";
 import { normalizeEmail } from "@/lib/auth/email-address";
 import { OutboxEmailSender, type OutboxStore, databaseOutbox } from "@/lib/email/outbox-sender";
-import { ResendEmailSender } from "@/lib/email/resend-sender";
+import { ResendEmailSender, unconfiguredResendSender } from "@/lib/email/resend-sender";
 import { render as accountExists } from "@/lib/email/templates/account-exists";
 import { render as billingNotice } from "@/lib/email/templates/billing-notice";
 import type { RenderedEmail } from "@/lib/email/templates/layout";
@@ -23,17 +23,17 @@ const RENDERERS = {
 
 type TemplateVars = { [K in EmailTemplate]: Parameters<(typeof RENDERERS)[K]>[1] };
 
-/** Mittente scelto da EMAIL_TRANSPORT (T-1402, D-11): Resend, oppure l'outbox (di default la tabella email_outbox). */
+/**
+ * Mittente scelto da EMAIL_TRANSPORT (T-1402, D-11): Resend, oppure l'outbox (di default la tabella email_outbox). Con
+ * resend ma senza RESEND_API_KEY ed EMAIL_FROM (D-11 emendata il 2026-10-07) ogni invio fallisce come non configurato.
+ */
 export function getEmailSender(outbox: OutboxStore = databaseOutbox): EmailSender {
   if (getEmailTransport() === "outbox") {
     return new OutboxEmailSender(outbox);
   }
 
   const settings = getResendSettings();
-  if (!settings) {
-    throw new Error("RESEND_API_KEY ed EMAIL_FROM sono obbligatorie con EMAIL_TRANSPORT=resend");
-  }
-  return new ResendEmailSender(new Resend(settings.apiKey), settings.from);
+  return settings ? new ResendEmailSender(new Resend(settings.apiKey), settings.from) : unconfiguredResendSender;
 }
 
 /**

@@ -40,8 +40,8 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `CRON_SECRET` | facolt. ma necessaria al cron dei job (almeno 16 caratteri; Vercel la invia come `Authorization: Bearer`; senza, `/api/cron/reap-jobs` risponde 401) | facolt. | facolt. | sì | Vercel (Sensitive) / locale |
 | `APP_PUBLIC_URL` | obbl. (T-1402): URL https dell'app, unica base dei link nelle email (mai l'header Host) e delle chiamate interne fuori da Vercel; su Vercel le chiamate interne usano `VERCEL_URL` | obbl., come Production | facolt. (`http://localhost:3000`; http ammesso solo per localhost; senza, l'invio delle email fallisce) | no | Vercel / locale |
 | `EMAIL_TRANSPORT` | obbl.: `resend` (T-1402, D-11; `outbox` è rifiutato all'avvio) | obbl., come Production | facolt. (default `outbox`: le email finiscono nella tabella `email_outbox`) | no | Vercel / locale |
-| `RESEND_API_KEY` | obbl.: chiave API di Resend con permesso di invio; mai nel sorgente né nei log | obbl., come Production | no (con `outbox` non serve) | sì | Vercel (Sensitive) / locale |
-| `EMAIL_FROM` | obbl.: mittente su un dominio verificato in Resend, `indirizzo` oppure `Nome <indirizzo>` | obbl., come Production | facolt. | no | Vercel / locale |
+| `RESEND_API_KEY` | facolt. finché Resend non è configurato (D-11 emendata il 2026-10-07: si configura alla fine del blueprint), poi obbl.: chiave API di Resend con permesso di invio, insieme a `EMAIL_FROM`; senza, nessuna email parte; mai nel sorgente né nei log | come Production | no (con `outbox` non serve) | sì | Vercel (Sensitive) / locale |
+| `EMAIL_FROM` | come `RESEND_API_KEY` (insieme o nessuna): mittente su un dominio verificato in Resend, `indirizzo` oppure `Nome <indirizzo>` | come Production | facolt. | no | Vercel / locale |
 | `VERCEL_URL` | no (di sistema: dominio della deployment corrente, base delle chiamate interne dei job) | no (di sistema) | no | no | piattaforma (Vercel) |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | no (di sistema: presente se è attivo Protection Bypass for Automation; serve alle chiamate interne verso deployment protette) | no (di sistema) | no | sì | piattaforma (Vercel, Settings → Deployment Protection) |
 | `AUTOCOMPLETE_TIMEOUT_MS` | facolt. (intero 1000…30000, default 4500) | facolt. | facolt. | no | Vercel / locale |
@@ -87,8 +87,10 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 - Con la tabella `users` vuota il primo login o la prima registrazione creano il root admin di `APP_ADMIN_EMAIL` con
   una password casuale mai comunicata: il primo accesso passa da «Password dimenticata?» (`/forgot-password`).
   `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD` non esistono più.
-- Email transazionali con Resend (D-11): verifica dell'email, recupero password, avviso di account esistente. Prima
-  del primo invio va verificato su Resend il dominio di `EMAIL_FROM` (record DNS SPF e DKIM indicati da Resend;
+- Email transazionali con Resend (D-11): verifica dell'email, recupero password, avviso di account esistente. Fino alla
+  configurazione di Resend (D-11 emendata il 2026-10-07, a fine blueprint) `RESEND_API_KEY` ed `EMAIL_FROM` mancano:
+  l'app parte, ogni invio fallisce come «resend non configurato» nei log, i nuovi utenti non ricevono la verifica e il
+  nuovo invio risponde 503 `EMAIL_UNAVAILABLE`. Prima del primo invio va verificato su Resend il dominio di `EMAIL_FROM` (record DNS SPF e DKIM indicati da Resend;
   DMARC consigliato): azione dell'utente, fuori dal codice. Un invio fallito è registrato nei log con template, id del
   messaggio e dominio del destinatario, mai l'indirizzo completo.
 - I link delle email (verifica 24 h, recupero password 1 h, monouso) usano solo `APP_PUBLIC_URL`.

@@ -99,6 +99,25 @@ describe("ResendEmailSender", () => {
   });
 });
 
+describe("Resend non ancora configurato (D-11 emendata il 2026-10-07)", () => {
+  it("senza chiave e mittente l'invio fallisce subito, senza client né rete, con un solo errore registrato", async () => {
+    vi.stubEnv("EMAIL_TRANSPORT", "resend");
+    vi.stubEnv("RESEND_API_KEY", "");
+    vi.stubEnv("EMAIL_FROM", "");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const error = await getEmailSender().send(message({ to: "utente@example.com" })).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(EmailDeliveryError);
+    expect(resendKeys).toEqual([]);
+    expect(sendMock).toHaveBeenCalledTimes(0);
+    expect(consoleError).toHaveBeenCalledTimes(1);
+    const logged = consoleError.mock.calls[0].map(String).join(" ");
+    expect(logged).toContain("example.com");
+    expect(logged).not.toContain("utente@");
+  });
+});
+
 describe("template verify-email", () => {
   // covers: AC-1402-3
   it("fa l'escape delle variabili, costruisce il link da APP_PUBLIC_URL e usa il subject della lingua", () => {

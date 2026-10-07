@@ -329,8 +329,10 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
 });
 
 /**
- * Email transazionali (T-1402): in produzione il trasporto è resend e servono RESEND_API_KEY, EMAIL_FROM e
- * APP_PUBLIC_URL (base dei link nelle email, mai l'header Host); altrove il default è outbox.
+ * Email transazionali (T-1402): in produzione il trasporto è resend e serve APP_PUBLIC_URL (base dei link nelle email,
+ * mai l'header Host); altrove il default è outbox. RESEND_API_KEY ed EMAIL_FROM vanno impostate insieme: finché
+ * mancano entrambe (D-11 emendata il 2026-10-07, Resend configurato alla fine del blueprint) ogni invio fallisce come
+ * non configurato, senza bloccare l'avvio.
  */
 function checkEmailSettings(raw: RawEnv, isProduction: boolean, ctx: z.RefinementCtx): void {
   const transport = present(raw.EMAIL_TRANSPORT)?.trim();
@@ -345,12 +347,15 @@ function checkEmailSettings(raw: RawEnv, isProduction: boolean, ctx: z.Refinemen
     ctx.addIssue({ code: "custom", path: ["EMAIL_FROM"], message: "deve essere un indirizzo email, anche nella forma Nome <indirizzo>" });
   }
 
-  if (isProduction) {
-    for (const name of ["RESEND_API_KEY", "EMAIL_FROM", "APP_PUBLIC_URL"] as const) {
-      if (present(raw[name]) === undefined) {
-        ctx.addIssue({ code: "custom", path: [name], message: "è obbligatoria in produzione" });
-      }
-    }
+  const apiKey = present(raw.RESEND_API_KEY);
+  if ((apiKey === undefined) !== (from === undefined)) {
+    const missing = apiKey === undefined ? "RESEND_API_KEY" : "EMAIL_FROM";
+    const other = missing === "EMAIL_FROM" ? "RESEND_API_KEY" : "EMAIL_FROM";
+    ctx.addIssue({ code: "custom", path: [missing], message: `va impostata insieme a ${other}` });
+  }
+
+  if (isProduction && present(raw.APP_PUBLIC_URL) === undefined) {
+    ctx.addIssue({ code: "custom", path: ["APP_PUBLIC_URL"], message: "è obbligatoria in produzione" });
   }
 }
 

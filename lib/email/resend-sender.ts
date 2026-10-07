@@ -15,6 +15,35 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Fallimento definitivo di un invio: un solo console.error con template, id e dominio del destinatario, mai l'indirizzo
+ * completo, la chiave API, il corpo o i link (CWE-532); l'EmailDeliveryError da lanciare al chiamante.
+ */
+function deliveryFailure(message: EmailMessage, attempts: number, reason: string): EmailDeliveryError {
+  console.error(
+    JSON.stringify({
+      level: "error",
+      msg: "email_delivery_failed",
+      template: message.template,
+      messageId: message.id,
+      recipientDomain: emailDomain(message.to),
+      attempts,
+      reason,
+    })
+  );
+  return new EmailDeliveryError(message, reason);
+}
+
+/**
+ * Resend senza RESEND_API_KEY ed EMAIL_FROM (D-11 emendata il 2026-10-07: Resend si configura alla fine del blueprint):
+ * ogni invio fallisce subito, nessuna richiesta di rete, registrato come gli altri fallimenti.
+ */
+export const unconfiguredResendSender: EmailSender = {
+  async send(message) {
+    throw deliveryFailure(message, 0, "resend non configurato");
+  },
+};
+
 /** Errore di rete (statusCode null), 429 o 5xx: si ritenta; ogni altro 4xx è un errore di validazione definitivo. */
 function isRetryableStatus(statusCode: number | null): boolean {
   return statusCode === null || statusCode === 429 || statusCode >= 500;
@@ -22,8 +51,7 @@ function isRetryableStatus(statusCode: number | null): boolean {
 
 /**
  * Invio con Resend (T-1402, D-11): mittente EMAIL_FROM, Idempotency-Key uguale all'id del messaggio a ogni tentativo.
- * Dopo l'ultimo fallimento un solo console.error con template, id e dominio del destinatario: mai l'indirizzo
- * completo, la chiave API, il corpo o i link (CWE-532).
+ * Dopo l'ultimo fallimento un solo console.error (deliveryFailure).
  */
 export class ResendEmailSender implements EmailSender {
   constructor(
@@ -40,18 +68,7 @@ export class ResendEmailSender implements EmailSender {
       }
 
       if (!outcome.retryable || attempt === MAX_ATTEMPTS) {
-        console.error(
-          JSON.stringify({
-            level: "error",
-            msg: "email_delivery_failed",
-            template: message.template,
-            messageId: message.id,
-            recipientDomain: emailDomain(message.to),
-            attempts: attempt,
-            reason: outcome.reason,
-          })
-        );
-        throw new EmailDeliveryError(message, outcome.reason);
+        throw deliveryFailure(message, attempt, outcome.reason);
       }
 
       await this.sleep(BASE_DELAY_MS * 2 ** (attempt - 1));
