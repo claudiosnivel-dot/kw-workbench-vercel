@@ -33,7 +33,7 @@ beforeEach(async () => {
 });
 
 async function rootCookie(): Promise<string> {
-  return (await createUserWithSession({ username: "root-506", role: UserRole.ADMIN, isRootAdmin: true })).cookie;
+  return (await createUserWithSession({ displayName: "root-506", role: UserRole.ADMIN, isRootAdmin: true })).cookie;
 }
 
 async function patch(cookie: string, body: Record<string, unknown>): Promise<Response> {
@@ -97,7 +97,7 @@ describe("origini ammesse per il logo", () => {
 describe("accesso riservato al root admin", () => {
   // covers: AC-506-4
   it("un ADMIN non root riceve 403 FORBIDDEN e le righe APP_BRAND_* non cambiano", async () => {
-    const { cookie } = await createUserWithSession({ username: "admin-506", role: UserRole.ADMIN });
+    const { cookie } = await createUserWithSession({ displayName: "admin-506", role: UserRole.ADMIN });
     await upsertSettingValue({ key: "APP_BRAND_NAME", value: "Vecchio" });
     const before = await brandRows();
 

@@ -40,7 +40,7 @@ beforeEach(async () => {
 });
 
 async function createSuspendedUserWithCookie(username: string) {
-  const { user, cookie } = await createUserWithSession({ username });
+  const { user, cookie } = await createUserWithSession({ displayName: username });
   await prisma.user.update({ where: { id: user.id }, data: { status: UserStatus.SUSPENDED } });
   return { user, cookie };
 }
@@ -98,7 +98,7 @@ describe("GET /api/auth/session-ended", () => {
   // covers: AC-502-3
   it("azzera il cookie e porta al login solo per l'utente non più attivo", async () => {
     const { cookie: suspendedCookie } = await createSuspendedUserWithCookie("sospeso-route");
-    const { cookie: activeCookie } = await createUserWithSession({ username: "attivo-route" });
+    const { cookie: activeCookie } = await createUserWithSession({ displayName: "attivo-route" });
 
     const suspended = await callRoute(sessionEnded, { url: "/api/auth/session-ended", cookie: suspendedCookie });
     const active = await callRoute(sessionEnded, { url: "/api/auth/session-ended", cookie: activeCookie });

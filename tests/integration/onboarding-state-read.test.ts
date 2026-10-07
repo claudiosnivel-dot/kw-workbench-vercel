@@ -43,8 +43,8 @@ async function renderDashboard(): Promise<string> {
 }
 
 async function signIn(username: string) {
-  const session = await createUserWithSession({ username });
-  shared.user = { id: session.user.id, username: session.user.username, role: session.user.role, isRootAdmin: false };
+  const session = await createUserWithSession({ displayName: username });
+  shared.user = { id: session.user.id, displayName: session.user.display_name, role: session.user.role, isRootAdmin: false };
   return session;
 }
 

@@ -8,16 +8,17 @@ import { useRefreshAction } from "@/lib/client/use-refresh-action";
 import { useSaveAction } from "@/lib/client/use-save-action";
 
 type AuthSnapshot = {
-  username: string;
+  email: string | null;
+  displayName: string;
 };
 
 type AuthSettingsResponse = ApiErrorPayload & {
-  data?: AuthSnapshot;
+  data?: { displayName: string };
 };
 
 export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
   const t = useTranslations("settings.account");
-  const [username, setUsername] = useState(initial.username);
+  const [displayName, setDisplayName] = useState(initial.displayName);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -25,10 +26,10 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
 
   const saveCredentials = () =>
     save(async (tErrors) => {
-      const body = { currentPassword, username, newPassword, confirmPassword };
+      const body = { currentPassword, displayName, newPassword, confirmPassword };
       const payload = await readApiResponse<AuthSettingsResponse>(await sendJson("PATCH", "/api/auth/config", body), tErrors);
-      if (payload?.data?.username) {
-        setUsername(payload.data.username);
+      if (payload?.data?.displayName) {
+        setDisplayName(payload.data.displayName);
       }
       setCurrentPassword("");
       setNewPassword("");
@@ -47,22 +48,26 @@ export function AuthSettingsCard({ initial }: { initial: AuthSnapshot }) {
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
         <p>
-          <span className="font-medium">{t("activeUsername")}</span> {username}
+          <span className="font-medium">{t("accountEmail")}</span> {initial.email}
+        </p>
+        <p>
+          <span className="font-medium">{t("activeDisplayName")}</span> {displayName}
         </p>
         <LogoutEverywhereButton />
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
         <div>
-          <label className="label" htmlFor="authUsername">
-            {t("newUsername")}
+          <label className="label" htmlFor="authDisplayName">
+            {t("newDisplayName")}
           </label>
           <input
-            id="authUsername"
+            id="authDisplayName"
             className="input"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            placeholder={t("usernamePlaceholder")}
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder={t("displayNamePlaceholder")}
+            maxLength={60}
           />
         </div>
 

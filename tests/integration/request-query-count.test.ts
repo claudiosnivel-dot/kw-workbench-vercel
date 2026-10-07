@@ -124,7 +124,7 @@ beforeEach(async () => {
 describe("query per richiesta (T-1105)", () => {
   // covers: AC-1105-1
   it("layout e DashboardPage della stessa richiesta leggono users una sola volta", async () => {
-    const { cookie, user } = await createUserWithSession({ username: "dashboard-user" });
+    const { cookie, user } = await createUserWithSession({ displayName: "dashboard-user" });
     await prisma.userOnboardingProgress.create({ data: { user_id: user.id, status: "COMPLETED", current_step: "REVIEW_EXPORT" } });
     signedInWith(cookie);
     newRequest();
@@ -138,7 +138,7 @@ describe("query per richiesta (T-1105)", () => {
 
   // covers: AC-1105-2
   it("il branding arriva dalla cache finché il root admin non lo salva", async () => {
-    const root = await createUserWithSession({ username: "root-branding", role: UserRole.ADMIN, isRootAdmin: true });
+    const root = await createUserWithSession({ displayName: "root-branding", role: UserRole.ADMIN, isRootAdmin: true });
 
     newRequest();
     await renderLogin();
@@ -163,14 +163,15 @@ describe("query per richiesta (T-1105)", () => {
 
   // covers: AC-1105-3
   it("il login con utenti già presenti non esegue il bootstrap del primo utente", async () => {
-    await createUserWithSession({ username: "root-login", role: UserRole.ADMIN, isRootAdmin: true });
-    await createUserWithSession({ username: "login-user" });
+    await createUserWithSession({ displayName: "root-login", role: UserRole.ADMIN, isRootAdmin: true });
+    await createUserWithSession({ displayName: "login-user" });
     newRequest();
 
     const response = await callRoute(login, {
       method: "POST",
       url: "/api/auth/login",
-      body: { username: "login-user", password: TEST_USER_PASSWORD },
+      // impacted-by: T-1401 (accesso con l'email)
+      body: { email: "login-user@example.test", password: TEST_USER_PASSWORD },
     });
 
     expect(response.status).toBe(200);
@@ -183,7 +184,7 @@ describe("query per richiesta (T-1105)", () => {
 
   // covers: AC-1105-4
   it("GET /api/admin/users con 50 utenti misti usa al massimo 2 query su users e totali esatti", async () => {
-    const root = await createUserWithSession({ username: "root-admin-list", role: UserRole.ADMIN, isRootAdmin: true });
+    const root = await createUserWithSession({ displayName: "root-admin-list", role: UserRole.ADMIN, isRootAdmin: true });
     // Oltre al root admin (ADMIN, ACTIVE): 9 admin (6 attivi, 3 sospesi) e 40 sottoscrittori (32 attivi, 8 sospesi).
     const others = [
       ...Array.from({ length: 9 }, (_, index) => ({ role: UserRole.ADMIN, status: index < 6 ? UserStatus.ACTIVE : UserStatus.SUSPENDED })),
@@ -193,7 +194,7 @@ describe("query per richiesta (T-1105)", () => {
       })),
     ];
     await prisma.user.createMany({
-      data: others.map((other, index) => ({ username: `misto-${index}`, password_hash: "x", ...other })),
+      data: others.map((other, index) => ({ display_name: `misto-${index}`, password_hash: "x", ...other })),
     });
     newRequest();
 

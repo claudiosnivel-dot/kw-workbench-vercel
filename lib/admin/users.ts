@@ -1,5 +1,5 @@
 import { Prisma, UserRole, UserStatus } from "@/lib/generated/prisma/client";
-import { type AuthUser, registerUser, updateUserAdminFields, validatePassword, validateUsername } from "@/lib/auth/credentials";
+import { type AuthUser, registerUser, updateUserAdminFields, validatePassword } from "@/lib/auth/credentials";
 import { AppError } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma";
 
@@ -31,7 +31,9 @@ export function parseUserStatus(value: string | null): UserStatus | undefined {
 
 export type AdminUserRecord = {
   id: string;
-  username: string;
+  /** null per gli utenti legacy senza email (T-1401). */
+  email: string | null;
+  displayName: string;
   role: UserRole;
   status: UserStatus;
   isRootAdmin: boolean;
@@ -51,7 +53,8 @@ export type AdminUsersTotals = {
 
 type AdminUserRow = {
   id: string;
-  username: string;
+  email: string | null;
+  display_name: string;
   role: UserRole;
   status: UserStatus;
   is_root_admin: boolean;
@@ -63,7 +66,8 @@ type AdminUserRow = {
 function toAdminUserRecord(row: AdminUserRow): AdminUserRecord {
   return {
     id: row.id,
-    username: row.username,
+    email: row.email,
+    displayName: row.display_name,
     role: row.role,
     status: row.status,
     isRootAdmin: row.is_root_admin,
@@ -103,7 +107,7 @@ type AdminUsersListRow = { [K in keyof AdminUserRow]: AdminUserRow[K] | null } &
 // I valori (perimetro, filtri, LIMIT, OFFSET) entrano solo come parametri legati, composti in listAdminUsers.
 const LIST_TOTALS = Prisma.sql`
   SELECT "t"."total_users", "t"."total_admins", "t"."total_subscribers", "t"."total_active", "t"."total_suspended",
-    "t"."filtered_total", "p"."id", "p"."username", "p"."role", "p"."status", "p"."is_root_admin", "p"."created_at",
+    "t"."filtered_total", "p"."id", "p"."email", "p"."display_name", "p"."role", "p"."status", "p"."is_root_admin", "p"."created_at",
     "p"."updated_at", "p"."last_login_at"
   FROM (
     SELECT count(*)::int AS "total_users",
@@ -114,7 +118,7 @@ const LIST_TOTALS = Prisma.sql`
       count(*) FILTER (WHERE`;
 const LIST_TOTALS_SCOPE = Prisma.sql`)::int AS "filtered_total" FROM "users" WHERE`;
 const LIST_PAGE = Prisma.sql`) AS "t" LEFT JOIN LATERAL (
-    SELECT "id", "username", "role", "status", "is_root_admin", "created_at", "updated_at", "last_login_at"
+    SELECT "id", "email", "display_name", "role", "status", "is_root_admin", "created_at", "updated_at", "last_login_at"
     FROM "users" WHERE`;
 // id come ultimo criterio: ordinamento totale, nessun utente ripetuto o saltato fra le pagine.
 const LIST_PAGE_ORDER = Prisma.sql`ORDER BY "is_root_admin" DESC, "created_at" DESC, "id" DESC`;
@@ -132,9 +136,11 @@ function containsPattern(text: string): string {
 function listConditions(actor: AuthUser, input: { searchText?: string; role?: UserRole; status?: UserStatus }) {
   const filters: Prisma.Sql[] = [];
 
+  // Ricerca su email e nome mostrato (T-1401).
   const searchText = String(input.searchText ?? "").trim().slice(0, MAX_SEARCH_TEXT_LENGTH);
   if (searchText) {
-    filters.push(Prisma.sql`"username" ILIKE ${containsPattern(searchText)}`);
+    const pattern = containsPattern(searchText);
+    filters.push(Prisma.sql`("email" ILIKE ${pattern} OR "display_name" ILIKE ${pattern})`);
   }
 
   const managedRoleScope = getManagedRoleScope(actor);
@@ -186,7 +192,8 @@ async function findTargetUser(targetUserId: string) {
     where: { id: targetUserId },
     select: {
       id: true,
-      username: true,
+      email: true,
+      display_name: true,
       role: true,
       status: true,
       is_root_admin: true,
@@ -251,7 +258,8 @@ export async function listAdminUsers(
 export async function createUserFromAdmin(
   actor: AuthUser,
   input: {
-    username: string;
+    email: string;
+    displayName?: string;
     password: string;
     role?: UserRole;
   }
@@ -261,10 +269,8 @@ export async function createUserFromAdmin(
     throw new AdminActionError("Solo il root admin può creare altri admin", 403, "FORBIDDEN");
   }
 
-  const username = validateUsername(input.username);
-  const password = validatePassword(input.password);
-
-  const created = await registerUser({ username, password, role });
+  // Email non valida 400 EMAIL_INVALID e già registrata 409 EMAIL_TAKEN: l'admin vede il motivo (T-1401).
+  const created = await registerUser({ email: input.email, displayName: input.displayName, password: input.password, role });
   const row = await findTargetUser(created.id);
 
   if (!row) {

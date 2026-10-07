@@ -63,7 +63,7 @@ beforeEach(async () => {
 describe("azione massiva sul set filtrato", () => {
   // covers: AC-803-1
   it("approva le 300 righe filtrate della sezione e lascia invariate le altre e il progetto Q", async () => {
-    const owner = await createUserWithSession({ username: "t803-owner" });
+    const owner = await createUserWithSession({ displayName: "t803-owner" });
     const p = await createSection(owner.user.id, "P");
     const q = await createSection(owner.user.id, "Q");
     await addCandidates(p, "scarpe running", 300, "pending");
@@ -96,7 +96,7 @@ describe("azione massiva sul set filtrato", () => {
 describe("validazione del payload", () => {
   // covers: AC-803-2
   it("rifiuta con 400 ids oltre 1000, ids non stringhe, azione ignota e body senza ids né filters", async () => {
-    const owner = await createUserWithSession({ username: "t803-validation" });
+    const owner = await createUserWithSession({ displayName: "t803-validation" });
     const p = await createSection(owner.user.id, "P");
     await addCandidates(p, "scarpe", 20, "pending");
     await addCandidates(p, "borsa", 5, "approved");

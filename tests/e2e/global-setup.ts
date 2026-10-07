@@ -1,9 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/security/password";
 import { assertLocalTestDatabase } from "../helpers/db-guard";
 import { resetDatabase } from "../helpers/db";
-import { E2E_USER_PASSWORD, E2E_USERNAME } from "./credentials";
+import { createE2EUser, E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 
 // Timestamp fissi: date e ordinamenti delle pagine fotografate non dipendono dall'ora dell'esecuzione.
 const FIXED_AT = new Date("2026-01-15T09:30:00.000Z");
@@ -25,15 +24,13 @@ export default async function globalSetup(): Promise<void> {
 
   // impacted-by: T-1105 (il login non promuove più il primo utente a root admin quando la tabella users non è
   // vuota): l'utente seed nasce root admin, come diventava al primo login, e può salvare il branding (T-1104).
-  const user = await prisma.user.create({
-    data: {
-      username: E2E_USERNAME,
-      password_hash: await hashPassword(E2E_USER_PASSWORD),
-      role: "ADMIN",
-      is_root_admin: true,
-      created_at: FIXED_AT,
-      updated_at: FIXED_AT,
-    },
+  // impacted-by: T-1401, T-1403, T-1405 (accesso con l'email, verificata, e termini correnti accettati)
+  const user = await createE2EUser(E2E_EMAIL, E2E_USER_PASSWORD, {
+    role: "ADMIN",
+    is_root_admin: true,
+    email_verified_at: FIXED_AT,
+    created_at: FIXED_AT,
+    updated_at: FIXED_AT,
   });
 
   // Account Google Sheets collegato (T-1104, AC-1104-2): la modale di export mostra il modulo. Il token non è

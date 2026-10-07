@@ -15,6 +15,8 @@ import { POST as logout } from "@/app/api/auth/logout/route";
 import { POST as register } from "@/app/api/auth/register/route";
 import LoginPage from "@/app/login/page";
 import { LoginForm } from "@/components/login-form";
+import { resetEnvForTests } from "@/lib/env";
+import { LEGAL_TERMS_VERSION } from "@/lib/legal/version";
 import { prisma } from "@/lib/prisma";
 // T-404: con Next 16 il middleware è proxy.ts (stessa logica, funzione rinominata).
 import { proxy as middleware } from "@/proxy";
@@ -27,7 +29,8 @@ vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => undefined }),
 }));
 
-const BOOTSTRAP_USERNAME = "char-bootstrap";
+// impacted-by: T-1401 (il root admin del bootstrap è APP_ADMIN_EMAIL, non più APP_AUTH_USERNAME)
+const BOOTSTRAP_EMAIL = "char-bootstrap@example.test";
 const KNOWN_PASSWORD = "char-password-not-real";
 
 function middlewareRequest(path: string, cookie?: string): NextRequest {
@@ -57,15 +60,16 @@ function findElement(node: ReactNode, type: unknown): ReactElement<Record<string
 
 beforeAll(() => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");
-  vi.stubEnv("APP_AUTH_USERNAME", BOOTSTRAP_USERNAME);
-  vi.stubEnv("APP_AUTH_PASSWORD", "char-bootstrap-password-not-real");
+  vi.stubEnv("APP_ADMIN_EMAIL", BOOTSTRAP_EMAIL);
   vi.stubEnv("APP_COOKIE_SECURE", "auto");
   vi.stubEnv("NODE_ENV", "test");
   vi.stubEnv("APP_SESSION_MAX_AGE_SECONDS", undefined);
+  resetEnvForTests();
 });
 
 afterAll(() => {
   vi.unstubAllEnvs();
+  resetEnvForTests();
 });
 
 beforeEach(async () => {
@@ -75,13 +79,14 @@ beforeEach(async () => {
 describe("caratterizzazione: login", () => {
   // covers: AC-104-1
   it("risponde 200 con il cookie di sessione, 401 con password errata e 403 per l'utente sospeso", async () => {
-    await createUserWithSession({ username: "char-active", password: KNOWN_PASSWORD });
-    await createUserWithSession({ username: "char-suspended", password: KNOWN_PASSWORD, status: UserStatus.SUSPENDED });
+    await createUserWithSession({ displayName: "char-active", password: KNOWN_PASSWORD });
+    await createUserWithSession({ displayName: "char-suspended", password: KNOWN_PASSWORD, status: UserStatus.SUSPENDED });
 
     const ok = await callRoute(login, {
       method: "POST",
       url: "/api/auth/login",
-      body: { username: "char-active", password: KNOWN_PASSWORD },
+      // impacted-by: T-1401 (accesso con l'email)
+      body: { email: "char-active@example.test", password: KNOWN_PASSWORD },
     });
     const setCookie = ok.headers.get("set-cookie") ?? "";
 
@@ -97,7 +102,7 @@ describe("caratterizzazione: login", () => {
     const wrong = await callRoute(login, {
       method: "POST",
       url: "/api/auth/login",
-      body: { username: "char-active", password: "password-errata" },
+      body: { email: "char-active@example.test", password: "password-errata" },
     });
     expect(wrong.status).toBe(401);
     // impacted-by: T-1303 (ogni risposta d'errore ha un code di API_ERROR_CODES)
@@ -106,7 +111,7 @@ describe("caratterizzazione: login", () => {
     const suspended = await callRoute(login, {
       method: "POST",
       url: "/api/auth/login",
-      body: { username: "char-suspended", password: KNOWN_PASSWORD },
+      body: { email: "char-suspended@example.test", password: KNOWN_PASSWORD },
     });
     expect(suspended.status).toBe(403);
     expect(((await suspended.json()) as { error: string }).error.startsWith("Account sospeso")).toBe(true);
@@ -115,26 +120,36 @@ describe("caratterizzazione: login", () => {
 
 describe("caratterizzazione: registrazione e logout", () => {
   // covers: AC-104-2
-  it("registra creando l'utente di bootstrap, rifiuta lo username duplicato e il logout svuota il cookie", async () => {
+  it("registra creando l'utente di bootstrap, non rivela l'email duplicata e il logout svuota il cookie", async () => {
     expect(await prisma.user.count()).toBe(0);
-    const body = { username: "char-nuovo", password: KNOWN_PASSWORD, confirmPassword: KNOWN_PASSWORD };
+    // impacted-by: T-1401 (email e nome mostrato al posto dello username)
+    // impacted-by: T-1405 (accettazione obbligatoria dei termini correnti)
+    const body = {
+      email: "char-nuovo@example.test",
+      password: KNOWN_PASSWORD,
+      confirmPassword: KNOWN_PASSWORD,
+      acceptTerms: true,
+      termsVersion: LEGAL_TERMS_VERSION,
+    };
 
     const first = await callRoute(register, { method: "POST", url: "/api/auth/register", body });
-    expect(first.status).toBe(200);
-    expect(first.headers.get("set-cookie") ?? "").toMatch(/^kwb_session=[^;]+;/);
+    // impacted-by: T-1403 (202 CHECK_EMAIL senza cookie di sessione: si accede con email e password)
+    expect(first.status).toBe(202);
+    expect(first.headers.get("set-cookie")).toBeNull();
 
     const users = await prisma.user.findMany({ orderBy: { created_at: "asc" } });
     expect(users).toHaveLength(2);
-    expect(users.map((user) => [user.username, user.role, user.is_root_admin])).toEqual([
-      [BOOTSTRAP_USERNAME, "ADMIN", true],
-      ["char-nuovo", "SUBSCRIBER", false],
+    expect(users.map((user) => [user.email, user.role, user.is_root_admin])).toEqual([
+      [BOOTSTRAP_EMAIL, "ADMIN", true],
+      ["char-nuovo@example.test", "SUBSCRIBER", false],
     ]);
 
     const duplicate = await callRoute(register, { method: "POST", url: "/api/auth/register", body });
-    // impacted-by: T-503 (aggiornata da T-503: username già in uso è un ConflictError, 409 CONFLICT)
-    // impacted-by: T-1302 (accento corretto nel messaggio del server)
-    expect(duplicate.status).toBe(409);
-    expect(await duplicate.json()).toMatchObject({ error: "Username già in uso", code: "CONFLICT" });
+    // impacted-by: T-503 (aggiornata da T-503: un duplicato non è più un 500)
+    // impacted-by: T-1403 (l'email già registrata risponde come una nuova, 202 CHECK_EMAIL, CWE-204)
+    expect(duplicate.status).toBe(202);
+    expect(await duplicate.json()).toEqual({ code: "CHECK_EMAIL" });
+    expect(await prisma.user.count()).toBe(2);
 
     const out = await callRoute(logout, { method: "POST", url: "/api/auth/logout" });
     const cleared = out.headers.get("set-cookie") ?? "";

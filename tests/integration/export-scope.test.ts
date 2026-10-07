@@ -60,7 +60,7 @@ afterAll(() => {
 
 beforeEach(async () => {
   await resetDatabase();
-  const owner = await createUserWithSession({ username: "t807-owner" });
+  const owner = await createUserWithSession({ displayName: "t807-owner" });
   const project = await prisma.project.create({
     data: { name: "Scope", owner_user_id: owner.user.id, language_code: "it", country_code: "IT" },
   });

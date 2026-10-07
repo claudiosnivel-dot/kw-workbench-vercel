@@ -1,12 +1,19 @@
 import { beforeEach, vi } from "vitest";
 import { assertLocalTestDatabase } from "../helpers/db-guard";
+import { clearAfter } from "../helpers/next-after";
 import { clearNextCache } from "../helpers/next-cache";
 
 // La cache dati di Next (unstable_cache, revalidateTag) esiste solo nel server di Next: nei test è una mappa in
 // memoria con gli stessi tag (T-1105), vuota all'inizio di ogni test.
 vi.mock("next/cache", () => import("../helpers/next-cache"));
+// after() di next/server (T-1403, T-1404): le callback si accodano e i test le eseguono con flushAfter().
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  after: (await import("../helpers/next-after")).after,
+}));
 beforeEach(() => {
   clearNextCache();
+  clearAfter();
 });
 
 // next-intl senza la configurazione per richiesta del plugin (T-1302): catalogo italiano, lingua di default, sia

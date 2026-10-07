@@ -43,7 +43,8 @@ export default defineConfig({
           fileParallelism: false,
           globalSetup: ["tests/integration/global-setup.ts"],
           setupFiles: ["tests/integration/setup.ts"],
-          env: { APP_SESSION_SECRET: TEST_SESSION_SECRET },
+          // URL pubblico dei link nelle email (T-1402): le email dei test finiscono nella tabella email_outbox.
+          env: { APP_SESSION_SECRET: TEST_SESSION_SECRET, APP_PUBLIC_URL: "http://localhost:3000", EMAIL_TRANSPORT: "outbox" },
         },
       },
       {

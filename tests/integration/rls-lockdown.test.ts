@@ -62,7 +62,7 @@ describe("RLS deny-by-default sulle tabelle di public", () => {
 
   // covers: AC-205-2
   it("un ruolo non proprietario con i grant non legge righe e non inserisce", async () => {
-    await prisma.user.create({ data: { username: "rls-owner", password_hash: "hash-fittizio" } });
+    await prisma.user.create({ data: { display_name: "rls-owner", password_hash: "hash-fittizio" } });
 
     let visibleUsers: number | undefined;
     const probe = prisma.$transaction(async (tx) => {
@@ -88,7 +88,7 @@ describe("RLS deny-by-default sulle tabelle di public", () => {
 
   // covers: AC-205-3
   it("il client Prisma, proprietario delle tabelle, crea, rilegge, aggiorna e cancella", async () => {
-    const user = await prisma.user.create({ data: { username: "rls-prisma", password_hash: "hash-fittizio" } });
+    const user = await prisma.user.create({ data: { display_name: "rls-prisma", password_hash: "hash-fittizio" } });
     const project = await prisma.project.create({ data: { name: "rls-project", owner_user_id: user.id } });
 
     const users = await prisma.user.findMany({ select: { id: true } });

@@ -7,8 +7,29 @@ import { useEffect, useMemo, useState } from "react";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { LogoutButton } from "@/components/logout-button";
 
+// Pagine di accesso e dei link delle email (T-1403…T-1405): la navbar mostra solo il marchio.
+const AUTH_ROUTE_PREFIXES = [
+  "/login",
+  "/register",
+  "/onboarding",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+  "/accept-terms",
+];
+
 function isAuthRoute(pathname: string): boolean {
-  return pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/onboarding");
+  return AUTH_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+/** Nome mostrato ed email dell'utente della sessione (T-1401): mai nel cookie, letti dal DB dal layout. */
+function UserIdentity({ user, className }: { user: { displayName: string; email: string | null }; className: string }) {
+  return (
+    <span className={`min-w-0 flex-col leading-tight ${className}`}>
+      <span className="truncate text-sm font-medium">{user.displayName}</span>
+      {user.email && <span className="truncate text-xs text-slate-500">{user.email}</span>}
+    </span>
+  );
 }
 
 type NavLabelKey = "overview" | "personalize" | "newProject" | "admin";
@@ -63,6 +84,7 @@ export function TopNav({
   brandLogoUrlLegacy,
   themeMode,
   showAdminLink = false,
+  user = null,
 }: {
   brandName: string;
   brandLogoUrlDark?: string;
@@ -70,6 +92,7 @@ export function TopNav({
   brandLogoUrlLegacy?: string;
   themeMode: "DARK" | "LIGHT";
   showAdminLink?: boolean;
+  user?: { displayName: string; email: string | null } | null;
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
@@ -183,6 +206,7 @@ export function TopNav({
                     </Link>
                   );
                 })}
+                {user && <UserIdentity user={user} className="hidden max-w-[12rem] text-right xl:flex" />}
                 <LocaleSwitcher />
                 <LogoutButton className="px-4 py-2" />
               </nav>
@@ -192,6 +216,7 @@ export function TopNav({
 
         {!authView && menuOpen && (
           <nav id="mobile-nav" className="mt-3 grid gap-2 md:hidden">
+            {user && <UserIdentity user={user} className="flex px-1 text-center" />}
             {navLinks.map((item) => {
               const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
               return (

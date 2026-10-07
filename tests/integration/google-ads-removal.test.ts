@@ -101,9 +101,9 @@ describe("rimozione dell'integrazione Google Ads", () => {
     expect(await dispatch("GET", "/api/integrations/google-sheets/connect")).toBe(200);
 
     const root = await prisma.user.create({
-      data: { username: "t901-root", password_hash: "hash-fittizio", role: "ADMIN", is_root_admin: true },
+      data: { display_name: "t901-root", password_hash: "hash-fittizio", role: "ADMIN", is_root_admin: true },
     });
-    auth.user = { id: root.id, username: root.username, role: "ADMIN", isRootAdmin: true };
+    auth.user = { id: root.id, displayName: root.display_name, role: "ADMIN", isRootAdmin: true };
     const { default: AdminPage } = await import("@/app/admin/page");
 
     const html = renderToStaticMarkup(await AdminPage());

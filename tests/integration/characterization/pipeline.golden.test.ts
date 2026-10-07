@@ -40,7 +40,7 @@ async function insertGlobalDefaults(): Promise<void> {
 }
 
 async function createSection(seeds: string[]): Promise<string> {
-  const { user } = await createUserWithSession({ username: "golden-owner" });
+  const { user } = await createUserWithSession({ displayName: "golden-owner" });
   const project = await prisma.project.create({
     data: {
       name: "Golden master",

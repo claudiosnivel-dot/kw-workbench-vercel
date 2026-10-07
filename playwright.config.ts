@@ -23,8 +23,8 @@ const appEnv: Record<string, string> = {
   PRISMA_CONNECTION_LIMIT: "3",
   PRISMA_POOL_TIMEOUT: "15",
   APP_AUTH_ENABLED: "true",
-  APP_AUTH_USERNAME: "e2e-bootstrap-admin",
-  APP_AUTH_PASSWORD: testSecret(),
+  // Root admin del bootstrap (T-1401): l'utente seed è già root admin, quindi il bootstrap non scatta.
+  APP_ADMIN_EMAIL: "e2e-bootstrap-admin@example.test",
   APP_PUBLIC_SIGNUP_ENABLED: "true",
   APP_SESSION_SECRET: testSecret(),
   APP_SESSION_MAX_AGE_SECONDS: "604800",
@@ -32,6 +32,11 @@ const appEnv: Record<string, string> = {
   // Job in background (T-1203): firma dei passi e chiamate interne verso il server degli E2E.
   JOB_SIGNING_SECRET: testSecret(),
   APP_PUBLIC_URL: `http://localhost:${PORT}`,
+  // next start gira in produzione, dove il trasporto delle email è resend (T-1402): chiave e mittente fittizi, gli
+  // E2E non inviano email.
+  EMAIL_TRANSPORT: "resend",
+  RESEND_API_KEY: `re_e2e_${testSecret()}`,
+  EMAIL_FROM: "noreply@example.test",
   APP_COOKIE_SECURE: "false",
   APP_BRAND_NAME: "Seo God Mode",
   APP_BRAND_LOGO_URL: "",

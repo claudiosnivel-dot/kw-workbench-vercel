@@ -1,18 +1,17 @@
 // Gate di T-505 (AC-505-1, AC-505-2, AC-505-3): header di sicurezza e CSP a nonce sulla build di produzione.
 import { expect, test, type Page } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/security/password";
-import { E2E_USER_PASSWORD, E2E_USERNAME } from "./credentials";
+import { createE2EUser, E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 
-const ONBOARDING_USERNAME = "e2e-onboarding-csp";
+const ONBOARDING_EMAIL = "e2e-onboarding-csp@example.test";
 
 function nonceOf(csp: string): string | null {
   return csp.match(/'nonce-([^']+)'/)?.[1] ?? null;
 }
 
-async function login(page: Page, username: string): Promise<void> {
+async function login(page: Page, email: string): Promise<void> {
   await page.goto("/login");
-  await page.getByLabel("Username").fill(username);
+  await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(E2E_USER_PASSWORD);
   await page.getByRole("button", { name: "Accedi" }).click();
   await page.waitForURL((url) => url.pathname !== "/login");
@@ -78,20 +77,18 @@ test.describe("header di sicurezza", () => {
   // covers: AC-505-3
   test("login, dashboard, risultati e onboarding non registrano violazioni CSP", async ({ browser }) => {
     const project = await prisma.project.findFirstOrThrow({
-      where: { name: "Progetto E2E", owner: { username: E2E_USERNAME } },
+      where: { name: "Progetto E2E", owner: { email: E2E_EMAIL } },
       select: { id: true },
     });
-    await prisma.user.deleteMany({ where: { username: ONBOARDING_USERNAME } });
-    await prisma.user.create({
-      data: { username: ONBOARDING_USERNAME, password_hash: await hashPassword(E2E_USER_PASSWORD) },
-    });
+    await prisma.user.deleteMany({ where: { email: ONBOARDING_EMAIL } });
+    await createE2EUser(ONBOARDING_EMAIL, E2E_USER_PASSWORD);
 
     const userContext = await browser.newContext();
     const userPage = await userContext.newPage();
     const userViolations = await trackCspViolations(userPage);
     await userPage.goto("/login");
     await expect(userPage.getByRole("button", { name: "Accedi" })).toBeVisible();
-    await login(userPage, E2E_USERNAME);
+    await login(userPage, E2E_EMAIL);
     await userPage.goto("/");
     await expect(userPage.getByRole("button", { name: "Esci" }).first()).toBeVisible();
     await userPage.goto(`/projects/${project.id}/results`);
@@ -100,7 +97,7 @@ test.describe("header di sicurezza", () => {
     const onboardingContext = await browser.newContext();
     const onboardingPage = await onboardingContext.newPage();
     const onboardingViolations = await trackCspViolations(onboardingPage);
-    await login(onboardingPage, ONBOARDING_USERNAME);
+    await login(onboardingPage, ONBOARDING_EMAIL);
     await onboardingPage.goto("/onboarding/welcome");
     await expect(onboardingPage.getByText("Percorso guidato", { exact: true })).toBeVisible();
 

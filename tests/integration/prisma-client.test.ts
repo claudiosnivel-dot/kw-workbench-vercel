@@ -110,11 +110,11 @@ describe("Prisma 7: prisma.config.ts e adapter pg", () => {
 
     await resetDatabase();
     const created = await prisma.user.create({
-      data: { username: "prisma-adapter-probe", password_hash: "hash-non-usato" },
+      data: { display_name: "prisma-adapter-probe", password_hash: "hash-non-usato" },
     });
     expect(await prisma.user.findUnique({ where: { id: created.id } })).toMatchObject({
       id: created.id,
-      username: "prisma-adapter-probe",
+      display_name: "prisma-adapter-probe",
     });
   });
 

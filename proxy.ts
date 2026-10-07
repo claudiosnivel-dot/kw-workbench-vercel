@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthEnabled, SESSION_COOKIE_NAME } from "@/lib/auth/config";
+import { PAGE_PATH_HEADER } from "@/lib/auth/safe-next-path";
 import { verifySessionToken } from "@/lib/auth/session";
 import { authRequiredResponse } from "@/lib/http/auth-required";
 import { getRequestId, REQUEST_ID_HEADER } from "@/lib/observability/request-id";
@@ -12,6 +13,13 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/register",
   "/api/auth/logout",
   "/api/auth/session-ended",
+  // Verifica dell'email e recupero password (T-1403, T-1404): si aprono dai link delle email, anche senza sessione.
+  "/verify-email",
+  "/api/auth/verify-email",
+  "/forgot-password",
+  "/reset-password",
+  "/api/auth/password-reset/request",
+  "/api/auth/password-reset/confirm",
   // Health check per il monitoraggio esterno (T-603): solo il percorso esatto, nessun prefisso.
   "/api/health",
   // Cron di Vercel per i job bloccati (T-1203): protetto da CRON_SECRET nella rotta.
@@ -63,6 +71,8 @@ function isPageRequest(request: NextRequest): boolean {
 function forward(request: NextRequest, requestId: string): NextResponse {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(REQUEST_ID_HEADER, requestId);
+  // Percorso richiesto per il gate dei termini delle pagine (T-1405): sempre sovrascritto, mai un valore del client.
+  requestHeaders.set(PAGE_PATH_HEADER, request.nextUrl.pathname + request.nextUrl.search);
 
   if (!isPageRequest(request)) {
     return NextResponse.next({ request: { headers: requestHeaders } });

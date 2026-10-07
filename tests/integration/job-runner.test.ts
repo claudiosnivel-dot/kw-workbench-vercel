@@ -33,7 +33,7 @@ const advance = vi.mocked(advanceJob);
 const NO_SEEDS_MESSAGE = "La sezione non ha seed: aggiungi almeno una seed prima di avviare l'estrazione";
 
 async function createSection(seeds: string[]) {
-  const { user } = await createUserWithSession({ username: "t706-owner" });
+  const { user } = await createUserWithSession({ displayName: "t706-owner" });
   const project = await prisma.project.create({
     data: {
       name: "Job T-706",

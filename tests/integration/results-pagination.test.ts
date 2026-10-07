@@ -8,7 +8,7 @@ import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 async function createProject(username: string) {
-  const owner = await createUserWithSession({ username });
+  const owner = await createUserWithSession({ displayName: username });
   const project = await prisma.project.create({
     data: { name: "Paginazione", owner_user_id: owner.user.id, language_code: "it", country_code: "IT" },
   });

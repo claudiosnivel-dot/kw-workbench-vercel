@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Manrope, Sora } from "next/font/google";
+import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { TopNav } from "@/components/top-nav";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
@@ -65,8 +66,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               brandLogoUrlLegacy={branding.logoUrl}
               themeMode={themeMode}
               showAdminLink={currentUser?.role === "ADMIN"}
+              user={currentUser ? { displayName: currentUser.displayName, email: currentUser.email } : null}
             />
-            <main className="mx-auto w-full max-w-[1180px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">{children}</main>
+            <main className="mx-auto w-full max-w-[1180px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+              {/* Email non ancora verificata (T-1403): l'app resta usabile, le estrazioni no. */}
+              {currentUser?.email && !currentUser.emailVerified && (
+                <div className="mb-6">
+                  <EmailVerificationBanner />
+                </div>
+              )}
+              {children}
+            </main>
           </div>
         </NextIntlClientProvider>
       </body>

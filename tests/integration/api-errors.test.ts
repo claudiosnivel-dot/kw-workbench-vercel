@@ -8,6 +8,7 @@ import { PATCH as patchAuthConfig } from "@/app/api/auth/config/route";
 import { POST as register } from "@/app/api/auth/register/route";
 import { PATCH as patchBranding } from "@/app/api/settings/branding/route";
 import { resetEnvForTests } from "@/lib/env";
+import { LEGAL_TERMS_VERSION } from "@/lib/legal/version";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
@@ -37,14 +38,14 @@ afterEach(() => {
 });
 
 async function createRootAdmin() {
-  return createUserWithSession({ username: "root-503", role: UserRole.ADMIN, isRootAdmin: true });
+  return createUserWithSession({ displayName: "root-503", role: UserRole.ADMIN, isRootAdmin: true });
 }
 
 describe("JSON malformato", () => {
   // covers: AC-503-1
   it("le quattro route rispondono 400 INVALID_JSON e nessuna 500", async () => {
     const { cookie: rootCookie } = await createRootAdmin();
-    const { user: target, cookie: userCookie } = await createUserWithSession({ username: "utente-503" });
+    const { user: target, cookie: userCookie } = await createUserWithSession({ displayName: "utente-503" });
 
     const responses = [
       await callRoute(register, { method: "POST", url: "/api/auth/register", body: "not-json" }),
@@ -69,7 +70,7 @@ describe("JSON malformato", () => {
 describe("errore imprevisto del DB", () => {
   // covers: AC-503-2
   it("risponde 500 INTERNAL_ERROR con il requestId dell'header, senza dettagli interni, e scrive una riga di log", async () => {
-    await createUserWithSession({ username: "utente-esistente" });
+    await createUserWithSession({ displayName: "utente-esistente" });
     vi.spyOn(prisma.user, "create").mockRejectedValueOnce(
       new Error("connect ECONNREFUSED db.example.supabase.co:5432 (prisma)")
     );
@@ -84,7 +85,14 @@ describe("errore imprevisto del DB", () => {
       method: "POST",
       url: "/api/auth/register",
       headers: { "x-request-id": "req-test-0001" },
-      body: { username: "nuovo-503", password: "password-503", confirmPassword: "password-503" },
+      // impacted-by: T-1401, T-1405 (email e accettazione dei termini correnti)
+      body: {
+        email: "nuovo-503@example.test",
+        password: "password-503",
+        confirmPassword: "password-503",
+        acceptTerms: true,
+        termsVersion: LEGAL_TERMS_VERSION,
+      },
     });
     const text = await response.text();
     const body = JSON.parse(text) as ErrorBody;
@@ -108,25 +116,26 @@ describe("errore imprevisto del DB", () => {
 
 describe("creazione utente da admin", () => {
   // covers: AC-503-3
-  it("username duplicato dà 409 CONFLICT e username non valido 400 VALIDATION_ERROR", async () => {
+  // impacted-by: T-1401 (AC-503-3 emendato: email già registrata 409 EMAIL_TAKEN, nome mostrato non valido 400)
+  it("email duplicata dà 409 EMAIL_TAKEN e nome mostrato non valido 400 VALIDATION_ERROR", async () => {
     const { cookie } = await createRootAdmin();
-    await createUserWithSession({ username: "mario" });
+    await createUserWithSession({ displayName: "mario" });
 
     const duplicate = await callRoute(createAdminUser, {
       method: "POST",
       url: "/api/admin/users",
       cookie,
-      body: { username: "mario", password: "password-503", confirmPassword: "password-503" },
+      body: { email: "mario@example.test", password: "password-503", confirmPassword: "password-503" },
     });
     const invalid = await callRoute(createAdminUser, {
       method: "POST",
       url: "/api/admin/users",
       cookie,
-      body: { username: "A!", password: "password-503", confirmPassword: "password-503" },
+      body: { email: "nome-lungo@example.test", displayName: "x".repeat(61), password: "password-503", confirmPassword: "password-503" },
     });
 
     expect(duplicate.status).toBe(409);
-    expect(((await duplicate.json()) as ErrorBody).code).toBe("CONFLICT");
+    expect(((await duplicate.json()) as ErrorBody).code).toBe("EMAIL_TAKEN");
     expect(invalid.status).toBe(400);
     expect(((await invalid.json()) as ErrorBody).code).toBe("VALIDATION_ERROR");
   });

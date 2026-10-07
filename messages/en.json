@@ -19,9 +19,11 @@
     "description": "Web workspace for keyword research"
   },
   "auth": {
-    "username": "Username",
+    "email": "Email",
+    "displayName": "Name (optional)",
     "password": "Password",
     "confirmPassword": "Confirm password",
+    "acceptTerms": "I accept the <terms>terms of service</terms> and the <privacy>privacy policy</privacy>.",
     "login": {
       "title": "Sign in",
       "subtitle": "Sign in to access your workspace.",
@@ -29,6 +31,7 @@
       "submitting": "Signing in...",
       "noAccount": "Don't have an account?",
       "registerLink": "Sign up",
+      "forgotPassword": "Forgot your password?",
       "notices": {
         "session_ended": "Your session has ended. Please sign in again."
       }
@@ -41,7 +44,48 @@
       "submit": "Create account",
       "submitting": "Creating account...",
       "haveAccount": "Already have an account?",
-      "loginLink": "Sign in"
+      "loginLink": "Sign in",
+      "checkEmail": "Check your email: we wrote to you to complete your sign-up. Then sign in with your email and password."
+    },
+    "verify": {
+      "title": "Verify email",
+      "intro": "Confirm your email address to complete your sign-up.",
+      "submit": "Confirm email",
+      "submitting": "Verifying...",
+      "success": "Email verified: you can now start extractions.",
+      "missingToken": "The verification link is incomplete: open it again from the email or request a new one.",
+      "goToApp": "Go to the app"
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "intro": "Enter the email of your account: if it is registered you will receive a link to choose a new password.",
+      "submit": "Send the link",
+      "submitting": "Sending...",
+      "sent": "If the email is registered, you will shortly receive a link valid for 1 hour.",
+      "backToLogin": "Back to sign in"
+    },
+    "reset": {
+      "title": "New password",
+      "intro": "Choose the new password of your account: the sessions open on every device will be closed.",
+      "password": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Set the password",
+      "submitting": "Saving...",
+      "done": "Password updated: sign in with the new password.",
+      "missingToken": "The link is incomplete: open it again from the email or request a new one.",
+      "goToLogin": "Go to sign in"
+    },
+    "terms": {
+      "title": "Updated terms",
+      "intro": "To keep using the app, accept the current version of the terms of service and of the privacy policy.",
+      "submit": "Accept and continue",
+      "submitting": "Saving..."
+    },
+    "verifyBanner": {
+      "text": "Your email address is not verified yet: open the link we sent you to be able to start extractions.",
+      "resend": "Send the email again",
+      "resending": "Sending...",
+      "sent": "Email sent: check your inbox."
     },
     "logout": {
       "submit": "Sign out",
@@ -436,19 +480,28 @@
     "AUTH_REQUIRED": "Your session is invalid or has expired. Please sign in again.",
     "FORBIDDEN": "You are not allowed to perform this operation.",
     "NOT_FOUND": "Resource not found.",
-    "CONFLICT": "An item with this data already exists, for example a username already in use.",
+    "CONFLICT": "An item with this data already exists.",
     "INTERNAL_ERROR": "Internal server error. Please try again shortly.",
     "INVALID_CREDENTIALS": "Invalid credentials",
     "ACCOUNT_SUSPENDED": "Account suspended. Contact the administrator.",
     "REGISTRATION_UNAVAILABLE": "Registration is not available while authentication is disabled.",
     "SIGNUP_DISABLED": "Public sign-up is disabled.",
-    "CREDENTIALS_REQUIRED": "Username and password are required.",
+    "CREDENTIALS_REQUIRED": "Email and password are required.",
     "PASSWORD_MISMATCH": "Password and confirmation do not match.",
     "CURRENT_PASSWORD_REQUIRED": "Your current password is required.",
     "CURRENT_PASSWORD_INVALID": "Your current password is not valid.",
     "NO_CHANGES": "No changes to save.",
     "USER_NOT_FOUND": "User not found.",
     "SELF_ACTION_FORBIDDEN": "You cannot change or delete your own account from user management.",
+    "EMAIL_INVALID": "Invalid email.",
+    "EMAIL_TAKEN": "Email already registered.",
+    "EMAIL_NOT_VERIFIED": "Verify your email before starting an extraction.",
+    "EMAIL_ALREADY_VERIFIED": "Your email is already verified.",
+    "VERIFICATION_TOKEN_INVALID": "Invalid or expired verification link: request a new one.",
+    "RESET_TOKEN_INVALID": "Invalid or expired reset link: request a new one.",
+    "TERMS_NOT_ACCEPTED": "To continue, accept the terms of service and the privacy policy.",
+    "TERMS_VERSION_CHANGED": "The terms have changed: reload the page and accept the new version.",
+    "RATE_LIMITED": "Too many requests: try again shortly.",
     "LOCALE_UNSUPPORTED": "Unsupported language.",
     "PROJECT_NOT_FOUND": "Project not found.",
     "SECTION_NOT_FOUND": "Section not found.",
@@ -639,10 +692,11 @@
     },
     "account": {
       "title": "Account",
-      "intro": "Update the username and password of your personal account.",
-      "activeUsername": "Current username:",
-      "newUsername": "New username",
-      "usernamePlaceholder": "username",
+      "intro": "Update the display name and the password of your personal account.",
+      "accountEmail": "Email:",
+      "activeDisplayName": "Current name:",
+      "newDisplayName": "New name",
+      "displayNamePlaceholder": "Display name",
       "currentPassword": "Current password (required)",
       "currentPasswordPlaceholder": "Current password",
       "newPassword": "New password (optional)",
@@ -707,7 +761,7 @@
       "suspended": "Suspended"
     },
     "filters": {
-      "search": "Search username",
+      "search": "Search email or name",
       "searchPlaceholder": "e.g. mario",
       "role": "Role",
       "status": "Status",
@@ -725,7 +779,7 @@
     "manage": {
       "title": "User management",
       "columns": {
-        "username": "Username",
+        "user": "User",
         "role": "Role",
         "status": "Status",
         "created": "Created",
@@ -733,6 +787,7 @@
         "actions": "Actions"
       },
       "rootBadge": "Root Admin",
+      "noEmail": "no email (legacy account)",
       "save": "Save",
       "newPasswordPlaceholder": "New password",
       "resetPassword": "Reset password",
@@ -741,7 +796,7 @@
       "previous": "Previous",
       "next": "Next",
       "updated": "User updated.",
-      "deleteConfirm": "Permanently delete the user \"{username}\"?",
+      "deleteConfirm": "Permanently delete the user \"{name}\"?",
       "deleted": "User permanently deleted."
     },
     "spend": {
@@ -801,6 +856,40 @@
       "disconnecting": "Disconnecting...",
       "disconnect": "Disconnect Google Sheets",
       "disconnectConfirm": "Disconnect Google Sheets from this account?"
+    }
+  },
+  "emails": {
+    "greeting": "Hi {name},",
+    "linkHint": "If the button doesn't work, copy this address into your browser:",
+    "footer": "You received this email because of an action on your account. If it wasn't you, you can ignore it.",
+    "verify": {
+      "subject": "Confirm your email address",
+      "intro": "please confirm your email address to complete your sign-up.",
+      "action": "Confirm email",
+      "expiry": "The link expires in 24 hours."
+    },
+    "passwordReset": {
+      "subject": "Reset your password",
+      "intro": "we received a request to reset the password of your account.",
+      "action": "Choose a new password",
+      "expiry": "The link expires in 1 hour and can be used only once."
+    },
+    "accountExists": {
+      "subject": "You already have an account",
+      "intro": "someone tried to sign up with this email address, which already has an account. If it was you, sign in or recover your password.",
+      "action": "Sign in",
+      "reset": "If you don't remember your password, you can reset it here:"
+    },
+    "workspaceInvite": {
+      "subject": "Invitation to the {workspace} workspace",
+      "intro": "{inviter} invited you to collaborate in the {workspace} workspace.",
+      "action": "Accept the invitation",
+      "expiry": "The invitation expires in 7 days."
+    },
+    "billingNotice": {
+      "subject": "Notice about your subscription",
+      "intro": "there is news about your {plan} subscription, with reference date {date}.",
+      "action": "Open the app"
     }
   }
 }

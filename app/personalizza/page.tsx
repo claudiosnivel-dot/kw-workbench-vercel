@@ -38,7 +38,8 @@ export default async function PersonalizzaPage() {
 
       <AuthSettingsCard
         initial={{
-          username: user.username,
+          email: user.email,
+          displayName: user.displayName,
         }}
       />
     </div>

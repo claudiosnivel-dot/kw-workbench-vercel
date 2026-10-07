@@ -1,5 +1,7 @@
-// Gate di T-201 (AC-201-4): in produzione un refuso non disattiva l'auth e il bootstrap del
-// primo utente rifiuta la password di default.
+// Gate di T-201 (AC-201-4): in produzione un refuso non disattiva l'auth e il bootstrap del primo utente non
+// accetta credenziali di default.
+// impacted-by: T-1401 (AC-201-4 emendato: il bootstrap crea il root admin di APP_ADMIN_EMAIL con password casuale,
+// non più APP_AUTH_USERNAME e APP_AUTH_PASSWORD)
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as login } from "@/app/api/auth/login/route";
 import { GET as onboardingState } from "@/app/api/onboarding/state/route";
@@ -8,18 +10,20 @@ import { prisma } from "@/lib/prisma";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
-const BOOTSTRAP_USERNAME = "bootstrap-admin";
-// Password di bootstrap fittizia di 16 caratteri, mai un valore reale.
-const STRONG_PASSWORD = "bootstrap-pw-16c";
+const ADMIN_EMAIL = "root@example.test";
 
 beforeAll(() => {
   vi.stubEnv("NODE_ENV", "production");
   vi.stubEnv("APP_AUTH_ENABLED", "ture");
-  vi.stubEnv("APP_AUTH_USERNAME", BOOTSTRAP_USERNAME);
-  vi.stubEnv("APP_AUTH_PASSWORD", "changeme");
+  vi.stubEnv("APP_ADMIN_EMAIL", ADMIN_EMAIL);
   vi.stubEnv("APP_ENCRYPTION_KEY", "y".repeat(40));
   // impacted-by: T-1203 (JOB_SIGNING_SECRET obbligatoria in produzione)
   vi.stubEnv("JOB_SIGNING_SECRET", "z".repeat(40));
+  // impacted-by: T-1402 (in produzione le email partono con Resend: trasporto, chiave, mittente e URL pubblico)
+  vi.stubEnv("EMAIL_TRANSPORT", "resend");
+  vi.stubEnv("RESEND_API_KEY", "re_test_non_reale");
+  vi.stubEnv("EMAIL_FROM", "noreply@example.test");
+  vi.stubEnv("APP_PUBLIC_URL", "https://app.example.test");
   resetEnvForTests();
 });
 
@@ -34,44 +38,21 @@ beforeEach(async () => {
 
 describe("bootstrap del primo utente in produzione", () => {
   // covers: AC-201-4
-  it("sessione anonima 401, login con changeme rifiutato senza righe, login con password valida crea il root admin", async () => {
+  it("sessione anonima 401; il login con changeme non riesce e il bootstrap crea solo il root admin di APP_ADMIN_EMAIL", async () => {
     // impacted-by: T-1101 (rotta /api/auth/session rimossa): l'auth resta attiva, una rotta autenticata risponde 401.
     const anonymous = await callRoute(onboardingState, { url: "/api/onboarding/state" });
     expect(anonymous.status).toBe(401);
 
-    // impacted-by: T-503 (l'errore di bootstrap diventa un 500 INTERNAL_ERROR di withApiErrors: il motivo
-    // resta nel log del server e non arriva al client)
-    // impacted-by: T-602 (il motivo lo scrive il logger JSON su stdout, non console.error)
-    const written: string[] = [];
-    const stdoutWrite = vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array) => {
-      written.push(String(chunk));
-      return true;
-    });
     const weak = await callRoute(login, {
       method: "POST",
       url: "/api/auth/login",
-      body: { username: BOOTSTRAP_USERNAME, password: "changeme" },
+      body: { email: ADMIN_EMAIL, password: "changeme" },
     });
-    const weakText = await weak.text();
+
     expect(weak.status).not.toBe(200);
-    expect(weak.status).toBe(500);
+    expect(weak.status).toBe(401);
     expect(weak.headers.get("set-cookie")).toBeNull();
-    expect(weakText).not.toContain("APP_AUTH_PASSWORD");
-    expect(written.some((chunk) => chunk.includes("APP_AUTH_PASSWORD"))).toBe(true);
-    stdoutWrite.mockRestore();
-    expect(await prisma.user.count()).toBe(0);
-
-    vi.stubEnv("APP_AUTH_PASSWORD", STRONG_PASSWORD);
-    resetEnvForTests();
-    const ok = await callRoute(login, {
-      method: "POST",
-      url: "/api/auth/login",
-      body: { username: BOOTSTRAP_USERNAME, password: STRONG_PASSWORD },
-    });
-
-    expect(ok.status).toBe(200);
-    expect(ok.headers.get("set-cookie")).toMatch(/^kwb_session=[^;]+;/);
-    const users = await prisma.user.findMany({ select: { is_root_admin: true } });
-    expect(users).toEqual([{ is_root_admin: true }]);
+    const users = await prisma.user.findMany({ select: { email: true, is_root_admin: true } });
+    expect(users).toEqual([{ email: ADMIN_EMAIL, is_root_admin: true }]);
   });
 });

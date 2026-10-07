@@ -36,7 +36,8 @@ beforeEach(async () => {
 async function createSubscribers(count: number, prefix: string, status: UserStatus = UserStatus.ACTIVE) {
   await prisma.user.createMany({
     data: Array.from({ length: count }, (_, index) => ({
-      username: `${prefix}-${String(index).padStart(3, "0")}`,
+      display_name: `${prefix}-${String(index).padStart(3, "0")}`,
+      email: `${prefix}-${String(index).padStart(3, "0")}@example.test`,
       password_hash: UNUSABLE_HASH,
       role: UserRole.SUBSCRIBER,
       status,
@@ -53,9 +54,9 @@ async function list(cookie: string, query = ""): Promise<ListBody["data"]> {
 describe("totali per un admin non root", () => {
   // covers: AC-507-1
   it("contano solo i sottoscrittori e totalAdmins è null", async () => {
-    await createUserWithSession({ username: "root-507", role: UserRole.ADMIN, isRootAdmin: true });
-    await createUserWithSession({ username: "admin-507-b", role: UserRole.ADMIN });
-    const { cookie } = await createUserWithSession({ username: "admin-507-a", role: UserRole.ADMIN });
+    await createUserWithSession({ displayName: "root-507", role: UserRole.ADMIN, isRootAdmin: true });
+    await createUserWithSession({ displayName: "admin-507-b", role: UserRole.ADMIN });
+    const { cookie } = await createUserWithSession({ displayName: "admin-507-a", role: UserRole.ADMIN });
     await createSubscribers(4, "sub-attivo");
     await createSubscribers(1, "sub-sospeso", UserStatus.SUSPENDED);
 
@@ -75,7 +76,7 @@ describe("totali per un admin non root", () => {
 describe("paginazione", () => {
   // covers: AC-507-2
   it("restituisce 50, 50 e 20 utenti senza ripetizioni e limita pageSize a 100", async () => {
-    const { cookie } = await createUserWithSession({ username: "root-507", role: UserRole.ADMIN, isRootAdmin: true });
+    const { cookie } = await createUserWithSession({ displayName: "root-507", role: UserRole.ADMIN, isRootAdmin: true });
     await createSubscribers(119, "sub");
 
     const pages = [
@@ -99,8 +100,8 @@ describe("azioni dell'admin su se stesso", () => {
   // covers: AC-507-3
   it("sospensione ed eliminazione del proprio account rispondono 400 SELF_ACTION_FORBIDDEN e il record non cambia", async () => {
     const actors = [
-      await createUserWithSession({ username: "root-507", role: UserRole.ADMIN, isRootAdmin: true }),
-      await createUserWithSession({ username: "admin-507", role: UserRole.ADMIN }),
+      await createUserWithSession({ displayName: "root-507", role: UserRole.ADMIN, isRootAdmin: true }),
+      await createUserWithSession({ displayName: "admin-507", role: UserRole.ADMIN }),
     ];
 
     for (const { user, cookie } of actors) {

@@ -19,6 +19,8 @@ const securityHeaders: Record<string, string> = {
     : {}),
 };
 
+const TOKEN_LINK_PAGES = ["/verify-email", "/forgot-password", "/reset-password"];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
@@ -27,6 +29,9 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: Object.entries(securityHeaders).map(([name, value]) => ({ key: name, value })),
       },
+      // Pagine dei link con token nelle email (T-1403, T-1404): nessun Referer verso link o risorse esterne, così il
+      // token nell'URL non esce dalla pagina. Una regola successiva con la stessa chiave sostituisce la precedente.
+      ...TOKEN_LINK_PAGES.map((source) => ({ source, headers: [{ key: "Referrer-Policy", value: "no-referrer" }] })),
     ];
   },
 };

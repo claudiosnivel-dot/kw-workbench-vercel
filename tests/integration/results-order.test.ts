@@ -10,7 +10,7 @@ import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
 async function createSection(settings: { metrics_provider: "NONE" | "MOCK" }) {
-  const owner = await createUserWithSession({ username: "t707-owner" });
+  const owner = await createUserWithSession({ displayName: "t707-owner" });
   const project = await prisma.project.create({
     data: {
       name: "Ordinamento",

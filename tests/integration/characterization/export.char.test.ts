@@ -77,7 +77,7 @@ function keywordFor(index: number): string {
 }
 
 async function createOwnerProject(onboardingStatus?: "IN_PROGRESS") {
-  const owner = await createUserWithSession({ username: "export-owner" });
+  const owner = await createUserWithSession({ displayName: "export-owner" });
   if (onboardingStatus) {
     await prisma.userOnboardingProgress.create({ data: { user_id: owner.user.id, status: onboardingStatus } });
   }

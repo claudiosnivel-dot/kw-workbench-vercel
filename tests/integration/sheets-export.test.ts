@@ -79,7 +79,7 @@ function valueWrites(calls: GoogleCall[]): { range: string; values: unknown[][] 
 }
 
 async function createOwnerProject() {
-  const owner = await createUserWithSession({ username: `t806-${randomUUID().slice(0, 8)}` });
+  const owner = await createUserWithSession({ displayName: `t806-${randomUUID().slice(0, 8)}` });
   const project = await prisma.project.create({
     data: { name: "Sheets", owner_user_id: owner.user.id, language_code: "it", country_code: "IT" },
   });

@@ -25,6 +25,16 @@ export const API_ERROR_CODES = [
   "NO_CHANGES",
   "USER_NOT_FOUND",
   "SELF_ACTION_FORBIDDEN",
+  // Identità via email, verifica, recupero password e consenso (T-1401…T-1405).
+  "EMAIL_INVALID",
+  "EMAIL_TAKEN",
+  "EMAIL_NOT_VERIFIED",
+  "EMAIL_ALREADY_VERIFIED",
+  "VERIFICATION_TOKEN_INVALID",
+  "RESET_TOKEN_INVALID",
+  "TERMS_NOT_ACCEPTED",
+  "TERMS_VERSION_CHANGED",
+  "RATE_LIMITED",
   // Lingua dell'interfaccia (T-1301).
   "LOCALE_UNSUPPORTED",
   // Progetti e sezioni.

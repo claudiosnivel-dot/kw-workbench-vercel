@@ -10,6 +10,12 @@ const PRODUCTION = {
   NODE_ENV: "production",
   APP_SESSION_SECRET: VALID_SECRET,
   APP_ENCRYPTION_KEY: VALID_SECRET,
+  // impacted-by: T-1401, T-1402 (root admin ed email transazionali obbligatori in produzione)
+  APP_ADMIN_EMAIL: "root@example.com",
+  EMAIL_TRANSPORT: "resend",
+  RESEND_API_KEY: "re_test_non_reale",
+  EMAIL_FROM: "Seo God Mode <noreply@example.com>",
+  APP_PUBLIC_URL: "https://app.example.com",
 };
 
 function errorMessageOf(run: () => unknown): string {
@@ -84,6 +90,21 @@ describe("variabili dei job in background (T-1203)", () => {
     expect(errorMessageOf(() => parseEnv({ ...development, JOB_STEP_BUDGET_MS: "200000" }))).toContain(
       "JOB_STALE_AFTER_MS deve superare JOB_STEP_BUDGET_MS"
     );
+  });
+});
+
+describe("root admin ed email transazionali in produzione (T-1401, T-1402)", () => {
+  it("APP_ADMIN_EMAIL, RESEND_API_KEY, EMAIL_FROM e APP_PUBLIC_URL sono obbligatorie; email e mittente devono essere validi", () => {
+    const withJob = { ...PRODUCTION, JOB_SIGNING_SECRET: "j".repeat(40) };
+    expect(() => parseEnv(withJob)).not.toThrow();
+
+    for (const name of ["APP_ADMIN_EMAIL", "RESEND_API_KEY", "EMAIL_FROM", "APP_PUBLIC_URL"] as const) {
+      expect(errorMessageOf(() => parseEnv({ ...withJob, [name]: undefined }))).toContain(`${name} è obbligatoria in produzione`);
+    }
+    expect(errorMessageOf(() => parseEnv({ ...withJob, APP_ADMIN_EMAIL: "non-email" }))).toContain("APP_ADMIN_EMAIL");
+    expect(errorMessageOf(() => parseEnv({ ...withJob, EMAIL_FROM: "Nome <a@b.it>\r\nBcc: x@y.it" }))).toContain("EMAIL_FROM");
+    expect(() => parseEnv({ NODE_ENV: "development", EMAIL_TRANSPORT: "outbox" })).not.toThrow();
+    expect(errorMessageOf(() => parseEnv({ NODE_ENV: "development", EMAIL_TRANSPORT: "smtp" }))).toContain("EMAIL_TRANSPORT");
   });
 });
 

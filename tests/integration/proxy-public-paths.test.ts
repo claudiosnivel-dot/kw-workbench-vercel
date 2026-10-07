@@ -118,7 +118,7 @@ describe("middleware: redirect al login", () => {
 describe("/login e /register con un utente già autenticato", () => {
   // covers: AC-302-4
   it("rimandano a / l'utente ACTIVE e mostrano i form all'utente SUSPENDED con token valido", async () => {
-    const active = await createUserWithSession({ username: "t302-active" });
+    const active = await createUserWithSession({ displayName: "t302-active" });
     cookieJar.session = sessionValue(active.cookie);
 
     const loginError = await pageError(() => LoginPage({ searchParams: searchParams() }));
@@ -128,7 +128,7 @@ describe("/login e /register con un utente già autenticato", () => {
     expect((registerError as Error | null)?.message).toBe("NEXT_REDIRECT");
     expect(redirectTarget(registerError)).toBe("/");
 
-    const suspended = await createUserWithSession({ username: "t302-suspended", status: UserStatus.SUSPENDED });
+    const suspended = await createUserWithSession({ displayName: "t302-suspended", status: UserStatus.SUSPENDED });
     cookieJar.session = sessionValue(suspended.cookie);
 
     const loginElement = await LoginPage({ searchParams: searchParams() });

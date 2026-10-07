@@ -1,19 +1,17 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/security/password";
+import { createE2EUser } from "./credentials";
 
 // Utente dedicato con ui_locale=en: le pagine fotografate dall'utente seed restano in italiano.
 // Password generata a ogni esecuzione, mai una credenziale reale.
-const USERNAME = "e2e-i18n";
+const EMAIL = "e2e-i18n@example.test";
 const PASSWORD = randomBytes(18).toString("hex");
 
 let userId = "";
 
 test.beforeAll(async () => {
-  const user = await prisma.user.create({
-    data: { username: USERNAME, password_hash: await hashPassword(PASSWORD), ui_locale: "en" },
-  });
+  const user = await createE2EUser(EMAIL, PASSWORD, { ui_locale: "en" });
   userId = user.id;
   await prisma.userOnboardingProgress.create({
     data: { user_id: user.id, status: "COMPLETED", current_step: "REVIEW_EXPORT", completed_at: new Date() },
@@ -48,7 +46,7 @@ test.describe("browser anonimo in inglese", () => {
 
 // covers: AC-1301-4
 test("la preferenza dell'utente vince sul cookie e una lingua non supportata è rifiutata", async ({ page, context, baseURL }) => {
-  const login = await page.request.post("/api/auth/login", { data: { username: USERNAME, password: PASSWORD } });
+  const login = await page.request.post("/api/auth/login", { data: { email: EMAIL, password: PASSWORD } });
   expect(login.status()).toBe(200);
   await context.addCookies([{ name: "kwb_locale", value: "it", url: baseURL as string }]);
 

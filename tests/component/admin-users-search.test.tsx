@@ -26,11 +26,12 @@ describe("ricerca utenti nella dashboard admin", () => {
   it("con 6 caratteri a 50 ms l'uno chiama fetch una sola volta dopo 300 ms e annulla la richiesta in corso", async () => {
     // Nessuna risposta arriva: il caricamento iniziale resta in corso quando parte la ricerca.
     fetchMock.mockImplementation(() => new Promise<Response>(() => undefined));
-    renderWithIntl(<AdminUsersDashboard viewer={{ id: "root", username: "root", isRootAdmin: true }} />);
+    renderWithIntl(<AdminUsersDashboard viewer={{ id: "root", isRootAdmin: true }} />);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const initialSignal = fetchMock.mock.calls[0][1]?.signal;
 
-    const input = screen.getByLabelText("Cerca username");
+    // impacted-by: T-1401 (la ricerca copre email e nome mostrato)
+    const input = screen.getByLabelText("Cerca email o nome");
     const text = "mario1";
     for (let length = 1; length <= text.length; length += 1) {
       fireEvent.change(input, { target: { value: text.slice(0, length) } });

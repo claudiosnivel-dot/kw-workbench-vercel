@@ -15,8 +15,7 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 |---|---|---|---|---|---|
 | `NODE_ENV` | `production` | `production` | `development` | no | piattaforma (Next: `next build`/`next start` in production, `next dev` in development) |
 | `APP_AUTH_ENABLED` | facolt. (attiva; disattivarla è un errore) | facolt. (come Production) | facolt. | no | Vercel / locale |
-| `APP_AUTH_USERNAME` | facolt. (default `admin`) | facolt. | facolt. | no | Vercel / locale |
-| `APP_AUTH_PASSWORD` | obbl. solo per il bootstrap del primo utente (tabella `users` vuota): almeno 12 caratteri, diversa da `changeme` | come Production (stesso DB) | facolt. (default `changeme`) | sì | Vercel (Sensitive) / locale |
+| `APP_ADMIN_EMAIL` | obbl.: email del root admin (T-1401); il seed la assegna, già verificata, al root admin senza email | obbl., come Production (stesse variabili) | obbl. solo per il bootstrap con la tabella `users` vuota | no | Vercel / locale |
 | `APP_PUBLIC_SIGNUP_ENABLED` | facolt. (default `true`) | facolt. | facolt. | no | Vercel / locale |
 | `APP_SESSION_SECRET` | obbl.: almeno 32 caratteri, non un segnaposto | obbl., stessi vincoli di Production | obbl. (nessun default; fuori produzione sono ammessi i segnaposto di `.env.example`) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
 | `APP_SESSION_MAX_AGE_SECONDS` | facolt. (intero 60…31536000, default 604800) | facolt. | facolt. | no | Vercel / locale |
@@ -39,7 +38,10 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `JOB_MAX_ATTEMPTS` | facolt. (intero 1…20, default 5: tentativi di un job prima del fallimento definitivo) | facolt. | facolt. | no | Vercel / locale |
 | `JOB_SIGNING_SECRET` | obbl.: almeno 32 caratteri, non un segnaposto, diversa da `APP_SESSION_SECRET` (firma HMAC dei passi dei job, T-1203) | obbl., come Production (stesse variabili) | facolt. (senza, i job non proseguono oltre il primo passo) | sì | Vercel (Sensitive), generata con `openssl rand -hex 32` / locale |
 | `CRON_SECRET` | facolt. ma necessaria al cron dei job (almeno 16 caratteri; Vercel la invia come `Authorization: Bearer`; senza, `/api/cron/reap-jobs` risponde 401) | facolt. | facolt. | sì | Vercel (Sensitive) / locale |
-| `APP_PUBLIC_URL` | facolt. (URL https dell'app: base delle chiamate interne fuori da Vercel e, da T-1402, dei link nelle email; su Vercel le chiamate interne usano `VERCEL_URL`) | facolt. | facolt. (`http://localhost:3000`; http ammesso solo per localhost) | no | Vercel / locale |
+| `APP_PUBLIC_URL` | obbl. (T-1402): URL https dell'app, unica base dei link nelle email (mai l'header Host) e delle chiamate interne fuori da Vercel; su Vercel le chiamate interne usano `VERCEL_URL` | obbl., come Production | facolt. (`http://localhost:3000`; http ammesso solo per localhost; senza, l'invio delle email fallisce) | no | Vercel / locale |
+| `EMAIL_TRANSPORT` | obbl.: `resend` (T-1402, D-11; `outbox` è rifiutato all'avvio) | obbl., come Production | facolt. (default `outbox`: le email finiscono nella tabella `email_outbox`) | no | Vercel / locale |
+| `RESEND_API_KEY` | obbl.: chiave API di Resend con permesso di invio; mai nel sorgente né nei log | obbl., come Production | no (con `outbox` non serve) | sì | Vercel (Sensitive) / locale |
+| `EMAIL_FROM` | obbl.: mittente su un dominio verificato in Resend, `indirizzo` oppure `Nome <indirizzo>` | obbl., come Production | facolt. | no | Vercel / locale |
 | `VERCEL_URL` | no (di sistema: dominio della deployment corrente, base delle chiamate interne dei job) | no (di sistema) | no | no | piattaforma (Vercel) |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | no (di sistema: presente se è attivo Protection Bypass for Automation; serve alle chiamate interne verso deployment protette) | no (di sistema) | no | sì | piattaforma (Vercel, Settings → Deployment Protection) |
 | `AUTOCOMPLETE_TIMEOUT_MS` | facolt. (intero 1000…30000, default 4500) | facolt. | facolt. | no | Vercel / locale |
@@ -75,6 +77,21 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
   il build con lo stesso exit code.
 - Un progetto Supabase in pausa (piano gratuito, dopo un periodo di inattività) fa fallire il build
   al primo passo: `prisma migrate deploy` non raggiunge il DB. Si riattiva dal pannello Supabase.
+
+### Account ed email (T-1401…T-1405)
+
+- L'identità di accesso è l'email. Gli utenti creati prima della migrazione `0027_email_identity` restano nel DB con
+  email nulla (utenti legacy, solo dati di prova per D-05) e non possono più accedere; il loro username è diventato
+  il nome mostrato. Il root admin riceve `APP_ADMIN_EMAIL` dal seed del deploy di produzione e continua ad accedere
+  con la sua password.
+- Con la tabella `users` vuota il primo login o la prima registrazione creano il root admin di `APP_ADMIN_EMAIL` con
+  una password casuale mai comunicata: il primo accesso passa da «Password dimenticata?» (`/forgot-password`).
+  `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD` non esistono più.
+- Email transazionali con Resend (D-11): verifica dell'email, recupero password, avviso di account esistente. Prima
+  del primo invio va verificato su Resend il dominio di `EMAIL_FROM` (record DNS SPF e DKIM indicati da Resend;
+  DMARC consigliato): azione dell'utente, fuori dal codice. Un invio fallito è registrato nei log con template, id del
+  messaggio e dominio del destinatario, mai l'indirizzo completo.
+- I link delle email (verifica 24 h, recupero password 1 h, monouso) usano solo `APP_PUBLIC_URL`.
 
 ### Job in background (T-1203)
 
@@ -121,7 +138,7 @@ atteso. Se in futuro serve uno staging, i passi sono questi.
    Vercel: pooler in transaction mode (porta 6543) in `DATABASE_URL`, porta 5432 in `DIRECT_URL`.
 3. Sempre in Preview: `PRODUCTION_DB_HOST` con l'identità del DB di produzione
    (`postgres.<ref-produzione>@<host del pooler>`), `APP_SESSION_SECRET` e `APP_ENCRYPTION_KEY`
-   generate apposta (diverse da Production) e `APP_AUTH_PASSWORD` per il primo utente dello staging.
+   generate apposta (diverse da Production) e `APP_ADMIN_EMAIL` per il root admin dello staging.
 4. Eseguire un deploy Preview (push di un branch): il log del build deve contenere
    `[vercel-build] migrazioni applicate: DB di Preview distinto da quello di produzione`.
 5. Scaricare le variabili e verificare:

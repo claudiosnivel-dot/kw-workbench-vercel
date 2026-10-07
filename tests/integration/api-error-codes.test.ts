@@ -89,8 +89,8 @@ describe("API_ERROR_CODES", () => {
 describe("risposte d'errore con un code dell'elenco", () => {
   // covers: AC-1303-3
   it("JSON malformato 400, progetto di un altro utente 404 e lingua non supportata 400 LOCALE_UNSUPPORTED", async () => {
-    const a = await createUserWithSession({ username: "t1303-a" });
-    const b = await createUserWithSession({ username: "t1303-b" });
+    const a = await createUserWithSession({ displayName: "t1303-a" });
+    const b = await createUserWithSession({ displayName: "t1303-b" });
     const projectOfA = await prisma.project.create({ data: { name: "Progetto di A", owner_user_id: a.user.id } });
 
     const malformed = await callRoute(createProject, {
