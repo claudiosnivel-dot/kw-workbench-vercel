@@ -19,6 +19,12 @@ T-1404. Gli AC dei macrotask precedenti scritti sullo username sono emendati neg
 con `APP_ADMIN_EMAIL`) e AC-503-3 (409 `EMAIL_TAKEN` per l'email già registrata, 400 `VALIDATION_ERROR` per un nome
 mostrato non valido). Il design non cambia.
 
+**Secondo emendamento 2026-10-07 (D-11 emendata, decisione dell'utente):** Resend si configura alla fine del blueprint.
+In produzione `EMAIL_TRANSPORT` resta `resend` (l'outbox resta rifiutato, AC-1402-4) e `APP_PUBLIC_URL` resta
+obbligatoria; `RESEND_API_KEY` ed `EMAIL_FROM` diventano facoltative, ma vanno impostate insieme. Senza, ogni invio
+fallisce subito con `EmailDeliveryError` registrato come gli altri fallimenti (template, id, dominio), l'app parte e il
+nuovo invio dell'email di verifica risponde 503 `EMAIL_UNAVAILABLE`.
+
 ## Vincoli di piattaforma verificati (2026-10-02)
 
 - Resend, Node SDK: `const { data, error } = await resend.emails.send({ from, to, subject, html, text, headers, tags })`, successo con `data.id`; l'header `Idempotency-Key` evita invii duplicati, massimo 256 caratteri, scade dopo 24 h (https://resend.com/docs/api-reference/emails/send-email). Pacchetto `resend` alla versione 6.32.0 su npm alla data.
@@ -96,7 +102,7 @@ mostrato non valido). Il design non cambia.
     - "lib/email/resend-sender.ts: usa il pacchetto resend (versione esatta in package.json) con emails.send e mittente EMAIL_FROM; header Idempotency-Key uguale a EmailMessage.id, così i ritentativi non duplicano l'invio."
     - "Retry: al massimo 2 ritentativi (3 tentativi totali) solo per errori di rete, 429 e 5xx, con attesa crescente; nessun ritentativo per errori 4xx di validazione; dopo l'ultimo fallimento un solo console.error con template, id del messaggio e dominio del destinatario (mai indirizzo completo, chiave API, corpo o link) e EmailDeliveryError propagato al chiamante."
     - "lib/email/outbox-sender.ts: implementazione senza rete che salva i messaggi in memoria (test unitari) o nella tabella email_outbox (sviluppo e test d'integrazione; nuova migrazione con id, to_address, template, locale, subject, html, text, created_at)."
-    - "lib/email/index.ts: getEmailSender() sceglie con EMAIL_TRANSPORT (resend oppure outbox) dallo schema di lib/env.ts; in produzione EMAIL_TRANSPORT deve valere resend e RESEND_API_KEY, EMAIL_FROM e APP_PUBLIC_URL (introdotta da T-1203, macrotask precedente) sono obbligatorie, altrimenti la validazione all'avvio fallisce (T-201)."
+    - "lib/email/index.ts: getEmailSender() sceglie con EMAIL_TRANSPORT (resend oppure outbox) dallo schema di lib/env.ts; in produzione EMAIL_TRANSPORT deve valere resend e APP_PUBLIC_URL (introdotta da T-1203, macrotask precedente) è obbligatoria, altrimenti la validazione all'avvio fallisce (T-201); RESEND_API_KEY ed EMAIL_FROM si impostano insieme e, finché mancano (D-11 emendata il 2026-10-07), ogni invio fallisce subito come non configurato."
     - "lib/email/templates/: verify-email, password-reset, workspace-invite, billing-notice; ognuno espone render(locale, vars) che restituisce { subject, html, text } con testi nel namespace emails di messages/it.json e messages/en.json; variabili interpolate con escape HTML; link costruiti solo da APP_PUBLIC_URL; la lingua è users.ui_locale (T-1301) con fallback it."
     - "I contenuti di billing-notice restano segnaposto con variabili (piano, data) finché D-14 non fissa piani e periodi; nessun testo legale definitivo (D-15)."
 
