@@ -33,7 +33,9 @@ describe("smoke DB di test", () => {
     const owner = await prisma.user.create({
       data: { display_name: "smoke-owner", password_hash: "not-a-real-hash" },
     });
-    await prisma.project.create({ data: { name: "Smoke project", owner_user_id: owner.id } });
+    await prisma.project.create({
+      data: { name: "Smoke project", workspace: { create: { name: "smoke", slug: `ws-${owner.id}` } } },
+    });
     const migrationsBefore = await countFinishedMigrations();
 
     await resetDatabase();

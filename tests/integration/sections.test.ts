@@ -6,13 +6,13 @@ import { PATCH as reorderSections } from "@/app/api/projects/[id]/subprojects/re
 import { POST as createSection } from "@/app/api/projects/[id]/subprojects/route";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
 async function createProjectWithSections(names: string[]) {
   const owner = await createUserWithSession({ displayName: `t808-${names.length}-${Date.now()}` });
-  const project = await prisma.project.create({ data: { name: "Sezioni", owner_user_id: owner.user.id } });
+  const project = await prisma.project.create({ data: { name: "Sezioni", workspace_id: await personalWorkspaceId(owner.user.id) } });
   const sections = [];
   for (const [position, name] of names.entries()) {
     sections.push(await prisma.subproject.create({ data: { project_id: project.id, name, position } }));
@@ -31,12 +31,15 @@ function countTransactionUpdates(): () => number {
   let calls = 0;
   vi.spyOn(prisma, "$transaction").mockImplementation(((fn: TransactionCallback, options?: unknown) =>
     realTransaction(async (tx) => {
+      // impacted-by: T-1502 (le position si scrivono con updateMany e il perimetro del workspace nel where)
       const update = vi.spyOn(tx.subproject, "update");
+      const updateMany = vi.spyOn(tx.subproject, "updateMany");
       try {
         return await fn(tx);
       } finally {
-        calls += update.mock.calls.length;
+        calls += update.mock.calls.length + updateMany.mock.calls.length;
         update.mockRestore();
+        updateMany.mockRestore();
       }
     }, options)) as never);
   return () => calls;

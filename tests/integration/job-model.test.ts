@@ -3,12 +3,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { enqueueExtractionJob } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 async function createSection() {
   const { user } = await createUserWithSession({ displayName: "t1201-owner" });
-  const project = await prisma.project.create({ data: { name: "Job T-1201", owner_user_id: user.id } });
+  const project = await prisma.project.create({ data: { name: "Job T-1201", workspace_id: await personalWorkspaceId(user.id) } });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   return { projectId: project.id, sectionId: section.id };
 }

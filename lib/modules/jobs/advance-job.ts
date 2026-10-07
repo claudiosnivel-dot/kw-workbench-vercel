@@ -12,7 +12,7 @@ import {
   storeCandidates,
 } from "@/lib/modules/pipeline/candidates";
 import { AutocompleteUnavailableError, NoSeedsError } from "@/lib/modules/pipeline/errors";
-import { touchProjectActivity } from "@/lib/modules/project-activity";
+import { jobProject, touchProjectActivity } from "@/lib/modules/project-activity";
 import { type EffectiveProjectSettings, resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
 import { createAutocompleteProvider } from "@/lib/modules/providers/autocomplete/factory";
 import { AutocompleteQueryFailedError } from "@/lib/modules/providers/autocomplete/types";
@@ -392,7 +392,7 @@ async function storeBatch(job: Job, lease: Lease): Promise<void> {
       locked_until: null,
       progress_done: candidates.length,
     });
-    await touchProjectActivity(tx, job.project_id, now);
+    await touchProjectActivity(tx, jobProject(job), now);
   });
 }
 

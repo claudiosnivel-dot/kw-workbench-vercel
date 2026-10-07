@@ -1,14 +1,15 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
+import { expectOneRow, requireProjectAccess } from "@/lib/authz/workspace";
 import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
-import { findOwnedProjectOr404 } from "@/lib/modules/project-access";
+import { ProjectNotFoundError } from "@/lib/modules/project-access";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { parseSubprojectCreate } from "@/lib/modules/project-settings";
 import { guardSectionName } from "@/lib/modules/sections";
 import { prisma } from "@/lib/prisma";
 
 export const POST = withUserRoute(async (request: Request, user, { id }: ProjectParams) => {
-  const project = await findOwnedProjectOr404(user.id, id, { id: true, default_subproject_id: true });
+  const project = await requireProjectAccess(user, id, "section.write", { default_subproject_id: true });
 
   const parsed = parseSubprojectCreate(await request.json(), user);
 
@@ -20,10 +21,11 @@ export const POST = withUserRoute(async (request: Request, user, { id }: Project
     });
 
     if (!project.default_subproject_id) {
-      await tx.project.update({
-        where: { id },
+      const { count } = await tx.project.updateMany({
+        where: { id, ...project.perimeter },
         data: { default_subproject_id: created.id },
       });
+      expectOneRow(count, () => new ProjectNotFoundError());
     }
 
     if (parsed.seeds.length > 0) {
@@ -36,10 +38,9 @@ export const POST = withUserRoute(async (request: Request, user, { id }: Project
       });
     }
 
-    await touchProjectActivity(tx, id);
+    await touchProjectActivity(tx, project);
     return created;
   }));
 
   return NextResponse.json({ data: subproject }, { status: 201 });
 });
-

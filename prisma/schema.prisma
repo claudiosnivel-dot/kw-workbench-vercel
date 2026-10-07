@@ -131,6 +131,13 @@ enum UiLocale {
   en
 }
 
+/// Ruolo nel workspace (T-1501, D-08): OWNER > ADMIN > MEMBER; i permessi stanno in lib/authz/permissions.ts.
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 enum OnboardingStatus {
   NEEDS_CHOICE
   IN_PROGRESS
@@ -183,7 +190,12 @@ model User {
   accepted_terms_at           DateTime?
   created_at                  DateTime                   @default(now())
   updated_at                  DateTime                   @updatedAt
-  projects                    Project[]
+  /// Progetti creati dall'utente (T-1501): la proprietà è del workspace, questo è solo l'autore.
+  created_projects            Project[]                  @relation("ProjectCreator")
+  /// Workspace personale creato con l'utente (T-1501): uno e uno solo, mai abbandonabile dal suo OWNER.
+  personal_workspace          Workspace?                 @relation("PersonalWorkspace")
+  memberships                 Membership[]
+  sent_workspace_invites      WorkspaceInvite[]
   google_sheets_credential    GoogleSheetsCredential?
   onboarding_progress         UserOnboardingProgress?
   onboarding_idempotency_keys OnboardingIdempotencyKey[]
@@ -195,9 +207,62 @@ model User {
   @@map("users")
 }
 
+/// Workspace di team (T-1501, D-08): possiede i progetti; l'isolamento è applicativo (D-02) e passa dalla membership.
+model Workspace {
+  id                   String            @id @default(cuid())
+  name                 String
+  slug                 String            @unique
+  personal_for_user_id String?           @unique
+  created_at           DateTime          @default(now())
+  updated_at           DateTime          @updatedAt
+  personal_for_user    User?             @relation("PersonalWorkspace", fields: [personal_for_user_id], references: [id], onDelete: Cascade)
+  memberships          Membership[]
+  projects             Project[]
+  invites              WorkspaceInvite[]
+
+  @@map("workspaces")
+}
+
+/// Appartenenza di un utente a un workspace con il suo ruolo (T-1501): una sola riga per coppia.
+model Membership {
+  id           String        @id @default(cuid())
+  workspace_id String
+  user_id      String
+  role         WorkspaceRole
+  created_at   DateTime      @default(now())
+  workspace    Workspace     @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([workspace_id, user_id])
+  @@index([user_id])
+  @@map("memberships")
+}
+
+/// Invito in un workspace (T-1503): email minuscola, ruolo ADMIN o MEMBER (vincoli CHECK solo nella migrazione), token
+/// salvato solo come SHA-256 esadecimale, valido 7 giorni e monouso.
+model WorkspaceInvite {
+  id                 String        @id @default(cuid())
+  workspace_id       String
+  email              String
+  role               WorkspaceRole
+  token_hash         String        @unique @db.Char(64)
+  invited_by_user_id String?
+  expires_at         DateTime
+  accepted_at        DateTime?
+  revoked_at         DateTime?
+  created_at         DateTime      @default(now())
+  workspace          Workspace     @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  invited_by         User?         @relation(fields: [invited_by_user_id], references: [id], onDelete: SetNull)
+
+  @@index([workspace_id])
+  @@index([email])
+  @@map("workspace_invites")
+}
+
 model Project {
   id                          String                     @id @default(cuid())
-  owner_user_id               String?
+  workspace_id                String
+  created_by_user_id          String?
   default_subproject_id       String?
   name                        String
   language_code               String                     @default("en")
@@ -216,7 +281,8 @@ model Project {
   updated_at                  DateTime                   @updatedAt
   /// Ultima attività reale (estrazioni, sezioni, revisione, impostazioni): ordinamento della dashboard (T-810).
   last_activity_at            DateTime                   @default(now())
-  owner                       User?                      @relation(fields: [owner_user_id], references: [id], onDelete: Cascade)
+  workspace                   Workspace                  @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  created_by                  User?                      @relation("ProjectCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
   subprojects                 Subproject[]               @relation("ProjectSubprojects")
   default_subproject          Subproject?                @relation("ProjectDefaultSubproject", fields: [default_subproject_id], references: [id], onDelete: SetNull)
   seeds                       Seed[]
@@ -228,7 +294,7 @@ model Project {
   onboarding_active_for_users UserOnboardingProgress[]   @relation("OnboardingActiveProject")
   onboarding_idempotency_keys OnboardingIdempotencyKey[]
 
-  @@index([owner_user_id])
+  @@index([workspace_id])
   @@index([default_subproject_id])
   @@map("projects")
 }

@@ -76,8 +76,9 @@ test.describe("header di sicurezza", () => {
 
   // covers: AC-505-3
   test("login, dashboard, risultati e onboarding non registrano violazioni CSP", async ({ browser }) => {
+    // impacted-by: T-1501 (il progetto dell'utente seed sta nel suo workspace personale)
     const project = await prisma.project.findFirstOrThrow({
-      where: { name: "Progetto E2E", owner: { email: E2E_EMAIL } },
+      where: { name: "Progetto E2E", workspace: { personal_for_user: { email: E2E_EMAIL } } },
       select: { id: true },
     });
     await prisma.user.deleteMany({ where: { email: ONBOARDING_EMAIL } });

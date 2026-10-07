@@ -1,3 +1,4 @@
+import { projectAccessWhere } from "@/lib/authz/workspace";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { OnboardingIdempotencyKind, OnboardingStatus, OnboardingStep } from "@/lib/generated/prisma/enums";
 import { AppError, NotFoundError } from "@/lib/http/errors";
@@ -96,12 +97,13 @@ async function createOnce(
 }
 
 /**
- * Passo 2 (T-1001): crea il progetto (senza sezione iniziale) e porta l'onboarding a PROJECT_TARGETING in una
- * sola transazione; la stessa chiave restituisce lo stesso progetto.
+ * Passo 2 (T-1001): crea il progetto (senza sezione iniziale) nel workspace indicato, già autorizzato dalla rotta
+ * (workspace attivo, T-1504), e porta l'onboarding a PROJECT_TARGETING in una sola transazione; la stessa chiave
+ * restituisce lo stesso progetto.
  */
 export async function createOnboardingProject(
   user: Actor,
-  input: { name: unknown; idempotencyKey: unknown }
+  input: { name: unknown; idempotencyKey: unknown; workspaceId: string }
 ): Promise<OnboardingCreation> {
   const key = parseIdempotencyKey(input.idempotencyKey);
   const parsed = parseProjectCreate({ name: input.name, createInitialSection: false }, user);
@@ -112,7 +114,10 @@ export async function createOnboardingProject(
     (await replay()) ??
     createOnce(async () => {
       const projectId = await prisma.$transaction(async (tx) => {
-        const project = await tx.project.create({ data: { owner_user_id: user.id, ...parsed.data }, select: { id: true } });
+        const project = await tx.project.create({
+          data: { workspace_id: input.workspaceId, created_by_user_id: user.id, ...parsed.data },
+          select: { id: true },
+        });
         await storeKey(tx, { user_id: user.id, key, kind: OnboardingIdempotencyKind.PROJECT, project_id: project.id });
         await advanceProgress(tx, user.id, {
           current_step: OnboardingStep.PROJECT_TARGETING,
@@ -127,9 +132,9 @@ export async function createOnboardingProject(
 }
 
 /**
- * Passo 4 (T-1001): crea la sezione nel progetto dell'utente (position in coda, sezione predefinita se assente,
- * come POST /api/projects/[id]/subprojects) e porta l'onboarding a SEEDS in una sola transazione.
- * Nome già usato nel progetto -> 409 SECTION_NAME_TAKEN; progetto di un altro utente -> 404.
+ * Passo 4 (T-1001): crea la sezione in un progetto di un workspace dell'utente (position in coda, sezione predefinita
+ * se assente, come POST /api/projects/[id]/subprojects) e porta l'onboarding a SEEDS in una sola transazione.
+ * Nome già usato nel progetto -> 409 SECTION_NAME_TAKEN; progetto fuori dai workspace dell'utente -> 404 (T-1502).
  */
 export async function createOnboardingSection(
   user: Actor,
@@ -146,13 +151,15 @@ export async function createOnboardingSection(
     createOnce(async () => {
       const subprojectId = await guardSectionName(() =>
         prisma.$transaction(async (tx) => {
+          const perimeter = projectAccessWhere(user.id, "section.write");
           const project = await tx.project.findFirst({
-            where: { id: projectId, owner_user_id: user.id },
+            where: { id: projectId, ...perimeter },
             select: { id: true, default_subproject_id: true },
           });
           if (!project) {
             throw new NotFoundError("Progetto non trovato");
           }
+          const target = { id: project.id, perimeter };
 
           const position = await tx.subproject.count({ where: { project_id: project.id } });
           const section = await tx.subproject.create({
@@ -160,7 +167,7 @@ export async function createOnboardingSection(
             select: { id: true },
           });
           if (!project.default_subproject_id) {
-            await tx.project.update({ where: { id: project.id }, data: { default_subproject_id: section.id } });
+            await tx.project.updateMany({ where: { id: project.id, ...perimeter }, data: { default_subproject_id: section.id } });
           }
           await storeKey(tx, {
             user_id: user.id,
@@ -174,7 +181,7 @@ export async function createOnboardingSection(
             active_project_id: project.id,
             active_subproject_id: section.id,
           });
-          await touchProjectActivity(tx, project.id);
+          await touchProjectActivity(tx, target);
           return section.id;
         })
       );

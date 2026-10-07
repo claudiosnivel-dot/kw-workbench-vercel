@@ -10,7 +10,7 @@ import { issueVerificationToken } from "@/lib/auth/email-verification";
 import { resetEnvForTests } from "@/lib/env";
 import { LEGAL_TERMS_VERSION } from "@/lib/legal/version";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { flushAfter } from "../helpers/next-after";
@@ -120,7 +120,7 @@ describe("utente non verificato", () => {
   // covers: AC-1403-3
   it("non avvia estrazioni (403 EMAIL_NOT_VERIFIED, nessun job) ma usa il resto dell'app", async () => {
     const { user, cookie } = await createUserWithSession({ displayName: "t1403-non-verificato", emailVerified: false });
-    const project = await prisma.project.create({ data: { name: "Progetto T-1403", owner_user_id: user.id } });
+    const project = await prisma.project.create({ data: { name: "Progetto T-1403", workspace_id: await personalWorkspaceId(user.id) } });
     const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
     await prisma.seed.create({ data: { project_id: project.id, subproject_id: section.id, keyword: "scarpe da corsa" } });
 

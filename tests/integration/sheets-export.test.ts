@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { POST as exportToSheets } from "@/app/api/projects/[id]/export/google-sheets/route";
 import { exportProjectToGoogleSheets } from "@/lib/modules/google-sheets-export";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -81,7 +81,7 @@ function valueWrites(calls: GoogleCall[]): { range: string; values: unknown[][] 
 async function createOwnerProject() {
   const owner = await createUserWithSession({ displayName: `t806-${randomUUID().slice(0, 8)}` });
   const project = await prisma.project.create({
-    data: { name: "Sheets", owner_user_id: owner.user.id, language_code: "it", country_code: "IT" },
+    data: { name: "Sheets", workspace_id: await personalWorkspaceId(owner.user.id), language_code: "it", country_code: "IT" },
   });
   return { cookie: owner.cookie, projectId: project.id };
 }

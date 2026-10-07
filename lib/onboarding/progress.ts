@@ -1,3 +1,4 @@
+import { projectAccessWhere } from "@/lib/authz/workspace";
 import { OnboardingEntryMode, OnboardingStatus, OnboardingStep } from "@/lib/generated/prisma/enums";
 import {
   type OnboardingEntryModeKey,
@@ -130,11 +131,13 @@ async function ensureProgressRow(userId: string): Promise<OnboardingProgressRow>
   });
 }
 
+// Progetti e sezioni dell'onboarding limitati ai workspace dell'utente (T-1502): un active_project_id fuori perimetro
+// non si trova e viene ignorato.
 async function findOwnedProject(userId: string, projectId: string) {
   return prisma.project.findFirst({
     where: {
       id: projectId,
-      owner_user_id: userId,
+      ...projectAccessWhere(userId),
     },
     select: PROJECT_SELECT,
   });
@@ -142,9 +145,7 @@ async function findOwnedProject(userId: string, projectId: string) {
 
 async function findFallbackProject(userId: string) {
   return prisma.project.findFirst({
-    where: {
-      owner_user_id: userId,
-    },
+    where: projectAccessWhere(userId),
     orderBy: [{ updated_at: "desc" }, { created_at: "desc" }],
     select: PROJECT_SELECT,
   });
@@ -155,9 +156,7 @@ async function findOwnedSubproject(userId: string, subprojectId: string, project
     where: {
       id: subprojectId,
       ...(projectId ? { project_id: projectId } : {}),
-      project: {
-        owner_user_id: userId,
-      },
+      project: projectAccessWhere(userId),
     },
     select: SUBPROJECT_SELECT,
   });
@@ -197,7 +196,7 @@ async function computeState(userId: string, row: OnboardingProgressRow): Promise
     : null;
   // Conteggi indipendenti in parallelo.
   const [projectCount, seedCount, jobCount] = await Promise.all([
-    prisma.project.count({ where: { owner_user_id: userId } }),
+    prisma.project.count({ where: projectAccessWhere(userId) }),
     sectionWhere ? prisma.seed.count({ where: sectionWhere }) : 0,
     sectionWhere ? prisma.job.count({ where: sectionWhere }) : 0,
   ]);

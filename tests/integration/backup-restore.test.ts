@@ -38,7 +38,9 @@ async function seedSource(): Promise<void> {
     ["t604-a", "t604-b", "t604-c"].map((username) => prisma.user.create({ data: { display_name: username, password_hash: "hash-fittizio" } }))
   );
   const projects = await Promise.all(
-    users.slice(0, 2).map((user, index) => prisma.project.create({ data: { name: `Progetto ${index}`, owner_user_id: user.id } }))
+    users.slice(0, 2).map((user, index) => prisma.project.create({
+        data: { name: `Progetto ${index}`, workspace: { create: { name: user.display_name, slug: `ws-${user.id}` } } },
+      }))
   );
   const sections = await Promise.all(
     [projects[0], projects[0], projects[1]].map((project, index) =>

@@ -1,15 +1,23 @@
 import { Prisma } from "@/lib/generated/prisma/client";
+import { type AuthorizedProject, expectOneRow } from "@/lib/authz/workspace";
 import { AppError } from "@/lib/http/errors";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
+import { ProjectNotFoundError, SectionNotFoundError } from "@/lib/modules/project-access";
 import { prisma } from "@/lib/prisma";
 
-/** Imposta la sezione predefinita del progetto: proprietà di progetto e sezione già verificate dalla rotta. */
-export function setDefaultSection(projectId: string, sectionId: string) {
-  return prisma.project.update({
-    where: { id: projectId },
+type ScopedProject = Pick<AuthorizedProject, "id" | "perimeter">;
+
+/**
+ * Imposta la sezione predefinita del progetto: accesso a progetto e sezione già verificato dalla rotta; la scrittura
+ * porta il perimetro del workspace (T-1502), quindi una membership revocata nel frattempo dà 404 e nessuna scrittura.
+ */
+export async function setDefaultSection(project: ScopedProject, sectionId: string) {
+  const { count } = await prisma.project.updateMany({
+    where: { id: project.id, ...project.perimeter },
     data: { default_subproject_id: sectionId },
-    select: { id: true, default_subproject_id: true },
   });
+  expectOneRow(count, () => new ProjectNotFoundError());
+  return { id: project.id, default_subproject_id: sectionId };
 }
 
 /** Nome di sezione già usato nel progetto (vincolo project_id + name): 409 con codice stabile (T-808). */
@@ -42,12 +50,21 @@ function orderedSections(tx: Prisma.TransactionClient, projectId: string) {
 }
 
 /** Riporta le position a 0..n-1 nell'ordine dato, aggiornando solo le sezioni fuori posto. */
-async function renumber(tx: Prisma.TransactionClient, projectId: string, ordered: { id: string; position: number }[]) {
+async function renumber(tx: Prisma.TransactionClient, project: ScopedProject, ordered: { id: string; position: number }[]) {
   for (const [position, section] of ordered.entries()) {
     if (section.position !== position) {
-      await tx.subproject.update({ where: { id: section.id, project_id: projectId }, data: { position } });
+      await setPosition(tx, project, section.id, position);
     }
   }
+}
+
+/** Nuova position della sezione, con il perimetro del progetto nel where (T-1502): 0 righe → 404 della sezione. */
+async function setPosition(tx: Prisma.TransactionClient, project: ScopedProject, sectionId: string, position: number) {
+  const { count } = await tx.subproject.updateMany({
+    where: { id: sectionId, project_id: project.id, project: project.perimeter },
+    data: { position },
+  });
+  expectOneRow(count, () => new SectionNotFoundError());
 }
 
 /**
@@ -55,12 +72,12 @@ async function renumber(tx: Prisma.TransactionClient, projectId: string, ordered
  * dopo aver normalizzato le position se non sono 0..n-1 univoche. Gli update filtrano anche per project_id.
  */
 export async function moveSection(
-  projectId: string,
+  project: ScopedProject,
   subprojectId: string,
   direction: "up" | "down"
 ): Promise<"moved" | "edge" | "not-found"> {
   return prisma.$transaction(async (tx) => {
-    const ordered = await orderedSections(tx, projectId);
+    const ordered = await orderedSections(tx, project.id);
     const index = ordered.findIndex((section) => section.id === subprojectId);
     if (index < 0) {
       return "not-found";
@@ -71,10 +88,10 @@ export async function moveSection(
       return "edge";
     }
 
-    await renumber(tx, projectId, ordered);
-    await tx.subproject.update({ where: { id: ordered[index].id, project_id: projectId }, data: { position: target } });
-    await tx.subproject.update({ where: { id: ordered[target].id, project_id: projectId }, data: { position: index } });
-    await touchProjectActivity(tx, projectId);
+    await renumber(tx, project, ordered);
+    await setPosition(tx, project, ordered[index].id, target);
+    await setPosition(tx, project, ordered[target].id, index);
+    await touchProjectActivity(tx, project);
     return "moved";
   });
 }
@@ -88,7 +105,8 @@ const FOR_UPDATE = Prisma.sql`FOR UPDATE`;
  * eliminazione e rinumerazione nella stessa transazione, così due DELETE concorrenti non lasciano il
  * progetto senza sezioni (CWE-362). La sezione predefinita eliminata passa alla prima rimasta.
  */
-export async function deleteSection(projectId: string, subprojectId: string): Promise<void> {
+export async function deleteSection(project: ScopedProject, subprojectId: string): Promise<void> {
+  const projectId = project.id;
   await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`${LOCK_PROJECT_ROW} ${projectId} ${FOR_UPDATE}`;
 
@@ -101,15 +119,21 @@ export async function deleteSection(projectId: string, subprojectId: string): Pr
       );
     }
 
-    const project = await tx.project.findUnique({ where: { id: projectId }, select: { default_subproject_id: true } });
-    await tx.subproject.delete({ where: { id: subprojectId, project_id: projectId } });
+    const current = await tx.project.findUnique({ where: { id: projectId }, select: { default_subproject_id: true } });
+    const deleted = await tx.subproject.deleteMany({
+      where: { id: subprojectId, project_id: projectId, project: project.perimeter },
+    });
+    expectOneRow(deleted.count, () => new SectionNotFoundError());
 
     const remaining = await orderedSections(tx, projectId);
-    await renumber(tx, projectId, remaining);
+    await renumber(tx, project, remaining);
 
-    if (project?.default_subproject_id === subprojectId) {
-      await tx.project.update({ where: { id: projectId }, data: { default_subproject_id: remaining[0]?.id ?? null } });
+    if (current?.default_subproject_id === subprojectId) {
+      await tx.project.updateMany({
+        where: { id: projectId, ...project.perimeter },
+        data: { default_subproject_id: remaining[0]?.id ?? null },
+      });
     }
-    await touchProjectActivity(tx, projectId);
+    await touchProjectActivity(tx, project);
   });
 }

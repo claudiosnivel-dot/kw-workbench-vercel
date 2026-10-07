@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { applyPlannerImport } from "@/lib/modules/planner/import";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 // Autocomplete senza suggerimenti: l'estrazione produce solo il seed.
@@ -17,7 +17,7 @@ async function importedSection(metricsProvider: "NONE" | "MOCK") {
   const project = await prisma.project.create({
     data: {
       name: "Re-run",
-      owner_user_id: user.id,
+      workspace_id: await personalWorkspaceId(user.id),
       language_code: "it",
       country_code: "IT",
       autocomplete_provider: "MOCK",

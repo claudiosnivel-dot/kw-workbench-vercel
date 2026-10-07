@@ -5,7 +5,7 @@ import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -14,7 +14,7 @@ async function createSection(settings: { metrics_provider: "NONE" | "MOCK" }) {
   const project = await prisma.project.create({
     data: {
       name: "Ordinamento",
-      owner_user_id: owner.user.id,
+      workspace_id: await personalWorkspaceId(owner.user.id),
       language_code: "it",
       country_code: "IT",
       autocomplete_provider: "MOCK",

@@ -39,7 +39,7 @@ function planNodes(node: PlanNode): PlanNode[] {
 async function seedCandidates(): Promise<string> {
   const user = await prisma.user.create({ data: { display_name: "indici", password_hash: "x" } });
   const project = await prisma.project.create({
-    data: { name: "Indici", owner_user_id: user.id, language_code: "it", country_code: "IT", autocomplete_provider: "MOCK" },
+    data: { name: "Indici", workspace: { create: { name: "indici", slug: `ws-${user.id}` } }, language_code: "it", country_code: "IT", autocomplete_provider: "MOCK" },
   });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
 
@@ -154,7 +154,9 @@ describe("indici e schema (T-1103)", () => {
 
   // covers: AC-1103-4
   it("un progetto creato senza autocomplete_provider ha GOOGLE_DIRECT", async () => {
-    const project = await prisma.project.create({ data: { name: "Default" } });
+    const project = await prisma.project.create({
+      data: { name: "Default", workspace: { create: { name: "default", slug: "ws-default" } } },
+    });
 
     const saved = await prisma.project.findUniqueOrThrow({ where: { id: project.id }, select: { autocomplete_provider: true } });
     expect(saved.autocomplete_provider).toBe("GOOGLE_DIRECT");

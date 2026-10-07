@@ -1,3 +1,4 @@
+import { requireProjectAccess } from "@/lib/authz/workspace";
 import type { PlannerExportRow } from "@/lib/modules/planner/export-keywords";
 import { resolvePlannerScope } from "@/lib/modules/planner/scope";
 import { prisma } from "@/lib/prisma";
@@ -6,14 +7,16 @@ export type PlannerExportSource = { rows: PlannerExportRow[] } | { notFound: "pr
 
 /**
  * Candidate del perimetro (progetto o sola sezione, vedi resolvePlannerScope) in ordine keyword asc, id asc,
- * ciascuna con la lingua effettiva della sua sezione.
+ * ciascuna con la lingua effettiva della sua sezione. Con user (rotta web, T-1502) il progetto deve stare in un
+ * workspace dell'utente con export.run: non membro 404 PROJECT_NOT_FOUND, ruolo insufficiente 403; la CLI non lo passa.
  */
 export async function loadPlannerExportRows(input: {
   projectId: string;
   sectionId?: string | null;
-  ownerUserId?: string;
+  user?: { id: string };
 }): Promise<PlannerExportSource> {
-  const scope = await resolvePlannerScope(input);
+  const perimeter = input.user ? (await requireProjectAccess(input.user, input.projectId, "export.run", {})).perimeter : undefined;
+  const scope = await resolvePlannerScope({ projectId: input.projectId, sectionId: input.sectionId, perimeter });
   if ("notFound" in scope) {
     return scope;
   }

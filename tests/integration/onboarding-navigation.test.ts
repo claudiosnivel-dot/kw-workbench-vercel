@@ -7,7 +7,7 @@ import { POST as skipOnboarding } from "@/app/api/onboarding/skip/route";
 import { GET as getOnboardingState } from "@/app/api/onboarding/state/route";
 import type { OnboardingEntryMode, OnboardingStatus, OnboardingStep } from "@/lib/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -29,7 +29,7 @@ async function createOnboardingUser(
   progress: { status: OnboardingStatus; current_step: OnboardingStep; entry_mode: OnboardingEntryMode }
 ) {
   const session = await createUserWithSession({ displayName: username });
-  const project = await prisma.project.create({ data: { name: "Blog", owner_user_id: session.user.id } });
+  const project = await prisma.project.create({ data: { name: "Blog", workspace_id: await personalWorkspaceId(session.user.id) } });
   await prisma.userOnboardingProgress.create({
     data: { user_id: session.user.id, ...progress, active_project_id: project.id },
   });
@@ -100,7 +100,7 @@ describe("navigazione indietro", () => {
     expect(html).toContain("Blog");
     expect(html).toContain("Continua");
     expect(html).toContain('href="/onboarding/section-create"');
-    expect(await prisma.project.count({ where: { owner_user_id: user.id } })).toBe(1);
+    expect(await prisma.project.count({ where: { workspace_id: await personalWorkspaceId(user.id) } })).toBe(1);
   });
 
   it("/onboarding/section-create con la sezione attiva già creata mostra la sezione e 'Continua'", async () => {

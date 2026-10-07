@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { getPageWorkspace, projectAccessWhere } from "@/lib/authz/workspace";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import type { WorkspaceRole } from "@/lib/generated/prisma/enums";
 import type { SearchParams } from "@/lib/http/search-params";
 import { prisma } from "@/lib/prisma";
 
@@ -18,16 +20,24 @@ export const SECTIONS_WITH_STATS = {
   },
 } satisfies Prisma.Project$subprojectsArgs;
 
-/** Progetto dell'utente con le relazioni richieste; notFound() se non esiste o appartiene ad altri. */
-export async function requireOwnedProject<const I extends Prisma.ProjectInclude>(
+/**
+ * Progetto di un workspace dell'utente con le relazioni richieste (T-1502): notFound() (pagina 404, nessun dato) se non
+ * esiste o l'utente non è membro del suo workspace. role è il ruolo dell'utente in quel workspace, per i controlli
+ * mostrati (la verifica resta lato server nelle rotte).
+ */
+export async function requireProjectPage<const I extends Prisma.ProjectInclude>(
   userId: string,
   projectId: string,
   include: I
-): Promise<Prisma.ProjectGetPayload<{ include: I }>> {
-  const project = await prisma.project.findFirst({ where: { id: projectId, owner_user_id: userId }, include });
-  if (!project) {
+): Promise<Prisma.ProjectGetPayload<{ include: I }> & { role: WorkspaceRole }> {
+  const [project, { workspaces }] = await Promise.all([
+    prisma.project.findFirst({ where: { id: projectId, ...projectAccessWhere(userId) }, include }),
+    getPageWorkspace(userId),
+  ]);
+  const role = workspaces.find((workspace) => workspace.id === project?.workspace_id)?.role;
+  if (!project || !role) {
     notFound();
   }
 
-  return project as Prisma.ProjectGetPayload<{ include: I }>;
+  return { ...(project as Prisma.ProjectGetPayload<{ include: I }>), role };
 }

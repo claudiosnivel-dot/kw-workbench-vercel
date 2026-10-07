@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { requireProjectAccess } from "@/lib/authz/workspace";
 import { errorResponse, withApiErrors } from "@/lib/http/errors";
 import { parsePlannerCsv } from "@/lib/modules/planner/csv-parser";
 import { applyPlannerImport, PLANNER_IMPORT_MAX_ROWS } from "@/lib/modules/planner/import";
@@ -48,13 +49,14 @@ async function readBodyWithin(request: NextRequest, limit: number): Promise<Uint
 
 /**
  * Import dei volumi dal file di Keyword Planner (T-910): multipart con il campo `file` e `sectionId` facoltativo.
- * Progetto e sezione filtrati per proprietario (404 agli altri, CWE-639); massimo 5 MB verificato sul
- * Content-Length e sui byte letti; il file resta in memoria e non viene salvato.
+ * Progetto nel workspace dell'utente con project.update (T-1502) e sezione del progetto (404 agli altri, CWE-639);
+ * massimo 5 MB verificato sul Content-Length e sui byte letti; il file resta in memoria e non viene salvato.
  */
 export const POST = withApiErrors(async (request: NextRequest, { params }: RouteContext) => {
   const [user, { id }] = await Promise.all([requireAuthenticatedUserFromRequest(request), params]);
 
-  const owned = await resolvePlannerScope({ projectId: id, ownerUserId: user.id });
+  const project = await requireProjectAccess(user, id, "project.update", {});
+  const owned = await resolvePlannerScope({ projectId: id, perimeter: project.perimeter });
   if ("notFound" in owned) {
     throw new ProjectNotFoundError();
   }
@@ -98,6 +100,6 @@ export const POST = withApiErrors(async (request: NextRequest, { params }: Route
     return errorResponse(413, "PLANNER_TOO_MANY_ROWS", `Troppe righe: il massimo è ${PLANNER_IMPORT_MAX_ROWS}`);
   }
 
-  const summary = await applyPlannerImport(id, sectionId, parsed.rows);
+  const summary = await applyPlannerImport(id, sectionId, parsed.rows, project.perimeter);
   return NextResponse.json({ data: { ...summary, skippedRows: parsed.skippedRows } });
 });

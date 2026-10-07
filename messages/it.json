@@ -510,6 +510,14 @@
     "LAST_SECTION": "Non puoi eliminare l'ultima sezione. Ogni progetto deve avere almeno una sezione.",
     "NO_SECTIONS": "Nessuna sezione disponibile. Crea prima una sezione.",
     "FORBIDDEN_FIELD": "Questo valore è riservato all'amministratore principale.",
+    "WORKSPACE_NOT_FOUND": "Workspace non trovato.",
+    "MEMBER_NOT_FOUND": "Membro non trovato.",
+    "INVITE_NOT_FOUND": "Invito non trovato.",
+    "INVITE_PENDING": "Esiste già un invito in attesa per questa email.",
+    "ALREADY_MEMBER": "Questa persona fa già parte del workspace.",
+    "INVITE_INVALID": "L'invito non è valido: potrebbe essere scaduto, revocato o già usato.",
+    "INVITE_EMAIL_MISMATCH": "L'invito è per un'altra email: accedi con l'account a cui è stato inviato.",
+    "LAST_OWNER": "Il workspace deve avere un proprietario: trasferisci prima la proprietà.",
     "JOB_SIGNATURE_INVALID": "Firma della continuazione non valida.",
     "CRON_UNAUTHORIZED": "Chiamata del cron non autorizzata.",
     "JOB_ALREADY_ACTIVE": "Un'estrazione è già in corso per questa sezione.",
@@ -741,6 +749,92 @@
       "darkRemoved": "Logo dark rimosso localmente. Premi Salva branding per confermare.",
       "lightRemoved": "Logo light rimosso localmente. Premi Salva branding per confermare.",
       "saved": "Branding salvato con successo."
+    }
+  },
+  "workspace": {
+    "switcher": {
+      "label": "Workspace attivo",
+      "personal": "{name} (personale)"
+    },
+    "roles": {
+      "OWNER": "Proprietario",
+      "ADMIN": "Amministratore",
+      "MEMBER": "Membro"
+    },
+    "page": {
+      "heading": "Workspace: {name}",
+      "intro": "Nome, membri, ruoli e inviti del workspace attivo. Cambia workspace dal selettore in alto.",
+      "personal": "Questo è il tuo workspace personale: puoi invitare altre persone, ma non puoi abbandonarlo.",
+      "yourRole": "Il tuo ruolo: {role}",
+      "sheetsNote": "L'export su Google Sheets usa la connessione Google personale di chi esporta: ogni membro collega il proprio account da Personalizza."
+    },
+    "name": {
+      "title": "Nome del workspace",
+      "label": "Nome",
+      "save": "Salva nome",
+      "saving": "Salvataggio...",
+      "saved": "Nome aggiornato."
+    },
+    "members": {
+      "title": "Membri",
+      "name": "Nome",
+      "email": "Email",
+      "role": "Ruolo",
+      "joined": "Ingresso",
+      "actions": "Azioni",
+      "you": "{name} (tu)",
+      "changeRole": "Ruolo di {name}",
+      "roleChanged": "Ruolo aggiornato.",
+      "remove": "Rimuovi",
+      "removing": "Rimozione...",
+      "removeConfirm": "Rimuovere {name} dal workspace?"
+    },
+    "invites": {
+      "title": "Inviti in attesa",
+      "empty": "Nessun invito in attesa.",
+      "email": "Email",
+      "role": "Ruolo",
+      "expires": "Scade",
+      "revoke": "Revoca",
+      "revoking": "Revoca...",
+      "revokeConfirm": "Revocare l'invito per {email}?",
+      "formTitle": "Invita una persona",
+      "formIntro": "L'invito vale 7 giorni e si accetta solo con l'account che ha questa email, verificata.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "nome@esempio.com",
+      "roleLabel": "Ruolo",
+      "send": "Invia invito",
+      "sending": "Invio...",
+      "sent": "Invito inviato."
+    },
+    "transfer": {
+      "title": "Trasferisci la proprietà",
+      "intro": "Il membro scelto diventa proprietario e tu diventi amministratore.",
+      "label": "Nuovo proprietario",
+      "submit": "Trasferisci",
+      "submitting": "Trasferimento...",
+      "confirm": "Trasferire la proprietà del workspace a {name}?"
+    },
+    "leave": {
+      "title": "Abbandona il workspace",
+      "intro": "Perderai l'accesso ai progetti di questo workspace finché qualcuno non ti invita di nuovo.",
+      "submit": "Abbandona",
+      "submitting": "Uscita...",
+      "confirm": "Abbandonare il workspace {name}?"
+    },
+    "accept": {
+      "title": "Invito in un workspace",
+      "intro": "Accetta l'invito per entrare nel workspace con l'account a cui è stato inviato.",
+      "submit": "Accetta invito",
+      "submitting": "Accettazione...",
+      "success": "Invito accettato: il workspace è ora quello attivo.",
+      "missingToken": "Il link dell'invito non è completo: aprilo di nuovo dalla email.",
+      "goToApp": "Vai alla dashboard"
+    },
+    "settingsLink": {
+      "title": "Workspace e membri",
+      "intro": "Nome del workspace attivo, membri, ruoli e inviti.",
+      "open": "Gestisci il workspace"
     }
   },
   "admin": {

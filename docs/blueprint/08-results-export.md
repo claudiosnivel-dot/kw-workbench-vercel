@@ -449,8 +449,8 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
       then: "l'utente non root riceve 403 con code 'FORBIDDEN_FIELD' e metrics_provider resta invariato; il root admin riceve 200 e metrics_provider vale 'MOCK'"
     - id: AC-809-4
       given: "un proprietario di progetto"
-      when: "invia PATCH progetto con il campo sconosciuto owner_user_id e PATCH sezione con language_code_override ''"
-      then: "la prima riceve 400 e owner_user_id nel DB non cambia; la seconda riceve 200 e language_code_override nel DB è null"
+      when: "invia PATCH progetto con il campo sconosciuto owner_user_id, poi con workspace_id (la colonna che da T-1501 porta la proprietà), e PATCH sezione con language_code_override ''"
+      then: "le due PATCH di progetto ricevono 400 e workspace_id nel DB non cambia; la PATCH di sezione riceve 200 e language_code_override nel DB è null"
 
   target_tests:
     - file: "tests/integration/project-settings-validation.test.ts"

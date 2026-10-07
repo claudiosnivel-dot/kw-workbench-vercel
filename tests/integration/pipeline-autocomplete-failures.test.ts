@@ -4,7 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { resetAutocompleteCacheForTests } from "@/lib/modules/providers/autocomplete/google-direct";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 const SEED = "caffe";
@@ -31,7 +31,7 @@ async function createSectionWithPreviousRun() {
   const project = await prisma.project.create({
     data: {
       name: "Autocomplete in errore",
-      owner_user_id: user.id,
+      workspace_id: await personalWorkspaceId(user.id),
       language_code: "it",
       country_code: "IT",
       autocomplete_provider: "GOOGLE_DIRECT",

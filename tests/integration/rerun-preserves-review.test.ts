@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 // Autocomplete e metriche mock controllati dal test: suggerimenti e volumi cambiano tra i run.
@@ -55,7 +55,7 @@ async function createProject() {
   const project = await prisma.project.create({
     data: {
       name: "Re-run",
-      owner_user_id: user.id,
+      workspace_id: await personalWorkspaceId(user.id),
       language_code: "it",
       country_code: "IT",
       autocomplete_provider: "MOCK",

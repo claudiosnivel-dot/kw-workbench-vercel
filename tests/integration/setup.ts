@@ -2,6 +2,7 @@ import { beforeEach, vi } from "vitest";
 import { assertLocalTestDatabase } from "../helpers/db-guard";
 import { clearAfter } from "../helpers/next-after";
 import { clearNextCache } from "../helpers/next-cache";
+import { clearRequestCookies } from "../helpers/next-cookies";
 
 // La cache dati di Next (unstable_cache, revalidateTag) esiste solo nel server di Next: nei test è una mappa in
 // memoria con gli stessi tag (T-1105), vuota all'inizio di ogni test.
@@ -11,9 +12,15 @@ vi.mock("next/server", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/server")>()),
   after: (await import("../helpers/next-after")).after,
 }));
+// cookies() di next/headers (T-1504): le pagine rese nei test leggono una mappa in memoria, vuota a ogni test.
+vi.mock("next/headers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/headers")>()),
+  cookies: (await import("../helpers/next-cookies")).cookies,
+}));
 beforeEach(() => {
   clearNextCache();
   clearAfter();
+  clearRequestCookies();
 });
 
 // next-intl senza la configurazione per richiesta del plugin (T-1302): catalogo italiano, lingua di default, sia

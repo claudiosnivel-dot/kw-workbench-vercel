@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as getOnboardingState } from "@/app/api/onboarding/state/route";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import type { QueryCounter } from "../helpers/query-counter";
@@ -92,7 +92,7 @@ describe("GET /api/onboarding/state", () => {
   // covers: AC-1004-3
   it("due letture con progetto attivo: stesso currentStep, updated_at invariato e nessuna scrittura", async () => {
     const { user, cookie } = await signIn("t1004-state");
-    const project = await prisma.project.create({ data: { name: "Blog", owner_user_id: user.id } });
+    const project = await prisma.project.create({ data: { name: "Blog", workspace_id: await personalWorkspaceId(user.id) } });
     // Sezione non ancora registrata nel progress: la lettura non deve riconciliarla scrivendo (T-1004).
     await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
     await prisma.userOnboardingProgress.create({

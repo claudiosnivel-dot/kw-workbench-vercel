@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { ValidationError } from "@/lib/http/errors";
-import { touchProjectActivity } from "@/lib/modules/project-activity";
+import { type ActivityTarget, touchProjectActivity } from "@/lib/modules/project-activity";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
 
@@ -41,19 +41,23 @@ export function parseBulkActionPayload(body: unknown): BulkActionPayload {
 }
 
 /**
- * Applica l'azione alle righe indicate per id o all'intero set filtrato della vista. projectId è il
- * progetto posseduto e subprojectId (se c'è) una sua sezione, già verificati dalla route: il where
- * parte sempre da project_id e i filtri passano da parseResultsFilters (enum in whitelist).
+ * Applica l'azione alle righe indicate per id o all'intero set filtrato della vista. project è il progetto
+ * autorizzato e subprojectId (se c'è) una sua sezione, già verificati dalla route: il where parte sempre da
+ * project_id con il perimetro del workspace (T-1502) e i filtri passano da parseResultsFilters (enum in whitelist).
+ * Id di righe di altri progetti non corrispondono: 0 righe aggiornate.
  */
-export async function applyBulkAction(projectId: string, payload: BulkActionPayload): Promise<number> {
+export async function applyBulkAction(project: ActivityTarget, payload: BulkActionPayload): Promise<number> {
   const subprojectId = payload.subprojectId || null;
-  const where: Prisma.KeywordCandidateWhereInput = payload.filters
-    ? buildResultsWhere(projectId, parseResultsFilters(payload.filters), subprojectId)
-    : { project_id: projectId, id: { in: payload.ids }, ...(subprojectId ? { subproject_id: subprojectId } : {}) };
+  const rows: Prisma.KeywordCandidateWhereInput = payload.filters
+    ? buildResultsWhere(project.id, parseResultsFilters(payload.filters), subprojectId)
+    : { project_id: project.id, id: { in: payload.ids }, ...(subprojectId ? { subproject_id: subprojectId } : {}) };
 
   return prisma.$transaction(async (tx) => {
-    const { count } = await tx.keywordCandidate.updateMany({ where, data: BULK_ACTION_DATA[payload.action] });
-    await touchProjectActivity(tx, projectId);
+    const { count } = await tx.keywordCandidate.updateMany({
+      where: { AND: [rows, { project: project.perimeter }] },
+      data: BULK_ACTION_DATA[payload.action],
+    });
+    await touchProjectActivity(tx, project);
     return count;
   });
 }

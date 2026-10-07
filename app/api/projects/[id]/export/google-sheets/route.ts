@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AppError, errorResponse } from "@/lib/http/errors";
 import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
-import { assertOwnedScope } from "@/lib/modules/project-access";
+import { requireProjectScope } from "@/lib/authz/workspace";
 import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
 import { EXPORT_SCOPES } from "@/lib/modules/export-types";
 import type { ExportScope } from "@/lib/modules/export-types";
@@ -71,7 +71,7 @@ export const POST = withUserRoute(async (request: NextRequest, user, { id }: Pro
     return errorResponse(400, "EXPORT_SCOPE_INVALID", "Scope non valido");
   }
 
-  await assertOwnedScope(user.id, id, subprojectId);
+  await requireProjectScope(user, id, subprojectId, "export.run");
 
   const filters = parseResultsFilters(parseBodyFilters(payload.filters));
 

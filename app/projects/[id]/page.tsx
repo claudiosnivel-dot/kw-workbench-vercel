@@ -4,7 +4,7 @@ import { RunExtractionButton } from "@/components/run-extraction-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { readParam } from "@/lib/http/search-params";
 import { activeJobIdOf } from "@/lib/modules/jobs/job-api";
-import { type ProjectPageProps, requireOwnedProject, SECTIONS_WITH_STATS } from "@/lib/modules/project-pages";
+import { type ProjectPageProps, requireProjectPage, SECTIONS_WITH_STATS } from "@/lib/modules/project-pages";
 import { resolveDefaultSectionId, resultsHref } from "@/lib/modules/results-view";
 import { formatDate, jobStatusTone } from "@/lib/view/format";
 
@@ -14,7 +14,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const user = await requirePageUser();
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
-  const project = await requireOwnedProject(user.id, id, {
+  const project = await requireProjectPage(user.id, id, {
     subprojects: SECTIONS_WITH_STATS,
     _count: { select: { seeds: true, keyword_candidates: true, jobs: true, subprojects: true } },
   });

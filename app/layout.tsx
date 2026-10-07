@@ -4,7 +4,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Manrope, Sora } from "next/font/google";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { TopNav } from "@/components/top-nav";
+import { WorkspaceCookieSync } from "@/components/workspace-cookie-sync";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { getPageWorkspace } from "@/lib/authz/workspace";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import "./globals.css";
 
@@ -38,6 +40,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     getLocale(),
   ]);
 
+  // Workspace attivo ed elenco per il selettore (T-1504): stessa query della pagina (cache di React).
+  const workspaceContext = currentUser ? await getPageWorkspace(currentUser.id) : null;
   const themeMode = currentUser?.themeMode ?? "DARK";
   const fontScaleMode = currentUser?.fontScaleMode ?? "NORMAL";
   const colorVisionMode = currentUser?.colorVisionMode ?? "NONE";
@@ -67,7 +71,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               themeMode={themeMode}
               showAdminLink={currentUser?.role === "ADMIN"}
               user={currentUser ? { displayName: currentUser.displayName, email: currentUser.email } : null}
+              workspaces={workspaceContext?.workspaces ?? []}
+              activeWorkspaceId={workspaceContext?.workspace.id ?? null}
             />
+            {workspaceContext?.fallback && <WorkspaceCookieSync workspaceId={workspaceContext.workspace.id} />}
             <main className="mx-auto w-full max-w-[1180px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
               {/* Email non ancora verificata (T-1403): l'app resta usabile, le estrazioni no. */}
               {currentUser?.email && !currentUser.emailVerified && (

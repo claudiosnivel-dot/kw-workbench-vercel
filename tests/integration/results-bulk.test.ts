@@ -5,13 +5,13 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { PATCH as patchResults } from "@/app/api/projects/[id]/results/route";
 import type { ReviewStatus } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
 async function createSection(ownerId: string, name: string) {
   const project = await prisma.project.create({
-    data: { name, owner_user_id: ownerId, language_code: "it", country_code: "IT" },
+    data: { name, workspace_id: await personalWorkspaceId(ownerId), language_code: "it", country_code: "IT" },
   });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "S1", position: 0 } });
   return { projectId: project.id, sectionId: section.id };

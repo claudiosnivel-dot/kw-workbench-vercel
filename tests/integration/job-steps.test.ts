@@ -7,7 +7,7 @@ import { advanceJob } from "@/lib/modules/jobs/advance-job";
 import { enqueueExtractionJob } from "@/lib/modules/jobs/job-runner";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 // Seed, default globali e impostazioni del golden master di T-106 (tests/integration/characterization).
@@ -34,7 +34,7 @@ async function createSection(seeds: string[]) {
   const project = await prisma.project.create({
     data: {
       name: "Golden master a passi",
-      owner_user_id: ownerId,
+      workspace_id: await personalWorkspaceId(ownerId),
       language_code: "it",
       country_code: "IT",
       autocomplete_provider: "MOCK",

@@ -5,7 +5,7 @@ import { NextRequest } from "next/server";
 import { POST as plannerImport } from "@/app/api/projects/[id]/planner-import/route";
 import { scoreKeyword } from "@/lib/modules/scoring";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 function uploadRequest(projectId: string, cookie: string, content: Uint8Array<ArrayBuffer> | string): NextRequest {
@@ -19,7 +19,7 @@ function uploadRequest(projectId: string, cookie: string, content: Uint8Array<Ar
 }
 
 async function createProjectWithCandidate(ownerId: string) {
-  const project = await prisma.project.create({ data: { name: "Import", owner_user_id: ownerId, language_code: "it" } });
+  const project = await prisma.project.create({ data: { name: "Import", workspace_id: await personalWorkspaceId(ownerId), language_code: "it" } });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   const baseline = scoreKeyword({
     raw_keyword: "caffè espresso",

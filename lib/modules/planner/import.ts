@@ -34,14 +34,15 @@ export type PlannerImportSummary = {
  * Applica i volumi del file di Keyword Planner alle candidate del progetto o della sezione (T-910): abbinamento con
  * canonicalizeKeyword nella lingua effettiva di ogni sezione (T-702), metriche, provider PLANNER_CSV, stato
  * imported, precisione e punteggio ricalcolato (T-707), tutto in una transazione e con update filtrati per
- * project_id.
+ * project_id e per il perimetro del workspace della rotta (T-1502; vuoto per la CLI dell'operatore).
  */
 export async function applyPlannerImport(
   projectId: string,
   sectionId: string | null,
-  rows: PlannerCsvRow[]
+  rows: PlannerCsvRow[],
+  perimeter: Prisma.ProjectWhereInput = {}
 ): Promise<PlannerImportSummary> {
-  const scope = await resolvePlannerScope({ projectId, sectionId });
+  const scope = await resolvePlannerScope({ projectId, sectionId, perimeter });
   if ("notFound" in scope) {
     throw new PlannerImportScopeError(scope.notFound);
   }
@@ -67,7 +68,7 @@ export async function applyPlannerImport(
   }
 
   const now = new Date();
-  const updates: Prisma.KeywordCandidateUpdateManyArgs[] = [];
+  const updates: { id: string; data: Prisma.KeywordCandidateUpdateManyMutationInput }[] = [];
   const updatedIds = new Set<string>();
   let matched = 0;
   let rangeRows = 0;
@@ -98,7 +99,7 @@ export async function applyPlannerImport(
         scoring_profile: sectionById.get(candidate.subproject_id)?.scoringProfile ?? "balanced",
       });
       updates.push({
-        where: { id: candidate.id, project_id: scope.projectId },
+        id: candidate.id,
         data: {
           avg_monthly_searches: row.avgMonthlySearches,
           competition: row.competition ?? null,
@@ -119,9 +120,12 @@ export async function applyPlannerImport(
     await prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         for (const update of updates) {
-          await tx.keywordCandidate.updateMany(update);
+          await tx.keywordCandidate.updateMany({
+            where: { id: update.id, project_id: scope.projectId, project: scope.perimeter },
+            data: update.data,
+          });
         }
-        await touchProjectActivity(tx, scope.projectId, now);
+        await touchProjectActivity(tx, { id: scope.projectId, perimeter: scope.perimeter }, now);
       },
       { timeout: getIntEnv("EXTRACTION_TX_TIMEOUT_MS") }
     );

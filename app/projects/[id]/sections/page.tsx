@@ -8,7 +8,7 @@ import { SetDefaultSectionButton } from "@/components/set-default-section-button
 import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { activeJobIdOf } from "@/lib/modules/jobs/job-api";
-import { requireOwnedProject, SECTIONS_WITH_STATS } from "@/lib/modules/project-pages";
+import { requireProjectPage, SECTIONS_WITH_STATS } from "@/lib/modules/project-pages";
 import { resultsHref } from "@/lib/modules/results-view";
 import { sectionDeleteTarget } from "@/lib/view/delete-targets";
 import { jobStatusTone } from "@/lib/view/format";
@@ -19,7 +19,7 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
   const user = await requirePageUser();
   const { id } = await params;
 
-  const project = await requireOwnedProject(user.id, id, { subprojects: SECTIONS_WITH_STATS });
+  const project = await requireProjectPage(user.id, id, { subprojects: SECTIONS_WITH_STATS });
   const t = await getTranslations();
 
   return (

@@ -7,6 +7,7 @@ import { PageHeaderCard } from "@/components/page-header-card";
 import { RunExtractionButton } from "@/components/run-extraction-button";
 import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { projectAccessWhere } from "@/lib/authz/workspace";
 import { findActiveJobId } from "@/lib/modules/jobs/job-api";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
 import { resultsHref } from "@/lib/modules/results-view";
@@ -27,9 +28,7 @@ export default async function SubprojectSettingsPage({
     where: {
       id: subprojectId,
       project_id: id,
-      project: {
-        owner_user_id: user.id,
-      },
+      project: projectAccessWhere(user.id),
     },
     include: {
       project: true,

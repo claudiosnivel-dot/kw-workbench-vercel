@@ -9,7 +9,7 @@ import { ResultsTable } from "@/components/results-table";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { isClassificationSupported } from "@/lib/modules/classification";
-import { type ProjectPageProps, requireOwnedProject } from "@/lib/modules/project-pages";
+import { type ProjectPageProps, requireProjectPage } from "@/lib/modules/project-pages";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
 import { parsePagingParams, withPaging } from "@/lib/modules/results-paging";
 import { loadResultsPage } from "@/lib/modules/results-query";
@@ -58,7 +58,7 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
   const [{ id }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
   const [project, googleSheets] = await Promise.all([
-    requireOwnedProject(user.id, id, {
+    requireProjectPage(user.id, id, {
       subprojects: {
         orderBy: [{ position: "asc" }, { created_at: "asc" }],
         select: { id: true, name: true, position: true, metrics_provider_override: true, language_code_override: true },

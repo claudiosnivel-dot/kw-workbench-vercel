@@ -5,6 +5,8 @@ import { DeleteEntityButton } from "@/components/delete-entity-button";
 import { PaginationLinks } from "@/components/pagination-links";
 import { ResumeOnboardingButton } from "@/components/resume-onboarding-button";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { canPerform } from "@/lib/authz/permissions";
+import { getPageWorkspace } from "@/lib/authz/workspace";
 import { listDashboardProjects } from "@/lib/modules/dashboard";
 import { resultsHref } from "@/lib/modules/results-view";
 import { getOnboardingStatusForUser, shouldRedirectUserToOnboarding } from "@/lib/onboarding/progress";
@@ -28,17 +30,18 @@ export default async function DashboardPage({
     redirect("/onboarding");
   }
 
+  // Workspace attivo (T-1504): cookie kwb_workspace riverificato, altrimenti il workspace personale.
+  const { workspace } = await getPageWorkspace(user.id);
+  const inWorkspace = { project: { workspace_id: workspace.id } };
+  const canDeleteProjects = canPerform(workspace.role, "project.delete");
+
   const [t, format, dashboard, recentJobs, totalKeywords, totalSubprojects] = await Promise.all([
     getTranslations(),
     getFormatter(),
-    // Tutti i progetti raggiungibili: pagine da 20 in ordine di ultima attività (T-810).
-    listDashboardProjects(user.id, Array.isArray(rawPage) ? rawPage[0] : rawPage),
+    // Progetti del workspace attivo: pagine da 20 in ordine di ultima attività (T-810).
+    listDashboardProjects(workspace.id, Array.isArray(rawPage) ? rawPage[0] : rawPage),
     prisma.job.findMany({
-      where: {
-        project: {
-          owner_user_id: user.id,
-        },
-      },
+      where: inWorkspace,
       orderBy: { created_at: "desc" },
       include: {
         project: {
@@ -50,20 +53,8 @@ export default async function DashboardPage({
       },
       take: 15,
     }),
-    prisma.keywordCandidate.count({
-      where: {
-        project: {
-          owner_user_id: user.id,
-        },
-      },
-    }),
-    prisma.subproject.count({
-      where: {
-        project: {
-          owner_user_id: user.id,
-        },
-      },
-    }),
+    prisma.keywordCandidate.count({ where: inWorkspace }),
+    prisma.subproject.count({ where: inWorkspace }),
   ]);
   const { items: projects, total: totalProjects, page, totalPages } = dashboard;
 
@@ -153,7 +144,7 @@ export default async function DashboardPage({
                       <Link className="btn-secondary" href={resultsHref(project.id, { view: "all" })}>
                         {t("dashboard.projects.results")}
                       </Link>
-                      <DeleteEntityButton {...projectDeleteTarget(project)} showInlineError={false} />
+                      {canDeleteProjects && <DeleteEntityButton {...projectDeleteTarget(project)} showInlineError={false} />}
                     </div>
                   </td>
                 </tr>

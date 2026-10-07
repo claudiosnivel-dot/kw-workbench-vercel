@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import type { MetricsItem, MetricsOutcome } from "@/lib/modules/providers/metrics/types";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 
 const enrichKeywords = vi.fn(
@@ -46,7 +46,7 @@ describe("contratto MetricsProvider nella pipeline", () => {
     const project = await prisma.project.create({
       data: {
         name: "Contratto metriche",
-        owner_user_id: user.id,
+        workspace_id: await personalWorkspaceId(user.id),
         language_code: "it",
         country_code: "IT",
         autocomplete_provider: "MOCK",

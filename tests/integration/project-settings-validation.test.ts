@@ -19,7 +19,7 @@ async function createFixture(options: { isRootAdmin?: boolean; username: string 
   const project = await prisma.project.create({
     data: {
       name: "Progetto",
-      owner_user_id: owner.user.id,
+      workspace_id: owner.workspaceId,
       metrics_provider: "NONE",
       min_volume: 500,
       exclude_brands: false,
@@ -154,15 +154,18 @@ describe("provider di metriche MOCK", () => {
 
 describe("campi non dichiarati e override vuoti", () => {
   // covers: AC-809-4
-  it("owner_user_id è rifiutato con 400; language_code_override vuoto torna a null", async () => {
+  // impacted-by: T-1501 (owner_user_id non esiste più: la proprietà è workspace_id, anch'esso rifiutato)
+  it("owner_user_id e workspace_id sono rifiutati con 400; language_code_override vuoto torna a null", async () => {
     const { owner, projectId, sectionId } = await createFixture({ username: "t809-strict" });
     const intruder = await createUserWithSession({ displayName: "t809-other" });
 
-    const rejected = await patchProjectAs(owner.cookie, projectId, { owner_user_id: intruder.user.id });
+    const rejectedOwner = await patchProjectAs(owner.cookie, projectId, { owner_user_id: intruder.user.id });
+    const rejectedWorkspace = await patchProjectAs(owner.cookie, projectId, { workspace_id: intruder.workspaceId });
     const inherited = await patchSectionAs(owner.cookie, projectId, sectionId, { language_code_override: "" });
 
-    expect(rejected.status).toBe(400);
-    expect((await prisma.project.findUniqueOrThrow({ where: { id: projectId } })).owner_user_id).toBe(owner.user.id);
+    expect(rejectedOwner.status).toBe(400);
+    expect(rejectedWorkspace.status).toBe(400);
+    expect((await prisma.project.findUniqueOrThrow({ where: { id: projectId } })).workspace_id).toBe(owner.workspaceId);
     expect(inherited.status).toBe(200);
     expect((await prisma.subproject.findUniqueOrThrow({ where: { id: sectionId } })).language_code_override).toBeNull();
   });

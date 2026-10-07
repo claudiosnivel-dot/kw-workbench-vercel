@@ -12,7 +12,7 @@ import { signJobStep } from "@/lib/modules/jobs/job-signature";
 import { runJobStep } from "@/lib/modules/jobs/job-step";
 import { reapStaleJobs } from "@/lib/modules/jobs/reaper";
 import { prisma } from "@/lib/prisma";
-import { createUserWithSession } from "../helpers/auth";
+import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -64,7 +64,7 @@ async function createPendingJob() {
   const project = await prisma.project.create({
     data: {
       name: "Job T-1203",
-      owner_user_id: user.id,
+      workspace_id: await personalWorkspaceId(user.id),
       language_code: "it",
       country_code: "IT",
       autocomplete_provider: "MOCK",

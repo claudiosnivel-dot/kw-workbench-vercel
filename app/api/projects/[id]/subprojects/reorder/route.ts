@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { requireProjectAccess } from "@/lib/authz/workspace";
 import { errorResponse } from "@/lib/http/errors";
 import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
-import { findOwnedProjectOr404, SectionNotFoundError } from "@/lib/modules/project-access";
+import { SectionNotFoundError } from "@/lib/modules/project-access";
 import { moveSection } from "@/lib/modules/sections";
 
 type ReorderPayload = {
@@ -18,9 +19,9 @@ export const PATCH = withUserRoute(async (request: Request, user, { id }: Projec
     return errorResponse(400, "VALIDATION_ERROR", "Dati riordino non validi");
   }
 
-  await findOwnedProjectOr404(user.id, id, { id: true });
+  const project = await requireProjectAccess(user, id, "section.write", {});
 
-  const outcome = await moveSection(id, subprojectId, direction);
+  const outcome = await moveSection(project, subprojectId, direction);
   if (outcome === "not-found") {
     throw new SectionNotFoundError();
   }
