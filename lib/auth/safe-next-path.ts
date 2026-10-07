@@ -33,3 +33,9 @@ export function safeNextPath(value: unknown): string {
     return "/";
   }
 }
+
+/**
+ * Header che il proxy aggiunge alle richieste di pagina con percorso e query richiesti (T-1405): il gate dei termini
+ * lo usa come next di /accept-terms, sempre passandolo da safeNextPath. Il proxy lo sovrascrive a ogni richiesta.
+ */
+export const PAGE_PATH_HEADER = "x-kwb-page-path";

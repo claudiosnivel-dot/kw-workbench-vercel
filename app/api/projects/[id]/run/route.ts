@@ -1,3 +1,4 @@
+import { requireVerifiedEmail } from "@/lib/auth/verified-email";
 import { errorResponse } from "@/lib/http/errors";
 import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
 import { enqueueExtractionJob } from "@/lib/modules/jobs/job-runner";
@@ -22,6 +23,8 @@ async function readRunPayload(request: Request): Promise<RunPayload> {
 }
 
 export const POST = withUserRoute(async (request: Request, user, { id }: ProjectParams) => {
+  // Email non verificata: 403 EMAIL_NOT_VERIFIED prima di qualunque lettura (T-1403).
+  requireVerifiedEmail(user);
   const payload = await readRunPayload(request);
   const requestedSubprojectId = String(payload.subprojectId ?? "").trim();
 

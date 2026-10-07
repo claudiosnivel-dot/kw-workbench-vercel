@@ -32,8 +32,10 @@ function sessionCookieFrom(response: Response): string | null {
   return match ? `kwb_session=${match[1]}` : null;
 }
 
-async function loginCookie(username: string, password = TEST_USER_PASSWORD): Promise<string> {
-  const response = await callRoute(login, { method: "POST", url: "/api/auth/login", body: { username, password } });
+// impacted-by: T-1401 (accesso con l'email <nome>@example.test degli utenti del helper)
+async function loginCookie(displayName: string, password = TEST_USER_PASSWORD): Promise<string> {
+  const email = `${displayName}@example.test`;
+  const response = await callRoute(login, { method: "POST", url: "/api/auth/login", body: { email, password } });
   expect(response.status).toBe(200);
   const cookie = sessionCookieFrom(response);
   expect(cookie).not.toBeNull();
@@ -51,7 +53,7 @@ async function sessionVersionOf(userId: string): Promise<number> {
 describe("cambio password dell'utente", () => {
   // covers: AC-501-1
   it("riemette il cookie solo al dispositivo corrente e revoca l'altro", async () => {
-    await createUserWithSession({ username: "utente-a" });
+    await createUserWithSession({ displayName: "utente-a" });
     const first = await loginCookie("utente-a");
     const second = await loginCookie("utente-a");
 
@@ -75,7 +77,7 @@ describe("reset password e sospensione da admin", () => {
   // covers: AC-501-2
   it("incrementano session_version di B di 1 e il vecchio cookie di B riceve 401", async () => {
     const { cookie: rootCookie } = await createUserWithSession({
-      username: "root-501",
+      displayName: "root-501",
       role: UserRole.ADMIN,
       isRootAdmin: true,
     });
@@ -86,7 +88,7 @@ describe("reset password e sospensione da admin", () => {
     ];
 
     for (const testCase of cases) {
-      const { user, cookie } = await createUserWithSession({ username: testCase.username });
+      const { user, cookie } = await createUserWithSession({ displayName: testCase.username });
       const before = await sessionVersionOf(user.id);
       expect(await preferencesStatus(cookie)).toBe(200);
 
@@ -108,7 +110,7 @@ describe("reset password e sospensione da admin", () => {
 describe("esci da tutti i dispositivi", () => {
   // covers: AC-501-3
   it("azzera il cookie, incrementa session_version e revoca entrambi i cookie", async () => {
-    const { user } = await createUserWithSession({ username: "utente-c" });
+    const { user } = await createUserWithSession({ displayName: "utente-c" });
     const first = await loginCookie("utente-c");
     const second = await loginCookie("utente-c");
     const before = await sessionVersionOf(user.id);
@@ -128,7 +130,7 @@ describe("esci da tutti i dispositivi", () => {
 describe("token minimale e preferenze", () => {
   // covers: AC-501-4
   it("il payload ha solo uid, ver, iat ed exp e PATCH delle preferenze non emette Set-Cookie", async () => {
-    await createUserWithSession({ username: "utente-d" });
+    await createUserWithSession({ displayName: "utente-d" });
     const cookie = await loginCookie("utente-d");
 
     const payloadPart = cookie.replace(/^kwb_session=/, "").split(".")[0];

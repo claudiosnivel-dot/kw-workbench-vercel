@@ -48,12 +48,29 @@ export async function seedGlobalDefaults(client: Pick<PrismaClient, "$transactio
   });
 }
 
+/**
+ * Email del root admin (T-1401): il root admin senza email (utente legacy, D-05) riceve APP_ADMIN_EMAIL già
+ * verificata, così continua ad accedere con la sua password usando l'email. Idempotente: con l'email già assegnata
+ * non cambia nulla.
+ */
+export async function assignRootAdminEmail(client: Pick<PrismaClient, "user">, email: string): Promise<void> {
+  await client.user.updateMany({
+    where: { is_root_admin: true, email: null },
+    data: { email, email_verified_at: new Date() },
+  });
+}
+
 async function main() {
   // Stesso client e stesso adapter pg dell'app (in v7 PrismaClient richiede un driver adapter).
   const { prisma } = await import("../lib/prisma");
+  const { getAdminEmail } = await import("../lib/env");
 
   try {
     await seedGlobalDefaults(prisma);
+    const adminEmail = getAdminEmail();
+    if (adminEmail) {
+      await assignRootAdminEmail(prisma, adminEmail);
+    }
     await prisma.$disconnect();
   } catch (error) {
     console.error("Seed error:", error);

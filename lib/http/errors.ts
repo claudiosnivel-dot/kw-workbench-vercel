@@ -68,8 +68,8 @@ export class NotFoundError extends AppError {
 }
 
 export class ConflictError extends AppError {
-  constructor(message = "Risorsa già esistente") {
-    super(409, "CONFLICT", message);
+  constructor(message = "Risorsa già esistente", code: ApiErrorCode = "CONFLICT") {
+    super(409, code, message);
     this.name = "ConflictError";
   }
 }

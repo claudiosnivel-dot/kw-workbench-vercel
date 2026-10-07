@@ -20,7 +20,7 @@ vi.mock("next/navigation", async (importOriginal) => ({
 
 /** Utente con onboarding IN_PROGRESS su un progetto attivo con una sezione attiva. */
 async function createActiveSection(username: string, currentStep: "SEEDS" | "REVIEW_EXPORT") {
-  const session = await createUserWithSession({ username });
+  const session = await createUserWithSession({ displayName: username });
   const project = await prisma.project.create({ data: { name: "Blog", owner_user_id: session.user.id } });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   await prisma.userOnboardingProgress.create({
@@ -33,7 +33,7 @@ async function createActiveSection(username: string, currentStep: "SEEDS" | "REV
       active_subproject_id: section.id,
     },
   });
-  auth.user = { id: session.user.id, username: session.user.username, role: session.user.role, isRootAdmin: false };
+  auth.user = { id: session.user.id, displayName: session.user.display_name, role: session.user.role, isRootAdmin: false };
   return { ...session, projectId: project.id, sectionId: section.id };
 }
 

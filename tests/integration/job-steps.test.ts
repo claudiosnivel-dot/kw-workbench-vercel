@@ -112,7 +112,7 @@ beforeEach(async () => {
   await prisma.expansionPattern.createMany({
     data: DEFAULT_PATTERNS.map((pattern) => ({ project_id: null, pattern, enabled: true })),
   });
-  ownerId = (await createUserWithSession({ username: "t1202-owner" })).user.id;
+  ownerId = (await createUserWithSession({ displayName: "t1202-owner" })).user.id;
 });
 
 afterEach(() => {

@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { E2E_USER_PASSWORD, E2E_USERNAME } from "./credentials";
+import { E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 
 async function submitLogin(page: Page, password: string): Promise<void> {
   await page.goto("/login");
-  await page.getByLabel("Username").fill(E2E_USERNAME);
+  await page.getByLabel("Email").fill(E2E_EMAIL);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Accedi" }).click();
 }

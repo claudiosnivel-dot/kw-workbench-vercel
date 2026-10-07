@@ -11,7 +11,7 @@ import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
 async function createProjectWithSections(names: string[]) {
-  const owner = await createUserWithSession({ username: `t808-${names.length}-${Date.now()}` });
+  const owner = await createUserWithSession({ displayName: `t808-${names.length}-${Date.now()}` });
   const project = await prisma.project.create({ data: { name: "Sezioni", owner_user_id: owner.user.id } });
   const sections = [];
   for (const [position, name] of names.entries()) {

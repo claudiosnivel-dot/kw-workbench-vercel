@@ -11,7 +11,8 @@ type UserStatus = "ACTIVE" | "SUSPENDED";
 
 type AdminUserRecord = {
   id: string;
-  username: string;
+  email: string | null;
+  displayName: string;
   role: UserRole;
   status: UserStatus;
   isRootAdmin: boolean;
@@ -79,7 +80,7 @@ function FilterSelect<V extends string>(props: {
 export function AdminUsersDashboard({
   viewer,
 }: {
-  viewer: { id: string; username: string; isRootAdmin: boolean };
+  viewer: { id: string; isRootAdmin: boolean };
 }) {
   const t = useTranslations("admin");
   const tAuth = useTranslations("auth");
@@ -101,7 +102,8 @@ export function AdminUsersDashboard({
   // Richiesta della lista in corso: una nuova la annulla, così vince sempre l'ultima.
   const inFlight = useRef<AbortController | null>(null);
 
-  const [createUsername, setCreateUsername] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createDisplayName, setCreateDisplayName] = useState("");
   const [createPassword, setCreatePassword] = useState("");
   const [createConfirmPassword, setCreateConfirmPassword] = useState("");
   const [createRole, setCreateRole] = useState<UserRole>("SUBSCRIBER");
@@ -192,7 +194,8 @@ export function AdminUsersDashboard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: createUsername,
+          email: createEmail,
+          displayName: createDisplayName,
           password: createPassword,
           confirmPassword: createConfirmPassword,
           role: createRole,
@@ -201,7 +204,8 @@ export function AdminUsersDashboard({
 
       await readApiResponse<ApiErrorPayload>(response, tErrors);
 
-      setCreateUsername("");
+      setCreateEmail("");
+      setCreateDisplayName("");
       setCreatePassword("");
       setCreateConfirmPassword("");
       setCreateRole("SUBSCRIBER");
@@ -244,7 +248,7 @@ export function AdminUsersDashboard({
   };
 
   const deleteUser = async (user: AdminUserRecord) => {
-    const confirmed = window.confirm(t("manage.deleteConfirm", { username: user.username }));
+    const confirmed = window.confirm(t("manage.deleteConfirm", { name: user.email ?? user.displayName }));
     if (!confirmed) return;
 
     setDeletingId(user.id);
@@ -343,14 +347,29 @@ export function AdminUsersDashboard({
 
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <label className="label" htmlFor="new-username">
-              {tAuth("username")}
+            <label className="label" htmlFor="new-email">
+              {tAuth("email")}
             </label>
             <input
-              id="new-username"
+              id="new-email"
               className="input"
-              value={createUsername}
-              onChange={(event) => setCreateUsername(event.target.value)}
+              type="email"
+              autoComplete="off"
+              value={createEmail}
+              onChange={(event) => setCreateEmail(event.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="label" htmlFor="new-display-name">
+              {tAuth("displayName")}
+            </label>
+            <input
+              id="new-display-name"
+              className="input"
+              maxLength={60}
+              value={createDisplayName}
+              onChange={(event) => setCreateDisplayName(event.target.value)}
             />
           </div>
 
@@ -408,7 +427,7 @@ export function AdminUsersDashboard({
           <table className="table-enterprise min-w-[1240px] text-left text-sm sm:min-w-full">
             <thead>
               <tr>
-                <th className="px-3 py-2">{t("manage.columns.username")}</th>
+                <th className="px-3 py-2">{t("manage.columns.user")}</th>
                 <th className="px-3 py-2">{t("manage.columns.role")}</th>
                 <th className="px-3 py-2">{t("manage.columns.status")}</th>
                 <th className="px-3 py-2">{t("manage.columns.created")}</th>
@@ -426,9 +445,10 @@ export function AdminUsersDashboard({
                   <tr key={user.id}>
                     <td className="px-3 py-3 font-medium">
                       <div className="flex items-center gap-2">
-                        <span>{user.username}</span>
+                        <span>{user.displayName}</span>
                         {user.isRootAdmin && <span className="status-chip border-emerald-400/40 bg-emerald-500/15 text-emerald-200">{t("manage.rootBadge")}</span>}
                       </div>
+                      <div className="text-xs font-normal text-slate-500">{user.email ?? t("manage.noEmail")}</div>
                     </td>
 
                     <td className="px-3 py-3">

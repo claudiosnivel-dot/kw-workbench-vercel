@@ -60,7 +60,7 @@ beforeEach(async () => {
 describe("paginazione della dashboard", () => {
   // covers: AC-810-1
   it("45 progetti in pagine da 20, 20 e 5, tutti distinti; la pagina 99 diventa la 3", async () => {
-    const { user } = await createUserWithSession({ username: "t810-pages" });
+    const { user } = await createUserWithSession({ displayName: "t810-pages" });
     await createProjects(user.id, 45);
 
     const pages = await Promise.all([1, 2, 3].map((page) => listDashboardProjects(user.id, page)));
@@ -79,7 +79,7 @@ describe("paginazione della dashboard", () => {
 describe("attività reale", () => {
   // covers: AC-810-2
   it("un'estrazione terminata porta il progetto in cima con last_activity_at uguale a completed_at", async () => {
-    const { user } = await createUserWithSession({ username: "t810-job" });
+    const { user } = await createUserWithSession({ displayName: "t810-job" });
     const [p01] = await createProjects(user.id, 45);
     const section = await prisma.subproject.create({ data: { project_id: p01, name: "Generale", position: 0 } });
     await prisma.seed.create({ data: { project_id: p01, subproject_id: section.id, keyword: "caffè moka" } });
@@ -96,7 +96,7 @@ describe("attività reale", () => {
 
   // covers: AC-810-3
   it("creare una sezione e revisionare keyword fanno salire i progetti in cima", async () => {
-    const owner = await createUserWithSession({ username: "t810-touch" });
+    const owner = await createUserWithSession({ displayName: "t810-touch" });
     const ids = await createProjects(owner.user.id, 45);
     const [p02, p03] = [ids[1], ids[2]];
     const before = await allPages(owner.user.id);
@@ -139,8 +139,8 @@ describe("attività reale", () => {
 describe("perimetro dell'utente", () => {
   // covers: AC-810-4
   it("nessun progetto di B compare nelle pagine di A", async () => {
-    const a = await createUserWithSession({ username: "t810-a" });
-    const b = await createUserWithSession({ username: "t810-b" });
+    const a = await createUserWithSession({ displayName: "t810-a" });
+    const b = await createUserWithSession({ displayName: "t810-b" });
     await createProjects(a.user.id, 45, "A");
     const idsOfB = await createProjects(b.user.id, 7, "B");
 

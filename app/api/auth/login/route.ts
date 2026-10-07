@@ -3,6 +3,7 @@ import { isAuthEnabled } from "@/lib/auth/config";
 import { verifyLoginCredentials } from "@/lib/auth/credentials";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
 import { errorResponse, withApiErrors } from "@/lib/http/errors";
+import { hasAcceptedCurrentTerms } from "@/lib/legal/consent";
 
 export const POST = withApiErrors(async (request: Request) => {
   if (!isAuthEnabled()) {
@@ -10,14 +11,12 @@ export const POST = withApiErrors(async (request: Request) => {
   }
 
   const payload = (await request.json()) as {
-    username?: string;
+    email?: string;
     password?: string;
   };
 
-  const username = String(payload.username ?? "").trim();
-  const password = String(payload.password ?? "");
-
-  const result = await verifyLoginCredentials(username, password);
+  // Email inesistente e password errata: stesso status e stesso corpo (T-1401, CWE-204).
+  const result = await verifyLoginCredentials(String(payload.email ?? ""), String(payload.password ?? ""));
   if (!result.user) {
     if (result.reason === "SUSPENDED") {
       return errorResponse(403, "ACCOUNT_SUSPENDED", "Account sospeso. Contatta l'amministratore.");
@@ -26,7 +25,10 @@ export const POST = withApiErrors(async (request: Request) => {
     return errorResponse(401, "INVALID_CREDENTIALS", "Credenziali non valide");
   }
 
-  const response = NextResponse.json({ success: true });
+  // Termini non accettati nella versione corrente (T-1405): il form apre /accept-terms prima della pagina richiesta.
+  const response = NextResponse.json(
+    hasAcceptedCurrentTerms(result.user) ? { success: true } : { success: true, requiresTermsAcceptance: true }
+  );
   await setSessionCookie(response, result.user);
   return response;
 });

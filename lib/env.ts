@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeEmail } from "@/lib/auth/email-address";
 
 // Configurazione validata (T-201). Usata anche dal middleware in runtime edge: qui niente moduli
 // solo-Node. Gli errori nominano la variabile e il vincolo violato, mai il valore.
@@ -65,13 +66,19 @@ const KNOWN_PLACEHOLDERS = new Set([
 ]);
 
 const optional = z.string().optional();
+
+/** Trasporti delle email transazionali (T-1402, D-11): Resend in produzione, outbox senza rete altrove. */
+export const EMAIL_TRANSPORTS = ["resend", "outbox"] as const;
+export type EmailTransport = (typeof EMAIL_TRANSPORTS)[number];
+// Mittente: un indirizzo, da solo o come «Nome <indirizzo>»; niente ritorni a capo (CWE-93).
+const EMAIL_FROM_PATTERN = /^(?:[^<>\r\n]*<([^<>\r\n]+)>|([^<>\r\n]+))$/;
 const SENTRY_DSN_KEYS = ["SENTRY_DSN", "NEXT_PUBLIC_SENTRY_DSN"] as const;
 
 const envSchema = z.object({
   NODE_ENV: optional,
   APP_AUTH_ENABLED: optional,
-  APP_AUTH_USERNAME: optional,
-  APP_AUTH_PASSWORD: optional,
+  // Email del root admin iniziale (T-1401): obbligatoria in produzione.
+  APP_ADMIN_EMAIL: optional,
   APP_PUBLIC_SIGNUP_ENABLED: optional,
   APP_SESSION_SECRET: optional,
   APP_SESSION_MAX_AGE_SECONDS: optional,
@@ -98,6 +105,10 @@ const envSchema = z.object({
   JOB_SIGNING_SECRET: optional,
   CRON_SECRET: optional,
   APP_PUBLIC_URL: optional,
+  // Email transazionali (T-1402, D-11): trasporto, chiave API di Resend e mittente.
+  EMAIL_TRANSPORT: optional,
+  RESEND_API_KEY: optional,
+  EMAIL_FROM: optional,
   VERCEL_URL: optional,
   VERCEL_AUTOMATION_BYPASS_SECRET: optional,
   AUTOCOMPLETE_TIMEOUT_MS: optional,
@@ -135,8 +146,6 @@ export const ENV_KEYS = Object.keys(envSchema.shape) as (keyof RawEnv)[];
 export type Env = {
   isProduction: boolean;
   authEnabled: boolean;
-  authUsername: string;
-  authPassword: string | undefined;
   // Senza default: assenti fuori produzione, l'errore arriva al primo uso (lib/auth/config.ts).
   sessionSecret: string | undefined;
   encryptionKey: string | undefined;
@@ -170,6 +179,11 @@ function isSentryDsn(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isEmailFrom(value: string): boolean {
+  const match = EMAIL_FROM_PATTERN.exec(value);
+  return match !== null && normalizeEmail(match[1] ?? match[2]) !== null;
 }
 
 function checkSecret(value: string | undefined): string | null {
@@ -264,6 +278,14 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
     ctx.addIssue({ code: "custom", path: ["APP_PUBLIC_URL"], message: "deve essere un URL https (http solo per localhost)" });
   }
 
+  const adminEmail = present(raw.APP_ADMIN_EMAIL);
+  if (adminEmail === undefined ? isProduction : normalizeEmail(adminEmail) === null) {
+    const message = adminEmail === undefined ? "è obbligatoria in produzione" : "deve essere un indirizzo email valido";
+    ctx.addIssue({ code: "custom", path: ["APP_ADMIN_EMAIL"], message });
+  }
+
+  checkEmailSettings(raw, isProduction, ctx);
+
   try {
     if (getIntEnv("JOB_STALE_AFTER_MS", raw) < getIntEnv("JOB_STEP_BUDGET_MS", raw) + STALE_MARGIN_MS) {
       ctx.addIssue({
@@ -306,6 +328,41 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
   }
 });
 
+/**
+ * Email transazionali (T-1402): in produzione il trasporto è resend e serve APP_PUBLIC_URL (base dei link nelle email,
+ * mai l'header Host); altrove il default è outbox. RESEND_API_KEY ed EMAIL_FROM vanno impostate insieme: finché
+ * mancano entrambe (D-11 emendata il 2026-10-07, Resend configurato alla fine del blueprint) ogni invio fallisce come
+ * non configurato, senza bloccare l'avvio.
+ */
+function checkEmailSettings(raw: RawEnv, isProduction: boolean, ctx: z.RefinementCtx): void {
+  const transport = present(raw.EMAIL_TRANSPORT)?.trim();
+  if (transport !== undefined && !isEmailTransport(transport)) {
+    ctx.addIssue({ code: "custom", path: ["EMAIL_TRANSPORT"], message: `deve essere uno tra ${EMAIL_TRANSPORTS.join(", ")}` });
+  } else if (isProduction && transport !== "resend") {
+    ctx.addIssue({ code: "custom", path: ["EMAIL_TRANSPORT"], message: "in produzione deve valere resend" });
+  }
+
+  const from = present(raw.EMAIL_FROM)?.trim();
+  if (from !== undefined && !isEmailFrom(from)) {
+    ctx.addIssue({ code: "custom", path: ["EMAIL_FROM"], message: "deve essere un indirizzo email, anche nella forma Nome <indirizzo>" });
+  }
+
+  const apiKey = present(raw.RESEND_API_KEY);
+  if ((apiKey === undefined) !== (from === undefined)) {
+    const missing = apiKey === undefined ? "RESEND_API_KEY" : "EMAIL_FROM";
+    const other = missing === "EMAIL_FROM" ? "RESEND_API_KEY" : "EMAIL_FROM";
+    ctx.addIssue({ code: "custom", path: [missing], message: `va impostata insieme a ${other}` });
+  }
+
+  if (isProduction && present(raw.APP_PUBLIC_URL) === undefined) {
+    ctx.addIssue({ code: "custom", path: ["APP_PUBLIC_URL"], message: "è obbligatoria in produzione" });
+  }
+}
+
+function isEmailTransport(value: string): value is EmailTransport {
+  return (EMAIL_TRANSPORTS as readonly string[]).includes(value);
+}
+
 /** Valida una sorgente di variabili d'ambiente; lancia un errore che elenca le variabili errate. */
 export function parseEnv(source: EnvSource): Env {
   const result = validatedSchema.safeParse(source);
@@ -321,8 +378,6 @@ export function parseEnv(source: EnvSource): Env {
   return {
     isProduction,
     authEnabled: isAuthEnabledValue(raw.APP_AUTH_ENABLED),
-    authUsername: raw.APP_AUTH_USERNAME ?? "admin",
-    authPassword: present(raw.APP_AUTH_PASSWORD),
     sessionSecret: present(raw.APP_SESSION_SECRET),
     encryptionKey: present(raw.APP_ENCRYPTION_KEY),
     sessionMaxAgeSeconds: getIntEnv("APP_SESSION_MAX_AGE_SECONDS", raw),
@@ -355,6 +410,29 @@ export function getInternalBaseUrl(source: EnvSource = process.env): string | nu
   if (vercelUrl) {
     return `https://${vercelUrl}`;
   }
+  return getPublicAppUrl(source);
+}
+
+/** Email normalizzata del root admin iniziale (T-1401); null se APP_ADMIN_EMAIL manca (ammesso fuori produzione). */
+export function getAdminEmail(source: EnvSource = process.env): string | null {
+  return normalizeEmail(present(source.APP_ADMIN_EMAIL));
+}
+
+/** Trasporto delle email (T-1402): EMAIL_TRANSPORT, default outbox (in produzione parseEnv impone resend). */
+export function getEmailTransport(source: EnvSource = process.env): EmailTransport {
+  const raw = present(source.EMAIL_TRANSPORT)?.trim();
+  return raw !== undefined && isEmailTransport(raw) ? raw : "outbox";
+}
+
+/** Chiave API e mittente di Resend (T-1402); null se una delle due manca. */
+export function getResendSettings(source: EnvSource = process.env): { apiKey: string; from: string } | null {
+  const apiKey = present(source.RESEND_API_KEY)?.trim();
+  const from = present(source.EMAIL_FROM)?.trim();
+  return apiKey && from ? { apiKey, from } : null;
+}
+
+/** URL pubblico dell'app senza barra finale (T-1402): l'unica base dei link nelle email; null se non impostato. */
+export function getPublicAppUrl(source: EnvSource = process.env): string | null {
   return present(source.APP_PUBLIC_URL)?.trim().replace(/\/+$/, "") ?? null;
 }
 

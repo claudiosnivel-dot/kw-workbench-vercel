@@ -20,7 +20,7 @@ const registrar = vi.mocked(scheduleJobContinuation);
 type Owner = { cookie: string; projectId: string; sectionId: string };
 
 async function createOwner(username: string): Promise<Owner> {
-  const { user, cookie } = await createUserWithSession({ username });
+  const { user, cookie } = await createUserWithSession({ displayName: username });
   const project = await prisma.project.create({
     data: { name: `Progetto ${username}`, owner_user_id: user.id, autocomplete_provider: "MOCK", metrics_provider: "MOCK" },
   });

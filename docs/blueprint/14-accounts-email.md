@@ -7,6 +7,24 @@
 Oggi la tabella users ha solo `username` (unico, minuscolo, 3-40 caratteri) e password; il root admin è determinato dal nome 'admin' o dal primo utente creato (lib/auth/credentials.ts `ensureRootAdminExists`, `ensureLegacyDefaultUser` con i default `APP_AUTH_USERNAME`/`APP_AUTH_PASSWORD`); la registrazione (app/api/auth/register/route.ts, components/register-form.tsx) non raccoglie email né consenso; non esiste invio di email.
 Il macrotask porta l'email a identità primaria (unica senza distinzione di maiuscole, verificabile), introduce un'interfaccia `EmailSender` con Resend in produzione e outbox in sviluppo/test (D-11), aggiunge verifica dell'email e recupero password con token monouso salvati solo come hash, e registra la versione dei termini accettata con riaccettazione al cambio di versione. I testi legali non sono scritti dall'agente (D-15).
 
+## Emendamento 2026-10-07 (costruzione del macrotask)
+
+T-1401 e T-1403 si costruiscono nella stessa sessione, quindi la risposta transitoria 409 `EMAIL_TAKEN` della
+registrazione pubblica non viene mai pubblicata: la registrazione risponde sempre 202 `CHECK_EMAIL` (T-1403) e il 409
+`EMAIL_TAKEN` resta nella creazione utente dell'admin (`POST /api/admin/users`), dove non c'è rischio di enumerazione.
+AC-1401-1 verifica quindi l'unicità senza distinzione di maiuscole su entrambe le rotte e AC-1405-1 attende il 202 di
+T-1403 invece del 200. Il root admin creato dal bootstrap con la tabella users vuota ha una password casuale mai
+comunicata (niente più `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD`): il primo accesso passa dal recupero password di
+T-1404. Gli AC dei macrotask precedenti scritti sullo username sono emendati negli stessi termini: AC-201-4 (bootstrap
+con `APP_ADMIN_EMAIL`) e AC-503-3 (409 `EMAIL_TAKEN` per l'email già registrata, 400 `VALIDATION_ERROR` per un nome
+mostrato non valido). Il design non cambia.
+
+**Secondo emendamento 2026-10-07 (D-11 emendata, decisione dell'utente):** Resend si configura alla fine del blueprint.
+In produzione `EMAIL_TRANSPORT` resta `resend` (l'outbox resta rifiutato, AC-1402-4) e `APP_PUBLIC_URL` resta
+obbligatoria; `RESEND_API_KEY` ed `EMAIL_FROM` diventano facoltative, ma vanno impostate insieme. Senza, ogni invio
+fallisce subito con `EmailDeliveryError` registrato come gli altri fallimenti (template, id, dominio), l'app parte e il
+nuovo invio dell'email di verifica risponde 503 `EMAIL_UNAVAILABLE`.
+
 ## Vincoli di piattaforma verificati (2026-10-02)
 
 - Resend, Node SDK: `const { data, error } = await resend.emails.send({ from, to, subject, html, text, headers, tags })`, successo con `data.id`; l'header `Idempotency-Key` evita invii duplicati, massimo 256 caratteri, scade dopo 24 h (https://resend.com/docs/api-reference/emails/send-email). Pacchetto `resend` alla versione 6.32.0 su npm alla data.
@@ -38,9 +56,9 @@ Il macrotask porta l'email a identità primaria (unica senza distinzione di maiu
 
   acceptance_criteria:
     - id: AC-1401-1
-      given: "un utente registrato con email 'Mario.Rossi@Example.COM'"
-      when: "si registra un secondo account con 'mario.rossi@example.com'"
-      then: "la risposta ha status 409 e code 'EMAIL_TAKEN', la tabella users contiene 1 sola riga con email 'mario.rossi@example.com'"
+      given: "un utente registrato con POST /api/auth/register ed email 'Mario.Rossi@Example.COM', e un root admin autenticato"
+      when: "si registra un secondo account con 'mario.rossi@example.com' con POST /api/auth/register e poi il root admin lo crea con POST /api/admin/users (emendato il 2026-10-07: la registrazione pubblica risponde già con il 202 di T-1403)"
+      then: "la registrazione risponde 202 con code 'CHECK_EMAIL', la creazione dell'admin risponde 409 con code 'EMAIL_TAKEN', la tabella users contiene 1 sola riga con email 'mario.rossi@example.com'"
     - id: AC-1401-2
       given: "l'utente 'mario.rossi@example.com' con password nota"
       when: "si invia POST /api/auth/login con ' MARIO.ROSSI@example.com ' e la password corretta, poi con password errata, poi con un'email inesistente"
@@ -84,7 +102,7 @@ Il macrotask porta l'email a identità primaria (unica senza distinzione di maiu
     - "lib/email/resend-sender.ts: usa il pacchetto resend (versione esatta in package.json) con emails.send e mittente EMAIL_FROM; header Idempotency-Key uguale a EmailMessage.id, così i ritentativi non duplicano l'invio."
     - "Retry: al massimo 2 ritentativi (3 tentativi totali) solo per errori di rete, 429 e 5xx, con attesa crescente; nessun ritentativo per errori 4xx di validazione; dopo l'ultimo fallimento un solo console.error con template, id del messaggio e dominio del destinatario (mai indirizzo completo, chiave API, corpo o link) e EmailDeliveryError propagato al chiamante."
     - "lib/email/outbox-sender.ts: implementazione senza rete che salva i messaggi in memoria (test unitari) o nella tabella email_outbox (sviluppo e test d'integrazione; nuova migrazione con id, to_address, template, locale, subject, html, text, created_at)."
-    - "lib/email/index.ts: getEmailSender() sceglie con EMAIL_TRANSPORT (resend oppure outbox) dallo schema di lib/env.ts; in produzione EMAIL_TRANSPORT deve valere resend e RESEND_API_KEY, EMAIL_FROM e APP_PUBLIC_URL (introdotta da T-1203, macrotask precedente) sono obbligatorie, altrimenti la validazione all'avvio fallisce (T-201)."
+    - "lib/email/index.ts: getEmailSender() sceglie con EMAIL_TRANSPORT (resend oppure outbox) dallo schema di lib/env.ts; in produzione EMAIL_TRANSPORT deve valere resend e APP_PUBLIC_URL (introdotta da T-1203, macrotask precedente) è obbligatoria, altrimenti la validazione all'avvio fallisce (T-201); RESEND_API_KEY ed EMAIL_FROM si impostano insieme e, finché mancano (D-11 emendata il 2026-10-07), ogni invio fallisce subito come non configurato."
     - "lib/email/templates/: verify-email, password-reset, workspace-invite, billing-notice; ognuno espone render(locale, vars) che restituisce { subject, html, text } con testi nel namespace emails di messages/it.json e messages/en.json; variabili interpolate con escape HTML; link costruiti solo da APP_PUBLIC_URL; la lingua è users.ui_locale (T-1301) con fallback it."
     - "I contenuti di billing-notice restano segnaposto con variabili (piano, data) finché D-14 non fissa piani e periodi; nessun testo legale definitivo (D-15)."
 
@@ -254,7 +272,7 @@ Il macrotask porta l'email a identità primaria (unica senza distinzione di maiu
     - id: AC-1405-1
       given: "un payload di registrazione valido"
       when: "viene inviato una volta senza acceptTerms e una volta con acceptTerms=true e termsVersion uguale a LEGAL_TERMS_VERSION"
-      then: "il primo invio risponde 400 con code 'TERMS_NOT_ACCEPTED' senza nuove righe in users; il secondo risponde 200 e l'utente ha accepted_terms_version uguale a LEGAL_TERMS_VERSION e accepted_terms_at entro 5 s dall'istante della richiesta"
+      then: "il primo invio risponde 400 con code 'TERMS_NOT_ACCEPTED' senza nuove righe in users; il secondo risponde 202 (emendato il 2026-10-07: risposta di T-1403) e l'utente ha accepted_terms_version uguale a LEGAL_TERMS_VERSION e accepted_terms_at entro 5 s dall'istante della richiesta"
     - id: AC-1405-2
       given: "un payload di registrazione con acceptTerms=true e termsVersion='versione-vecchia'"
       when: "viene inviato a POST /api/auth/register"

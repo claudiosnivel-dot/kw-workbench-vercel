@@ -20,7 +20,7 @@ vi.mock("@/lib/modules/jobs/continuation", () => ({ scheduleJobContinuation: vi.
 const pipeline = vi.mocked(advanceJob);
 
 async function createOwnedSections() {
-  const { user, cookie } = await createUserWithSession({ username: "t305-owner" });
+  const { user, cookie } = await createUserWithSession({ displayName: "t305-owner" });
   const project = await prisma.project.create({ data: { name: "Progetto T-305", owner_user_id: user.id } });
   const first = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   const second = await prisma.subproject.create({ data: { project_id: project.id, name: "Seconda", position: 1 } });

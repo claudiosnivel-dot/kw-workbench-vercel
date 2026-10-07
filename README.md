@@ -36,8 +36,11 @@ Valori minimi:
 
 Note autenticazione multi-account:
 
-- `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD` servono solo a bootstrap del primo account se il DB utenti e vuoto.
-- Poi puoi creare nuovi account da `/register`.
+- Si accede con email e password. `APP_ADMIN_EMAIL` e l'email del root admin: con il DB utenti vuoto il primo accesso
+  crea il root admin con una password casuale, da impostare con "Password dimenticata?" (in sviluppo l'email finisce
+  nella tabella `email_outbox`).
+- Poi puoi creare nuovi account da `/register`: la registrazione chiede l'accettazione dei termini e invia l'email di
+  verifica, necessaria per avviare le estrazioni.
 - Ogni account vede solo i propri dati (progetti, risultati, job, integrazioni utente).
 
 ### 3) Avvio

@@ -12,7 +12,7 @@ import { callRoute } from "../helpers/http";
 
 async function createFixture(options: { isRootAdmin?: boolean; username: string }) {
   const owner = await createUserWithSession({
-    username: options.username,
+    displayName: options.username,
     isRootAdmin: options.isRootAdmin,
     role: options.isRootAdmin ? UserRole.ADMIN : UserRole.SUBSCRIBER,
   });
@@ -156,7 +156,7 @@ describe("campi non dichiarati e override vuoti", () => {
   // covers: AC-809-4
   it("owner_user_id è rifiutato con 400; language_code_override vuoto torna a null", async () => {
     const { owner, projectId, sectionId } = await createFixture({ username: "t809-strict" });
-    const intruder = await createUserWithSession({ username: "t809-other" });
+    const intruder = await createUserWithSession({ displayName: "t809-other" });
 
     const rejected = await patchProjectAs(owner.cookie, projectId, { owner_user_id: intruder.user.id });
     const inherited = await patchSectionAs(owner.cookie, projectId, sectionId, { language_code_override: "" });

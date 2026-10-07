@@ -160,25 +160,35 @@ enum OnboardingIdempotencyKind {
 }
 
 model User {
-  id                String            @id @default(cuid())
-  username          String            @unique
-  password_hash     String
-  role              UserRole          @default(SUBSCRIBER)
-  status            UserStatus        @default(ACTIVE)
-  is_root_admin     Boolean           @default(false)
-  last_login_at     DateTime?
-  theme_mode        ThemeMode         @default(DARK)
-  font_scale_mode   FontScaleMode     @default(NORMAL)
-  color_vision_mode ColorVisionMode   @default(NONE)
+  id                          String                     @id @default(cuid())
+  /// Identità di accesso (T-1401): sempre minuscola (vincolo CHECK users_email_lowercase, solo nella migrazione),
+  /// nulla solo per gli utenti legacy creati prima dell'email, che non possono più accedere.
+  email                       String?                    @unique
+  email_verified_at           DateTime?
+  /// Nome mostrato, non univoco (era username fino a T-1401).
+  display_name                String
+  password_hash               String
+  role                        UserRole                   @default(SUBSCRIBER)
+  status                      UserStatus                 @default(ACTIVE)
+  is_root_admin               Boolean                    @default(false)
+  last_login_at               DateTime?
+  theme_mode                  ThemeMode                  @default(DARK)
+  font_scale_mode             FontScaleMode              @default(NORMAL)
+  color_vision_mode           ColorVisionMode            @default(NONE)
   /// null finché l'utente non sceglie: la lingua si risolve da cookie, Accept-Language e infine it.
-  ui_locale         UiLocale?
-  session_version   Int               @default(0)
-  created_at        DateTime          @default(now())
-  updated_at        DateTime          @updatedAt
-  projects          Project[]
-  google_sheets_credential GoogleSheetsCredential?
-  onboarding_progress UserOnboardingProgress?
+  ui_locale                   UiLocale?
+  session_version             Int                        @default(0)
+  /// Versione dei termini accettata e momento dell'accettazione (T-1405); null finché l'utente non accetta.
+  accepted_terms_version      String?
+  accepted_terms_at           DateTime?
+  created_at                  DateTime                   @default(now())
+  updated_at                  DateTime                   @updatedAt
+  projects                    Project[]
+  google_sheets_credential    GoogleSheetsCredential?
+  onboarding_progress         UserOnboardingProgress?
   onboarding_idempotency_keys OnboardingIdempotencyKey[]
+  email_verification_tokens   EmailVerificationToken[]
+  password_reset_tokens       PasswordResetToken[]
 
   // Indice unico parziale users_single_root_admin_idx (migrazione 0005): un solo root admin. Prisma non esprime
   // gli indici parziali: c'è solo nella migrazione e tests/integration/schema-indexes.test.ts ne verifica la presenza.
@@ -186,36 +196,36 @@ model User {
 }
 
 model Project {
-  id                    String               @id @default(cuid())
-  owner_user_id         String?
-  default_subproject_id String?
-  name                  String
-  language_code         String               @default("en")
-  country_code          String               @default("US")
+  id                          String                     @id @default(cuid())
+  owner_user_id               String?
+  default_subproject_id       String?
+  name                        String
+  language_code               String                     @default("en")
+  country_code                String                     @default("US")
   /// Provider reale per default (T-1103): MOCK produce keyword fittizie (CWE-1188).
-  autocomplete_provider AutocompleteProvider @default(GOOGLE_DIRECT)
-  metrics_provider      MetricsProvider      @default(NONE)
-  min_volume            Int                  @default(0)
-  exclude_brands        Boolean              @default(true)
-  expand_alpha          Boolean              @default(true)
-  expand_numeric        Boolean              @default(true)
-  expand_patterns       Boolean              @default(true)
-  auto_classification   Boolean              @default(true)
-  scoring_profile       String               @default("balanced")
-  created_at            DateTime             @default(now())
-  updated_at            DateTime             @updatedAt
+  autocomplete_provider       AutocompleteProvider       @default(GOOGLE_DIRECT)
+  metrics_provider            MetricsProvider            @default(NONE)
+  min_volume                  Int                        @default(0)
+  exclude_brands              Boolean                    @default(true)
+  expand_alpha                Boolean                    @default(true)
+  expand_numeric              Boolean                    @default(true)
+  expand_patterns             Boolean                    @default(true)
+  auto_classification         Boolean                    @default(true)
+  scoring_profile             String                     @default("balanced")
+  created_at                  DateTime                   @default(now())
+  updated_at                  DateTime                   @updatedAt
   /// Ultima attività reale (estrazioni, sezioni, revisione, impostazioni): ordinamento della dashboard (T-810).
-  last_activity_at      DateTime             @default(now())
-  owner                 User?                @relation(fields: [owner_user_id], references: [id], onDelete: Cascade)
-  subprojects           Subproject[]         @relation("ProjectSubprojects")
-  default_subproject    Subproject?          @relation("ProjectDefaultSubproject", fields: [default_subproject_id], references: [id], onDelete: SetNull)
-  seeds                 Seed[]
-  keyword_candidates    KeywordCandidate[]
-  jobs                  Job[]
-  brand_blacklist       BrandBlacklist[]
-  expansion_patterns    ExpansionPattern[]
-  metrics_provider_requests MetricsProviderRequest[]
-  onboarding_active_for_users UserOnboardingProgress[] @relation("OnboardingActiveProject")
+  last_activity_at            DateTime                   @default(now())
+  owner                       User?                      @relation(fields: [owner_user_id], references: [id], onDelete: Cascade)
+  subprojects                 Subproject[]               @relation("ProjectSubprojects")
+  default_subproject          Subproject?                @relation("ProjectDefaultSubproject", fields: [default_subproject_id], references: [id], onDelete: SetNull)
+  seeds                       Seed[]
+  keyword_candidates          KeywordCandidate[]
+  jobs                        Job[]
+  brand_blacklist             BrandBlacklist[]
+  expansion_patterns          ExpansionPattern[]
+  metrics_provider_requests   MetricsProviderRequest[]
+  onboarding_active_for_users UserOnboardingProgress[]   @relation("OnboardingActiveProject")
   onboarding_idempotency_keys OnboardingIdempotencyKey[]
 
   @@index([owner_user_id])
@@ -224,11 +234,11 @@ model Project {
 }
 
 model Subproject {
-  id                             String               @id @default(cuid())
+  id                             String                     @id @default(cuid())
   project_id                     String
   name                           String
   description                    String?
-  position                       Int                  @default(0)
+  position                       Int                        @default(0)
   language_code_override         String?
   country_code_override          String?
   autocomplete_provider_override AutocompleteProvider?
@@ -240,14 +250,14 @@ model Subproject {
   expand_patterns_override       Boolean?
   auto_classification_override   Boolean?
   scoring_profile_override       String?
-  created_at                     DateTime             @default(now())
-  updated_at                     DateTime             @updatedAt
-  project                        Project              @relation("ProjectSubprojects", fields: [project_id], references: [id], onDelete: Cascade)
-  default_for_projects           Project[]            @relation("ProjectDefaultSubproject")
+  created_at                     DateTime                   @default(now())
+  updated_at                     DateTime                   @updatedAt
+  project                        Project                    @relation("ProjectSubprojects", fields: [project_id], references: [id], onDelete: Cascade)
+  default_for_projects           Project[]                  @relation("ProjectDefaultSubproject")
   seeds                          Seed[]
   keyword_candidates             KeywordCandidate[]
   jobs                           Job[]
-  onboarding_active_for_users    UserOnboardingProgress[] @relation("OnboardingActiveSubproject")
+  onboarding_active_for_users    UserOnboardingProgress[]   @relation("OnboardingActiveSubproject")
   onboarding_idempotency_keys    OnboardingIdempotencyKey[]
 
   @@unique([project_id, name])
@@ -270,7 +280,7 @@ model Seed {
 }
 
 model KeywordCandidate {
-  id                          String          @id @default(cuid())
+  id                          String            @id @default(cuid())
   project_id                  String
   subproject_id               String
   keyword                     String
@@ -278,30 +288,30 @@ model KeywordCandidate {
   canonical_keyword           String
   source                      String
   source_query                String
-  brand_status                BrandStatus     @default(allowed)
+  brand_status                BrandStatus       @default(allowed)
   brand_reason                String?
-  review_status               ReviewStatus    @default(pending)
-  selected_for_export         Boolean         @default(false)
-  keyword_type                KeywordType     @default(generic)
-  search_intent               SearchIntent    @default(mixed)
-  is_question                 Boolean         @default(false)
-  is_local_intent             Boolean         @default(false)
-  is_tool_intent              Boolean         @default(false)
-  is_commercial_intent        Boolean         @default(false)
-  metrics_status              MetricsStatus   @default(missing)
-  metrics_provider            MetricsProvider @default(NONE)
+  review_status               ReviewStatus      @default(pending)
+  selected_for_export         Boolean           @default(false)
+  keyword_type                KeywordType       @default(generic)
+  search_intent               SearchIntent      @default(mixed)
+  is_question                 Boolean           @default(false)
+  is_local_intent             Boolean           @default(false)
+  is_tool_intent              Boolean           @default(false)
+  is_commercial_intent        Boolean           @default(false)
+  metrics_status              MetricsStatus     @default(missing)
+  metrics_provider            MetricsProvider   @default(NONE)
   avg_monthly_searches        Int?
   competition                 Float?
   low_top_of_page_bid_micros  BigInt?
   high_top_of_page_bid_micros BigInt?
   metrics_precision           MetricsPrecision?
   score                       Float?
-  score_source                ScoreSource     @default(heuristic)
+  score_source                ScoreSource       @default(heuristic)
   metrics_updated_at          DateTime?
-  created_at                  DateTime        @default(now())
-  updated_at                  DateTime        @updatedAt
-  project                     Project         @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  subproject                  Subproject      @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
+  created_at                  DateTime          @default(now())
+  updated_at                  DateTime          @updatedAt
+  project                     Project           @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  subproject                  Subproject        @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
 
   @@unique([subproject_id, canonical_keyword])
   @@index([project_id, review_status])
@@ -319,18 +329,18 @@ model KeywordCandidate {
 }
 
 model Job {
-  id            String     @id @default(cuid())
-  project_id    String
-  subproject_id String
-  type          JobType    @default(extraction)
-  status        JobStatus  @default(pending)
-  payload       Json?
-  result        Json?
-  error_message String?
-  started_at    DateTime?
-  completed_at  DateTime?
-  created_at    DateTime   @default(now())
-  updated_at    DateTime   @updatedAt
+  id               String          @id @default(cuid())
+  project_id       String
+  subproject_id    String
+  type             JobType         @default(extraction)
+  status           JobStatus       @default(pending)
+  payload          Json?
+  result           Json?
+  error_message    String?
+  started_at       DateTime?
+  completed_at     DateTime?
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
   // Esecuzione a passi ripartibile (T-1201): cursore della fase, avanzamento, heartbeat e lease del passo in corso.
   phase            JobPhase        @default(expand)
   cursor           Json            @default("{}")
@@ -416,36 +426,36 @@ model ExpansionPattern {
 }
 
 model GoogleSheetsCredential {
-  id                      String   @id @default(cuid())
-  user_id                 String   @unique
+  id                      String    @id @default(cuid())
+  user_id                 String    @unique
   connected_email         String?
   refresh_token_encrypted String
   scope                   String?
   token_type              String?
   /// invalid_grant al rinnovo del token (T-906): la credenziale va ricollegata; un nuovo consenso la azzera.
   reauth_required_at      DateTime?
-  created_at              DateTime @default(now())
-  updated_at              DateTime @updatedAt
-  user                    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+  user                    User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("google_sheets_credentials")
 }
 
 model UserOnboardingProgress {
-  id                 String            @id @default(cuid())
-  user_id            String            @unique
-  status             OnboardingStatus  @default(NEEDS_CHOICE)
-  current_step       OnboardingStep    @default(WELCOME)
-  entry_mode         OnboardingEntryMode @default(NONE)
-  active_project_id  String?
+  id                   String              @id @default(cuid())
+  user_id              String              @unique
+  status               OnboardingStatus    @default(NEEDS_CHOICE)
+  current_step         OnboardingStep      @default(WELCOME)
+  entry_mode           OnboardingEntryMode @default(NONE)
+  active_project_id    String?
   active_subproject_id String?
-  first_export_at    DateTime?
-  completed_at       DateTime?
-  created_at         DateTime          @default(now())
-  updated_at         DateTime          @updatedAt
-  user               User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  active_project     Project?          @relation("OnboardingActiveProject", fields: [active_project_id], references: [id], onDelete: SetNull)
-  active_subproject  Subproject?       @relation("OnboardingActiveSubproject", fields: [active_subproject_id], references: [id], onDelete: SetNull)
+  first_export_at      DateTime?
+  completed_at         DateTime?
+  created_at           DateTime            @default(now())
+  updated_at           DateTime            @updatedAt
+  user                 User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  active_project       Project?            @relation("OnboardingActiveProject", fields: [active_project_id], references: [id], onDelete: SetNull)
+  active_subproject    Subproject?         @relation("OnboardingActiveSubproject", fields: [active_subproject_id], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([current_step])
@@ -508,7 +518,46 @@ model AppSetting {
   @@map("app_settings")
 }
 
+/// Outbox delle email transazionali (T-1402): con EMAIL_TRANSPORT=outbox (sviluppo e test) i messaggi finiscono qui
+/// invece che a Resend.
+model EmailOutbox {
+  id         String   @id
+  to_address String
+  template   String
+  locale     String
+  subject    String
+  html       String
+  text       String
+  created_at DateTime @default(now())
 
+  @@index([created_at])
+  @@map("email_outbox")
+}
 
+/// Token di verifica dell'email (T-1403): solo l'hash SHA-256 esadecimale del token, valido 24 h, monouso.
+model EmailVerificationToken {
+  id         String    @id @default(cuid())
+  user_id    String
+  token_hash String    @unique @db.Char(64)
+  expires_at DateTime
+  used_at    DateTime?
+  created_at DateTime  @default(now())
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([user_id, created_at])
+  @@map("email_verification_tokens")
+}
 
+/// Token di recupero password (T-1404): solo l'hash SHA-256 esadecimale del token, valido 1 h, monouso.
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  user_id    String
+  token_hash String    @unique @db.Char(64)
+  expires_at DateTime
+  used_at    DateTime?
+  created_at DateTime  @default(now())
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("password_reset_tokens")
+}

@@ -7,6 +7,7 @@ import { RegisterForm } from "@/components/register-form";
 import { isPublicSignupEnabled } from "@/lib/auth/config";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
+import { LEGAL_TERMS_VERSION } from "@/lib/legal/version";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function RegisterPage({
       {signupEnabled ? (
         <>
           <p className="text-sm text-slate-600">{t("subtitle")}</p>
-          <RegisterForm nextPath={nextPath} />
+          <RegisterForm nextPath={nextPath} termsVersion={LEGAL_TERMS_VERSION} />
         </>
       ) : (
         <>

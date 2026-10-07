@@ -77,6 +77,19 @@ const I18N_MIGRATED_FILES = [
   "components/settings-card.tsx",
   "components/locale-code-options.tsx",
   "components/project-advanced-fields.tsx",
+  // T-1401…T-1405: verifica dell'email, recupero password e consenso ai termini nascono già con il catalogo.
+  "app/verify-email/page.tsx",
+  "components/token-link-forms.tsx",
+  "components/email-verification-banner.tsx",
+  "app/forgot-password/page.tsx",
+  "components/forgot-password-form.tsx",
+  "app/reset-password/page.tsx",
+  "app/accept-terms/page.tsx",
+  "components/accept-terms-form.tsx",
+  "components/terms-consent-checkbox.tsx",
+  "components/token-link-card.tsx",
+  "components/submit-button.tsx",
+  "components/form-done.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

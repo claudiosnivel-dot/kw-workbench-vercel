@@ -35,7 +35,7 @@ const DROP_FAILING_TRIGGER = "DROP TRIGGER IF EXISTS t1001_fail_progress ON user
 const DROP_FAILING_FUNCTION = "DROP FUNCTION IF EXISTS t1001_fail_progress()";
 
 async function createOnboardingUser(username: string) {
-  const session = await createUserWithSession({ username });
+  const session = await createUserWithSession({ displayName: username });
   await prisma.userOnboardingProgress.create({
     data: { user_id: session.user.id, status: "IN_PROGRESS", current_step: "PROJECT_CREATE", entry_mode: "RESUME" },
   });
@@ -169,7 +169,7 @@ describe("POST /api/onboarding/section", () => {
 describe("/onboarding/project-create con un progetto attivo", () => {
   // covers: AC-1001-4
   it("in RESTART al passo PROJECT_TARGETING mostra il progetto e 'Continua' invece del form", async () => {
-    const { user } = await createUserWithSession({ username: "t1001-page" });
+    const { user } = await createUserWithSession({ displayName: "t1001-page" });
     const project = await prisma.project.create({ data: { name: "Blog", owner_user_id: user.id } });
     await prisma.userOnboardingProgress.create({
       data: {
@@ -180,7 +180,7 @@ describe("/onboarding/project-create con un progetto attivo", () => {
         active_project_id: project.id,
       },
     });
-    auth.user = { id: user.id, username: user.username, role: user.role, isRootAdmin: false };
+    auth.user = { id: user.id, displayName: user.display_name, role: user.role, isRootAdmin: false };
     const { default: ProjectCreatePage } = await import("@/app/onboarding/project-create/page");
 
     const html = renderToStaticMarkup(await ProjectCreatePage());

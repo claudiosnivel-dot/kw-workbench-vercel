@@ -19,9 +19,11 @@
     "description": "Workspace web per keyword research"
   },
   "auth": {
-    "username": "Username",
+    "email": "Email",
+    "displayName": "Nome (facoltativo)",
     "password": "Password",
     "confirmPassword": "Conferma password",
+    "acceptTerms": "Accetto i <terms>termini di servizio</terms> e la <privacy>informativa sulla privacy</privacy>.",
     "login": {
       "title": "Accesso",
       "subtitle": "Autenticati per accedere al tuo workspace.",
@@ -29,6 +31,7 @@
       "submitting": "Accesso in corso...",
       "noAccount": "Non hai un account?",
       "registerLink": "Registrati",
+      "forgotPassword": "Password dimenticata?",
       "notices": {
         "session_ended": "La sessione è terminata. Accedi di nuovo."
       }
@@ -41,7 +44,48 @@
       "submit": "Crea account",
       "submitting": "Registrazione in corso...",
       "haveAccount": "Hai già un account?",
-      "loginLink": "Accedi"
+      "loginLink": "Accedi",
+      "checkEmail": "Controlla la tua email: ti abbiamo scritto per completare la registrazione. Poi accedi con email e password."
+    },
+    "verify": {
+      "title": "Verifica email",
+      "intro": "Conferma il tuo indirizzo email per completare la registrazione.",
+      "submit": "Conferma email",
+      "submitting": "Verifica in corso...",
+      "success": "Email verificata: ora puoi avviare le estrazioni.",
+      "missingToken": "Il link di verifica non è completo: aprilo di nuovo dalla email o chiedi un nuovo invio.",
+      "goToApp": "Vai all'app"
+    },
+    "forgot": {
+      "title": "Password dimenticata",
+      "intro": "Inserisci l'email del tuo account: se è registrata riceverai un link per scegliere una nuova password.",
+      "submit": "Invia il link",
+      "submitting": "Invio in corso...",
+      "sent": "Se l'email è registrata, riceverai a breve un link valido per 1 ora.",
+      "backToLogin": "Torna al login"
+    },
+    "reset": {
+      "title": "Nuova password",
+      "intro": "Scegli la nuova password del tuo account: le sessioni aperte su ogni dispositivo verranno chiuse.",
+      "password": "Nuova password",
+      "confirmPassword": "Conferma nuova password",
+      "submit": "Imposta la password",
+      "submitting": "Salvataggio...",
+      "done": "Password aggiornata: accedi con la nuova password.",
+      "missingToken": "Il link non è completo: aprilo di nuovo dalla email o richiedine uno nuovo.",
+      "goToLogin": "Vai al login"
+    },
+    "terms": {
+      "title": "Termini aggiornati",
+      "intro": "Per continuare a usare l'app accetta la versione corrente dei termini di servizio e dell'informativa sulla privacy.",
+      "submit": "Accetta e continua",
+      "submitting": "Salvataggio..."
+    },
+    "verifyBanner": {
+      "text": "Il tuo indirizzo email non è ancora verificato: apri il link che ti abbiamo inviato per poter avviare le estrazioni.",
+      "resend": "Invia di nuovo l'email",
+      "resending": "Invio...",
+      "sent": "Email inviata: controlla la posta."
     },
     "logout": {
       "submit": "Esci",
@@ -436,19 +480,29 @@
     "AUTH_REQUIRED": "Sessione non valida o scaduta. Effettua di nuovo il login.",
     "FORBIDDEN": "Operazione non autorizzata.",
     "NOT_FOUND": "Risorsa non trovata.",
-    "CONFLICT": "Esiste già un elemento con questi dati, per esempio uno username già in uso.",
+    "CONFLICT": "Esiste già un elemento con questi dati.",
     "INTERNAL_ERROR": "Errore interno del server. Riprova tra qualche istante.",
     "INVALID_CREDENTIALS": "Credenziali non valide",
     "ACCOUNT_SUSPENDED": "Account sospeso. Contatta l'amministratore.",
     "REGISTRATION_UNAVAILABLE": "Registrazione non disponibile con autenticazione disabilitata.",
     "SIGNUP_DISABLED": "Registrazione pubblica disabilitata.",
-    "CREDENTIALS_REQUIRED": "Username e password sono obbligatori.",
+    "CREDENTIALS_REQUIRED": "Email e password sono obbligatorie.",
     "PASSWORD_MISMATCH": "Password e conferma non coincidono.",
     "CURRENT_PASSWORD_REQUIRED": "La password attuale è obbligatoria.",
     "CURRENT_PASSWORD_INVALID": "La password attuale non è valida.",
     "NO_CHANGES": "Nessuna modifica da salvare.",
     "USER_NOT_FOUND": "Utente non trovato.",
     "SELF_ACTION_FORBIDDEN": "Non puoi modificare o eliminare il tuo account dalla gestione utenti.",
+    "EMAIL_INVALID": "Email non valida.",
+    "EMAIL_TAKEN": "Email già registrata.",
+    "EMAIL_NOT_VERIFIED": "Verifica la tua email prima di avviare un'estrazione.",
+    "EMAIL_ALREADY_VERIFIED": "La tua email è già verificata.",
+    "EMAIL_UNAVAILABLE": "L'invio delle email non è disponibile in questo momento: riprova più tardi.",
+    "VERIFICATION_TOKEN_INVALID": "Link di verifica non valido o scaduto: chiedi un nuovo invio.",
+    "RESET_TOKEN_INVALID": "Link di reimpostazione non valido o scaduto: richiedine uno nuovo.",
+    "TERMS_NOT_ACCEPTED": "Per continuare accetta termini di servizio e informativa sulla privacy.",
+    "TERMS_VERSION_CHANGED": "I termini sono cambiati: ricarica la pagina e accetta la nuova versione.",
+    "RATE_LIMITED": "Troppe richieste: riprova tra poco.",
     "LOCALE_UNSUPPORTED": "Lingua non supportata.",
     "PROJECT_NOT_FOUND": "Progetto non trovato.",
     "SECTION_NOT_FOUND": "Sezione non trovata.",
@@ -639,10 +693,11 @@
     },
     "account": {
       "title": "Account",
-      "intro": "Aggiorna username e password del tuo account personale.",
-      "activeUsername": "Username attivo:",
-      "newUsername": "Nuovo username",
-      "usernamePlaceholder": "username",
+      "intro": "Aggiorna il nome mostrato e la password del tuo account personale.",
+      "accountEmail": "Email:",
+      "activeDisplayName": "Nome attuale:",
+      "newDisplayName": "Nuovo nome",
+      "displayNamePlaceholder": "Nome mostrato",
       "currentPassword": "Password attuale (obbligatoria)",
       "currentPasswordPlaceholder": "Password attuale",
       "newPassword": "Nuova password (opzionale)",
@@ -707,7 +762,7 @@
       "suspended": "Sospesi"
     },
     "filters": {
-      "search": "Cerca username",
+      "search": "Cerca email o nome",
       "searchPlaceholder": "es. mario",
       "role": "Ruolo",
       "status": "Stato",
@@ -725,7 +780,7 @@
     "manage": {
       "title": "Gestione utenti",
       "columns": {
-        "username": "Username",
+        "user": "Utente",
         "role": "Ruolo",
         "status": "Stato",
         "created": "Creato",
@@ -733,6 +788,7 @@
         "actions": "Azioni"
       },
       "rootBadge": "Root Admin",
+      "noEmail": "senza email (account legacy)",
       "save": "Salva",
       "newPasswordPlaceholder": "Nuova password",
       "resetPassword": "Reset password",
@@ -741,7 +797,7 @@
       "previous": "Precedente",
       "next": "Successiva",
       "updated": "Utente aggiornato con successo.",
-      "deleteConfirm": "Eliminare definitivamente l'utente \"{username}\"?",
+      "deleteConfirm": "Eliminare definitivamente l'utente \"{name}\"?",
       "deleted": "Utente eliminato definitivamente."
     },
     "spend": {
@@ -801,6 +857,40 @@
       "disconnecting": "Disconnessione...",
       "disconnect": "Disconnetti Google Sheets",
       "disconnectConfirm": "Disconnettere Google Sheets da questo account?"
+    }
+  },
+  "emails": {
+    "greeting": "Ciao {name},",
+    "linkHint": "Se il pulsante non funziona, copia questo indirizzo nel browser:",
+    "footer": "Hai ricevuto questa email per un'azione sul tuo account. Se non sei stato tu, puoi ignorarla.",
+    "verify": {
+      "subject": "Conferma il tuo indirizzo email",
+      "intro": "conferma il tuo indirizzo email per completare la registrazione.",
+      "action": "Conferma email",
+      "expiry": "Il link scade tra 24 ore."
+    },
+    "passwordReset": {
+      "subject": "Reimposta la password",
+      "intro": "abbiamo ricevuto una richiesta per reimpostare la password del tuo account.",
+      "action": "Scegli una nuova password",
+      "expiry": "Il link scade tra 1 ora e si può usare una sola volta."
+    },
+    "accountExists": {
+      "subject": "Hai già un account",
+      "intro": "qualcuno ha provato a registrarsi con questo indirizzo email, che ha già un account. Se eri tu, accedi oppure recupera la password.",
+      "action": "Accedi",
+      "reset": "Se non ricordi la password, puoi reimpostarla da qui:"
+    },
+    "workspaceInvite": {
+      "subject": "Invito nel workspace {workspace}",
+      "intro": "{inviter} ti ha invitato a collaborare nel workspace {workspace}.",
+      "action": "Accetta l'invito",
+      "expiry": "L'invito scade tra 7 giorni."
+    },
+    "billingNotice": {
+      "subject": "Avviso sul tuo abbonamento",
+      "intro": "ci sono novità sul tuo abbonamento {plan}, con data di riferimento {date}.",
+      "action": "Apri l'app"
     }
   }
 }

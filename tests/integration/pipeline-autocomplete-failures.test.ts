@@ -27,7 +27,7 @@ const fetchMock = vi.fn(async (input: string | URL | Request) => {
 });
 
 async function createSectionWithPreviousRun() {
-  const { user } = await createUserWithSession({ username: "t306-owner" });
+  const { user } = await createUserWithSession({ displayName: "t306-owner" });
   const project = await prisma.project.create({
     data: {
       name: "Autocomplete in errore",

@@ -58,7 +58,7 @@ describe("x-request-id nel proxy", () => {
 describe("job di estrazione fallito", () => {
   // covers: AC-602-4
   it("termina failed e il logger emette job_failed con jobId e lo stack dell'errore", async () => {
-    const { user } = await createUserWithSession({ username: "t602-owner" });
+    const { user } = await createUserWithSession({ displayName: "t602-owner" });
     const project = await prisma.project.create({ data: { name: "Progetto T-602", owner_user_id: user.id } });
     const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
     const { job } = await enqueueExtractionJob(project.id, section.id);

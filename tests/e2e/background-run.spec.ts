@@ -1,11 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/security/password";
+import { createE2EUser } from "./credentials";
 
 // Utente dedicato: il progetto e i job di questo file non compaiono nelle pagine fotografate dall'utente seed.
 // Password generata a ogni esecuzione, mai una credenziale reale.
-const USERNAME = "e2e-background-run";
+const EMAIL = "e2e-background-run@example.test";
 const PASSWORD = randomBytes(18).toString("hex");
 
 let userId = "";
@@ -15,7 +15,7 @@ let secondSectionId = "";
 let runningJobId = "";
 
 test.beforeAll(async () => {
-  const user = await prisma.user.create({ data: { username: USERNAME, password_hash: await hashPassword(PASSWORD) } });
+  const user = await createE2EUser(EMAIL, PASSWORD);
   userId = user.id;
   await prisma.userOnboardingProgress.create({
     data: { user_id: user.id, status: "COMPLETED", current_step: "REVIEW_EXPORT", completed_at: new Date() },
@@ -67,7 +67,7 @@ test.describe("estrazione in background", () => {
   // covers: AC-1205-4
   test("l'avanzamento sopravvive al ricaricamento e una nuova estrazione arriva ai risultati", async ({ page }) => {
     test.setTimeout(120_000);
-    const login = await page.request.post("/api/auth/login", { data: { username: USERNAME, password: PASSWORD } });
+    const login = await page.request.post("/api/auth/login", { data: { email: EMAIL, password: PASSWORD } });
     expect(login.status()).toBe(200);
 
     await page.goto(`/projects/${projectId}?sectionId=${firstSectionId}`);

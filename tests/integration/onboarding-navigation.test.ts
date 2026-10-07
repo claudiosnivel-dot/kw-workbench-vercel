@@ -28,12 +28,12 @@ async function createOnboardingUser(
   username: string,
   progress: { status: OnboardingStatus; current_step: OnboardingStep; entry_mode: OnboardingEntryMode }
 ) {
-  const session = await createUserWithSession({ username });
+  const session = await createUserWithSession({ displayName: username });
   const project = await prisma.project.create({ data: { name: "Blog", owner_user_id: session.user.id } });
   await prisma.userOnboardingProgress.create({
     data: { user_id: session.user.id, ...progress, active_project_id: project.id },
   });
-  auth.user = { id: session.user.id, username: session.user.username, role: session.user.role, isRootAdmin: false };
+  auth.user = { id: session.user.id, displayName: session.user.display_name, role: session.user.role, isRootAdmin: false };
   return { ...session, projectId: project.id };
 }
 

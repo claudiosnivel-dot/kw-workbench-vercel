@@ -51,7 +51,7 @@ const STILL_PRODUCED = ["scarpe running", "scarpe trail", "scarpe usate", DESELE
 const NO_LONGER_PRODUCED = ["scarpe tennis", "scarpe gratis"];
 
 async function createProject() {
-  const { user } = await createUserWithSession({ username: "t705-owner" });
+  const { user } = await createUserWithSession({ displayName: "t705-owner" });
   const project = await prisma.project.create({
     data: {
       name: "Re-run",

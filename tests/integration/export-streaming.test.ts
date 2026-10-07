@@ -50,7 +50,7 @@ function errorLines(written: string[]): string[] {
 beforeAll(async () => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");
   await resetDatabase();
-  const owner = await createUserWithSession({ username: "t805-owner" });
+  const owner = await createUserWithSession({ displayName: "t805-owner" });
   ownerCookie = owner.cookie;
   const project = await prisma.project.create({
     data: { name: "Streaming", owner_user_id: owner.user.id, language_code: "it", country_code: "IT" },
@@ -166,7 +166,7 @@ describe("export in streaming", () => {
     "un errore dell'onboarding non cambia l'export del proprietario; un altro utente riceve 404 senza letture",
     async () => {
       vi.mocked(markOnboardingExportCompleted).mockRejectedValueOnce(new Error("onboarding non aggiornato"));
-      const intruder = await createUserWithSession({ username: "t805-intruder" });
+      const intruder = await createUserWithSession({ displayName: "t805-intruder" });
       const written = captureStdout();
 
       const ownerResponse = await callRoute(exportProject, { url: exportUrl("csv"), cookie: ownerCookie, params: { id: projectId } });

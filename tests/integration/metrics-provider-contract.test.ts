@@ -42,7 +42,7 @@ beforeEach(async () => {
 describe("contratto MetricsProvider nella pipeline", () => {
   // covers: AC-901-4
   it("passa displayKeyword con gli accenti e il canonical, e salva la precisione restituita", async () => {
-    const { user } = await createUserWithSession({ username: "t901-owner" });
+    const { user } = await createUserWithSession({ displayName: "t901-owner" });
     const project = await prisma.project.create({
       data: {
         name: "Contratto metriche",

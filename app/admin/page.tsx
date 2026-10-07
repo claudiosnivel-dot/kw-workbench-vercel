@@ -48,7 +48,6 @@ export default async function AdminPage() {
       <AdminUsersDashboard
         viewer={{
           id: user.id,
-          username: user.username,
           isRootAdmin: user.isRootAdmin,
         }}
       />

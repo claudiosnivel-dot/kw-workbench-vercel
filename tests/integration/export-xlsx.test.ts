@@ -75,7 +75,7 @@ afterAll(() => {
 
 beforeEach(async () => {
   await resetDatabase();
-  const owner = await createUserWithSession({ username: "xlsx-owner" });
+  const owner = await createUserWithSession({ displayName: "xlsx-owner" });
   const project = await prisma.project.create({ data: { name: "Export XLSX", owner_user_id: owner.user.id } });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   cookie = owner.cookie;

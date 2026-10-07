@@ -31,7 +31,7 @@ describe("smoke DB di test", () => {
   // covers: AC-101-4
   it("resetDatabase svuota i dati e createUserWithSession firma un cookie valido", async () => {
     const owner = await prisma.user.create({
-      data: { username: "smoke-owner", password_hash: "not-a-real-hash" },
+      data: { display_name: "smoke-owner", password_hash: "not-a-real-hash" },
     });
     await prisma.project.create({ data: { name: "Smoke project", owner_user_id: owner.id } });
     const migrationsBefore = await countFinishedMigrations();
@@ -42,8 +42,8 @@ describe("smoke DB di test", () => {
     expect(await prisma.project.count()).toBe(0);
     expect(await countFinishedMigrations()).toBe(migrationsBefore);
 
-    const { cookie } = await createUserWithSession({ username: "smoke-user" });
-    const stored = await prisma.user.findUniqueOrThrow({ where: { username: "smoke-user" } });
+    const { cookie } = await createUserWithSession({ displayName: "smoke-user" });
+    const stored = await prisma.user.findUniqueOrThrow({ where: { email: "smoke-user@example.test" } });
     const token = cookie.replace(/^kwb_session=/, "");
     const session = await verifySessionToken(token);
 

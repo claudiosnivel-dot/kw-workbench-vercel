@@ -52,8 +52,8 @@ async function createProjectWithCandidates(ownerId: string, name: string, seeds:
 }
 
 async function createFixture(): Promise<Fixture> {
-  const a = await createUserWithSession({ username: "authz-a" });
-  const b = await createUserWithSession({ username: "authz-b" });
+  const a = await createUserWithSession({ displayName: "authz-a" });
+  const b = await createUserWithSession({ displayName: "authz-b" });
   const projectA = await createProjectWithCandidates(a.user.id, "Progetto A", ["seed a1", "seed a2", "seed a3"], 5);
   const projectB = await createProjectWithCandidates(b.user.id, "Progetto B", [], 2);
   const candidatesB = await prisma.keywordCandidate.findMany({

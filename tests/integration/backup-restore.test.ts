@@ -35,7 +35,7 @@ function testDbContainer(): string {
 async function seedSource(): Promise<void> {
   await resetDatabase();
   const users = await Promise.all(
-    ["t604-a", "t604-b", "t604-c"].map((username) => prisma.user.create({ data: { username, password_hash: "hash-fittizio" } }))
+    ["t604-a", "t604-b", "t604-c"].map((username) => prisma.user.create({ data: { display_name: username, password_hash: "hash-fittizio" } }))
   );
   const projects = await Promise.all(
     users.slice(0, 2).map((user, index) => prisma.project.create({ data: { name: `Progetto ${index}`, owner_user_id: user.id } }))

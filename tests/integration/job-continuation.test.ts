@@ -60,7 +60,7 @@ async function flushAfter(): Promise<void> {
 
 /** Sezione con 1 seed, 3 pattern e l'espansione alfabetica: 30 query previste. */
 async function createPendingJob() {
-  const { user } = await createUserWithSession({ username: "t1203-owner" });
+  const { user } = await createUserWithSession({ displayName: "t1203-owner" });
   const project = await prisma.project.create({
     data: {
       name: "Job T-1203",

@@ -37,7 +37,7 @@ function planNodes(node: PlanNode): PlanNode[] {
 }
 
 async function seedCandidates(): Promise<string> {
-  const user = await prisma.user.create({ data: { username: "indici", password_hash: "x" } });
+  const user = await prisma.user.create({ data: { display_name: "indici", password_hash: "x" } });
   const project = await prisma.project.create({
     data: { name: "Indici", owner_user_id: user.id, language_code: "it", country_code: "IT", autocomplete_provider: "MOCK" },
   });

@@ -1,9 +1,6 @@
-import { getEnv, getIntEnv } from "@/lib/env";
+import { getAdminEmail, getEnv, getIntEnv } from "@/lib/env";
 
 export const SESSION_COOKIE_NAME = "kwb_session";
-
-const DEVELOPMENT_BOOTSTRAP_PASSWORD = "changeme";
-const MIN_BOOTSTRAP_PASSWORD_LENGTH = 12;
 
 /** Segreti senza valore di default, in nessun ambiente: in produzione li impone già parseEnv. */
 function requireSecret(name: "APP_SESSION_SECRET" | "APP_ENCRYPTION_KEY", value: string | undefined): string {
@@ -17,29 +14,17 @@ export function isAuthEnabled(): boolean {
   return getEnv().authEnabled;
 }
 
-export function getAuthUsername(): string {
-  return getEnv().authUsername;
-}
-
-/** Password del primo utente: in produzione niente default, niente changeme e almeno 12 caratteri. */
-export function getAuthPassword(): string {
-  const { isProduction, authPassword } = getEnv();
-
-  if (!isProduction) {
-    return authPassword ?? DEVELOPMENT_BOOTSTRAP_PASSWORD;
+/**
+ * Email del root admin iniziale (T-1401): APP_ADMIN_EMAIL, senza default in nessun ambiente (in produzione la impone
+ * già parseEnv). Serve solo al bootstrap con la tabella users vuota e al seed.
+ */
+export function getRootAdminEmail(): string {
+  getEnv();
+  const email = getAdminEmail();
+  if (!email) {
+    throw new Error("APP_ADMIN_EMAIL non impostata: serve a creare il root admin con la tabella users vuota");
   }
-
-  if (
-    !authPassword ||
-    authPassword === DEVELOPMENT_BOOTSTRAP_PASSWORD ||
-    authPassword.length < MIN_BOOTSTRAP_PASSWORD_LENGTH
-  ) {
-    throw new Error(
-      `APP_AUTH_PASSWORD non valida per il bootstrap del primo utente in produzione: obbligatoria, diversa dal default e lunga almeno ${MIN_BOOTSTRAP_PASSWORD_LENGTH} caratteri`
-    );
-  }
-
-  return authPassword;
+  return email;
 }
 
 export function isPublicSignupEnabled(): boolean {

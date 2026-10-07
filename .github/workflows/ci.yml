@@ -111,4 +111,10 @@ jobs:
           echo "APP_SESSION_SECRET=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
           echo "APP_ENCRYPTION_KEY=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
           echo "JOB_SIGNING_SECRET=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          echo "RESEND_API_KEY=re_ci_$(openssl rand -hex 12)" >> "$GITHUB_ENV"
+          # Root admin ed email transazionali obbligatori in produzione (T-1401, T-1402): valori fittizi.
+          echo "APP_ADMIN_EMAIL=ci-admin@example.test" >> "$GITHUB_ENV"
+          echo "EMAIL_TRANSPORT=resend" >> "$GITHUB_ENV"
+          echo "EMAIL_FROM=noreply@example.test" >> "$GITHUB_ENV"
+          echo "APP_PUBLIC_URL=https://ci.example.test" >> "$GITHUB_ENV"
       - run: npm run build

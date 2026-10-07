@@ -2,11 +2,11 @@
 // focus della modale di export Sheets, anteprima del tema non salvata ripristinata, titolo dal branding.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { E2E_USER_PASSWORD, E2E_USERNAME } from "./credentials";
+import { E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 
 async function login(page: Page): Promise<void> {
   const response = await page.request.post("/api/auth/login", {
-    data: { username: E2E_USERNAME, password: E2E_USER_PASSWORD },
+    data: { email: E2E_EMAIL, password: E2E_USER_PASSWORD },
   });
   expect(response.status()).toBe(200);
 }

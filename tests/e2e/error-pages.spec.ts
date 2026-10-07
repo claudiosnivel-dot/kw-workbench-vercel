@@ -1,14 +1,13 @@
 // Gate di T-502 (AC-502-4, AC-502-5): sessione terminata e pagina inesistente senza «Application error».
 import { expect, test, type Page } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/security/password";
-import { E2E_USER_PASSWORD, E2E_USERNAME } from "./credentials";
+import { createE2EUser, E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 
-const SUSPENDED_USERNAME = "e2e-sospeso";
+const SUSPENDED_EMAIL = "e2e-sospeso@example.test";
 
-async function submitLogin(page: Page, username: string): Promise<void> {
+async function submitLogin(page: Page, email: string): Promise<void> {
   await page.goto("/login");
-  await page.getByLabel("Username").fill(username);
+  await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(E2E_USER_PASSWORD);
   await page.getByRole("button", { name: "Accedi" }).click();
   await page.waitForURL((url) => url.pathname === "/");
@@ -20,15 +19,13 @@ test.describe("pagine di errore", () => {
     page,
     context,
   }) => {
-    await prisma.user.deleteMany({ where: { username: SUSPENDED_USERNAME } });
-    const user = await prisma.user.create({
-      data: { username: SUSPENDED_USERNAME, password_hash: await hashPassword(E2E_USER_PASSWORD) },
-    });
+    await prisma.user.deleteMany({ where: { email: SUSPENDED_EMAIL } });
+    const user = await createE2EUser(SUSPENDED_EMAIL, E2E_USER_PASSWORD);
     await prisma.userOnboardingProgress.create({
       data: { user_id: user.id, status: "COMPLETED", current_step: "REVIEW_EXPORT", completed_at: new Date() },
     });
 
-    await submitLogin(page, SUSPENDED_USERNAME);
+    await submitLogin(page, SUSPENDED_EMAIL);
     await prisma.user.update({ where: { id: user.id }, data: { status: "SUSPENDED" } });
 
     const statuses: number[] = [];
@@ -43,7 +40,7 @@ test.describe("pagine di errore", () => {
 
   // covers: AC-502-5
   test("un progetto inesistente risponde 404 con la pagina «Pagina non trovata»", async ({ page }) => {
-    await submitLogin(page, E2E_USERNAME);
+    await submitLogin(page, E2E_EMAIL);
 
     const response = await page.goto("/projects/id-inesistente");
 
