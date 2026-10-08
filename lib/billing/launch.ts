@@ -12,7 +12,7 @@ import {
 import { AppError } from "@/lib/http/errors";
 import { getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
-import { areLegalTextsPublished } from "@/lib/legal/version";
+import { areLegalTextsPublished } from "@/lib/legal/documents";
 import { logger } from "@/lib/observability/logger";
 import { isTurnstileReady } from "@/lib/security/turnstile";
 

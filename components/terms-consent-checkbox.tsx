@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { marketingPath } from "@/lib/marketing/routes";
 
-/** Casella obbligatoria di accettazione di termini e privacy (T-1405), con i link alle pagine legali di T-1803. */
+/** Casella obbligatoria di accettazione di termini e privacy (T-1405), con i link alle pagine legali di T-1803 nella lingua corrente. */
 export function TermsConsentCheckbox({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
   const t = useTranslations("auth");
+  const locale = useLocale();
 
   return (
     <label className="flex items-start gap-2 text-sm text-slate-600" htmlFor="acceptTerms">
@@ -20,12 +22,12 @@ export function TermsConsentCheckbox({ checked, onChange }: { checked: boolean; 
       <span>
         {t.rich("acceptTerms", {
           terms: (chunks) => (
-            <Link href="/terms" className="font-medium underline">
+            <Link href={marketingPath("terms", locale)} className="font-medium underline">
               {chunks}
             </Link>
           ),
           privacy: (chunks) => (
-            <Link href="/privacy" className="font-medium underline">
+            <Link href={marketingPath("privacy", locale)} className="font-medium underline">
               {chunks}
             </Link>
           ),

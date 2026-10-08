@@ -3,6 +3,8 @@ import { isAuthEnabled, SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { PAGE_PATH_HEADER } from "@/lib/auth/safe-next-path";
 import { verifySessionToken } from "@/lib/auth/session";
 import { authRequiredResponse } from "@/lib/http/auth-required";
+import { LOCALE_COOKIE, PAGE_LOCALE_HEADER, resolveLocale } from "@/lib/i18n/locale";
+import { findMarketingRoute, marketingPath } from "@/lib/marketing/routes";
 import { getRequestId, REQUEST_ID_HEADER } from "@/lib/observability/request-id";
 import { buildCsp } from "@/lib/security/csp";
 
@@ -28,6 +30,8 @@ const PUBLIC_PATHS = new Set([
   "/api/locale",
   // Webhook di Paddle (T-1603): nessuna sessione, solo la firma HMAC verificata dalla rotta.
   "/api/billing/webhook",
+  // Modulo contatti (T-1805): protetto da rate limit e CAPTCHA nella rotta.
+  "/api/contact",
 ]);
 
 // Passi dei job in background (T-1203): nessuna sessione, solo la firma HMAC verificata dalla rotta.
@@ -36,8 +40,16 @@ const INTERNAL_JOBS_PREFIX = "/api/internal/jobs/";
 // File di public serviti senza login: un solo segmento (es. /robots.txt) con estensione ammessa.
 const PUBLIC_ROOT_FILE = /^\/[^/]+\.(?:txt|xml|ico|png|jpg|jpeg|svg|webp|webmanifest)$/;
 
+// Immagini Open Graph delle pagine pubbliche (T-1801): solo PNG con nome semplice dentro public/og/.
+const OPEN_GRAPH_IMAGE = /^\/og\/[a-z0-9-]+\.png$/;
+
 function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_PATHS.has(pathname)) {
+  // Pagine pubbliche (T-1801…T-1805): solo i percorsi esatti di MARKETING_ROUTES, mai un prefisso come /en (CWE-863).
+  if (PUBLIC_PATHS.has(pathname) || findMarketingRoute(pathname)) {
+    return true;
+  }
+
+  if (OPEN_GRAPH_IMAGE.test(pathname)) {
     return true;
   }
 
@@ -75,6 +87,13 @@ function forward(request: NextRequest, requestId: string): NextResponse {
   requestHeaders.set(REQUEST_ID_HEADER, requestId);
   // Percorso richiesto per il gate dei termini delle pagine (T-1405): sempre sovrascritto, mai un valore del client.
   requestHeaders.set(PAGE_PATH_HEADER, request.nextUrl.pathname + request.nextUrl.search);
+  // Lingua del percorso delle pagine pubbliche (T-1801): impostata solo qui, rimossa se arriva dal client.
+  const marketingRoute = findMarketingRoute(request.nextUrl.pathname);
+  if (marketingRoute) {
+    requestHeaders.set(PAGE_LOCALE_HEADER, marketingRoute.locale);
+  } else {
+    requestHeaders.delete(PAGE_LOCALE_HEADER);
+  }
 
   if (!isPageRequest(request)) {
     return NextResponse.next({ request: { headers: requestHeaders } });
@@ -115,6 +134,18 @@ async function route(request: NextRequest, requestId: string): Promise<Response>
 
   if (pathname.startsWith("/api/")) {
     return authRequiredResponse({ requestId });
+  }
+
+  // D-16 e D-28 emendata: l'anonimo su / va alla landing nella lingua del browser (cookie della lingua, poi
+  // Accept-Language, default it); l'utente autenticato resta sulla dashboard.
+  if (pathname === "/") {
+    const locale = resolveLocale({
+      cookieLocale: request.cookies.get(LOCALE_COOKIE)?.value ?? null,
+      acceptLanguage: request.headers.get("accept-language"),
+    });
+    const response = NextResponse.redirect(new URL(marketingPath("home", locale), request.url));
+    response.headers.set("Vary", "Accept-Language, Cookie");
+    return response;
   }
 
   const loginUrl = new URL("/login", request.url);

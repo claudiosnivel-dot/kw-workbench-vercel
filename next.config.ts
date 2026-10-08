@@ -24,6 +24,8 @@ const TOKEN_LINK_PAGES = ["/verify-email", "/forgot-password", "/reset-password"
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Testi legali letti dal disco a runtime (T-1803): pagine legali e checklist del lancio (T-1606) nelle funzioni.
+  outputFileTracingIncludes: { "/**": ["./content/legal/**/*"] },
   async headers() {
     return [
       {

@@ -608,6 +608,8 @@ model EmailOutbox {
   subject    String
   html       String
   text       String
+  /// Reply-To del messaggio (T-1805): l'email del mittente del modulo contatti, null per le altre email.
+  reply_to   String?
   created_at DateTime @default(now())
 
   @@index([created_at])

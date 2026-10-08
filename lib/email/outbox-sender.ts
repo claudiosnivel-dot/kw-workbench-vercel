@@ -27,6 +27,7 @@ export const databaseOutbox: OutboxStore = {
         subject: message.subject,
         html: message.html,
         text: message.text,
+        reply_to: message.replyTo ?? null,
       },
     });
   },

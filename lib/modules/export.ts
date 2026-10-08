@@ -1,6 +1,7 @@
 import { PassThrough, Readable } from "node:stream";
 import ExcelJS from "exceljs";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { textStream } from "@/lib/http/text-stream";
 import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 import { buildResultsClauses, type ResultsFilters } from "@/lib/modules/results-filters";
 import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
@@ -8,8 +9,11 @@ import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 
 
-/** Campi della candidata letti dall'export, nell'ordine delle colonne che seguono subproject_name. */
-const EXPORT_FIELD_SELECT = {
+/**
+ * Campi della candidata letti dall'export, nell'ordine delle colonne che seguono subproject_name; li riusa l'export
+ * dell'account (T-1804).
+ */
+export const EXPORT_FIELD_SELECT = {
   keyword: true,
   normalized_keyword: true,
   canonical_keyword: true,
@@ -278,29 +282,6 @@ async function* jsonChunks(rows: AsyncIterable<ExportRow>): AsyncGenerator<strin
     }
   }
   yield `${chunk}${empty ? "]" : "\n]"}`;
-}
-
-/** Stream a richiesta: ogni lettura del client chiede il pezzo successivo (e quindi il blocco successivo). */
-function textStream(chunks: AsyncGenerator<string>, onError: (error: unknown) => void): ReadableStream<Uint8Array> {
-  const encoder = new TextEncoder();
-  return new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      try {
-        const { value, done } = await chunks.next();
-        if (done) {
-          controller.close();
-        } else {
-          controller.enqueue(encoder.encode(value));
-        }
-      } catch (error) {
-        onError(error);
-        controller.error(error);
-      }
-    },
-    async cancel() {
-      await chunks.return(undefined);
-    },
-  });
 }
 
 /**

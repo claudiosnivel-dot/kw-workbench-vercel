@@ -1,7 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
-import { APP_TIME_ZONE, type AppLocale, LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/locale";
+import { APP_TIME_ZONE, type AppLocale, isSupportedLocale, LOCALE_COOKIE, PAGE_LOCALE_HEADER, resolveLocale } from "@/lib/i18n/locale";
 import en from "@/messages/en.json";
 import it from "@/messages/it.json";
 
@@ -9,15 +9,18 @@ import it from "@/messages/it.json";
 const MESSAGES: Record<AppLocale, typeof it> = { it, en };
 
 /**
- * Lingua della richiesta (T-1301): preferenza dell'utente della sessione, poi cookie kwb_locale, poi
- * Accept-Language, poi it. L'utente è quello risolto una volta per richiesta e condiviso con il layout.
+ * Lingua della richiesta (T-1301): sulle pagine pubbliche quella del percorso (/it, /en, T-1801), passata dal proxy;
+ * altrimenti preferenza dell'utente della sessione, poi cookie kwb_locale, poi Accept-Language, poi it. L'utente è
+ * quello risolto una volta per richiesta e condiviso con il layout.
  */
 export default getRequestConfig(async () => {
-  const [user, cookieStore, headerStore] = await Promise.all([
-    getOptionalAuthenticatedUserFromCookies(),
-    cookies(),
-    headers(),
-  ]);
+  const headerStore = await headers();
+  const pageLocale = headerStore.get(PAGE_LOCALE_HEADER);
+  if (isSupportedLocale(pageLocale)) {
+    return { locale: pageLocale, messages: MESSAGES[pageLocale], timeZone: APP_TIME_ZONE };
+  }
+
+  const [user, cookieStore] = await Promise.all([getOptionalAuthenticatedUserFromCookies(), cookies()]);
 
   const locale = resolveLocale({
     userLocale: user?.uiLocale ?? null,

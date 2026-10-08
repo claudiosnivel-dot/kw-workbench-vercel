@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { vi } from "vitest";
 import { resetEnvForTests } from "@/lib/env";
+import type { TurnstileAction } from "@/lib/security/turnstile";
 
 /** Token fittizio documentato da Cloudflare: nei test siteverify è sempre simulato, nessuna chiamata di rete (T-1702). */
 export const TEST_TURNSTILE_TOKEN = "XXXX.DUMMY.TOKEN.XXXX";
@@ -13,17 +14,17 @@ function testAppHost(): string {
 }
 
 /** Risposta di siteverify riuscita per l'host di APP_PUBLIC_URL e l'action indicata. */
-export function siteverifySuccess(action: "register" | "password-reset" = "register"): Response {
+export function siteverifySuccess(action: TurnstileAction = "register"): Response {
   return Response.json({ success: true, hostname: testAppHost(), action, "error-codes": [] });
 }
 
 /**
  * Turnstile configurato con chiavi casuali non di test (generate a ogni esecuzione: mai chiavi reali) e, se manca,
  * APP_PUBLIC_URL su un host di prova; fetch verso siteverify passa dal mock restituito, che di default risponde success
- * per l'action indicata, mentre le altre richieste vanno al fetch originale. Per i test di registrazione e recupero
- * password con il CAPTCHA obbligatorio (T-1702).
+ * per l'action indicata, mentre le altre richieste vanno al fetch originale. Per i test di registrazione, recupero
+ * password e modulo contatti con il CAPTCHA obbligatorio (T-1702, T-1805).
  */
-export function configureTestTurnstile(action: "register" | "password-reset" = "register") {
+export function configureTestTurnstile(action: TurnstileAction = "register") {
   const secretKey = `0x4AAAA${randomBytes(12).toString("hex")}`;
   vi.stubEnv("TURNSTILE_SECRET_KEY", secretKey);
   vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", `0x4AAAA${randomBytes(8).toString("hex")}`);

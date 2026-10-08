@@ -33,6 +33,9 @@ deploy di produzione dopo il merge. Rischio accettato con D-05 (in produzione so
 - [ ] Se il rilascio contiene una migrazione: backup logico di produzione appena prima del merge
       (`docs/OPERATIONS.md`, «Backup e ripristino»).
 - [ ] Dopo il deploy: `/api/health` 200 con la `version` attesa e nessun errore nuovo su Sentry (T-601).
+- [ ] Prima di attivare il lancio commerciale (D-32) e a ogni cambio dei testi legali: `npm run legal:check` (T-1803)
+      esce con 0, cioè i 6 file di `content/legal/` esistono, nessuno è segnaposto e la `version` dei termini è
+      `LEGAL_TERMS_VERSION` di `lib/legal/version.ts`. Cambiare la costante chiede a ogni utente di riaccettare.
 
 ## Rollback
 

@@ -70,9 +70,10 @@ function TurnstileWidget({ siteKey, action, onToken }: { siteKey: string; action
 
 /**
  * CAPTCHA di un form pubblico (T-1702): con la site key il widget e il token da inviare come turnstileToken; senza
- * (Turnstile non configurato) nessun widget e token vuoto. reset() chiede un token nuovo dopo un invio.
+ * (Turnstile non configurato) nessun widget e token vuoto. reset() chiede un token nuovo dopo un invio; attach(campi)
+ * restituisce i campi con turnstileToken e chiede subito il token successivo (il token è monouso, T-1805).
  */
-export function useTurnstile(siteKey: string | null | undefined, action: "register" | "password-reset") {
+export function useTurnstile(siteKey: string | null | undefined, action: "register" | "password-reset" | "contact") {
   const [token, setToken] = useState("");
   const [round, setRound] = useState(0);
 
@@ -82,5 +83,11 @@ export function useTurnstile(siteKey: string | null | undefined, action: "regist
     setRound((value) => value + 1);
   };
 
-  return { token, widget, reset };
+  const attach = <T extends object>(fields: T): T & { turnstileToken: string } => {
+    const sent = { ...fields, turnstileToken: token };
+    reset();
+    return sent;
+  };
+
+  return { token, widget, reset, attach };
 }

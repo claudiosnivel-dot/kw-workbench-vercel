@@ -10,7 +10,7 @@ const MAX_TOKEN_LENGTH = 2048;
 const SITEVERIFY_TIMEOUT_MS = 5_000;
 
 /** Form protetti dal CAPTCHA, con l'action del widget che siteverify restituisce. */
-export type TurnstileAction = "register" | "password-reset";
+export type TurnstileAction = "register" | "password-reset" | "contact";
 
 type SiteverifyResponse = { success?: unknown; hostname?: unknown; action?: unknown; "error-codes"?: unknown };
 

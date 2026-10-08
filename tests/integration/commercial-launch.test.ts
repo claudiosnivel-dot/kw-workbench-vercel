@@ -9,19 +9,21 @@ import { getEntitlements } from "@/lib/billing/entitlements";
 import { getLaunchStatus } from "@/lib/billing/launch";
 import { setPlansForTesting } from "@/lib/billing/plans";
 import { resetEnvForTests } from "@/lib/env";
-import { areLegalTextsPublished, LEGAL_TERMS_VERSION } from "@/lib/legal/version";
+import { areLegalTextsPublished } from "@/lib/legal/documents";
+import { LEGAL_TERMS_VERSION } from "@/lib/legal/version";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { configureTestBilling, fakePaddleValue, TEST_FREE_LIMITS } from "../helpers/paddle";
 
-// La voce legal appartiene a T-1803, non ancora costruito: il test la simula pronta solo in AC-1606-4 (configurazione di
-// test della checklist completa). impacted-by: T-1702 (la voce captcha è costruita: in AC-1606-4 chiavi di prova).
-vi.mock("@/lib/legal/version", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/legal/version")>()),
-  areLegalTextsPublished: vi.fn(() => false),
-}));
+// La voce legal controlla i file di T-1803, oggi segnaposto (mancante): il test la simula pronta solo in AC-1606-4
+// (configurazione di test della checklist completa). impacted-by: T-1702 (la voce captcha è costruita: in AC-1606-4
+// chiavi di prova), T-1803 (il controllo vive in lib/legal/documents.ts e negli altri test gira davvero).
+vi.mock("@/lib/legal/documents", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/legal/documents")>();
+  return { ...original, areLegalTextsPublished: vi.fn(original.areLegalTextsPublished) };
+});
 
 beforeEach(async () => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");
