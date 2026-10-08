@@ -64,7 +64,7 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
 - id: T-1802
   title: "Pagina prezzi generata dalla configurazione dei piani"
   macrotask: "marketing-legal"
-  depends_on: [T-1601, T-1801, T-1604]
+  depends_on: [T-1601, T-1801, T-1604, T-1606]
 
   objective: >
     Pubblicare /pricing e /en/pricing generate da lib/billing/plans.ts, la stessa fonte
@@ -75,7 +75,7 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
     - "lib/billing/pricing-view.ts: buildPricingView(plans, locale, viewer) restituisce, per ogni piano con public true nell'ordine di order, nome (chiave i18n), prezzo visualizzato per intervallo e righe dei limiti generate dalle stesse chiavi usate da getEntitlements; components/marketing/pricing-table.tsx la rende; nessun valore numerico scritto nel markup."
     - "Pagine app/pricing/page.tsx e app/en/pricing/page.tsx; /pricing e /en/pricing aggiunte a MARKETING_ROUTES (proxy pubblico e sitemap) con metadata canonical e alternates it/en come T-1801."
     - "CTA: anonimo → /register?plan=<id>; autenticato → /billing?plan=<id> (pagina di T-1604, dipendenza implicita segnalata nel Self-check); piano free → /register per l'anonimo e dashboard per l'autenticato."
-    - "Con isPlansConfigured() false (placeholder di D-14) la pagina mostra l'avviso con chiave pricing.comingSoon e nessun prezzo né CTA di acquisto, in qualsiasi ambiente."
+    - "Con isPlansConfigured() false (placeholder di D-14) o con il lancio commerciale in pausa (D-32, T-1606) la pagina mostra l'avviso con chiave pricing.comingSoon e nessun prezzo né CTA di acquisto, in qualsiasi ambiente."
 
   acceptance_criteria:
     - id: AC-1802-1

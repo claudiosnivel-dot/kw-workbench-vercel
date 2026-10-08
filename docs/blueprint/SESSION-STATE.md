@@ -8,7 +8,7 @@
 |---|---|
 | **Progetto** | Seo God Mode (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
-| **Ultimo aggiornamento** | 2026-10-07 |
+| **Ultimo aggiornamento** | 2026-10-08 |
 | **Sessione corrente** | 2026-10-07 (sedicesima) — BUILD di `workspaces` (15): emendamento del modulo 15 e di AC-809-4 (`de7b153`), T-1501…T-1504 costruiti (`6fbce88`), checkpoint **VERDE** alla prima esecuzione; CI verde, PR #37 mergiata (`92487a2`), deploy di produzione verde con le migrazioni 0032-0033 |
 
 ---
@@ -32,14 +32,14 @@
 | `i18n` (13) | chiuso | VERDE (2026-10-07, terza esecuzione; le prime due NON-VERDE, §4) | T-1301…T-1303 chiusi; cloni consolidati su scelta dell'utente; PR #33 mergiata su `master` (`87ec7ec`), CI verde, deploy di produzione verde con la migrazione 0026 |
 | `accounts-email` (14) | chiuso | VERDE (2026-10-07, due esecuzioni verdi: dopo la costruzione e dopo l'emendamento di D-11) | T-1401…T-1405 chiusi; D-11 emendata (Resend a fine blueprint: le email non partono finché mancano `RESEND_API_KEY` ed `EMAIL_FROM`); PR #35 mergiata su `master` (`e2bf2be`), CI verde, deploy di produzione verde con le migrazioni 0027-0031 |
 | `workspaces` (15) | chiuso | VERDE (2026-10-07, prima esecuzione) | T-1501…T-1504 chiusi; D-08 era già DECISA nel ledger (2026-10-05); emendamento del modulo (`de7b153`); PR #37 mergiata su `master` (`92487a2`), CI verde, deploy di produzione verde con le migrazioni 0032 e 0033 |
-| `billing` (16) | todo | — | Bloccato da D-14 (piani e prezzi) |
+| `billing` (16) | todo | — | Si costruisce in pausa dietro l'interruttore del lancio commerciale (D-32, T-1606); D-14 serve solo per attivarlo |
 | `abuse-quotas` (17) | todo | — | D-12 da confermare |
-| `marketing-legal` (18) | todo | — | Bloccato da D-15 (testi legali) |
+| `marketing-legal` (18) | todo | — | Si costruisce con i segnaposto dei testi legali; D-15 serve solo per attivare il lancio (D-32) |
 
 ## 2. Macrotask corrente
 
 - **Ultimo chiuso**: `workspaces` (15), checkpoint VERDE alla prima esecuzione, mergiato e in produzione (T-1501…T-1504).
-- **Prossimo**: `billing` (16), dipendenze 09 e 15 verdi ma bloccato da D-14 (piani e prezzi, APERTA): si costruiscono solo i task che non la usano e si chiede la decisione; `abuse-quotas` (17) dipende da 16, `marketing-legal` (18) da 16, 17 e D-15.
+- **Prossimo**: `billing` (16), T-1601…T-1606, tutto in pausa dietro l'interruttore del lancio commerciale (D-32): prima T-1601 e T-1606, poi checkout, webhook, portale e limiti; D-14 (valori) serve solo per attivare il lancio. Poi `abuse-quotas` (17) e `marketing-legal` (18).
 - **Criteri/test di riferimento**: `docs/blueprint/16-billing.md`.
 
 ## 3. Stato git
@@ -95,6 +95,12 @@
 - **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5, jsdom 30 e, da T-407, del progetto `24.x`: funziona con avviso; riferimento la CI su Node 24 da `.nvmrc`). E2E e Vitest su Linux con Node 24: container `mcr.microsoft.com/playwright:v1.63.0-noble` nella rete `kw-workbench-vercel_default`, copia del repo senza `node_modules`, `npm ci`, un proxy TCP in Node da `localhost:54329` a `postgres-test:5432` (la guardia ammette solo host locali), `CI=true`. Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
+
+### 2026-10-08 — decisione dell'utente sul lancio commerciale (D-32)
+
+- **Richiesta dell'utente**: usare l'app da solo, registrare utenti e fare tutti i test, con il billing costruito ma in pausa, da attivare con un bottone quando si potrà pubblicizzare il software.
+- **Scelte dell'utente**: in pausa nessun limite per gli utenti; account solo creati dal root admin (registrazione pubblica chiusa, utenti creati dall'admin già verificati); interruttore nel pannello admin con checklist (D-14, Paddle, Resend, testi legali, Turnstile), che si può rispegnere.
+- **Emendamento del piano** (branch `trueline/emend/lancio-commerciale`): D-32 nel ledger; D-14 e D-15 non bloccano più la costruzione; nuovo T-1606 «Interruttore del lancio commerciale» in `16-billing.md` (AC-1606-1…4, `tests/integration/commercial-launch.test.ts`); T-1602, T-1605, T-1703 e T-1802 dipendono da T-1606; nota sul CAPTCHA di T-1702; prompt di inizio sessione allineato. `validate_blueprint` e `ac_observability_check` (modulo 16) OK.
 
 ### Sessione 2026-10-07 (sedicesima) — BUILD di `workspaces` (15), chiuso
 
@@ -505,7 +511,7 @@
 
 ## 6. Prossimi passi
 
-- **Prossimo macrotask**: `billing` (16), bloccato da D-14 (piani e prezzi, APERTA): servono le risposte al questionario su Claude Docs; senza, si costruiscono solo i task che non usano D-14.
+- **Prossimo macrotask**: `billing` (16), costruito in pausa dietro l'interruttore di T-1606 (D-32). Le risposte al questionario su piani e prezzi (D-14, https://claude.ai/artifact/Aob18VKysnxndAnyYEDDaL) servono solo per attivare il lancio, insieme a Paddle, Resend, testi legali (D-15) e Turnstile.
 - **Utente, scelte del macrotask 15 da confermare** (non bloccano): selettore del workspace solo con almeno due workspace e pagina `/workspace` raggiungibile da Personalizza (così le baseline visive restano invariate); inviti che falliscono con 503 finché Resend non è configurato; il proprietario del workspace personale non può uscirne né esserne rimosso, anche dopo un trasferimento; l'admin non elimina l'unico OWNER di un workspace di altri (409 LAST_OWNER); eliminare un utente elimina il suo workspace personale con i progetti, anche quelli su cui lavorano gli invitati (come prima con `owner_user_id`).
 - **Dal macrotask 15, da portare nei task futuri**: seats (T-1605) da agganciare a `createInvite` e `acceptInvite` di `lib/workspaces/invites.ts`; `billing.manage` e `workspace.delete` sono già nella tabella dei permessi (T-1602 usa `requireWorkspaceRole`); non esiste ancora la creazione di workspace di squadra dall'interfaccia (i team nascono invitando nel workspace personale); le quote per workspace di T-1703 possono usare `getRequestWorkspace`; la cache di React di `getPageWorkspace` vale per una richiesta.
 - **Utente (consigliato subito)**: login in produzione con l'email di `APP_ADMIN_EMAIL` e la password attuale del root admin, poi accettazione dei termini segnaposto: conferma l'assegnazione dell'email fatta dal seed.
