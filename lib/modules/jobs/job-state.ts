@@ -1,4 +1,7 @@
-import { Prisma, type Job, type JobStatus } from "@/lib/generated/prisma/client";
+import * as Sentry from "@sentry/nextjs";
+import { getBillingPolicy } from "@/lib/billing/plans";
+import { type RefundOutcome, refundRunReservation, type RunReservation } from "@/lib/billing/usage";
+import { Prisma, type Job, type JobFailureCause, type JobStatus } from "@/lib/generated/prisma/client";
 import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { jobProject, touchProjectActivity } from "@/lib/modules/project-activity";
 import { logger } from "@/lib/observability/logger";
@@ -8,6 +11,14 @@ import { prisma } from "@/lib/prisma";
 export const ACTIVE_JOB_STATUSES: JobStatus[] = ["pending", "running"];
 
 const MAX_PUBLIC_ERROR_LENGTH = 500;
+
+/**
+ * Causa del fallimento (T-1703, D-27 emendata): USER per un input non valido dell'utente (sezione senza seed), INTERNAL
+ * per ogni altro errore (eccezione non prevista, DB, fornitore esterno non disponibile), che restituisce la quota.
+ */
+export function failureCauseOf(error: unknown): JobFailureCause {
+  return error instanceof NoSeedsError ? "USER" : "INTERNAL";
+}
 
 /**
  * Messaggio salvato in jobs.error_message e mostrato all'utente (T-706, CWE-209): mai il dettaglio di
@@ -26,34 +37,54 @@ export function toPublicJobError(error: unknown): string {
   return message.slice(0, MAX_PUBLIC_ERROR_LENGTH);
 }
 
+/** Riserva della quota salvata all'avvio nel payload del job (T-1703); assente con il lancio in pausa. */
+function runReservationOf(payload: Prisma.JsonValue | null): RunReservation | null {
+  const quota = (payload as { quota?: RunReservation } | null)?.quota;
+  return quota?.workspaceId && quota.runsPeriodStart ? quota : null;
+}
+
 /**
- * Porta a failed un job ancora attivo con il messaggio pubblico, rilascia il lease ed elimina lo staging; i
- * keyword_candidates della sezione non cambiano. false se il job era già terminato nel frattempo.
+ * Porta a failed un job ancora attivo con il messaggio pubblico e la causa (T-1703, D-27 emendata: INTERNAL per un
+ * errore nostro, USER per un input non valido), rilascia il lease ed elimina lo staging; i keyword_candidates della
+ * sezione non cambiano. Con causa INTERNAL e una quota riservata all'avvio, nella stessa transazione il rimborso entro
+ * il tetto mensile; oltre il tetto un messaggio a Sentry e una riga di log per l'admin. false se il job era già
+ * terminato nel frattempo.
  */
-export async function failActiveJob(job: Pick<Job, "id" | "project_id">, message: string): Promise<boolean> {
+export async function failActiveJob(job: Pick<Job, "id" | "project_id">, message: string, cause: JobFailureCause): Promise<boolean> {
   const now = new Date();
-  const failed = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const outcome = await prisma.$transaction(async (tx: Prisma.TransactionClient): Promise<RefundOutcome | "failed" | null> => {
     const { count } = await tx.job.updateMany({
       where: { id: job.id, status: { in: ACTIVE_JOB_STATUSES } },
-      data: { status: "failed", completed_at: now, error_message: message, locked_until: null },
+      data: { status: "failed", completed_at: now, error_message: message, locked_until: null, failure_cause: cause },
     });
     if (count === 0) {
-      return false;
+      return null;
     }
     await tx.jobSuggestion.deleteMany({ where: { job_id: job.id } });
     await tx.jobMetric.deleteMany({ where: { job_id: job.id } });
     await touchProjectActivity(tx, jobProject(job), now);
-    return true;
+
+    const { payload } = await tx.job.findUniqueOrThrow({ where: { id: job.id }, select: { payload: true } });
+    const reservation = runReservationOf(payload);
+    if (cause !== "INTERNAL" || !reservation) {
+      return "failed";
+    }
+    return refundRunReservation(tx, { jobId: job.id, reservation, refundCap: getBillingPolicy().runRefundsPerMonth, now });
   });
-  return failed;
+
+  if (outcome === "cap_reached") {
+    logger.error("quota_refund_cap_reached", { jobId: job.id });
+    Sentry.captureMessage("quota_refund_cap_reached", { level: "warning", extra: { jobId: job.id } });
+  }
+  return outcome !== null;
 }
 
 /**
  * Fallimento definitivo per tetto di tentativi (T-1203): messaggio generico con il solo numero di tentativi, mai il
- * dettaglio interno; una riga di log con jobId e tentativi (CWE-778).
+ * dettaglio interno; una riga di log con jobId e tentativi (CWE-778). È un errore nostro: causa INTERNAL (T-1703).
  */
 export async function failJobAfterAttempts(job: Pick<Job, "id" | "project_id">, attempts: number): Promise<boolean> {
-  const failed = await failActiveJob(job, `Estrazione interrotta dopo ${attempts} tentativi`);
+  const failed = await failActiveJob(job, `Estrazione interrotta dopo ${attempts} tentativi`, "INTERNAL");
   if (failed) {
     logger.error("job_attempts_exhausted", { jobId: job.id, attempts });
   }

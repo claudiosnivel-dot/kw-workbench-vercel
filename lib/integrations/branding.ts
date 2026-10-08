@@ -1,4 +1,5 @@
 import { revalidateTag, unstable_cache } from "next/cache";
+import { auditFingerprint, writeAuditLog } from "@/lib/admin/audit";
 import { ValidationError } from "@/lib/http/errors";
 import { deleteSettingValue, getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
@@ -143,12 +144,31 @@ function validatedLogo(field: LogoField, value: string | null): string | null {
   return normalized;
 }
 
-export async function updateBrandingSettings(input: {
-  appName?: string;
-  logoUrl?: string | null;
-  logoUrlDark?: string | null;
-  logoUrlLight?: string | null;
-}): Promise<BrandingSnapshot> {
+/**
+ * Metadata della riga branding.update (T-1704): solo i campi cambiati con il valore prima e dopo; per i loghi l'impronta
+ * SHA-256 al posto dell'URL o del data URL (CWE-532). Vuoto se nessun valore cambia.
+ */
+function brandingAuditChanges(before: Record<string, string>, changes: Map<string, string | null>) {
+  const metadata: Record<string, { before: string | null; after: string | null }> = {};
+  for (const [field, key] of Object.entries(KEYS)) {
+    if (!changes.has(key) || (before[key] ?? null) === changes.get(key)) {
+      continue;
+    }
+    const value = (raw: string | null | undefined) => (field === "appName" ? (raw ?? null) : auditFingerprint(raw));
+    metadata[field] = { before: value(before[key]), after: value(changes.get(key)) };
+  }
+  return metadata;
+}
+
+export async function updateBrandingSettings(
+  input: {
+    appName?: string;
+    logoUrl?: string | null;
+    logoUrlDark?: string | null;
+    logoUrlLight?: string | null;
+  },
+  audit: { actorUserId: string; ip: string | null }
+): Promise<BrandingSnapshot> {
   // Prima si valida tutto, poi si scrive in un'unica transazione: un campo invalido non lascia stati parziali.
   const changes = new Map<string, string | null>();
 
@@ -163,11 +183,16 @@ export async function updateBrandingSettings(input: {
   }
 
   if (changes.size > 0) {
-    await prisma.$transaction(
-      [...changes].map(([key, value]) =>
-        value === null ? deleteSettingValue(key) : upsertSettingValue({ key, value })
-      )
-    );
+    const auditChanges = brandingAuditChanges(await readBrandingValues(), changes);
+    // Una riga branding.update nella stessa transazione delle scritture, solo se un valore cambia davvero (T-1704).
+    const auditRow =
+      Object.keys(auditChanges).length > 0
+        ? [writeAuditLog(prisma, { ...audit, action: "branding.update", targetType: "branding", metadata: auditChanges })]
+        : [];
+    await prisma.$transaction([
+      ...[...changes].map(([key, value]) => (value === null ? deleteSettingValue(key) : upsertSettingValue({ key, value }))),
+      ...auditRow,
+    ]);
     // expire 0: nessuna richiesta successiva riceve il branding precedente (niente stale-while-revalidate).
     revalidateTag(BRANDING_CACHE_TAG, { expire: 0 });
   }

@@ -36,6 +36,8 @@ const AUTH_USER_SELECT = {
   session_version: true,
   // Versione dei termini accettata (T-1405): il gate delle pagine la confronta con LEGAL_TERMS_VERSION.
   accepted_terms_version: true,
+  // Password impostata da un admin (T-1704): finché non la cambia, solo cambio password e logout.
+  must_change_password: true,
 } satisfies Prisma.UserSelect;
 
 type AuthUserRow = Prisma.UserGetPayload<{ select: typeof AUTH_USER_SELECT }>;
@@ -55,6 +57,7 @@ export type AuthUser = {
   uiLocale: UiLocale | null;
   sessionVersion: number;
   acceptedTermsVersion: string | null;
+  mustChangePassword: boolean;
 };
 
 export type LoginFailureReason = "INVALID_CREDENTIALS" | "SUSPENDED";
@@ -102,6 +105,7 @@ function mapAuthUser(row: AuthUserRow): AuthUser {
     uiLocale: row.ui_locale,
     sessionVersion: row.session_version,
     acceptedTermsVersion: row.accepted_terms_version,
+    mustChangePassword: row.must_change_password,
   };
 }
 
@@ -174,14 +178,18 @@ async function findResolvedUser(userId: string): Promise<AuthUser> {
   return resolved;
 }
 
+/** Scrittura aggiuntiva nella transazione che crea l'utente (riga del registro delle azioni admin, T-1704). */
+type OnUserCreated = (tx: Prisma.TransactionClient, user: { id: string }) => Promise<unknown>;
+
 /**
  * Utente nuovo con il suo workspace personale e la membership OWNER in una sola transazione (T-1501): se la creazione
- * del workspace fallisce non resta un utente senza workspace (CWE-460).
+ * del workspace fallisce non resta un utente senza workspace (CWE-460). onCreated scrive nella stessa transazione.
  */
-async function createUserWithPersonalWorkspace(data: Prisma.UserCreateInput): Promise<AuthUser> {
+async function createUserWithPersonalWorkspace(data: Prisma.UserCreateInput, onCreated?: OnUserCreated): Promise<AuthUser> {
   const created = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({ data, select: AUTH_USER_SELECT });
     await createPersonalWorkspace(tx, user);
+    await onCreated?.(tx, user);
     return user;
   });
   return mapAuthUser(created);
@@ -306,6 +314,8 @@ export async function registerUser(input: {
   acceptedTermsVersion?: string;
   /** Email già garantita (utente creato dal root admin con il lancio in pausa, T-1606): nasce verificata. */
   emailVerified?: boolean;
+  /** Scrittura nella stessa transazione della creazione (riga del registro delle azioni admin, T-1704). */
+  onCreated?: OnUserCreated;
 }): Promise<AuthUser> {
   await bootstrapFirstUserIfEmpty();
 
@@ -314,22 +324,25 @@ export async function registerUser(input: {
   const passwordHash = await hashPassword(validatePassword(input.password));
 
   try {
-    return await createUserWithPersonalWorkspace({
-      email,
-      display_name: displayName,
-      password_hash: passwordHash,
-      role: input.role ?? UserRole.SUBSCRIBER,
-      status: UserStatus.ACTIVE,
-      is_root_admin: false,
-      theme_mode: ThemeMode.DARK,
-      font_scale_mode: FontScaleMode.NORMAL,
-      color_vision_mode: ColorVisionMode.NONE,
-      ui_locale: input.uiLocale ?? null,
-      ...(input.emailVerified ? { email_verified_at: new Date() } : {}),
-      ...(input.acceptedTermsVersion
-        ? { accepted_terms_version: input.acceptedTermsVersion, accepted_terms_at: new Date() }
-        : {}),
-    });
+    return await createUserWithPersonalWorkspace(
+      {
+        email,
+        display_name: displayName,
+        password_hash: passwordHash,
+        role: input.role ?? UserRole.SUBSCRIBER,
+        status: UserStatus.ACTIVE,
+        is_root_admin: false,
+        theme_mode: ThemeMode.DARK,
+        font_scale_mode: FontScaleMode.NORMAL,
+        color_vision_mode: ColorVisionMode.NONE,
+        ui_locale: input.uiLocale ?? null,
+        ...(input.emailVerified ? { email_verified_at: new Date() } : {}),
+        ...(input.acceptedTermsVersion
+          ? { accepted_terms_version: input.acceptedTermsVersion, accepted_terms_at: new Date() }
+          : {}),
+      },
+      input.onCreated
+    );
   } catch (error) {
     throw isUniqueViolation(error) ? new EmailTakenError(email) : error;
   }
@@ -362,8 +375,9 @@ export async function updateAuthCredentials(input: {
   const passwordHash = await hashNewPassword(input.password);
   if (passwordHash) {
     data.password_hash = passwordHash;
-    // Il cambio password revoca i token già emessi (T-501).
+    // Il cambio password revoca i token già emessi (T-501) e chiude il cambio obbligato dopo un reset da admin (T-1704).
     data.session_version = { increment: 1 };
+    data.must_change_password = false;
   }
 
   if (!data.display_name && !data.password_hash) {
@@ -379,11 +393,16 @@ export async function updateAuthCredentials(input: {
   return mapAuthUser(updated);
 }
 
+/**
+ * Modifica di ruolo, stato o password da parte di un admin (T-503). Una password impostata dall'admin obbliga l'utente
+ * a cambiarla al primo accesso (T-1704); onUpdated scrive nella stessa transazione (registro delle azioni admin).
+ */
 export async function updateUserAdminFields(input: {
   targetUserId: string;
   role?: UserRole;
   status?: UserStatus;
   password?: string;
+  onUpdated?: (tx: Prisma.TransactionClient) => Promise<unknown>;
 }): Promise<AuthUser> {
   const data: Prisma.UserUpdateInput = {};
 
@@ -398,6 +417,7 @@ export async function updateUserAdminFields(input: {
   const passwordHash = await hashNewPassword(input.password);
   if (passwordHash) {
     data.password_hash = passwordHash;
+    data.must_change_password = true;
   }
 
   if (!data.role && !data.status && !data.password_hash) {
@@ -409,10 +429,14 @@ export async function updateUserAdminFields(input: {
     data.session_version = { increment: 1 };
   }
 
-  const updated = await prisma.user.update({
-    where: { id: input.targetUserId },
-    data,
-    select: AUTH_USER_SELECT,
+  const updated = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.update({
+      where: { id: input.targetUserId },
+      data,
+      select: AUTH_USER_SELECT,
+    });
+    await input.onUpdated?.(tx);
+    return user;
   });
 
   return mapAuthUser(updated);

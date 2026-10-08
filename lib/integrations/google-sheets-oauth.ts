@@ -58,7 +58,8 @@ export async function oauthPreflight(
   request: Request
 ): Promise<{ user: AuthUser; config: Required<GoogleSheetsApiConfig> } | NextResponse> {
   const user = await getOptionalAuthenticatedUserFromRequest(request);
-  if (!user) {
+  // Durante il cambio password obbligato (T-1704) nessuna integrazione: come una sessione non utilizzabile.
+  if (!user || user.mustChangePassword) {
     return oauthRedirect(request, { error: "sessione_scaduta" });
   }
   const config = await getCompleteGoogleSheetsOAuthConfig();

@@ -38,7 +38,9 @@ export type MetricsNotice =
   | "METRICS_BUDGET_EXCEEDED"
   | "RUN_BUDGET_EXCEEDED"
   // Piano del workspace senza metriche con licenza (T-1605): l'estrazione usa NONE senza chiamare il fornitore.
-  | "PLAN_NO_LICENSED_METRICS";
+  | "PLAN_NO_LICENSED_METRICS"
+  // Quota mensile di keyword arricchite dal fornitore con licenza esaurita (T-1703): le altre restano senza volumi.
+  | "LICENSED_METRICS_QUOTA_EXCEEDED";
 
 export type MetricsOutcome = {
   metrics: Map<string, KeywordMetric>;

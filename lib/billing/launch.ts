@@ -1,4 +1,5 @@
 import { revalidateTag, unstable_cache } from "next/cache";
+import { writeAuditLog } from "@/lib/admin/audit";
 import { getPlans, isPlansConfigured } from "@/lib/billing/plans";
 import {
   getPaddleClientToken,
@@ -10,6 +11,7 @@ import {
 } from "@/lib/env";
 import { AppError } from "@/lib/http/errors";
 import { getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
+import { prisma } from "@/lib/prisma";
 import { areLegalTextsPublished } from "@/lib/legal/version";
 import { logger } from "@/lib/observability/logger";
 import { isTurnstileReady } from "@/lib/security/turnstile";
@@ -130,10 +132,14 @@ export class LaunchNotReadyError extends AppError {
 
 /**
  * Cambia lo stato del lancio (solo root admin, verificato dalla rotta): live richiede la checklist completa, altrimenti
- * 409 LAUNCH_NOT_READY e stato invariato; paused è sempre ammesso. Ogni cambio scrive una riga di log con attore, stato
- * precedente e nuovo, e invalida la cache.
+ * 409 LAUNCH_NOT_READY e stato invariato; paused è sempre ammesso. Ogni cambio scrive nella stessa transazione una riga
+ * launch.update del registro delle azioni admin con attore, stato precedente e nuovo (T-1704), e invalida la cache.
  */
-export async function setLaunchStatus(actor: { id: string; email: string | null }, status: LaunchStatus): Promise<LaunchState> {
+export async function setLaunchStatus(
+  actor: { id: string; email: string | null },
+  status: LaunchStatus,
+  ip: string | null = null
+): Promise<LaunchState> {
   if (status === "live") {
     const missing = getLaunchChecklist()
       .filter((item) => !item.ok)
@@ -145,9 +151,17 @@ export async function setLaunchStatus(actor: { id: string; email: string | null 
 
   const previous = await readLaunchState();
   const next: LaunchState = { status, changedAt: new Date().toISOString(), changedBy: actor.email ?? actor.id };
-  await upsertSettingValue({ key: LAUNCH_SETTING_KEY, value: JSON.stringify(next) });
+  await prisma.$transaction([
+    upsertSettingValue({ key: LAUNCH_SETTING_KEY, value: JSON.stringify(next) }),
+    writeAuditLog(prisma, {
+      actorUserId: actor.id,
+      action: "launch.update",
+      targetType: "launch",
+      metadata: { status: { before: previous.status, after: status } },
+      ip,
+    }),
+  ]);
   // expire 0: nessuna richiesta successiva riceve lo stato precedente.
   revalidateTag(LAUNCH_CACHE_TAG, { expire: 0 });
-  logger.info("commercial_launch_changed", { actorId: actor.id, from: previous.status, to: status });
   return next;
 }

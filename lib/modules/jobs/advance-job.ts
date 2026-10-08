@@ -1,10 +1,11 @@
 import type { ExtractionPlanLimits } from "@/lib/billing/enforce";
+import { reservePartialQuota, type RunReservation } from "@/lib/billing/usage";
 import { Prisma, type Job, type JobMetric, type JobPhase, type JobStatus } from "@/lib/generated/prisma/client";
 import { getIntEnv } from "@/lib/env";
 import { prepareBlacklist } from "@/lib/modules/brand-filter";
 import { dedupeCandidates, type DedupedCandidate, type RawKeywordCandidate } from "@/lib/modules/dedupe";
 import { buildExpansionQueries } from "@/lib/modules/expansion-engine";
-import { ACTIVE_JOB_STATUSES, failActiveJob, toPublicJobError } from "@/lib/modules/jobs/job-state";
+import { ACTIVE_JOB_STATUSES, failActiveJob, failureCauseOf, toPublicJobError } from "@/lib/modules/jobs/job-state";
 import {
   AUTOCOMPLETE_FAILURE_THRESHOLD,
   buildCandidateRows,
@@ -19,7 +20,13 @@ import { createAutocompleteProvider } from "@/lib/modules/providers/autocomplete
 import { AutocompleteQueryFailedError } from "@/lib/modules/providers/autocomplete/types";
 import { DATAFORSEO_BATCH_SIZE } from "@/lib/modules/providers/metrics/dataforseo";
 import { createMetricsProvider } from "@/lib/modules/providers/metrics/factory";
-import { type KeywordMetric, type MetricsOutcome, toMetricsResult } from "@/lib/modules/providers/metrics/types";
+import {
+  type KeywordMetric,
+  type MetricsItem,
+  type MetricsOutcome,
+  missingOutcome,
+  toMetricsResult,
+} from "@/lib/modules/providers/metrics/types";
 import { parseSeedsFromRows } from "@/lib/modules/seed-parser";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
@@ -50,6 +57,8 @@ type JobCursor = {
   skippedQueries?: number;
   failedQueries?: number;
   metrics?: MetricsTotals;
+  /** Keyword della quota del fornitore con licenza concesse al batch che parte da start (T-1703): riuso dopo un crash. */
+  licensedReservation?: { start: number; granted: number };
 };
 
 export type ExtractionSummary = {
@@ -60,6 +69,8 @@ export type ExtractionSummary = {
   partial?: boolean;
   failedQueries?: number;
   truncated?: boolean;
+  /** Troncamento per la quota mensile di keyword del workspace (T-1703). */
+  truncatedReason?: "monthly_quota";
   skippedQueries?: number;
 } & ReturnType<typeof toMetricsResult>;
 
@@ -149,6 +160,16 @@ async function loadCandidates(
 function planLimitsOf(job: Job): ExtractionPlanLimits | null {
   const plan = (job.payload as { plan?: ExtractionPlanLimits } | null)?.plan;
   return plan ?? null;
+}
+
+/**
+ * Quota mensile del job (T-1703): workspace della riserva fatta all'avvio con il lancio attivo e limite del piano. null
+ * senza riserva (lancio in pausa, test, CLI) o senza limite: nessuna quota.
+ */
+function monthlyQuotaOf(job: Job, limitKey: "keywordsPerMonth" | "licensedMetricsKeywordsPerMonth") {
+  const quota = (job.payload as { quota?: RunReservation } | null)?.quota;
+  const limit = planLimitsOf(job)?.[limitKey];
+  return quota?.workspaceId && typeof limit === "number" ? { workspaceId: quota.workspaceId, limit } : null;
 }
 
 /**
@@ -302,8 +323,55 @@ function toJobMetricRow(jobId: string, metric: KeywordMetric): Prisma.JobMetricC
 }
 
 /**
+ * Keyword del batch concesse dalla quota mensile del fornitore con licenza (T-1703): la riserva atomica e la sua
+ * registrazione nel cursore stanno in una transazione prima della chiamata al fornitore, così un passo ripreso dopo un
+ * crash riusa la stessa concessione invece di consumare di nuovo la quota.
+ */
+async function licensedKeywordsGranted(job: Job, lease: Lease, cursor: JobCursor, start: number, requested: number) {
+  const quota = monthlyQuotaOf(job, "licensedMetricsKeywordsPerMonth");
+  if (!quota || cursor.settings?.metrics_provider !== "DATAFORSEO") {
+    return requested;
+  }
+  if (cursor.licensedReservation?.start === start) {
+    return cursor.licensedReservation.granted;
+  }
+  return inTransaction(async (tx) => {
+    const granted = await reservePartialQuota(tx, {
+      workspaceId: quota.workspaceId,
+      metric: "licensed_keywords_month",
+      now: new Date(),
+      requested,
+      limit: quota.limit,
+    });
+    await writeJob(tx, lease, { cursor: toCursorJson({ ...cursor, licensedReservation: { start, granted } }) });
+    return granted;
+  });
+}
+
+/** Arricchisce solo le prime granted keyword; le altre restano senza volumi con LICENSED_METRICS_QUOTA_EXCEEDED. */
+async function enrichWithinQuota(job: Job, cursor: JobCursor & { settings: EffectiveProjectSettings }, items: MetricsItem[], granted: number) {
+  const provider = createMetricsProvider(cursor.settings.metrics_provider);
+  const context = {
+    languageCode: cursor.settings.language_code,
+    countryCode: cursor.settings.country_code,
+    projectId: job.project_id,
+    jobId: job.id,
+  };
+  if (granted >= items.length) {
+    return provider.enrichKeywords(items, context);
+  }
+  const over = missingOutcome(items.slice(granted), provider.id, "LICENSED_METRICS_QUOTA_EXCEEDED");
+  if (granted === 0) {
+    return over;
+  }
+  const within = await provider.enrichKeywords(items.slice(0, granted), context);
+  return { ...within, metrics: new Map([...within.metrics, ...over.metrics]), notice: within.notice ?? over.notice };
+}
+
+/**
  * Fase metrics: un batch di canonical arricchito con il provider della sezione e salvato in job_metrics. Dopo un
- * tetto di spesa (T-903) i batch successivi non chiamano il fornitore e le loro keyword restano senza volumi.
+ * tetto di spesa (T-903) i batch successivi non chiamano il fornitore e le loro keyword restano senza volumi; oltre la
+ * quota mensile del fornitore con licenza (T-1703) le keyword in più restano senza volumi e il job continua.
  */
 async function metricsBatch(job: Job, lease: Lease): Promise<void> {
   const cursor = readCursor(job);
@@ -311,21 +379,15 @@ async function metricsBatch(job: Job, lease: Lease): Promise<void> {
   const start = job.progress_done;
   const batch = candidates.slice(start, start + METRICS_BATCH_SIZE);
   const canonicals = batch.map((item) => item.canonicalKeyword);
+  const items = batch.map((item) => ({ displayKeyword: item.keyword, canonical: item.canonicalKeyword }));
 
   const outcome = BUDGET_NOTICES.has(cursor.metrics?.notice ?? "")
     ? null
-    : await createMetricsProvider(cursor.settings.metrics_provider).enrichKeywords(
-        batch.map((item) => ({ displayKeyword: item.keyword, canonical: item.canonicalKeyword })),
-        {
-          languageCode: cursor.settings.language_code,
-          countryCode: cursor.settings.country_code,
-          projectId: job.project_id,
-          jobId: job.id,
-        }
-      );
+    : await enrichWithinQuota(job, cursor, items, await licensedKeywordsGranted(job, lease, cursor, start, items.length));
 
   const done = start + batch.length;
-  const next = toCursorJson(outcome ? { ...cursor, metrics: addMetricsTotals(cursor.metrics, outcome) } : cursor);
+  const settled = { ...cursor, licensedReservation: undefined };
+  const next = toCursorJson(outcome ? { ...settled, metrics: addMetricsTotals(cursor.metrics, outcome) } : settled);
 
   await inTransaction(async (tx) => {
     if (outcome) {
@@ -387,21 +449,30 @@ async function storeBatch(job: Job, lease: Lease): Promise<void> {
   const built = buildCandidateRows({ candidates, settings, blacklist, metrics, imported, now });
   // Tetto di keyword del piano (T-1605): le keyword oltre il tetto non si salvano e il risultato è troncato.
   const capped = typeof cursor.maxKeywords === "number" && built.length > cursor.maxKeywords;
-  const rows = capped ? built.slice(0, cursor.maxKeywords ?? 0) : built;
+  const allowed = capped ? built.slice(0, cursor.maxKeywords ?? 0) : built;
   const failedQueries = cursor.failedQueries ?? 0;
-  const summary: ExtractionSummary = {
-    queries: cursor.queries?.length ?? 0,
-    rawSuggestions: rawCount,
-    dedupedCandidates: candidates.length,
-    storedCandidates: rows.length,
-    partial: failedQueries > 0,
-    failedQueries,
-    truncated: capped || cursor.truncated,
-    skippedQueries: cursor.skippedQueries,
-    ...toMetricsResult({ metrics: new Map(), ...cursor.metrics }),
-  };
+  const monthly = monthlyQuotaOf(job, "keywordsPerMonth");
 
   await inTransaction(async (tx) => {
+    // Quota mensile di keyword (T-1703): sotto il lock del contatore si salva al massimo il residuo del mese e il
+    // contatore aumenta delle keyword effettivamente salvate, nella stessa transazione dello store.
+    const granted = monthly
+      ? await reservePartialQuota(tx, { workspaceId: monthly.workspaceId, metric: "keywords_month", now, requested: allowed.length, limit: monthly.limit })
+      : allowed.length;
+    const rows = allowed.slice(0, granted);
+    const quotaTruncated = granted < allowed.length;
+    const summary: ExtractionSummary = {
+      queries: cursor.queries?.length ?? 0,
+      rawSuggestions: rawCount,
+      dedupedCandidates: candidates.length,
+      storedCandidates: rows.length,
+      partial: failedQueries > 0,
+      failedQueries,
+      truncated: capped || quotaTruncated || cursor.truncated,
+      ...(quotaTruncated ? { truncatedReason: "monthly_quota" as const } : {}),
+      skippedQueries: cursor.skippedQueries,
+      ...toMetricsResult({ metrics: new Map(), ...cursor.metrics }),
+    };
     await storeCandidates(tx, job.project_id, job.subproject_id, rows, now);
     await deleteStaging(tx, job.id);
     await writeJob(tx, lease, {
@@ -481,7 +552,7 @@ export async function advanceJob(jobId: string, deadlineMs: number): Promise<Adv
         throw error;
       }
       logger.error("job_failed", { jobId, projectId: job.project_id, subprojectId: job.subproject_id, error });
-      await failActiveJob(job, toPublicJobError(error));
+      await failActiveJob(job, toPublicJobError(error), failureCauseOf(error));
       return toResult(await prisma.job.findUniqueOrThrow({ where: { id: jobId } }), false, { error });
     }
   }

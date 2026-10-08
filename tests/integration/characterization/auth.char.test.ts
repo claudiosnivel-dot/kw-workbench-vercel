@@ -24,6 +24,7 @@ import { createUserWithSession } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";
 import { setCommercialLaunchForTests } from "../../helpers/launch";
+import { configureTestTurnstile, TEST_TURNSTILE_TOKEN } from "../../helpers/turnstile";
 
 // Da T-302 la pagina di login legge l'utente dai cookie: qui nessun cookie di sessione.
 vi.mock("next/headers", () => ({
@@ -70,6 +71,7 @@ beforeAll(() => {
 
 afterAll(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   resetEnvForTests();
 });
 
@@ -77,6 +79,8 @@ beforeEach(async () => {
   await resetDatabase();
   // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
   await setCommercialLaunchForTests("live");
+  // impacted-by: T-1702 (CAPTCHA obbligatorio sulla registrazione aperta: chiavi di prova e siteverify simulato)
+  configureTestTurnstile();
 });
 
 describe("caratterizzazione: login", () => {
@@ -133,6 +137,8 @@ describe("caratterizzazione: registrazione e logout", () => {
       confirmPassword: KNOWN_PASSWORD,
       acceptTerms: true,
       termsVersion: LEGAL_TERMS_VERSION,
+      // impacted-by: T-1702 (token del CAPTCHA, siteverify simulato)
+      turnstileToken: TEST_TURNSTILE_TOKEN,
     };
 
     const first = await callRoute(register, { method: "POST", url: "/api/auth/register", body });

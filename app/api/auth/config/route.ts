@@ -4,8 +4,9 @@ import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
 import { errorResponse, withApiErrors } from "@/lib/http/errors";
 
+/** Cambio di nome mostrato e password: l'unica rotta di dati ammessa durante il cambio password obbligato (T-1704). */
 export const PATCH = withApiErrors(async (request: NextRequest) => {
-  const user = await requireAuthenticatedUserFromRequest(request);
+  const user = await requireAuthenticatedUserFromRequest(request, { allowPendingPasswordChange: true });
 
   const payload = (await request.json()) as {
     currentPassword?: string;

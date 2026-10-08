@@ -1,7 +1,11 @@
-import { Prisma, UserRole, UserStatus } from "@/lib/generated/prisma/client";
+import { Prisma, type UiLocale, UserRole, UserStatus } from "@/lib/generated/prisma/client";
+import { type AuditEntry, writeAuditLog } from "@/lib/admin/audit";
 import { type AuthUser, registerUser, updateUserAdminFields, validatePassword } from "@/lib/auth/credentials";
 import { isCommercialLive } from "@/lib/billing/launch";
+import { sendTemplateEmail } from "@/lib/email";
+import { runAfterResponse } from "@/lib/http/after-response";
 import { AppError } from "@/lib/http/errors";
+import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
 import { prisma } from "@/lib/prisma";
 
 /** Errore delle azioni admin: status e code espliciti, messaggio pubblico (T-503). */
@@ -201,9 +205,13 @@ async function findTargetUser(targetUserId: string) {
       created_at: true,
       updated_at: true,
       last_login_at: true,
+      ui_locale: true,
     },
   });
 }
+
+/** Autore e IP delle righe del registro delle azioni admin (T-1704). */
+type AuditContext = { ip?: string | null };
 
 export async function listAdminUsers(
   actor: AuthUser,
@@ -263,7 +271,8 @@ export async function createUserFromAdmin(
     displayName?: string;
     password: string;
     role?: UserRole;
-  }
+  },
+  context: AuditContext = {}
 ): Promise<AdminUserRecord> {
   const role = input.role ?? UserRole.SUBSCRIBER;
   if (role === UserRole.ADMIN && !actor.isRootAdmin) {
@@ -278,6 +287,16 @@ export async function createUserFromAdmin(
     password: input.password,
     role,
     emailVerified: !(await isCommercialLive()),
+    // Riga user.create nella transazione della creazione (T-1704): un'email già registrata non scrive nulla.
+    onCreated: (tx, user) =>
+      writeAuditLog(tx, {
+        actorUserId: actor.id,
+        action: "user.create",
+        targetType: "user",
+        targetId: user.id,
+        metadata: { role: { before: null, after: role } },
+        ip: context.ip,
+      }),
   });
   const row = await findTargetUser(created.id);
 
@@ -288,6 +307,57 @@ export async function createUserFromAdmin(
   return toAdminUserRecord(row as AdminUserRow);
 }
 
+/**
+ * Righe del registro per le modifiche effettive (T-1704): cambio di ruolo, sospensione o riattivazione con il valore
+ * prima e dopo, reset della password senza alcun valore (CWE-532).
+ */
+function updateAuditEntries(
+  actor: AuthUser,
+  target: { id: string; role: UserRole; status: UserStatus },
+  update: { role?: UserRole; status?: UserStatus; password?: string },
+  context: AuditContext
+): AuditEntry[] {
+  const entry = (action: AuditEntry["action"], metadata: Prisma.InputJsonObject = {}): AuditEntry => ({
+    actorUserId: actor.id,
+    action,
+    targetType: "user",
+    targetId: target.id,
+    metadata,
+    ip: context.ip,
+  });
+  const entries: AuditEntry[] = [];
+  if (update.role && update.role !== target.role) {
+    entries.push(entry("user.role_change", { role: { before: target.role, after: update.role } }));
+  }
+  if (update.status && update.status !== target.status) {
+    const action = update.status === UserStatus.SUSPENDED ? "user.suspend" : "user.reactivate";
+    entries.push(entry(action, { status: { before: target.status, after: update.status } }));
+  }
+  if (update.password) {
+    entries.push(entry("user.password_reset"));
+  }
+  return entries;
+}
+
+/**
+ * Avviso all'utente della password reimpostata da un admin (T-1704), dopo la risposta e quindi dopo il commit: un invio
+ * non riuscito non annulla il reset e finisce nei log.
+ */
+function notifyAdminPasswordReset(target: { email: string | null; display_name: string; ui_locale: UiLocale | null }) {
+  const { email } = target;
+  if (!email) {
+    return;
+  }
+  runAfterResponse("admin_password_reset_email_failed", async () => {
+    await sendTemplateEmail({
+      to: email,
+      template: "admin-password-reset",
+      locale: target.ui_locale ?? DEFAULT_LOCALE,
+      vars: { displayName: target.display_name },
+    });
+  });
+}
+
 export async function updateUserFromAdmin(
   actor: AuthUser,
   input: {
@@ -295,7 +365,8 @@ export async function updateUserFromAdmin(
     role?: UserRole;
     status?: UserStatus;
     newPassword?: string;
-  }
+  },
+  context: AuditContext = {}
 ): Promise<AdminUserRecord> {
   const target = await findManageableTarget(actor, input.targetUserId);
 
@@ -325,12 +396,21 @@ export async function updateUserFromAdmin(
     throw new AdminActionError("Nessuna modifica da salvare", 400, "VALIDATION_ERROR");
   }
 
+  const audit = updateAuditEntries(actor, target, updatePayload, context);
   const updated = await updateUserAdminFields({
     targetUserId: target.id,
     role: updatePayload.role,
     status: updatePayload.status,
     password: updatePayload.password,
+    onUpdated: async (tx) => {
+      for (const entry of audit) {
+        await writeAuditLog(tx, entry);
+      }
+    },
   });
+  if (updatePayload.password) {
+    notifyAdminPasswordReset(target);
+  }
 
   const row = await findTargetUser(updated.id);
   if (!row) {
@@ -344,7 +424,7 @@ export async function updateUserFromAdmin(
  * Eliminazione di un utente dall'admin. Il suo workspace personale va via in cascata con i progetti; un workspace di
  * altri di cui è l'unico OWNER non può restare senza proprietario (T-1503): 409 LAST_OWNER finché non trasferisce.
  */
-export async function deleteUserFromAdmin(actor: AuthUser, targetUserId: string): Promise<void> {
+export async function deleteUserFromAdmin(actor: AuthUser, targetUserId: string, context: AuditContext = {}): Promise<void> {
   const target = await findManageableTarget(actor, targetUserId);
   const ownedWithoutHeir = await prisma.membership.count({
     where: {
@@ -359,5 +439,16 @@ export async function deleteUserFromAdmin(actor: AuthUser, targetUserId: string)
   if (ownedWithoutHeir > 0) {
     throw new AdminActionError("L'utente è l'unico proprietario di un workspace di altri", 409, "LAST_OWNER");
   }
-  await prisma.user.delete({ where: { id: target.id } });
+  // Riga user.delete nella stessa transazione dell'eliminazione (T-1704).
+  await prisma.$transaction([
+    prisma.user.delete({ where: { id: target.id } }),
+    writeAuditLog(prisma, {
+      actorUserId: actor.id,
+      action: "user.delete",
+      targetType: "user",
+      targetId: target.id,
+      metadata: { role: { before: target.role, after: null } },
+      ip: context.ip,
+    }),
+  ]);
 }

@@ -14,6 +14,7 @@ import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { setCommercialLaunchForTests } from "../helpers/launch";
+import { configureTestTurnstile, TEST_TURNSTILE_TOKEN } from "../helpers/turnstile";
 
 type DriverAdapterFailure = Prisma.PrismaClientKnownRequestError & {
   meta?: { driverAdapterError?: { cause?: { originalCode?: string } } };
@@ -27,7 +28,14 @@ function registration(email: string) {
   return {
     method: "POST",
     url: "/api/auth/register",
-    body: { email, password: PASSWORD, confirmPassword: PASSWORD, acceptTerms: true, termsVersion: LEGAL_TERMS_VERSION },
+    body: {
+      email,
+      password: PASSWORD,
+      confirmPassword: PASSWORD,
+      acceptTerms: true,
+      termsVersion: LEGAL_TERMS_VERSION,
+      turnstileToken: TEST_TURNSTILE_TOKEN,
+    },
   };
 }
 
@@ -41,10 +49,13 @@ beforeEach(async () => {
   await resetDatabase();
   // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
   await setCommercialLaunchForTests("live");
+  // impacted-by: T-1702 (CAPTCHA obbligatorio sulla registrazione aperta: chiavi di prova e siteverify simulato)
+  configureTestTurnstile();
 });
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   resetEnvForTests();
 });
 

@@ -15,6 +15,7 @@ import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { flushAfter } from "../helpers/next-after";
 import { setCommercialLaunchForTests } from "../helpers/launch";
+import { configureTestTurnstile, TEST_TURNSTILE_TOKEN } from "../helpers/turnstile";
 
 const PASSWORD = "password-1403-non-reale";
 const T0 = new Date("2026-10-07T10:00:00.000Z");
@@ -23,7 +24,14 @@ function registration(email: string) {
   return {
     method: "POST",
     url: "/api/auth/register",
-    body: { email, password: PASSWORD, confirmPassword: PASSWORD, acceptTerms: true, termsVersion: LEGAL_TERMS_VERSION },
+    body: {
+      email,
+      password: PASSWORD,
+      confirmPassword: PASSWORD,
+      acceptTerms: true,
+      termsVersion: LEGAL_TERMS_VERSION,
+      turnstileToken: TEST_TURNSTILE_TOKEN,
+    },
   };
 }
 
@@ -55,11 +63,14 @@ beforeEach(async () => {
   await resetDatabase();
   // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
   await setCommercialLaunchForTests("live");
+  // impacted-by: T-1702 (CAPTCHA obbligatorio sulla registrazione aperta: chiavi di prova e siteverify simulato)
+  configureTestTurnstile();
 });
 
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
   resetEnvForTests();
 });

@@ -46,6 +46,8 @@ export class AppError extends Error {
   readonly code: string;
   /** Campi pubblici aggiuntivi del body d'errore; non sostituiscono error, code e requestId. */
   readonly fields?: ErrorFields;
+  /** Header aggiuntivi della risposta d'errore (Retry-After del 429 RATE_LIMITED, T-1701). */
+  headers?: Record<string, string>;
 
   constructor(status: number, code: string, message: string, fields?: ErrorFields) {
     super(message);
@@ -81,6 +83,18 @@ export class AuthRequiredError extends AppError {
   constructor() {
     super(401, AUTH_REQUIRED_CODE, AUTH_REQUIRED_MESSAGE);
     this.name = "AuthRequiredError";
+  }
+}
+
+/**
+ * Troppe richieste per la regola di rate limit (T-1701): 429 RATE_LIMITED con retryAfter nel body e l'header
+ * Retry-After, entrambi in secondi interi maggiori di 0.
+ */
+export class RateLimitedError extends AppError {
+  constructor(retryAfterSeconds: number) {
+    super(429, "RATE_LIMITED", "Troppe richieste: riprova più tardi", { retryAfter: retryAfterSeconds });
+    this.name = "RateLimitedError";
+    this.headers = { "Retry-After": String(retryAfterSeconds) };
   }
 }
 
@@ -125,7 +139,11 @@ function toErrorResponse(error: unknown, request: Request, requestId: string): R
   }
 
   if (error instanceof AppError) {
-    return errorJson(error.status, error.code, error.message, requestId, error.fields);
+    const response = errorJson(error.status, error.code, error.message, requestId, error.fields);
+    for (const [name, value] of Object.entries(error.headers ?? {})) {
+      response.headers.set(name, value);
+    }
+    return response;
   }
 
   if (error instanceof SyntaxError) {

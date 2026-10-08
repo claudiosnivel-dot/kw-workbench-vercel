@@ -59,6 +59,11 @@ const appEnv: Record<string, string> = {
   GOOGLE_SHEETS_OAUTH_CLIENT_ID: "",
   GOOGLE_SHEETS_OAUTH_CLIENT_SECRET: "",
   GOOGLE_SHEETS_OAUTH_REDIRECT_URI: "",
+  // Rate limit (T-1701): gli E2E accedono molte volte con lo stesso utente dallo stesso IP (fuori da Vercel vale
+  // 'unknown'), quindi soglie alte; le soglie basse sono provate dai test d'integrazione.
+  RATE_LIMIT_LOGIN_IP_EMAIL_MAX: "10000",
+  RATE_LIMIT_LOGIN_IP_MAX: "100000",
+  RATE_LIMIT_RUN_START_MAX: "10000",
   // Paddle sandbox senza chiave API (T-1603, T-1604): i webhook firmati sì, nessuna chiamata all'API di Paddle.
   PADDLE_ENV: "sandbox",
   PADDLE_WEBHOOK_SECRET: process.env.E2E_PADDLE_WEBHOOK_SECRET,

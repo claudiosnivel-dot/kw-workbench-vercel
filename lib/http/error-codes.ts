@@ -36,6 +36,11 @@ export const API_ERROR_CODES = [
   "TERMS_NOT_ACCEPTED",
   "TERMS_VERSION_CHANGED",
   "RATE_LIMITED",
+  // CAPTCHA (T-1702) e cambio password obbligato dopo un reset da admin (T-1704).
+  "CAPTCHA_REQUIRED",
+  "CAPTCHA_INVALID",
+  "CAPTCHA_UNAVAILABLE",
+  "PASSWORD_CHANGE_REQUIRED",
   // Lingua dell'interfaccia (T-1301).
   "LOCALE_UNSUPPORTED",
   // Progetti e sezioni.
@@ -95,6 +100,8 @@ export const API_ERROR_CODES = [
   "INVALID_SIGNATURE",
   "PLAN_LIMIT",
   "LAUNCH_NOT_READY",
+  // Quote d'uso del workspace (T-1703).
+  "QUOTA_EXCEEDED",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

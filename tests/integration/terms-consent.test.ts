@@ -11,6 +11,7 @@ import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { setCommercialLaunchForTests } from "../helpers/launch";
+import { configureTestTurnstile, TEST_TURNSTILE_TOKEN } from "../helpers/turnstile";
 
 // Versione corrente scritta nel test (lib/legal/version.ts): il server la confronta con la propria costante.
 const CURRENT_TERMS = "segnaposto-2026-10-07";
@@ -20,7 +21,13 @@ function registerWith(extra: Record<string, unknown>) {
   return callRoute(register, {
     method: "POST",
     url: "/api/auth/register",
-    body: { email: "consenso@example.com", password: PASSWORD, confirmPassword: PASSWORD, ...extra },
+    body: {
+      email: "consenso@example.com",
+      password: PASSWORD,
+      confirmPassword: PASSWORD,
+      turnstileToken: TEST_TURNSTILE_TOKEN,
+      ...extra,
+    },
   });
 }
 
@@ -43,10 +50,13 @@ beforeEach(async () => {
   await resetDatabase();
   // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
   await setCommercialLaunchForTests("live");
+  // impacted-by: T-1702 (CAPTCHA obbligatorio sulla registrazione aperta: chiavi di prova e siteverify simulato)
+  configureTestTurnstile();
 });
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   resetEnvForTests();
 });
 

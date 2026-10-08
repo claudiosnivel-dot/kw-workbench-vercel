@@ -28,10 +28,11 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
   definition_of_done:
     - "prisma/schema.prisma: model RateLimitHit (id BigInt autoincrement, key String, created_at DateTime default now, @@index([key, created_at])) mappato su rate_limit_hits, con RLS abilitata senza policy (T-205)."
     - "lib/security/rate-limit.ts: consumeRateLimit(key, regola, now) a finestra scorrevole (sliding log): in una transazione pg_advisory_xact_lock(hashtext(key)), DELETE delle righe della chiave più vecchie della finestra, COUNT, INSERT solo se il conteggio è sotto la soglia; restituisce allowed e retryAfterSeconds (secondi finché la riga più vecchia esce dalla finestra, arrotondati per eccesso, minimo 1)."
-    - "Pulizia globale: pruneRateLimitHits(now) elimina le righe più vecchie della finestra massima configurata; esposta come npm run ratelimit:prune e collegata al cron di manutenzione se esiste (T-1203)."
-    - "Regole in lib/security/rate-limit-config.ts con valori iniziali PROPOSTI e sovrascrivibili da env validata (T-201): login per IP+email 5 ogni 15 minuti e per IP 50 ogni 15 minuti; registrazione per IP 5 ogni ora; richiesta di reset per email 3 ogni ora e per IP 20 ogni ora. I test iniettano soglie basse."
-    - "lib/security/client-ip.ts: primo valore di x-forwarded-for (su Vercel l'header è sovrascritto dalla piattaforma con l'IP pubblico del client); fuori da Vercel o con header assente la parte IP della chiave vale 'unknown'."
-    - "Rotte: app/api/auth/login/route.ts (prima di verifyLoginCredentials, email normalizzata lowercase), app/api/auth/register/route.ts e la rotta di richiesta reset di T-1404; oltre soglia → 429 con error, code RATE_LIMITED, retryAfter e header Retry-After in secondi; la risposta non cambia tra email esistenti e inesistenti."
+    - "Pulizia globale: pruneRateLimitHits(now) elimina le righe più vecchie della finestra massima configurata; esposta come npm run ratelimit:prune (scripts/ratelimit-prune.ts) e chiamata dal cron di manutenzione /api/cron/reap-jobs (T-1203)."
+    - "Regole in lib/security/rate-limit-config.ts con valori iniziali PROPOSTI e sovrascrivibili da env validata (T-201, interi di INT_ENV in lib/env.ts): login per IP+email 5 ogni 15 minuti e per IP 50 ogni 15 minuti (RATE_LIMIT_LOGIN_IP_EMAIL_MAX, RATE_LIMIT_LOGIN_IP_MAX, RATE_LIMIT_LOGIN_WINDOW_SECONDS); registrazione per IP 5 ogni ora (RATE_LIMIT_REGISTER_IP_MAX, RATE_LIMIT_REGISTER_WINDOW_SECONDS); richiesta di reset per email 3 ogni ora e per IP 20 ogni ora (RATE_LIMIT_RESET_EMAIL_MAX, RATE_LIMIT_RESET_IP_MAX, RATE_LIMIT_RESET_WINDOW_SECONDS); avvii di estrazione per workspace 30 ogni ora (RATE_LIMIT_RUN_START_MAX, RATE_LIMIT_RUN_START_WINDOW_SECONDS, D-27 emendata). I test iniettano soglie basse."
+    - "lib/security/client-ip.ts: su Vercel (VERCEL=1) il primo valore di x-forwarded-for (l'header è sovrascritto dalla piattaforma con l'IP pubblico del client); fuori da Vercel o con header assente la parte IP della chiave vale 'unknown'."
+    - "Rotte: app/api/auth/login/route.ts (prima di verifyLoginCredentials, email normalizzata lowercase), app/api/auth/register/route.ts (dopo il 403 SIGNUP_DISABLED della registrazione chiusa, T-1606) e la rotta di richiesta reset di T-1404; oltre soglia → 429 con error, code RATE_LIMITED, retryAfter e header Retry-After in secondi; la risposta non cambia tra email esistenti e inesistenti."
+    - "Avvii di estrazione (D-27 emendata, rate limit sugli avvii): con il lancio commerciale attivo (D-32) le rotte di avvio di T-1204 consumano la regola per workspace prima della riserva della quota (T-1703); oltre soglia → 429 RATE_LIMITED con Retry-After e nessun job; con il lancio in pausa la regola non si applica."
     - "Ordine dei controlli: rate limit prima della verifica credenziali e del CAPTCHA (T-1702), così i tentativi bloccati non consumano hash password né chiamate esterne."
 
   acceptance_criteria:
@@ -51,16 +52,21 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
       given: "x-forwarded-for '203.0.113.5, 10.0.0.1' e una regola con soglia 1"
       when: "si eseguono 2 chiamate concorrenti a consumeRateLimit sulla stessa chiave e poi pruneRateLimitHits con l'orologio oltre la finestra"
       then: "la chiave calcolata contiene 203.0.113.5; esattamente 1 chiamata restituisce allowed true; dopo la pulizia rate_limit_hits ha 0 righe"
+    - id: AC-1701-5
+      given: "lancio commerciale attivo, soglia di test degli avvii per workspace pari a 1 e un workspace W con due sezioni con seed"
+      when: "un membro avvia l'estrazione della prima sezione e poi della seconda; poi, con il lancio in pausa, avvia la seconda"
+      then: "il primo avvio è 202, il secondo 429 con code RATE_LIMITED e header Retry-After intero maggiore di 0 e jobs di W ha 1 riga; l'avvio in pausa è 202"
 
   target_tests:
     - file: "tests/integration/rate-limit-auth.test.ts"
-      covers: [AC-1701-1, AC-1701-2, AC-1701-3, AC-1701-4]
+      covers: [AC-1701-1, AC-1701-2, AC-1701-3, AC-1701-4, AC-1701-5]
 
   security_notes:
     - "A07 Authentication Failures / CWE-307 (Improper Restriction of Excessive Authentication Attempts): limiti per IP+email e per IP sul login, per IP sulla registrazione, per email e IP sul reset."
     - "A07 / CWE-204 (Observable Response Discrepancy): 429 e risposte del reset identiche per account esistenti e inesistenti."
     - "A02 Security Misconfiguration / CWE-348 (Use of Less Trusted Source): x-forwarded-for è considerato affidabile solo su Vercel, che lo sovrascrive; altrove la chiave degrada a 'unknown' invece di fidarsi di un header del client."
     - "A06 Insecure Design / CWE-362 (Race Condition): advisory lock per chiave, così richieste concorrenti non superano la soglia."
+    - "A06 / CWE-770 (Allocation of Resources Without Limits or Throttling): con il lancio attivo gli avvii di estrazione per workspace hanno un tetto per finestra (D-27 emendata)."
 
   out_of_scope:
     - "CAPTCHA: T-1702."
@@ -79,11 +85,11 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
     irraggiungibile; chiavi da env validata e chiavi di test vietate in produzione.
 
   definition_of_done:
-    - "lib/security/turnstile.ts: verifyTurnstile(token, remoteIp, expectedAction) invia POST a https://challenges.cloudflare.com/turnstile/v0/siteverify (form-urlencoded con secret, response, remoteip) con timeout di 5 secondi (AbortSignal.timeout); esito valido solo se success è true, hostname coincide con l'host di APP_PUBLIC_URL e action coincide con expectedAction."
+    - "lib/security/turnstile.ts: verifyTurnstile(token, remoteIp, expectedAction) invia POST a https://challenges.cloudflare.com/turnstile/v0/siteverify (form-urlencoded con secret, response, remoteip) con timeout di 5 secondi (AbortSignal.timeout); esito valido solo se success è true, hostname coincide con l'host di APP_PUBLIC_URL e action coincide con expectedAction. Senza APP_PUBLIC_URL l'host atteso manca e l'esito è 503 CAPTCHA_UNAVAILABLE."
     - "Esiti: token assente → 400 code CAPTCHA_REQUIRED; token più lungo di 2048 caratteri → 400 code CAPTCHA_INVALID senza chiamare siteverify; success false (ad esempio invalid-input-response o timeout-or-duplicate) oppure hostname o action diversi → 400 CAPTCHA_INVALID; errore di rete, timeout o internal-error → 503 code CAPTCHA_UNAVAILABLE."
-    - "Rotte protette: app/api/auth/register/route.ts (action 'register') e rotta di richiesta reset di T-1404 (action 'password-reset'); ordine: rate limit (T-1701), poi CAPTCHA, poi logica."
-    - "Client: components/register-form.tsx e il form di reset caricano https://challenges.cloudflare.com/turnstile/v0/api.js con data-action coerente e inviano il token (campo cf-turnstile-response) nel body come turnstileToken; la CSP di T-505, se già presente, consente challenges.cloudflare.com in script-src e frame-src."
-    - "Env validata (T-201): TURNSTILE_SECRET_KEY e NEXT_PUBLIC_TURNSTILE_SITE_KEY obbligatorie quando la registrazione pubblica è attiva (APP_PUBLIC_SIGNUP_ENABLED, oggi default true in lib/auth/config.ts, e lancio commerciale attivo, D-32: in pausa la registrazione pubblica è chiusa e le chiavi sono una voce della checklist di T-1606); in production le chiavi di test Cloudflare (sitekey e secret che iniziano con 1x00000, 2x00000 o 3x00000) sono rifiutate; dev ed e2e usano proprio le chiavi di test che passano sempre."
+    - "Rotte protette: app/api/auth/register/route.ts (action 'register') e rotta di richiesta reset di T-1404 (action 'password-reset'); ordine: rate limit (T-1701), poi CAPTCHA, poi logica. Il CAPTCHA è obbligatorio quando Turnstile è configurato (entrambe le chiavi) o il lancio commerciale è attivo: la registrazione, aperta solo con il lancio attivo (T-1606), lo richiede sempre e senza chiavi risponde 503 CAPTCHA_UNAVAILABLE (fail-closed); il recupero password con il lancio in pausa e senza chiavi resta senza CAPTCHA, protetto dai limiti di T-1701."
+    - "Client: components/register-form.tsx (tramite il form delle credenziali) e il form di reset, solo con NEXT_PUBLIC_TURNSTILE_SITE_KEY impostata, inseriscono dal bundle lo script https://challenges.cloudflare.com/turnstile/v0/api.js (rendering esplicito con action coerente) e inviano il token (campo cf-turnstile-response) nel body come turnstileToken; con la site key la CSP di T-505 consente challenges.cloudflare.com in script-src e frame-src (senza, la CSP non cambia)."
+    - "Env validata (T-201): TURNSTILE_SECRET_KEY e NEXT_PUBLIC_TURNSTILE_SITE_KEY vanno impostate insieme; sono facoltative all'avvio perché il lancio commerciale è uno stato del DB (D-32): la loro presenza è la voce captcha della checklist di T-1606 (isTurnstileReady), quindi il lancio non si attiva senza chiavi; in production le chiavi di test Cloudflare (sitekey e secret che iniziano con 1x00000, 2x00000 o 3x00000) sono rifiutate; dev ed e2e usano proprio le chiavi di test che passano sempre (gli E2E girano senza chiavi: nessun widget, baseline visive invariate)."
     - "Nei test di integrazione siteverify è sempre mockato con fetch mock; nessuna chiamata di rete reale."
 
   acceptance_criteria:
@@ -93,10 +99,10 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
       then: "la risposta è 400 con code CAPTCHA_REQUIRED; users ha lo stesso numero di righe e il mock ha ricevuto 0 chiamate"
     - id: AC-1702-2
       given: "siteverify mockato che risponde nell'ordine success false con error-codes invalid-input-response, success true con hostname 'evil.example', success true con hostname di APP_PUBLIC_URL e action 'register'"
-      when: "si inviano tre registrazioni con token e username diversi da x-forwarded-for 203.0.113.9"
-      then: "le prime due ricevono 400 CAPTCHA_INVALID senza nuovi utenti; la terza crea 1 utente; ogni chiamata al mock contiene secret uguale a TURNSTILE_SECRET_KEY e remoteip 203.0.113.9"
+      when: "si inviano tre registrazioni con token ed email diversi da x-forwarded-for 203.0.113.9 (su Vercel)"
+      then: "le prime due ricevono 400 CAPTCHA_INVALID senza nuovi utenti; la terza riceve 202 e crea 1 utente; ogni chiamata al mock contiene secret uguale a TURNSTILE_SECRET_KEY e remoteip 203.0.113.9"
     - id: AC-1702-3
-      given: "siteverify mockato e l'outbox email di test vuota"
+      given: "Turnstile configurato, siteverify mockato e l'outbox email di test vuota"
       when: "si invia la richiesta di reset password senza token e poi con un token mentre il mock va in timeout"
       then: "la prima risposta è 400 CAPTCHA_REQUIRED, la seconda 503 CAPTCHA_UNAVAILABLE, e l'outbox contiene 0 email"
     - id: AC-1702-4
@@ -130,19 +136,21 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
     di fatturazione.
 
   definition_of_done:
-    - "prisma/schema.prisma: enum UsageMetric (runs_day, keywords_month, licensed_metrics_keywords_month); model UsageCounter (workspace_id, metric, period_start DateTime, count Int default 0, @@unique([workspace_id, metric, period_start])) mappato su usage_counters, con RLS abilitata senza policy (T-205)."
-    - "Periodi in UTC: runs_day parte alle 00:00Z del giorno, keywords_month alle 00:00Z del primo giorno del mese; resetAt è l'inizio del periodo successivo."
-    - "lib/billing/usage.ts: reserveRun(tx, workspaceId, now) esegue un incremento condizionale atomico di runs_day (INSERT ... ON CONFLICT DO UPDATE SET count = count + 1 WHERE count è minore di runsPerDay); 0 righe → QuotaExceededError; con runsPerDay = 0 rifiuta senza eseguire l'insert; richiede anche keywords_month minore di keywordsPerMonth; è chiamata nella stessa transazione che crea il job (avvio di T-1204 per progetto e per sezione)."
+    - "prisma/schema.prisma: enum UsageMetric (runs_day, keywords_month, licensed_keywords_month, run_refunds_month); model UsageCounter (id BigInt autoincrement, workspace_id, metric, period_start DateTime, count Int default 0, @@unique([workspace_id, metric, period_start])) mappato su usage_counters, con RLS abilitata senza policy (T-205); su jobs l'enum JobFailureCause (INTERNAL, USER) nella colonna failure_cause e quota_refunded Boolean default false."
+    - "Periodi in UTC: runs_day parte alle 00:00Z del giorno, keywords_month e run_refunds_month alle 00:00Z del primo giorno del mese; resetAt è l'inizio del periodo successivo."
+    - "lib/billing/usage.ts: reserveRun(tx, workspaceId, limits, now) esegue un incremento condizionale atomico di runs_day (INSERT ... ON CONFLICT DO UPDATE SET count = count + 1 WHERE count è minore di runsPerDay); 0 righe → QuotaExceededError; con runsPerDay = 0 rifiuta senza eseguire l'insert; richiede anche keywords_month minore di keywordsPerMonth; è chiamata nella stessa transazione che crea il job (avvio di T-1204 per progetto e per sezione), sotto il lock della riga del workspace, e la riserva (workspace e giorno) va nel payload del job."
+    - "Al massimo un job attivo per workspace (D-27 emendata): con il lancio attivo, dopo la riserva, un job pending o running in un altro progetto o sezione del workspace → 409 JOB_ALREADY_ACTIVE con il suo jobId e la riserva annullata con la transazione; con il lancio in pausa resta il solo vincolo di un job attivo per sezione (T-1201)."
     - "Oltre quota: 429 con error, code QUOTA_EXCEEDED, metric, limit e resetAt (ISO 8601); nessun job creato."
     - "Quota mensile di keyword: lo store finale della pipeline (T-1202) salva al massimo il minimo tra maxKeywordsPerRun e keywordsPerMonth meno le keyword già contate; keywords_month aumenta del numero di keyword effettivamente salvate; se si tronca per la quota, result.truncated = true e result.truncatedReason = 'monthly_quota'."
-    - "Un'estrazione conta all'avvio e i job falliti non vengono stornati (scelta da confermare con D-14)."
-    - "Con il lancio commerciale in pausa (D-32, T-1606) le quote non si applicano: nessun 429 QUOTA_EXCEEDED né troncamento per quota; i contatori possono comunque registrare l'uso per il cruscotto."
-    - "Quota del fornitore con licenza (D-30): prima di ogni richiesta al fornitore (T-902) la pipeline riserva in modo atomico, su licensed_metrics_keywords_month, il numero di keyword del batch entro licensedMetricsKeywordsPerMonth; le keyword oltre quota restano con metrics_status missing e result.metricsNotice = LICENSED_METRICS_QUOTA_EXCEEDED, senza far fallire il job. Si somma al tetto di spesa globale di T-903, che resta il limite di sicurezza dell'intero servizio."
+    - "Un'estrazione conta all'avvio (D-27). Causa del fallimento classificata dal codice in jobs.failure_cause (D-27 emendata): INTERNAL per eccezione non prevista, errore del DB, tentativi esauriti dal recupero (T-1203) e autocomplete non disponibile (fornitore esterno, T-306); USER per sezione senza seed; l'annullamento dell'utente porta il job a canceled e consuma la quota."
+    - "Rimborso (D-27 emendata): nella transazione che porta a failed un job con causa INTERNAL e una riserva, un incremento condizionale atomico di run_refunds_month del workspace entro il tetto runRefundsPerMonth della politica di D-14 (lib/billing/plans.ts, segnaposto 0); se riesce, runs_day del giorno della riserva scende di 1 (mai sotto 0) e jobs.quota_refunded diventa true; oltre il tetto nessun rimborso, un messaggio a Sentry, la riga di log quota_refund_cap_reached e una riga quota.refund_cap_reached nel registro di T-1704 (actor null, target workspace). Un fallimento USER non rimborsa."
+    - "Con il lancio commerciale in pausa (D-32, T-1606) le quote non si applicano: nessun 429 QUOTA_EXCEEDED né troncamento per quota, nessuna riserva né rimborso; i contatori non si scrivono (nessun consumatore in pausa: la pagina di fatturazione mostra solo la pausa e il cruscotto di T-1705 legge i job)."
+    - "Quota del fornitore con licenza (D-30): prima di ogni richiesta al fornitore (T-902) la pipeline riserva in modo atomico, su licensed_keywords_month, il numero di keyword del batch entro licensedMetricsKeywordsPerMonth; le keyword oltre quota restano con metrics_status missing e result.metricsNotice = LICENSED_METRICS_QUOTA_EXCEEDED, senza far fallire il job. Si somma al tetto di spesa globale di T-903, che resta il limite di sicurezza dell'intero servizio."
     - "GET /api/billing/usage?workspaceId= (qualsiasi membro, non membro 404) → runsToday, runsPerDay, keywordsThisMonth, keywordsPerMonth, resetAt per metrica; components/usage-summary.tsx lo mostra ed è montato in /billing se T-1604 è già costruito, altrimenti lo monta T-1604."
 
   acceptance_criteria:
     - id: AC-1703-1
-      given: "W su un piano di prova con runsPerDay = 2 e 2 estrazioni avviate oggi"
+      given: "lancio commerciale attivo, W su un piano di prova con runsPerDay = 2 e 2 estrazioni avviate oggi e concluse"
       when: "un membro invia una terza richiesta di avvio estrazione"
       then: "la risposta è 429 con code QUOTA_EXCEEDED, metric 'runs_day' e resetAt uguale alla mezzanotte UTC successiva; jobs di W ha ancora 2 righe"
     - id: AC-1703-2
@@ -160,16 +168,25 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
     - id: AC-1703-5
       given: "W con licensedMetrics = true, licensedMetricsKeywordsPerMonth = 1500, 1000 keyword già arricchite nel mese e una pipeline che produce 800 keyword con il fetch del fornitore mockato"
       when: "il job arriva alla fase delle metriche"
-      then: "il mock del fornitore riceve in totale 500 keyword, 300 candidate restano con metrics_status missing, il contatore licensed_metrics_keywords_month vale 1500 e il result del job contiene metricsNotice uguale a LICENSED_METRICS_QUOTA_EXCEEDED con status del job completed"
+      then: "il mock del fornitore riceve in totale 500 keyword, 300 candidate restano con metrics_status missing, il contatore licensed_keywords_month vale 1500 e il result del job contiene metricsNotice uguale a LICENSED_METRICS_QUOTA_EXCEEDED con status del job completed"
+    - id: AC-1703-6
+      given: "lancio commerciale attivo, runsPerDay = 2, tetto di rimborsi runRefundsPerMonth = 1 e una sezione con seed in cui l'autocomplete è sempre non disponibile"
+      when: "un membro avvia due estrazioni che falliscono una dopo l'altra, poi toglie le seed della sezione, ne avvia una terza e infine richiede una quarta"
+      then: "il primo job è failed con failure_cause INTERNAL e quota_refunded true; il secondo è failed INTERNAL con quota_refunded false e admin_audit_log ha 1 riga quota.refund_cap_reached con target_id W; il terzo è failed con failure_cause USER e quota_refunded false; la quarta richiesta riceve 429 QUOTA_EXCEEDED con metric 'runs_day'"
+    - id: AC-1703-7
+      given: "lancio commerciale attivo, W con due sezioni con seed e un job pending sulla prima"
+      when: "un membro avvia l'estrazione della seconda sezione; poi, con il lancio in pausa, la avvia di nuovo"
+      then: "con il lancio attivo la risposta è 409 JOB_ALREADY_ACTIVE con il jobId del job pending e il contatore runs_day del giorno resta invariato; in pausa la risposta è 202"
 
   target_tests:
     - file: "tests/integration/usage-quotas.test.ts"
-      covers: [AC-1703-1, AC-1703-2, AC-1703-3, AC-1703-4, AC-1703-5]
+      covers: [AC-1703-1, AC-1703-2, AC-1703-3, AC-1703-4, AC-1703-5, AC-1703-6, AC-1703-7]
 
   security_notes:
     - "A06 Insecure Design / CWE-770 (Allocation of Resources Without Limits or Throttling): quote per workspace sulle operazioni costose (autocomplete Google e metriche del fornitore con licenza), lette solo dai diritti lato server."
     - "A06 / CWE-362 (Race Condition): incremento condizionale atomico in SQL, nessun check-then-increment in memoria."
     - "A01 Broken Access Control / CWE-639: GET /api/billing/usage filtra per membership; un non membro riceve 404."
+    - "A06 / CWE-841 (Improper Enforcement of Behavioral Workflow): i rimborsi automatici hanno un tetto per workspace e mese, oltre il quale decide l'admin (D-27 emendata); un job attivo per workspace con il lancio attivo."
 
   out_of_scope:
     - "Limiti di conteggio non periodici (progetti, sezioni, seed): T-1605."
@@ -190,7 +207,9 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
     - "Azioni registrate nella stessa transazione dell'azione: user.create, user.password_reset, user.suspend, user.reactivate, user.role_change, user.delete (createUserFromAdmin, updateUserFromAdmin, deleteUserFromAdmin in lib/admin/users.ts) e branding.update (app/api/settings/branding/route.ts e lib/integrations/branding.ts); un'azione rifiutata (400, 403, 404) non scrive righe."
     - "metadata: solo i campi cambiati con valore prima e dopo (ruolo, stato, nome app; per il logo l'hash SHA-256 al posto del data URL); mai password, hash, token o data URL."
     - "Reset da admin: nuova colonna users.must_change_password Boolean default false impostata a true; session_version incrementata (T-501) così le sessioni esistenti decadono; al login con must_change_password la risposta porta code PASSWORD_CHANGE_REQUIRED e redirect a /account/password; ogni API diversa da cambio password e logout risponde 403 con code PASSWORD_CHANGE_REQUIRED finché il cambio non azzera il flag."
-    - "Avviso: email via EmailSender (T-1402) con nuovo template admin_password_reset in it ed en, inviata all'email dell'utente dopo il commit della transazione."
+    - "Avviso: email via EmailSender (T-1402) con nuovo template admin_password_reset (nome admin-password-reset, come gli altri template del repo) in it ed en, inviata all'email dell'utente dopo il commit della transazione."
+    - "Cambio password obbligato: la pagina /account/password contiene la card dell'account di Personalizza (PATCH /api/auth/config è la rotta di cambio password, che azzera il flag); restano ammesse anche POST /api/auth/logout e /api/auth/logout-all, e /api/locale (solo la lingua dell'interfaccia) e /api/auth/session-ended (solo un reindirizzamento), che non leggono dati; ogni pagina diversa da /account/password reindirizza lì. Il login risponde 200 con il cookie di sessione, code PASSWORD_CHANGE_REQUIRED e redirect '/account/password'."
+    - "Registrate anche, fuori dalle azioni su utenti e branding: il cambio del lancio commerciale (launch.update, T-1606, al posto della sola riga di log) e il tetto dei rimborsi raggiunto (quota.refund_cap_reached di T-1703, actor null)."
     - "Lettura: GET /api/admin/audit-log?cursor= solo root admin (requireRootAdminUserFromRequest), 50 righe per pagina ordinate per created_at e id decrescenti; sezione in app/admin/page.tsx resa solo se user.isRootAdmin."
 
   acceptance_criteria:
@@ -200,8 +219,8 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
       then: "la risposta è 200; admin_audit_log ha 1 riga con action 'user.password_reset', actor_user_id dell'admin e target_id U; la riga serializzata non contiene 'Temp-Pass-123'"
     - id: AC-1704-2
       given: "U dopo il reset di AC-1704-1, con un cookie di sessione emesso prima del reset"
-      when: "U usa il vecchio cookie su GET /api/projects, poi fa login con la nuova password e invia GET /api/projects con il nuovo cookie"
-      then: "il vecchio cookie riceve 401; il login risponde con code PASSWORD_CHANGE_REQUIRED e redirect a /account/password; la GET con il nuovo cookie riceve 403 PASSWORD_CHANGE_REQUIRED; l'outbox contiene 1 email a U con template admin_password_reset"
+      when: "U usa il vecchio cookie su POST /api/projects, poi fa login con la nuova password e invia POST /api/projects con il nuovo cookie"
+      then: "il vecchio cookie riceve 401; il login risponde con code PASSWORD_CHANGE_REQUIRED e redirect a /account/password; la POST con il nuovo cookie riceve 403 PASSWORD_CHANGE_REQUIRED; l'outbox contiene 1 email a U con template admin_password_reset"
     - id: AC-1704-3
       given: "un root admin, utenti di prova e un admin non root"
       when: "il root admin sospende un utente, cambia il ruolo di un altro, ne elimina un terzo e aggiorna il branding, poi l'admin non root tenta di modificare un admin"
@@ -240,6 +259,7 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
     - "Metriche calcolate con sole query aggregate (count, groupBy): utenti totali, attivi e sospesi; workspace totali; abbonamenti per piano e per status (trialing, active, past_due, paused); estrazioni per giorno negli ultimi 30 giorni (jobs.created_at in UTC); tasso di job falliti negli ultimi 7 giorni = failed diviso (completed + failed), null se il denominatore è 0."
     - "MRR stimato per valuta: somma, sugli abbonamenti active e past_due, di recurring_amount_minor per quantity diviso i mesi del ciclo (month: frequency; year: 12 per frequency; week: frequency per 12/52; day: frequency per 12/365), arrotondato all'intero, in unità minima e senza conversione di valuta; i campi sono quelli salvati da T-1603 dal payload Paddle; nessuna chiamata a Paddle dal cruscotto."
     - "Privacy: risposta con chiavi di primo livello in whitelist (users, workspaces, subscriptions, mrr, extractionsPerDay, failedJobRate7d) e solo numeri; nessun nome di progetto, keyword, seed, email o username, coerente con la promessa di app/admin/page.tsx che i dati progetto degli utenti restano privati."
+    - "Forma: users {total, active, suspended}; workspaces {total}; subscriptions {byPlan, byStatus} (conteggi per id di piano e per status); mrr {<codice valuta>: importo in unità minima}; extractionsPerDay array di 30 {date YYYY-MM-DD, count} dal giorno più vecchio a oggi (UTC); failedJobRate7d numero o null sui job creati negli ultimi 7 giorni."
 
   acceptance_criteria:
     - id: AC-1705-1
@@ -276,3 +296,14 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
 - Rilievi da confermare: soglie di rate limit di T-1701 sono valori iniziali PROPOSTI (configurabili), non decisioni del ledger; il conteggio delle estrazioni fallite (T-1703) va confermato con D-14.
+- Emendamento del 2026-10-08 allo stato dei macrotask 01-16 (il design non cambia):
+  - D-27 emendata il 2026-10-05 (meccanismo deciso dall'utente) entra nel modulo: rate limit sugli avvii (T-1701, AC-1701-5), causa del fallimento INTERNAL o USER, rimborso della quota per INTERNAL entro un tetto mensile per workspace con avviso oltre il tetto, un job attivo per workspace (T-1703, AC-1703-6 e AC-1703-7). Valori PROPOSTI o segnaposto di D-14: avvii 30 ogni ora per workspace, `runRefundsPerMonth` 0 nella politica dei piani; tutto vale solo con il lancio attivo (D-32).
+  - D-32 (T-1606): le quote si riservano solo con il lancio attivo; il CAPTCHA della registrazione (aperta solo col lancio attivo) è sempre obbligatorio, quello del recupero password solo con Turnstile configurato o lancio attivo; le chiavi di Turnstile sono la voce captcha della checklist del lancio.
+  - T-1401: la registrazione usa l'email (AC-1702-2) e risponde 202 CHECK_EMAIL (T-1403); l'IP del client si legge da x-forwarded-for solo su Vercel (VERCEL=1).
+  - T-1704: template `admin-password-reset` (nomi kebab-case dei template del repo), pagina `/account/password` con la card dell'account e rotte ammesse durante il cambio obbligato; registro anche del cambio del lancio (T-1606) e del tetto dei rimborsi (T-1703).
+- Rilievi della costruzione (2026-10-08, il design non cambia):
+  - T-1701: chiavi `login:ip-email:<ip>:<email>`, `login:ip:<ip>`, `register:ip:<ip>`, `reset:email:<email>`, `reset:ip:<ip>` e `run:workspace:<id>`; la pulizia gira nel cron giornaliero `/api/cron/reap-jobs` con il solo conteggio nel log (`rate_limit_hits_pruned`), così il corpo della risposta del cron (AC-1203-3) non cambia. Gli E2E girano con soglie alte del login (stesso utente e IP `unknown` in ogni spec), le soglie basse sono provate dai test d'integrazione. La registrazione legge il body prima del rate limit (serve il token del CAPTCHA): l'ordine rate limit, CAPTCHA, logica resta.
+  - T-1702: con una secret di test di Cloudflare (solo fuori produzione) siteverify restituisce hostname e action fittizi e conta solo success; registrazione e richiesta di reset passano dalla stessa guardia (`guardPublicForm`: rate limit poi CAPTCHA). Senza la site key nessun widget e la CSP resta com'era (baseline visive invariate).
+  - T-1703: il valore dell'enum per il fornitore con licenza è `licensed_keywords_month` (il nome più lungo era un falso positivo della regola gitleaks `trueline-generic-assigned-secret` nel client generato da Prisma); la concessione della quota del fornitore si registra nel cursore del job prima della richiesta, così un passo ripreso non la consuma due volte; la quota mensile di keyword si riserva nella transazione dello store; i contatori non si scrivono in pausa. Il tetto dei rimborsi è `runRefundsPerMonth` nella politica dei piani (segnaposto 0 di D-14). Il riepilogo d'uso compare in `/billing` solo con il lancio attivo.
+  - T-1704: AC-1704-2 usa POST /api/projects (la GET è stata rimossa da T-1101); una modifica che non cambia ruolo o stato non scrive righe; il cambio del lancio scrive `launch.update` al posto della riga di log; durante il cambio obbligato l'OAuth di Google Sheets risponde come una sessione scaduta; la pagina del cambio password viene prima del gate dei termini (l'accettazione è un'API).
+  - T-1705: la risposta ha le sole chiavi della whitelist al primo livello (nessun involucro `data`); `subscriptions.byStatus` elenca tutti gli stati, anche a zero; i tipi condivisi con i componenti stanno in `lib/admin/kpi-types.ts` e `lib/billing/usage-types.ts` (contratto D-22: i componenti non raggiungono Prisma).
