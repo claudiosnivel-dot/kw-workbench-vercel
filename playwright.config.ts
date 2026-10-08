@@ -14,6 +14,12 @@ process.env.DIRECT_URL = testDatabaseUrl;
 // Segreti di test generati a ogni esecuzione: lunghi 48 caratteri, mai valori reali né placeholder.
 const testSecret = () => randomBytes(24).toString("hex");
 
+// Segreti condivisi con i worker dei test, che ereditano l'ambiente del processo principale (il config si rivaluta nei
+// worker, ??= conserva il valore ereditato): gli E2E di fatturazione (T-1604) scrivono app_settings cifrata e firmano i
+// webhook di Paddle come il server.
+process.env.E2E_APP_ENCRYPTION_KEY ??= testSecret();
+process.env.E2E_PADDLE_WEBHOOK_SECRET ??= `pdl_ntfset_${testSecret()}`;
+
 // Ogni variabile letta dall'app è esplicita: Next carica il .env locale solo per le variabili
 // non impostate, quindi qui nessun valore del .env (DB reale, token Google) può prevalere.
 const appEnv: Record<string, string> = {
@@ -28,7 +34,7 @@ const appEnv: Record<string, string> = {
   APP_PUBLIC_SIGNUP_ENABLED: "true",
   APP_SESSION_SECRET: testSecret(),
   APP_SESSION_MAX_AGE_SECONDS: "604800",
-  APP_ENCRYPTION_KEY: testSecret(),
+  APP_ENCRYPTION_KEY: process.env.E2E_APP_ENCRYPTION_KEY,
   // Job in background (T-1203): firma dei passi e chiamate interne verso il server degli E2E.
   JOB_SIGNING_SECRET: testSecret(),
   APP_PUBLIC_URL: `http://localhost:${PORT}`,
@@ -53,6 +59,9 @@ const appEnv: Record<string, string> = {
   GOOGLE_SHEETS_OAUTH_CLIENT_ID: "",
   GOOGLE_SHEETS_OAUTH_CLIENT_SECRET: "",
   GOOGLE_SHEETS_OAUTH_REDIRECT_URI: "",
+  // Paddle sandbox senza chiave API (T-1603, T-1604): i webhook firmati sì, nessuna chiamata all'API di Paddle.
+  PADDLE_ENV: "sandbox",
+  PADDLE_WEBHOOK_SECRET: process.env.E2E_PADDLE_WEBHOOK_SECRET,
 };
 
 export default defineConfig({

@@ -85,6 +85,16 @@ export const API_ERROR_CODES = [
   "PLANNER_KEYWORD_COLUMN_MISSING",
   "PLANNER_TOO_MANY_ROWS",
   "PLANNER_PART_NOT_FOUND",
+  // Fatturazione, diritti del piano e lancio commerciale (T-1602…T-1606).
+  "BILLING_PAUSED",
+  "PLANS_NOT_CONFIGURED",
+  "INVALID_PLAN",
+  "SUBSCRIPTION_EXISTS",
+  "SUBSCRIPTION_NOT_FOUND",
+  "BILLING_PROVIDER_ERROR",
+  "INVALID_SIGNATURE",
+  "PLAN_LIMIT",
+  "LAUNCH_NOT_READY",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

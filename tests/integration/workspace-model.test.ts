@@ -14,6 +14,7 @@ import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { flushAfter } from "../helpers/next-after";
 import { createTemporaryDatabase, type TemporaryDatabase } from "../helpers/migrations";
+import { setCommercialLaunchForTests } from "../helpers/launch";
 
 const WORKSPACES_MIGRATION = "0032_workspaces";
 
@@ -135,6 +136,8 @@ describe("workspace personale alla registrazione", () => {
     resetEnvForTests();
     personalWorkspace.fail = false;
     await resetDatabase();
+    // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
+    await setCommercialLaunchForTests("live");
   });
 
   afterEach(() => {

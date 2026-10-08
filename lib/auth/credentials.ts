@@ -304,6 +304,8 @@ export async function registerUser(input: {
   role?: UserRole;
   uiLocale?: UiLocale | null;
   acceptedTermsVersion?: string;
+  /** Email già garantita (utente creato dal root admin con il lancio in pausa, T-1606): nasce verificata. */
+  emailVerified?: boolean;
 }): Promise<AuthUser> {
   await bootstrapFirstUserIfEmpty();
 
@@ -323,6 +325,7 @@ export async function registerUser(input: {
       font_scale_mode: FontScaleMode.NORMAL,
       color_vision_mode: ColorVisionMode.NONE,
       ui_locale: input.uiLocale ?? null,
+      ...(input.emailVerified ? { email_verified_at: new Date() } : {}),
       ...(input.acceptedTermsVersion
         ? { accepted_terms_version: input.acceptedTermsVersion, accepted_terms_at: new Date() }
         : {}),

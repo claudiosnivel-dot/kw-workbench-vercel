@@ -4,6 +4,7 @@ import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
 import { enqueueExtractionJob } from "@/lib/modules/jobs/job-runner";
 import { startedJobResponse } from "@/lib/modules/jobs/run-response";
 import { requireProjectAccess } from "@/lib/authz/workspace";
+import { extractionPlanLimits } from "@/lib/billing/enforce";
 import { SectionNotFoundError } from "@/lib/modules/project-access";
 import { resolveDefaultSectionId } from "@/lib/modules/results-view";
 
@@ -49,7 +50,11 @@ export const POST = withUserRoute(async (request: Request, user, { id }: Project
     throw new SectionNotFoundError();
   }
 
-  const { job, created } = await enqueueExtractionJob(project.id, targetSubproject.id);
+  const { job, created } = await enqueueExtractionJob(
+    project.id,
+    targetSubproject.id,
+    await extractionPlanLimits(project.workspace_id)
+  );
   return startedJobResponse(job, created, targetSubproject.id);
 });
 

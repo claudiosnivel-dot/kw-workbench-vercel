@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ConfirmedActionButton } from "@/components/confirmed-action-button";
 import { FormFeedback } from "@/components/form-feedback";
 import { SettingsCard } from "@/components/settings-card";
 import { readApiResponse, sendJson } from "@/lib/client/http";
@@ -19,40 +20,6 @@ type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
 function workspaceUrl(workspaceId: string, path = "") {
   return `/api/workspaces/${encodeURIComponent(workspaceId)}${path}`;
-}
-
-/** Azione che chiede conferma, chiama l'API e ricarica la pagina; l'errore resta accanto al pulsante. */
-function ConfirmedActionButton({
-  confirmText,
-  label,
-  pendingLabel,
-  request,
-  className = "btn-secondary",
-  redirectTo,
-}: {
-  confirmText: string;
-  label: string;
-  pendingLabel: string;
-  request: () => Promise<Response>;
-  className?: string;
-  redirectTo?: string;
-}) {
-  const { loading, error, run } = useRefreshAction();
-
-  const onClick = () => {
-    if (window.confirm(confirmText)) {
-      void run(request, { redirectTo, keepLoadingOnSuccess: true });
-    }
-  };
-
-  return (
-    <div className="space-y-1">
-      <button type="button" className={className} disabled={loading} onClick={onClick}>
-        {loading ? pendingLabel : label}
-      </button>
-      <FormFeedback error={error} />
-    </div>
-  );
 }
 
 function RoleOptions() {

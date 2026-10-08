@@ -36,7 +36,9 @@ export type MetricsNotice =
   | "LOCATION_UNSUPPORTED"
   | "LANGUAGE_UNSUPPORTED"
   | "METRICS_BUDGET_EXCEEDED"
-  | "RUN_BUDGET_EXCEEDED";
+  | "RUN_BUDGET_EXCEEDED"
+  // Piano del workspace senza metriche con licenza (T-1605): l'estrazione usa NONE senza chiamare il fornitore.
+  | "PLAN_NO_LICENSED_METRICS";
 
 export type MetricsOutcome = {
   metrics: Map<string, KeywordMetric>;

@@ -219,6 +219,7 @@ model Workspace {
   memberships          Membership[]
   projects             Project[]
   invites              WorkspaceInvite[]
+  subscription         WorkspaceSubscription?
 
   @@map("workspaces")
 }
@@ -626,4 +627,61 @@ model PasswordResetToken {
 
   @@index([user_id, created_at])
   @@map("password_reset_tokens")
+}
+
+// Abbonamenti per workspace (T-1603): stati di Paddle Billing, aggiornati solo dai webhook firmati.
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  paused
+  canceled
+}
+
+// Esito di un evento di fatturazione (T-1603): applicato, più vecchio dello stato (stale) o ignorato.
+enum BillingEventOutcome {
+  applied
+  stale
+  ignored
+}
+
+/// Abbonamento del workspace (T-1603): una riga per workspace, legata alla subscription di Paddle. I campi di importo,
+/// valuta e ciclo servono ai KPI di T-1705; past_due_since alla tolleranza dei pagamenti scaduti (T-1604).
+model WorkspaceSubscription {
+  id                       String             @id @default(cuid())
+  workspace_id             String             @unique
+  provider                 String
+  provider_subscription_id String             @unique
+  provider_customer_id     String
+  plan_id                  String
+  status                   SubscriptionStatus
+  current_period_start     DateTime?
+  current_period_end       DateTime?
+  cancel_at                DateTime?
+  past_due_since           DateTime?
+  currency_code            String?
+  recurring_amount_minor   BigInt?
+  billing_interval         String?
+  billing_frequency        Int?
+  quantity                 Int?
+  last_event_occurred_at   DateTime
+  created_at               DateTime           @default(now())
+  updated_at               DateTime           @updatedAt
+  workspace                Workspace          @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+
+  @@map("workspace_subscriptions")
+}
+
+/// Registro dei webhook di fatturazione (T-1603): un evento per event_id, così una consegna ripetuta non ha effetti.
+model BillingEvent {
+  id              String              @id @default(cuid())
+  event_id        String              @unique
+  event_type      String
+  occurred_at     DateTime
+  notification_id String?
+  outcome         BillingEventOutcome
+  payload         Json
+  created_at      DateTime            @default(now())
+
+  @@map("billing_events")
 }

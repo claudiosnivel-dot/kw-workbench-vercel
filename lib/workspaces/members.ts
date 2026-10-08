@@ -6,14 +6,11 @@ import { AppError, ForbiddenError, ValidationError } from "@/lib/http/errors";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 import { parseAssignableRole } from "@/lib/workspaces/invites";
+import { lockWorkspaceRow } from "@/lib/workspaces/lock";
 
 const MAX_WORKSPACE_NAME_LENGTH = 80;
 // Caratteri di controllo: il nome finisce nelle email di invito e nel selettore.
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
-
-// SQL statico in frammenti costanti; l'id del workspace è sempre un parametro legato.
-const LOCK_WORKSPACE_ROW = Prisma.sql`SELECT "id" FROM "workspaces" WHERE "id" =`;
-const FOR_UPDATE = Prisma.sql`FOR UPDATE`;
 
 class LastOwnerError extends AppError {
   constructor() {
@@ -44,7 +41,7 @@ async function withLockedMembership<T>(
   ) => Promise<T>
 ): Promise<T> {
   return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`${LOCK_WORKSPACE_ROW} ${workspace.id} ${FOR_UPDATE}`;
+    await lockWorkspaceRow(tx, workspace.id);
     const target = await tx.membership.findUnique({
       where: { workspace_id_user_id: { workspace_id: workspace.id, user_id: targetUserId } },
       select: { role: true, workspace: { select: { personal_for_user_id: true } } },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AppError, errorResponse } from "@/lib/http/errors";
 import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
 import { requireProjectScope } from "@/lib/authz/workspace";
+import { assertFeature } from "@/lib/billing/enforce";
 import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
 import { EXPORT_SCOPES } from "@/lib/modules/export-types";
 import type { ExportScope } from "@/lib/modules/export-types";
@@ -71,7 +72,9 @@ export const POST = withUserRoute(async (request: NextRequest, user, { id }: Pro
     return errorResponse(400, "EXPORT_SCOPE_INVALID", "Scope non valido");
   }
 
-  await requireProjectScope(user, id, subprojectId, "export.run");
+  const project = await requireProjectScope(user, id, subprojectId, "export.run");
+  // Export su Google Sheets nel piano del workspace (T-1605): senza il diritto 402, nessuna chiamata a Google.
+  await assertFeature(project.workspace_id, "sheetsExport");
 
   const filters = parseResultsFilters(parseBodyFilters(payload.filters));
 

@@ -3,10 +3,14 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Manrope, Sora } from "next/font/google";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
+import { PastDueBanner } from "@/components/past-due-banner";
+import { PlanLimitNotice } from "@/components/plan-limit-notice";
 import { TopNav } from "@/components/top-nav";
 import { WorkspaceCookieSync } from "@/components/workspace-cookie-sync";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
+import { canPerform } from "@/lib/authz/permissions";
 import { getPageWorkspace } from "@/lib/authz/workspace";
+import { getPastDueGraceEnd } from "@/lib/billing/summary";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import "./globals.css";
 
@@ -42,6 +46,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   // Workspace attivo ed elenco per il selettore (T-1504): stessa query della pagina (cache di React).
   const workspaceContext = currentUser ? await getPageWorkspace(currentUser.id) : null;
+  // Pagamento scaduto del workspace attivo (T-1604): solo con il lancio commerciale attivo.
+  const pastDueUntil = workspaceContext ? await getPastDueGraceEnd(workspaceContext.workspace.id) : null;
+  const canManageBilling = workspaceContext ? canPerform(workspaceContext.workspace.role, "billing.manage") : false;
   const themeMode = currentUser?.themeMode ?? "DARK";
   const fontScaleMode = currentUser?.fontScaleMode ?? "NORMAL";
   const colorVisionMode = currentUser?.colorVisionMode ?? "NONE";
@@ -80,6 +87,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {currentUser?.email && !currentUser.emailVerified && (
                 <div className="mb-6">
                   <EmailVerificationBanner />
+                </div>
+              )}
+              {/* Limite del piano raggiunto (T-1605) e pagamento scaduto (T-1604) del workspace attivo. */}
+              {workspaceContext && <PlanLimitNotice canManageBilling={canManageBilling} />}
+              {pastDueUntil && (
+                <div className="mb-6">
+                  <PastDueBanner graceEndsAt={pastDueUntil.toISOString()} canManageBilling={canManageBilling} />
                 </div>
               )}
               {children}

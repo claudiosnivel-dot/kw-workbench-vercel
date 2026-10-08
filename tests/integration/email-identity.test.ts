@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
+import { setCommercialLaunchForTests } from "../helpers/launch";
 
 type DriverAdapterFailure = Prisma.PrismaClientKnownRequestError & {
   meta?: { driverAdapterError?: { cause?: { originalCode?: string } } };
@@ -38,6 +39,8 @@ beforeEach(async () => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");
   vi.stubEnv("APP_PUBLIC_SIGNUP_ENABLED", "true");
   await resetDatabase();
+  // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
+  await setCommercialLaunchForTests("live");
 });
 
 afterEach(() => {

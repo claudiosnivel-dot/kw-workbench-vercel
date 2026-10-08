@@ -95,6 +95,14 @@ const I18N_MIGRATED_FILES = [
   "app/invites/accept/page.tsx",
   "components/workspace-controls.tsx",
   "components/workspace-switcher.tsx",
+  "components/confirmed-action-button.tsx",
+  // T-1602…T-1606: fatturazione, avvisi del piano e interruttore del lancio nascono già con il catalogo.
+  "app/billing/page.tsx",
+  "components/billing-actions.tsx",
+  "components/checkout-button.tsx",
+  "components/past-due-banner.tsx",
+  "components/plan-limit-notice.tsx",
+  "components/admin-launch-card.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

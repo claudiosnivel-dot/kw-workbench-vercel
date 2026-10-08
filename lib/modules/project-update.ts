@@ -1,4 +1,5 @@
 import { expectOneRow, requireProjectAccess } from "@/lib/authz/workspace";
+import { assertLicensedMetricsChoice } from "@/lib/billing/enforce";
 import { ProjectNotFoundError } from "@/lib/modules/project-access";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
 import { parseProjectPatch } from "@/lib/modules/project-settings";
@@ -14,6 +15,7 @@ type ProjectActor = Parameters<typeof parseProjectPatch>[1] & { id: string };
 export async function patchProject(user: ProjectActor, projectId: string, payload: unknown) {
   const project = await requireProjectAccess(user, projectId, "project.update", { metrics_provider: true });
   const data = parseProjectPatch(payload, user, project);
+  await assertLicensedMetricsChoice(user, project.workspace_id, data.metrics_provider, project.metrics_provider);
   return prisma.$transaction(async (tx) => {
     const { count } = await tx.project.updateMany({ where: { id: project.id, ...project.perimeter }, data });
     expectOneRow(count, () => new ProjectNotFoundError());
