@@ -42,4 +42,15 @@ describe("buildCsp", () => {
     ]);
     expect(directive(buildCsp("abc", false, "non-un-url"), "connect-src")).toEqual(["'self'"]);
   });
+
+  it("con PADDLE_ENV ammette l'iframe e gli stili del checkout di quell'ambiente, senza cambiare script-src (T-1602)", () => {
+    const sandbox = buildCsp("abc", false, undefined, "sandbox");
+    const production = buildCsp("abc", false, undefined, "production");
+
+    expect(directive(sandbox, "frame-src")).toEqual(["'self'", "https://sandbox-buy.paddle.com"]);
+    expect(directive(production, "frame-src")).toEqual(["'self'", "https://buy.paddle.com"]);
+    expect(directive(production, "style-src")).toEqual(["'self'", "'nonce-abc'", "https://cdn.paddle.com"]);
+    expect(directive(sandbox, "script-src")).toEqual(directive(buildCsp("abc", false), "script-src"));
+    expect(directive(buildCsp("abc", false, undefined, "altro"), "frame-src")).toEqual([]);
+  });
 });

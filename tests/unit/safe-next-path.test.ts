@@ -17,6 +17,9 @@ vi.mock("@/lib/auth/current-user", () => ({
 // impacted-by: T-1302 (le pagine leggono i testi con getTranslations: fuori da Next, il catalogo italiano)
 vi.mock("next-intl/server", () => import("../helpers/next-intl-server"));
 
+// impacted-by: T-1606 (la registrazione pubblica è aperta solo con il lancio commerciale attivo, letto dal DB)
+vi.mock("@/lib/billing/launch", () => ({ isCommercialLive: async () => true }));
+
 const FILES_USING_NEXT = [
   "app/login/page.tsx",
   "app/register/page.tsx",

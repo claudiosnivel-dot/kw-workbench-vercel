@@ -1,4 +1,5 @@
 import { projectAccessWhere } from "@/lib/authz/workspace";
+import { assertWithinLimit, loadPlanGuard } from "@/lib/billing/enforce";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { OnboardingIdempotencyKind, OnboardingStatus, OnboardingStep } from "@/lib/generated/prisma/enums";
 import { AppError, NotFoundError } from "@/lib/http/errors";
@@ -113,7 +114,12 @@ export async function createOnboardingProject(
   return (
     (await replay()) ??
     createOnce(async () => {
+      const plan = await loadPlanGuard(input.workspaceId);
       const projectId = await prisma.$transaction(async (tx) => {
+        // Limite dei progetti del piano (T-1605), come POST /api/projects.
+        await assertWithinLimit(tx, plan, "maxProjects", async () =>
+          (await tx.project.count({ where: { workspace_id: input.workspaceId } })) + 1
+        );
         const project = await tx.project.create({
           data: { workspace_id: input.workspaceId, created_by_user_id: user.id, ...parsed.data },
           select: { id: true },
@@ -149,9 +155,15 @@ export async function createOnboardingSection(
   return (
     (await replay()) ??
     createOnce(async () => {
+      const perimeter = projectAccessWhere(user.id, "section.write");
+      // Diritti del workspace del progetto letti prima della transazione (T-1605); fuori dai workspace dell'utente → 404.
+      const owner = await prisma.project.findFirst({ where: { id: projectId, ...perimeter }, select: { workspace_id: true } });
+      if (!owner) {
+        throw new NotFoundError("Progetto non trovato");
+      }
+      const plan = await loadPlanGuard(owner.workspace_id);
       const subprojectId = await guardSectionName(() =>
         prisma.$transaction(async (tx) => {
-          const perimeter = projectAccessWhere(user.id, "section.write");
           const project = await tx.project.findFirst({
             where: { id: projectId, ...perimeter },
             select: { id: true, default_subproject_id: true },
@@ -161,6 +173,10 @@ export async function createOnboardingSection(
           }
           const target = { id: project.id, perimeter };
 
+          // Limite delle sezioni del piano (T-1605), come POST /api/projects/[id]/subprojects.
+          await assertWithinLimit(tx, plan, "maxSectionsPerProject", async () =>
+            (await tx.subproject.count({ where: { project_id: project.id } })) + 1
+          );
           const position = await tx.subproject.count({ where: { project_id: project.id } });
           const section = await tx.subproject.create({
             data: { project_id: project.id, position, ...parsed.data },

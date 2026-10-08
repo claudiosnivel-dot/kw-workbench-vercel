@@ -67,6 +67,13 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `SENTRY_ORG` | facolt. (slug dell'organizzazione Sentry, solo build) | facolt. | no | no | Vercel |
 | `SENTRY_PROJECT` | facolt. (slug del progetto Sentry, solo build) | facolt. | no | no | Vercel |
 | `LOG_LEVEL` | facolt. (`debug`, `info`, `warn` o `error`; default `info`) | facolt. | facolt. | no | Vercel / locale |
+| `PADDLE_ENV` | facolt. finché il lancio commerciale è in pausa (D-32), poi obbl. (checklist di T-1606): `sandbox` o `production`; obbligatoria se è impostata un'altra variabile di Paddle; con un valore, la CSP ammette l'iframe e gli stili del checkout di quell'ambiente | come Production (stesse variabili: `sandbox` per provare) | facolt. (`sandbox`) | no | Vercel / locale |
+| `PADDLE_API_KEY` | come `PADDLE_ENV`: chiave API di Paddle Billing; con `PADDLE_ENV=sandbox` deve contenere `sdbx`, con `production` no (errore all'avvio, senza mostrare il valore); mai nel sorgente né nei log | come Production | facolt. (chiave sandbox) | sì | Vercel (Sensitive) / locale |
+| `PADDLE_WEBHOOK_SECRET` | come `PADDLE_ENV`: segreto della notification destination (`pdl_ntfset_...`) che firma i webhook su `/api/billing/webhook`; senza, ogni webhook risponde 401 | come Production | facolt. | sì | Vercel (Sensitive) / locale |
+| `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | come `PADDLE_ENV`: client token di Paddle.js (pubblico); con `PADDLE_ENV=sandbox` inizia con `test_`, con `production` no | come Production | facolt. (`test_...`) | no | Vercel / locale |
+| `PADDLE_API_BASE_URL` | no (rifiutata all'avvio in produzione) | no | facolt. (solo test: base URL di un fake HTTP dell'API di Paddle) | no | locale |
+| `PADDLE_WEBHOOK_TOLERANCE_SECONDS` | facolt. (intero 1…300, default 5: tolleranza sul timestamp della firma dei webhook) | facolt. | facolt. | no | Vercel / locale |
+| `PADDLE_PRICE_*` | come `PADDLE_ENV`: price id di Paddle (`pri_...`) dei piani pubblici a pagamento, una variabile per piano e intervallo, con i nomi dichiarati da `priceEnv` in `lib/billing/plans.ts` (D-14); un valore malformato è un errore all'avvio | come Production | facolt. | no | Vercel / locale |
 
 ## Production
 

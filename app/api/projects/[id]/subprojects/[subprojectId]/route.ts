@@ -1,6 +1,7 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { expectOneRow, requireSectionAccess } from "@/lib/authz/workspace";
+import { assertLicensedMetricsChoice, assertWithinLimit, loadPlanGuard } from "@/lib/billing/enforce";
 import { type SectionParams, withUserRoute } from "@/lib/http/user-route";
 import { SectionNotFoundError } from "@/lib/modules/project-access";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
@@ -14,8 +15,18 @@ export const PATCH = withUserRoute(async (request: Request, user, { id, subproje
 
   // Aggiornamento parziale (T-809): seeds assente lascia le seed, seeds vuoto le cancella.
   const parsed = parseSubprojectPatch(await request.json(), user, existing);
+  await assertLicensedMetricsChoice(user, project.workspace_id, parsed.data.metrics_provider_override, existing.metrics_provider_override);
+  const plan = await loadPlanGuard(project.workspace_id);
 
   const updated = await guardSectionName(() => prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    // Seed della sezione dopo la deduplica (T-1605): la PATCH le sostituisce tutte, quindi conta l'elenco inviato;
+    // una sezione già oltre il limite (downgrade) resta modificabile finché le seed non aumentano.
+    const seeds = parsed.seeds;
+    if (seeds !== undefined) {
+      await assertWithinLimit(tx, plan, "maxSeedsPerSection", () => seeds.length, () =>
+        tx.seed.count({ where: { project_id: id, subproject_id: subprojectId } })
+      );
+    }
     // Perimetro del workspace nel where (T-1502): una membership revocata nel frattempo non porta a una scrittura.
     const { count } = await tx.subproject.updateMany({
       where: { id: subprojectId, project_id: id, project: project.perimeter },

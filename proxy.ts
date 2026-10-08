@@ -26,6 +26,8 @@ const PUBLIC_PATHS = new Set([
   "/api/cron/reap-jobs",
   // Scelta della lingua (T-1301): anche dalle pagine di login e registrazione; aggiorna l'utente solo con sessione valida.
   "/api/locale",
+  // Webhook di Paddle (T-1603): nessuna sessione, solo la firma HMAC verificata dalla rotta.
+  "/api/billing/webhook",
 ]);
 
 // Passi dei job in background (T-1203): nessuna sessione, solo la firma HMAC verificata dalla rotta.
@@ -79,7 +81,12 @@ function forward(request: NextRequest, requestId: string): NextResponse {
   }
 
   const nonce = btoa(crypto.randomUUID());
-  const csp = buildCsp(nonce, process.env.NODE_ENV === "development", process.env.NEXT_PUBLIC_SENTRY_DSN);
+  const csp = buildCsp(
+    nonce,
+    process.env.NODE_ENV === "development",
+    process.env.NEXT_PUBLIC_SENTRY_DSN,
+    process.env.PADDLE_ENV?.trim()
+  );
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
 

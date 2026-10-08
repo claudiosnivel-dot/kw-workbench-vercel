@@ -1,19 +1,11 @@
-import { Prisma, type Job } from "@/lib/generated/prisma/client";
+import type { ExtractionPlanLimits } from "@/lib/billing/enforce";
+import { isUniqueViolation } from "@/lib/db/unique-violation";
+import type { Job } from "@/lib/generated/prisma/client";
 import { getIntEnv } from "@/lib/env";
 import { advanceJob } from "@/lib/modules/jobs/advance-job";
 import { ACTIVE_JOB_STATUSES, failActiveJob, toPublicJobError } from "@/lib/modules/jobs/job-state";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
-
-type DriverAdapterFailure = { meta?: { driverAdapterError?: { cause?: { originalCode?: string } } } };
-
-/** Violazione di un vincolo unico: P2002 di Prisma o SQLSTATE 23505 riportato dal driver adapter. */
-function isUniqueViolation(error: unknown): boolean {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
-    return false;
-  }
-  return error.code === "P2002" || (error as DriverAdapterFailure).meta?.driverAdapterError?.cause?.originalCode === "23505";
-}
 
 // Un job concluso tra la violazione dell'indice e la rilettura libera la sezione: si riprova l'inserimento.
 const ENQUEUE_ATTEMPTS = 3;
@@ -21,9 +13,14 @@ const ENQUEUE_ATTEMPTS = 3;
 /**
  * Crea il job di estrazione della sezione (T-1201). L'indice parziale jobs_one_active_per_subproject ammette un solo
  * job pending o running per sezione: se esiste già, restituisce quello con created=false invece di propagare la
- * violazione (nessun controllo check-then-insert, CWE-362).
+ * violazione (nessun controllo check-then-insert, CWE-362). plan sono i limiti del piano letti all'avvio (T-1605):
+ * tetto di keyword e metriche con licenza, salvati nel payload; senza, l'estrazione non ha limiti di piano.
  */
-export async function enqueueExtractionJob(projectId: string, subprojectId: string): Promise<{ job: Job; created: boolean }> {
+export async function enqueueExtractionJob(
+  projectId: string,
+  subprojectId: string,
+  plan?: ExtractionPlanLimits
+): Promise<{ job: Job; created: boolean }> {
   for (let attempt = 1; ; attempt += 1) {
     try {
       const job = await prisma.job.create({
@@ -32,7 +29,7 @@ export async function enqueueExtractionJob(projectId: string, subprojectId: stri
           subproject_id: subprojectId,
           type: "extraction",
           status: "pending",
-          payload: { projectId, subprojectId },
+          payload: { projectId, subprojectId, ...(plan ? { plan } : {}) },
         },
       });
       return { job, created: true };

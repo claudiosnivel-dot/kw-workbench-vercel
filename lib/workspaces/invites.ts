@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { AuthUser } from "@/lib/auth/credentials";
 import { normalizeEmail } from "@/lib/auth/email-address";
 import { requireWorkspaceRole } from "@/lib/authz/workspace";
+import { assertSeatAvailable, loadPlanGuard } from "@/lib/billing/enforce";
 import { sendTemplateEmail } from "@/lib/email";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { WorkspaceRole } from "@/lib/generated/prisma/enums";
@@ -70,17 +71,22 @@ export async function createInvite(
   }
 
   const token = randomBytes(32).toString("base64url");
-  const invite = await prisma.workspaceInvite.create({
-    data: {
-      workspace_id: workspace.id,
-      email,
-      role,
-      token_hash: hashInviteToken(token),
-      invited_by_user_id: actor.id,
-      created_at: now,
-      expires_at: new Date(now.getTime() + INVITE_TTL_MS),
-    },
-    select: { id: true, email: true, role: true, expires_at: true },
+  // Posti del piano (T-1605): membership e inviti pendenti, contati sotto il lock del workspace con l'insert.
+  const plan = await loadPlanGuard(workspace.id);
+  const invite = await prisma.$transaction(async (tx) => {
+    await assertSeatAvailable(tx, plan);
+    return tx.workspaceInvite.create({
+      data: {
+        workspace_id: workspace.id,
+        email,
+        role,
+        token_hash: hashInviteToken(token),
+        invited_by_user_id: actor.id,
+        created_at: now,
+        expires_at: new Date(now.getTime() + INVITE_TTL_MS),
+      },
+      select: { id: true, email: true, role: true, expires_at: true },
+    });
   });
 
   try {
@@ -155,6 +161,7 @@ export async function acceptInvite(user: AuthUser, token: unknown) {
     throw new AppError(403, "EMAIL_NOT_VERIFIED", "Verifica la tua email prima di accettare l'invito");
   }
 
+  const plan = await loadPlanGuard(invite.workspace_id);
   await prisma.$transaction(async (tx) => {
     const { count } = await tx.workspaceInvite.updateMany({
       where: { id: invite.id, ...pendingAt(now) },
@@ -163,6 +170,8 @@ export async function acceptInvite(user: AuthUser, token: unknown) {
     if (count !== 1) {
       throw new InviteInvalidError();
     }
+    // Posti del piano (T-1605): l'invito appena consumato non conta più come pendente, conta la nuova membership.
+    await assertSeatAvailable(tx, plan);
     try {
       await tx.membership.create({ data: { workspace_id: invite.workspace_id, user_id: user.id, role: invite.role } });
     } catch (error) {

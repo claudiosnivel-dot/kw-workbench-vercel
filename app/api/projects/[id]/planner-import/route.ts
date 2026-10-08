@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { requireProjectAccess } from "@/lib/authz/workspace";
+import { assertFeature } from "@/lib/billing/enforce";
 import { errorResponse, withApiErrors } from "@/lib/http/errors";
 import { parsePlannerCsv } from "@/lib/modules/planner/csv-parser";
 import { applyPlannerImport, PLANNER_IMPORT_MAX_ROWS } from "@/lib/modules/planner/import";
@@ -56,6 +57,8 @@ export const POST = withApiErrors(async (request: NextRequest, { params }: Route
   const [user, { id }] = await Promise.all([requireAuthenticatedUserFromRequest(request), params]);
 
   const project = await requireProjectAccess(user, id, "project.update", {});
+  // Import di Keyword Planner nel piano del workspace (T-1605): senza il diritto 402, prima di leggere il file.
+  await assertFeature(project.workspace_id, "plannerImport");
   const owned = await resolvePlannerScope({ projectId: id, perimeter: project.perimeter });
   if ("notFound" in owned) {
     throw new ProjectNotFoundError();

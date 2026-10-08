@@ -1,14 +1,23 @@
 import { isAuthEnabled, isPublicSignupEnabled } from "@/lib/auth/config";
+import { isCommercialLive } from "@/lib/billing/launch";
 import { errorResponse } from "@/lib/http/errors";
 
 type CredentialsInput = { email: string; displayName: string; password: string; confirmPassword: string };
 
-/** Registrazione pubblica chiusa: 400 con l'autenticazione disabilitata, 403 se disabilitata; null se aperta. */
-export function registrationClosed(): Response | null {
+/**
+ * Registrazione pubblica aperta: APP_PUBLIC_SIGNUP_ENABLED e lancio commerciale attivo. In pausa (D-32, T-1606) gli
+ * account li crea solo il root admin o nascono dagli inviti.
+ */
+export async function isPublicSignupOpen(): Promise<boolean> {
+  return isPublicSignupEnabled() && (await isCommercialLive());
+}
+
+/** Registrazione pubblica chiusa: 400 con l'autenticazione disabilitata, 403 se chiusa (anche in pausa); null se aperta. */
+export async function registrationClosed(): Promise<Response | null> {
   if (!isAuthEnabled()) {
     return errorResponse(400, "REGISTRATION_UNAVAILABLE", "Registrazione non disponibile con autenticazione disabilitata");
   }
-  if (!isPublicSignupEnabled()) {
+  if (!(await isPublicSignupOpen())) {
     return errorResponse(403, "SIGNUP_DISABLED", "Registrazione pubblica disabilitata");
   }
   return null;

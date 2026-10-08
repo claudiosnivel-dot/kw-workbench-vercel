@@ -8,6 +8,9 @@ export type ApiErrorPayload = {
   code?: string;
 };
 
+/** Evento della finestra per una risposta 402 PLAN_LIMIT (T-1605), ascoltato da components/plan-limit-notice.tsx. */
+export const PLAN_LIMIT_EVENT = "kwb:plan-limit";
+
 /** Traduzioni del namespace errors: useTranslations("errors") nei componenti (T-1303). */
 export type ErrorTranslator = ReturnType<typeof createTranslator<Messages, "errors">>;
 
@@ -58,6 +61,10 @@ export async function readApiData<T>(response: Response, t: ErrorTranslator): Pr
  * senza code noto (per esempio un body "Unauthorized" che non arriva dall'app) resta la sessione scaduta (T-502).
  */
 export function buildApiErrorMessage(response: Response, payload: ApiErrorPayload | null, t: ErrorTranslator): string {
+  if (payload?.code === "PLAN_LIMIT" && typeof window !== "undefined") {
+    // Limite del piano (T-1605): l'avviso globale del layout mostra l'invito all'upgrade.
+    window.dispatchEvent(new CustomEvent(PLAN_LIMIT_EVENT));
+  }
   if (isApiErrorCode(payload?.code)) {
     return t(payload.code);
   }

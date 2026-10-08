@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { AdminLaunchCard } from "@/components/admin-launch-card";
 import { AdminUsersDashboard } from "@/components/admin-users-dashboard";
 import { BrandingSettingsCard } from "@/components/branding-settings-card";
 import { GoogleSheetsApiConfigCard } from "@/components/google-sheets-api-config-card";
@@ -7,6 +8,7 @@ import { MetricsSpendCard } from "@/components/metrics-spend-card";
 import { PageIntro } from "@/components/page-intro";
 import { isAdminUser } from "@/lib/auth/current-user";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { getLaunchChecklist, getLaunchState } from "@/lib/billing/launch";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import { getGoogleSheetsApiConfigSnapshot } from "@/lib/integrations/google-sheets-config";
 import { getMetricsSpend } from "@/lib/modules/providers/metrics/metrics-ledger";
@@ -20,16 +22,19 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const [t, branding, googleSheetsConfig, metricsSpend] = await Promise.all([
+  const [t, branding, googleSheetsConfig, metricsSpend, launch] = await Promise.all([
     getTranslations("admin"),
     getBrandingSnapshot(),
     user.isRootAdmin ? getGoogleSheetsApiConfigSnapshot() : Promise.resolve(null),
     user.isRootAdmin ? getMetricsSpend() : Promise.resolve(null),
+    user.isRootAdmin ? getLaunchState() : Promise.resolve(null),
   ]);
 
   return (
     <div className="space-y-6">
       <PageIntro title={t("title")} intro={t("intro")} />
+
+      {user.isRootAdmin && launch && <AdminLaunchCard launch={{ ...launch, checklist: getLaunchChecklist() }} />}
 
       <BrandingSettingsCard
         initial={{

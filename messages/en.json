@@ -544,7 +544,16 @@
     "PLANNER_KEYWORD_COLUMN_MISSING": "File not recognized: the Keyword column is missing.",
     "PLANNER_TOO_MANY_ROWS": "The file has too many rows for a single import.",
     "PLANNER_PART_NOT_FOUND": "Export part not found.",
-    "UNKNOWN": "Unexpected error (HTTP {status})."
+    "UNKNOWN": "Unexpected error (HTTP {status}).",
+    "BILLING_PAUSED": "Billing is not active yet.",
+    "PLANS_NOT_CONFIGURED": "Plans are not configured yet.",
+    "INVALID_PLAN": "Invalid plan or billing interval.",
+    "SUBSCRIPTION_EXISTS": "This workspace already has a subscription: change plan from the Billing page.",
+    "SUBSCRIPTION_NOT_FOUND": "This workspace has no subscription to manage.",
+    "BILLING_PROVIDER_ERROR": "The payment service is not responding. Try again later.",
+    "INVALID_SIGNATURE": "Invalid signature.",
+    "PLAN_LIMIT": "You have reached a limit of the workspace plan.",
+    "LAUNCH_NOT_READY": "The launch checklist is not complete."
   },
   "errorPages": {
     "error": {
@@ -766,7 +775,8 @@
       "intro": "Name, members, roles and invitations of the active workspace. Switch workspace from the selector at the top.",
       "personal": "This is your personal workspace: you can invite other people, but you cannot leave it.",
       "yourRole": "Your role: {role}",
-      "sheetsNote": "Google Sheets export uses the personal Google connection of whoever exports: each member connects their own account from Personalize."
+      "sheetsNote": "Google Sheets export uses the personal Google connection of whoever exports: each member connects their own account from Personalize.",
+      "billingLink": "Plan and billing"
     },
     "name": {
       "title": "Workspace name",
@@ -897,6 +907,34 @@
     "spend": {
       "title": "Metrics provider spend",
       "body": "Month {month} (UTC): {spent} of a {budget} cap, {requests} requests for {keywords} keywords. Caps in METRICS_MONTHLY_BUDGET_USD and METRICS_RUN_BUDGET_USD."
+    },
+    "launch": {
+      "title": "Commercial launch",
+      "intro": "While the launch is paused users have no limits, nothing can be bought and public sign-up is closed: you create accounts from user management, already verified, or they come from invitations. The launch can be turned on only with the checklist complete and can be paused again.",
+      "status": "Status: {status}",
+      "statuses": {
+        "paused": "paused",
+        "live": "live"
+      },
+      "changed": "Last change: {date} by {by}",
+      "checklist": "Checklist",
+      "items": {
+        "plans": "Plans and prices (D-14)",
+        "paddle": "Payments with Paddle",
+        "email": "Transactional email (Resend)",
+        "legal": "Legal texts (D-15)",
+        "captcha": "Sign-up CAPTCHA (Turnstile)"
+      },
+      "ok": "ready",
+      "missing": "missing",
+      "requires": "Requires: {requires}",
+      "activate": "Turn on the launch",
+      "activating": "Turning on...",
+      "activateConfirm": "Turn on the commercial launch? Plans, limits and quotas apply and public sign-up opens.",
+      "pause": "Pause again",
+      "pausing": "Pausing...",
+      "pauseConfirm": "Pause the commercial launch? Users go back to no limits and public sign-up closes.",
+      "updated": "Launch status updated."
     }
   },
   "integrations": {
@@ -985,6 +1023,55 @@
       "subject": "Notice about your subscription",
       "intro": "there is news about your {plan} subscription, with reference date {date}.",
       "action": "Open the app"
+    }
+  },
+  "billing": {
+    "title": "Billing",
+    "intro": "Plan and subscription of the {name} workspace.",
+    "paused": "The commercial launch is not active yet: the workspace has no limits and plans cannot be bought.",
+    "plans": {
+      "free": "Free"
+    },
+    "plan": "Plan: {plan}",
+    "status": "Status: {status}",
+    "statuses": {
+      "trialing": "trialing",
+      "active": "active",
+      "past_due": "payment past due",
+      "paused": "paused",
+      "canceled": "canceled",
+      "none": "no subscription"
+    },
+    "renewal": "Next renewal: {date}",
+    "cancelAt": "Scheduled cancellation: the plan stays active until {date}.",
+    "ownerOnly": "Only the workspace owner manages billing.",
+    "checkoutTitle": "Choose a plan",
+    "noPaidPlans": "No paid plan available.",
+    "intervals": {
+      "month": "monthly",
+      "year": "yearly"
+    },
+    "subscribe": "Subscribe to {plan} ({interval})",
+    "planOption": "{plan} ({interval})",
+    "opening": "Opening...",
+    "portal": "Invoices and payment method",
+    "changePlanTitle": "Change plan",
+    "changePlanLabel": "New plan",
+    "changePlan": "Change plan",
+    "changing": "Changing...",
+    "changeRequested": "Change requested: the new plan appears once Paddle confirms it.",
+    "cancel": "Cancel at period end",
+    "canceling": "Canceling...",
+    "cancelConfirm": "Cancel the subscription? The plan stays active until the end of the paid period.",
+    "cancelRequested": "Cancellation requested: the date appears once Paddle confirms it.",
+    "pastDue": {
+      "banner": "The workspace subscription payment failed: the plan stays active until {date}.",
+      "update": "Update the payment method"
+    },
+    "limit": {
+      "owner": "You have reached a limit of the workspace plan.",
+      "ownerLink": "Change plan from Billing",
+      "member": "You have reached a limit of the workspace plan: ask the owner to move to a higher plan."
     }
   }
 }

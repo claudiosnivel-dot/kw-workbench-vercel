@@ -3,6 +3,7 @@ import { type SectionParams, withUserRoute } from "@/lib/http/user-route";
 import { enqueueExtractionJob } from "@/lib/modules/jobs/job-runner";
 import { startedJobResponse } from "@/lib/modules/jobs/run-response";
 import { requireSectionAccess } from "@/lib/authz/workspace";
+import { extractionPlanLimits } from "@/lib/billing/enforce";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -12,7 +13,11 @@ export const POST = withUserRoute(async (request: Request, user, { id, subprojec
   requireVerifiedEmail(user);
   const subproject = await requireSectionAccess(user, id, subprojectId, "extraction.run", { id: true, project_id: true });
 
-  const { job, created } = await enqueueExtractionJob(subproject.project_id, subproject.id);
+  const { job, created } = await enqueueExtractionJob(
+    subproject.project_id,
+    subproject.id,
+    await extractionPlanLimits(subproject.project.workspace_id)
+  );
   return startedJobResponse(job, created, subproject.id);
 });
 

@@ -544,7 +544,16 @@
     "PLANNER_KEYWORD_COLUMN_MISSING": "File non riconosciuto: manca la colonna Keyword.",
     "PLANNER_TOO_MANY_ROWS": "Il file ha troppe righe per un solo import.",
     "PLANNER_PART_NOT_FOUND": "Blocco di export non trovato.",
-    "UNKNOWN": "Errore imprevisto (HTTP {status})."
+    "UNKNOWN": "Errore imprevisto (HTTP {status}).",
+    "BILLING_PAUSED": "La fatturazione non è ancora attiva.",
+    "PLANS_NOT_CONFIGURED": "I piani non sono ancora configurati.",
+    "INVALID_PLAN": "Piano o intervallo di fatturazione non valido.",
+    "SUBSCRIPTION_EXISTS": "Il workspace ha già un abbonamento: cambia piano dalla pagina Fatturazione.",
+    "SUBSCRIPTION_NOT_FOUND": "Il workspace non ha un abbonamento da gestire.",
+    "BILLING_PROVIDER_ERROR": "Il servizio di pagamento non risponde. Riprova più tardi.",
+    "INVALID_SIGNATURE": "Firma non valida.",
+    "PLAN_LIMIT": "Hai raggiunto un limite del piano del workspace.",
+    "LAUNCH_NOT_READY": "La checklist del lancio non è completa."
   },
   "errorPages": {
     "error": {
@@ -766,7 +775,8 @@
       "intro": "Nome, membri, ruoli e inviti del workspace attivo. Cambia workspace dal selettore in alto.",
       "personal": "Questo è il tuo workspace personale: puoi invitare altre persone, ma non puoi abbandonarlo.",
       "yourRole": "Il tuo ruolo: {role}",
-      "sheetsNote": "L'export su Google Sheets usa la connessione Google personale di chi esporta: ogni membro collega il proprio account da Personalizza."
+      "sheetsNote": "L'export su Google Sheets usa la connessione Google personale di chi esporta: ogni membro collega il proprio account da Personalizza.",
+      "billingLink": "Piano e fatturazione"
     },
     "name": {
       "title": "Nome del workspace",
@@ -897,6 +907,34 @@
     "spend": {
       "title": "Spesa fornitore metriche",
       "body": "Mese {month} (UTC): {spent} su un tetto di {budget}, {requests} richieste per {keywords} keyword. Tetti in METRICS_MONTHLY_BUDGET_USD e METRICS_RUN_BUDGET_USD."
+    },
+    "launch": {
+      "title": "Lancio commerciale",
+      "intro": "Finché il lancio è in pausa gli utenti non hanno limiti, non si compra nulla e la registrazione pubblica è chiusa: gli account li crei dalla gestione utenti, già verificati, o nascono dagli inviti. Il lancio si attiva solo con la checklist completa e si può rimettere in pausa.",
+      "status": "Stato: {status}",
+      "statuses": {
+        "paused": "in pausa",
+        "live": "attivo"
+      },
+      "changed": "Ultimo cambio: {date} da {by}",
+      "checklist": "Checklist",
+      "items": {
+        "plans": "Piani e prezzi (D-14)",
+        "paddle": "Pagamenti con Paddle",
+        "email": "Email transazionali (Resend)",
+        "legal": "Testi legali (D-15)",
+        "captcha": "CAPTCHA della registrazione (Turnstile)"
+      },
+      "ok": "pronto",
+      "missing": "mancante",
+      "requires": "Serve: {requires}",
+      "activate": "Attiva il lancio",
+      "activating": "Attivazione...",
+      "activateConfirm": "Attivare il lancio commerciale? Si applicano piani, limiti e quote e si apre la registrazione pubblica.",
+      "pause": "Rimetti in pausa",
+      "pausing": "Pausa...",
+      "pauseConfirm": "Rimettere in pausa il lancio commerciale? Gli utenti tornano senza limiti e la registrazione pubblica si chiude.",
+      "updated": "Stato del lancio aggiornato."
     }
   },
   "integrations": {
@@ -985,6 +1023,55 @@
       "subject": "Avviso sul tuo abbonamento",
       "intro": "ci sono novità sul tuo abbonamento {plan}, con data di riferimento {date}.",
       "action": "Apri l'app"
+    }
+  },
+  "billing": {
+    "title": "Fatturazione",
+    "intro": "Piano e abbonamento del workspace {name}.",
+    "paused": "Il lancio commerciale non è ancora attivo: il workspace non ha limiti e non si può acquistare un piano.",
+    "plans": {
+      "free": "Free"
+    },
+    "plan": "Piano: {plan}",
+    "status": "Stato: {status}",
+    "statuses": {
+      "trialing": "in prova",
+      "active": "attivo",
+      "past_due": "pagamento scaduto",
+      "paused": "sospeso",
+      "canceled": "disdetto",
+      "none": "nessun abbonamento"
+    },
+    "renewal": "Prossimo rinnovo: {date}",
+    "cancelAt": "Disdetta programmata: il piano resta attivo fino al {date}.",
+    "ownerOnly": "Solo il proprietario del workspace gestisce la fatturazione.",
+    "checkoutTitle": "Scegli un piano",
+    "noPaidPlans": "Nessun piano a pagamento disponibile.",
+    "intervals": {
+      "month": "mensile",
+      "year": "annuale"
+    },
+    "subscribe": "Abbonati a {plan} ({interval})",
+    "planOption": "{plan} ({interval})",
+    "opening": "Apertura...",
+    "portal": "Fatture e metodo di pagamento",
+    "changePlanTitle": "Cambia piano",
+    "changePlanLabel": "Nuovo piano",
+    "changePlan": "Cambia piano",
+    "changing": "Cambio...",
+    "changeRequested": "Cambio richiesto: il nuovo piano compare quando Paddle lo conferma.",
+    "cancel": "Disdici a fine periodo",
+    "canceling": "Disdetta...",
+    "cancelConfirm": "Disdire l'abbonamento? Il piano resta attivo fino alla fine del periodo pagato.",
+    "cancelRequested": "Disdetta richiesta: la data compare quando Paddle la conferma.",
+    "pastDue": {
+      "banner": "Il pagamento dell'abbonamento del workspace non è andato a buon fine: il piano resta attivo fino al {date}.",
+      "update": "Aggiorna il metodo di pagamento"
+    },
+    "limit": {
+      "owner": "Hai raggiunto un limite del piano del workspace.",
+      "ownerLink": "Cambia piano da Fatturazione",
+      "member": "Hai raggiunto un limite del piano del workspace: chiedi al proprietario di passare a un piano superiore."
     }
   }
 }

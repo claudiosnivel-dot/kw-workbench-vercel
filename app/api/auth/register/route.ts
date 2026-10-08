@@ -18,7 +18,7 @@ const CHECK_EMAIL_CODE = "CHECK_EMAIL";
  * account-exists. Le email partono dopo la risposta; un loro fallimento non annulla la registrazione.
  */
 export const POST = withApiErrors(async (request: NextRequest) => {
-  const closed = registrationClosed();
+  const closed = await registrationClosed();
   if (closed) {
     return closed;
   }

@@ -23,6 +23,7 @@ import { proxy as middleware } from "@/proxy";
 import { createUserWithSession } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";
+import { setCommercialLaunchForTests } from "../../helpers/launch";
 
 // Da T-302 la pagina di login legge l'utente dai cookie: qui nessun cookie di sessione.
 vi.mock("next/headers", () => ({
@@ -74,6 +75,8 @@ afterAll(() => {
 
 beforeEach(async () => {
   await resetDatabase();
+  // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
+  await setCommercialLaunchForTests("live");
 });
 
 describe("caratterizzazione: login", () => {

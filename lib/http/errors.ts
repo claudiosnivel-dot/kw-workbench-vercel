@@ -38,13 +38,16 @@ export const JOB_ERROR_CODES = {
   notCancelable: "JOB_NOT_CANCELABLE",
 } as const;
 
+/** Campi pubblici aggiuntivi del body d'errore: missing di ONBOARDING_PRECONDITION e LAUNCH_NOT_READY, limit e max di PLAN_LIMIT. */
+export type ErrorFields = Record<string, string | number | readonly string[]>;
+
 export class AppError extends Error {
   readonly status: number;
   readonly code: string;
   /** Campi pubblici aggiuntivi del body d'errore; non sostituiscono error, code e requestId. */
-  readonly fields?: Record<string, string>;
+  readonly fields?: ErrorFields;
 
-  constructor(status: number, code: string, message: string, fields?: Record<string, string>) {
+  constructor(status: number, code: string, message: string, fields?: ErrorFields) {
     super(message);
     this.name = "AppError";
     this.status = status;
@@ -101,7 +104,7 @@ function errorJson(
   code: string,
   error: string,
   requestId: string,
-  fields?: Record<string, string>
+  fields?: ErrorFields
 ): Response {
   return NextResponse.json({ ...fields, error, code, requestId }, { status });
 }

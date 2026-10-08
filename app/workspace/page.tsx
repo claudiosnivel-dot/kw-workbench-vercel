@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { PageIntro } from "@/components/page-intro";
 import {
@@ -43,6 +44,10 @@ export default async function WorkspacePage() {
         <p>{t("page.yourRole", { role: t(`roles.${workspace.role}`) })}</p>
         {workspace.isPersonal && <p>{t("page.personal")}</p>}
         <p>{t("page.sheetsNote")}</p>
+        {/* Piano e fatturazione del workspace (T-1604): la pagina mostra a tutti i membri piano e rinnovo. */}
+        <Link href="/billing" className="btn-secondary inline-block">
+          {t("page.billingLink")}
+        </Link>
       </section>
 
       <WorkspaceNameForm

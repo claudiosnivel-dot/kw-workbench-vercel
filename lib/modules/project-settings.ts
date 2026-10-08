@@ -135,9 +135,20 @@ const subprojectFields = {
 const subprojectCreateSchema = z.strictObject(subprojectFields).partial();
 const subprojectPatchSchema = z.strictObject(subprojectFields).partial();
 
+// Campi con cui un client proverebbe a scegliersi piano o limiti (T-1605): ignorati, mai un 400 né un effetto; i
+// diritti arrivano solo da getEntitlements lato server (CWE-602).
+const CLIENT_ENTITLEMENT_FIELDS = new Set(["plan", "limits", "entitlements"]);
+
+function withoutEntitlementFields(payload: unknown): unknown {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return payload;
+  }
+  return Object.fromEntries(Object.entries(payload).filter(([key]) => !CLIENT_ENTITLEMENT_FIELDS.has(key)));
+}
+
 /** Primo problema dello schema come 400 VALIDATION_ERROR con il nome del campo (formato di T-503). */
 function parseOrThrow<T>(schema: z.ZodType<T>, payload: unknown): T {
-  const result = schema.safeParse(payload);
+  const result = schema.safeParse(withoutEntitlementFields(payload));
   if (result.success) {
     return result.data;
   }
@@ -152,22 +163,18 @@ function parseOrThrow<T>(schema: z.ZodType<T>, payload: unknown): T {
 
 type Actor = { isRootAdmin: boolean };
 
-// Provider che solo il root admin può scegliere: MOCK produce volumi finti, DATAFORSEO ha un costo per richiesta
-// (T-902, finché T-1605 non introduce il diritto di piano licensedMetrics).
-const ROOT_ONLY_METRICS_PROVIDERS = new Map<MetricsProvider, string>([
-  ["MOCK", "Il provider di metriche MOCK è riservato all'amministratore principale"],
-  ["DATAFORSEO", "Il provider di metriche DATAFORSEO è riservato all'amministratore principale"],
-]);
-
-/** MOCK e DATAFORSEO si scelgono solo come root admin (CWE-284); chi li ha già li conserva. */
+/**
+ * MOCK produce volumi finti e si sceglie solo come root admin (D-24, CWE-284); chi lo ha già lo conserva. DATAFORSEO,
+ * che ha un costo per richiesta, lo regola il diritto licensedMetrics del piano (T-1605, assertLicensedMetricsChoice di
+ * lib/billing/enforce.ts), chiamato dalle rotte dopo il parse.
+ */
 function assertMetricsProviderAllowed(
   value: MetricsProvider | null | undefined,
   current: MetricsProvider | null | undefined,
   actor: Actor
 ): void {
-  const rootOnlyMessage = value ? ROOT_ONLY_METRICS_PROVIDERS.get(value) : undefined;
-  if (rootOnlyMessage && value !== current && !actor.isRootAdmin) {
-    throw new AppError(403, "FORBIDDEN_FIELD", rootOnlyMessage);
+  if (value === "MOCK" && value !== current && !actor.isRootAdmin) {
+    throw new AppError(403, "FORBIDDEN_FIELD", "Il provider di metriche MOCK è riservato all'amministratore principale");
   }
 }
 

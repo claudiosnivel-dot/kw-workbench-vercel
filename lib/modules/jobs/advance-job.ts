@@ -1,3 +1,4 @@
+import type { ExtractionPlanLimits } from "@/lib/billing/enforce";
 import { Prisma, type Job, type JobMetric, type JobPhase, type JobStatus } from "@/lib/generated/prisma/client";
 import { getIntEnv } from "@/lib/env";
 import { prepareBlacklist } from "@/lib/modules/brand-filter";
@@ -44,6 +45,8 @@ type JobCursor = {
   seeds?: string[];
   queries?: string[];
   truncated?: boolean;
+  /** Tetto di keyword salvate del piano (T-1605); assente o null = nessun tetto. */
+  maxKeywords?: number | null;
   skippedQueries?: number;
   failedQueries?: number;
   metrics?: MetricsTotals;
@@ -142,7 +145,16 @@ async function loadCandidates(
   return { candidates: dedupeCandidates(raw, cursor.settings.language_code), rawCount: raw.length };
 }
 
-/** Fase expand: impostazioni effettive, seed e query fissate nel cursore. */
+/** Limiti del piano salvati all'avvio nel payload del job (T-1605); un job senza limiti (test, CLI) non ne ha. */
+function planLimitsOf(job: Job): ExtractionPlanLimits | null {
+  const plan = (job.payload as { plan?: ExtractionPlanLimits } | null)?.plan;
+  return plan ?? null;
+}
+
+/**
+ * Fase expand: impostazioni effettive, seed e query fissate nel cursore. Un piano senza metriche con licenza porta
+ * DATAFORSEO a NONE senza chiamate al fornitore, con metricsNotice PLAN_NO_LICENSED_METRICS (T-1605).
+ */
 async function expandBatch(job: Job, lease: Lease): Promise<void> {
   const subproject = await prisma.subproject.findUnique({
     where: { id: job.subproject_id },
@@ -155,7 +167,10 @@ async function expandBatch(job: Job, lease: Lease): Promise<void> {
     throw new Error(`Sottoprogetto ${job.subproject_id} non trovato`);
   }
 
-  const settings = resolveEffectiveProjectSettings({ project: subproject.project, subproject });
+  const plan = planLimitsOf(job);
+  const effective = resolveEffectiveProjectSettings({ project: subproject.project, subproject });
+  const unlicensed = plan !== null && !plan.licensedMetrics && effective.metrics_provider === "DATAFORSEO";
+  const settings: EffectiveProjectSettings = unlicensed ? { ...effective, metrics_provider: "NONE" } : effective;
   const seeds = parseSeedsFromRows(subproject.seeds);
   if (seeds.length === 0) {
     throw new NoSeedsError(subproject.id);
@@ -184,6 +199,8 @@ async function expandBatch(job: Job, lease: Lease): Promise<void> {
     truncated: expansion.truncated,
     skippedQueries: expansion.skippedQueries,
     failedQueries: 0,
+    maxKeywords: plan?.maxKeywordsPerRun ?? null,
+    ...(unlicensed ? { metrics: { notice: "PLAN_NO_LICENSED_METRICS" as const } } : {}),
   };
   await inTransaction((tx) =>
     writeJob(tx, lease, {
@@ -367,7 +384,10 @@ async function storeBatch(job: Job, lease: Lease): Promise<void> {
   const imported = settings.metrics_provider === "NONE" ? await loadImportedMetrics(job.subproject_id) : new Map();
 
   const now = new Date();
-  const rows = buildCandidateRows({ candidates, settings, blacklist, metrics, imported, now });
+  const built = buildCandidateRows({ candidates, settings, blacklist, metrics, imported, now });
+  // Tetto di keyword del piano (T-1605): le keyword oltre il tetto non si salvano e il risultato è troncato.
+  const capped = typeof cursor.maxKeywords === "number" && built.length > cursor.maxKeywords;
+  const rows = capped ? built.slice(0, cursor.maxKeywords ?? 0) : built;
   const failedQueries = cursor.failedQueries ?? 0;
   const summary: ExtractionSummary = {
     queries: cursor.queries?.length ?? 0,
@@ -376,7 +396,7 @@ async function storeBatch(job: Job, lease: Lease): Promise<void> {
     storedCandidates: rows.length,
     partial: failedQueries > 0,
     failedQueries,
-    truncated: cursor.truncated,
+    truncated: capped || cursor.truncated,
     skippedQueries: cursor.skippedQueries,
     ...toMetricsResult({ metrics: new Map(), ...cursor.metrics }),
   };

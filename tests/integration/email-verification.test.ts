@@ -14,6 +14,7 @@ import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { flushAfter } from "../helpers/next-after";
+import { setCommercialLaunchForTests } from "../helpers/launch";
 
 const PASSWORD = "password-1403-non-reale";
 const T0 = new Date("2026-10-07T10:00:00.000Z");
@@ -52,6 +53,8 @@ beforeEach(async () => {
   vi.stubEnv("EMAIL_TRANSPORT", "outbox");
   resetEnvForTests();
   await resetDatabase();
+  // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
+  await setCommercialLaunchForTests("live");
 });
 
 afterEach(() => {

@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
+import { setCommercialLaunchForTests } from "../helpers/launch";
 
 type ErrorBody = { error?: string; code?: string; requestId?: string };
 
@@ -31,6 +32,8 @@ afterAll(() => {
 
 beforeEach(async () => {
   await resetDatabase();
+  // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
+  await setCommercialLaunchForTests("live");
 });
 
 afterEach(() => {

@@ -1,6 +1,7 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { expectOneRow, requireProjectAccess } from "@/lib/authz/workspace";
+import { assertLicensedMetricsChoice, assertWithinLimit, loadPlanGuard } from "@/lib/billing/enforce";
 import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
 import { ProjectNotFoundError } from "@/lib/modules/project-access";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
@@ -12,8 +13,13 @@ export const POST = withUserRoute(async (request: Request, user, { id }: Project
   const project = await requireProjectAccess(user, id, "section.write", { default_subproject_id: true });
 
   const parsed = parseSubprojectCreate(await request.json(), user);
+  await assertLicensedMetricsChoice(user, project.workspace_id, parsed.data.metrics_provider_override, null);
+  const plan = await loadPlanGuard(project.workspace_id);
 
   const subproject = await guardSectionName(() => prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    // Limiti del piano (T-1605) sotto il lock del workspace, nella transazione della creazione.
+    await assertWithinLimit(tx, plan, "maxSectionsPerProject", async () => (await tx.subproject.count({ where: { project_id: id } })) + 1);
+    await assertWithinLimit(tx, plan, "maxSeedsPerSection", () => parsed.seeds.length);
     const positionCount = await tx.subproject.count({ where: { project_id: id } });
 
     const created = await tx.subproject.create({

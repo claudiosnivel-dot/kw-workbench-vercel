@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
+import { setCommercialLaunchForTests } from "../helpers/launch";
 
 // Versione corrente scritta nel test (lib/legal/version.ts): il server la confronta con la propria costante.
 const CURRENT_TERMS = "segnaposto-2026-10-07";
@@ -40,6 +41,8 @@ beforeEach(async () => {
   vi.stubEnv("APP_ADMIN_EMAIL", "root@example.test");
   resetEnvForTests();
   await resetDatabase();
+  // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
+  await setCommercialLaunchForTests("live");
 });
 
 afterEach(() => {

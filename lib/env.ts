@@ -29,6 +29,8 @@ export const INT_ENV = {
   // Il default effettivo dipende da NODE_ENV (lib/prisma.ts): 3 in produzione, 1 altrove.
   PRISMA_CONNECTION_LIMIT: { def: 3, min: 1, max: 50 },
   PRISMA_POOL_TIMEOUT: { def: 15, min: 1, max: 120 },
+  // Tolleranza sul timestamp della firma dei webhook di Paddle (T-1603): default di Paddle 5 s, al massimo 300.
+  PADDLE_WEBHOOK_TOLERANCE_SECONDS: { def: 5, min: 1, max: 300 },
 } as const;
 
 type IntEnvKey = keyof typeof INT_ENV;
@@ -136,6 +138,16 @@ const envSchema = z.object({
   SENTRY_ORG: optional,
   SENTRY_PROJECT: optional,
   LOG_LEVEL: optional,
+  // Fatturazione con Paddle Billing (T-1602, T-1603, D-06): facoltative finché il lancio commerciale è in pausa (D-32);
+  // se presenti devono essere coerenti con PADDLE_ENV. I price id stanno nelle variabili PADDLE_PRICE_* nominate da
+  // priceEnv in lib/billing/plans.ts, validate da parseEnv.
+  PADDLE_ENV: optional,
+  PADDLE_API_KEY: optional,
+  PADDLE_WEBHOOK_SECRET: optional,
+  NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: optional,
+  // Solo fuori da production (fake HTTP nei test): sostituisce la base URL dell'API di Paddle.
+  PADDLE_API_BASE_URL: optional,
+  PADDLE_WEBHOOK_TOLERANCE_SECONDS: optional,
 });
 
 type RawEnv = z.infer<typeof envSchema>;
@@ -286,6 +298,10 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
 
   checkEmailSettings(raw, isProduction, ctx);
 
+  for (const issue of paddleSettingsIssues(raw)) {
+    ctx.addIssue({ code: "custom", path: [issue.name], message: issue.message });
+  }
+
   try {
     if (getIntEnv("JOB_STALE_AFTER_MS", raw) < getIntEnv("JOB_STEP_BUDGET_MS", raw) + STALE_MARGIN_MS) {
       ctx.addIssue({
@@ -359,6 +375,110 @@ function checkEmailSettings(raw: RawEnv, isProduction: boolean, ctx: z.Refinemen
   }
 }
 
+/** Ambienti di Paddle (T-1602): sandbox per sviluppo e preview, production per gli incassi reali. */
+export const PADDLE_ENVIRONMENTS = ["sandbox", "production"] as const;
+export type PaddleEnvironment = (typeof PADDLE_ENVIRONMENTS)[number];
+
+const PADDLE_API_BASE_URLS: Record<PaddleEnvironment, string> = {
+  sandbox: "https://sandbox-api.paddle.com",
+  production: "https://api.paddle.com",
+};
+const PADDLE_PRICE_ENV_PATTERN = /^PADDLE_PRICE_[A-Z0-9_]+$/;
+const PADDLE_PRICE_ID_PATTERN = /^pri_[a-z0-9]+$/;
+
+type EnvIssue = { name: string; message: string };
+
+function isPaddleEnvironment(value: string): value is PaddleEnvironment {
+  return (PADDLE_ENVIRONMENTS as readonly string[]).includes(value);
+}
+
+/**
+ * Coerenza delle variabili di Paddle (T-1602): le chiavi API sandbox contengono sdbx e i client token sandbox iniziano
+ * con test_; una chiave o un token dell'altro ambiente è un errore che nomina la variabile, mai il valore. Le variabili
+ * sono facoltative (lancio in pausa, D-32), ma se una è presente serve PADDLE_ENV. PADDLE_API_BASE_URL è ammessa solo
+ * fuori da production. I price id PADDLE_PRICE_* devono avere la forma pri_...
+ */
+export function paddleSettingsIssues(source: EnvSource): EnvIssue[] {
+  const issues: EnvIssue[] = [];
+  const environment = present(source.PADDLE_ENV)?.trim();
+  const apiKey = present(source.PADDLE_API_KEY)?.trim();
+  const clientToken = present(source.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN)?.trim();
+  const webhookSecret = present(source.PADDLE_WEBHOOK_SECRET)?.trim();
+
+  if (environment !== undefined && !isPaddleEnvironment(environment)) {
+    issues.push({ name: "PADDLE_ENV", message: `deve essere uno tra ${PADDLE_ENVIRONMENTS.join(", ")}` });
+  } else if (environment === undefined && [apiKey, clientToken, webhookSecret].some((value) => value !== undefined)) {
+    issues.push({ name: "PADDLE_ENV", message: "va impostata insieme alle altre variabili di Paddle" });
+  }
+
+  if (environment !== undefined && isPaddleEnvironment(environment)) {
+    const sandbox = environment === "sandbox";
+    if (apiKey !== undefined && apiKey.includes("sdbx") !== sandbox) {
+      issues.push({ name: "PADDLE_API_KEY", message: `non corrisponde a PADDLE_ENV=${environment}` });
+    }
+    if (clientToken !== undefined && clientToken.startsWith("test_") !== sandbox) {
+      issues.push({ name: "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN", message: `non corrisponde a PADDLE_ENV=${environment}` });
+    }
+  }
+
+  if (webhookSecret !== undefined && !webhookSecret.startsWith("pdl_ntfset_")) {
+    issues.push({ name: "PADDLE_WEBHOOK_SECRET", message: "deve essere il segreto di una notification destination (pdl_ntfset_)" });
+  }
+
+  const baseUrl = present(source.PADDLE_API_BASE_URL)?.trim();
+  if (baseUrl !== undefined) {
+    if (source.NODE_ENV === "production") {
+      issues.push({ name: "PADDLE_API_BASE_URL", message: "non è ammessa in produzione" });
+    } else if (!/^https?:\/\/[^\s/]+/.test(baseUrl)) {
+      issues.push({ name: "PADDLE_API_BASE_URL", message: "deve essere un URL http o https" });
+    }
+  }
+
+  for (const name of Object.keys(source).filter((key) => PADDLE_PRICE_ENV_PATTERN.test(key))) {
+    const priceId = present(source[name])?.trim();
+    if (priceId !== undefined && !PADDLE_PRICE_ID_PATTERN.test(priceId)) {
+      issues.push({ name, message: "deve essere un price id di Paddle (pri_...)" });
+    }
+  }
+  return issues;
+}
+
+export type PaddleSettings = {
+  environment: PaddleEnvironment;
+  apiKey: string;
+  apiBaseUrl: string;
+};
+
+/** Ambiente, chiave API e base URL di Paddle (T-1602); null se PADDLE_ENV o PADDLE_API_KEY mancano o non sono coerenti. */
+export function getPaddleSettings(source: EnvSource = process.env): PaddleSettings | null {
+  const environment = present(source.PADDLE_ENV)?.trim();
+  const apiKey = present(source.PADDLE_API_KEY)?.trim();
+  if (environment === undefined || !isPaddleEnvironment(environment) || apiKey === undefined) {
+    return null;
+  }
+  if (paddleSettingsIssues(source).some((issue) => issue.name === "PADDLE_ENV" || issue.name === "PADDLE_API_KEY")) {
+    return null;
+  }
+  const override = source.NODE_ENV === "production" ? undefined : present(source.PADDLE_API_BASE_URL)?.trim();
+  return { environment, apiKey, apiBaseUrl: (override ?? PADDLE_API_BASE_URLS[environment]).replace(/\/+$/, "") };
+}
+
+/** Segreto della notification destination di Paddle (T-1603); assente → ogni webhook risponde 401. */
+export function getPaddleWebhookSecret(source: EnvSource = process.env): string | undefined {
+  return present(source.PADDLE_WEBHOOK_SECRET)?.trim();
+}
+
+/** Client token di Paddle.js (T-1602): pubblico per progetto di Paddle; null se assente. */
+export function getPaddleClientToken(source: EnvSource = process.env): string | null {
+  return present(source.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN)?.trim() ?? null;
+}
+
+/** Price id nella variabile indicata (nome da priceEnv di lib/billing/plans.ts); null se assente o malformato. */
+export function getPaddlePriceId(name: string, source: EnvSource = process.env): string | null {
+  const value = PADDLE_PRICE_ENV_PATTERN.test(name) ? present(source[name])?.trim() : undefined;
+  return value !== undefined && PADDLE_PRICE_ID_PATTERN.test(value) ? value : null;
+}
+
 function isEmailTransport(value: string): value is EmailTransport {
   return (EMAIL_TRANSPORTS as readonly string[]).includes(value);
 }
@@ -366,10 +486,14 @@ function isEmailTransport(value: string): value is EmailTransport {
 /** Valida una sorgente di variabili d'ambiente; lancia un errore che elenca le variabili errate. */
 export function parseEnv(source: EnvSource): Env {
   const result = validatedSchema.safeParse(source);
+  // I price id PADDLE_PRICE_* non sono nello schema (li nomina lib/billing/plans.ts): si controllano sulla sorgente.
+  const priceProblems = paddleSettingsIssues(source)
+    .filter((issue) => PADDLE_PRICE_ENV_PATTERN.test(issue.name))
+    .map((issue) => `${issue.name} ${issue.message}`);
 
-  if (!result.success) {
-    const problems = result.error.issues.map((issue) => `${issue.path.join(".")} ${issue.message}`);
-    throw new Error(`Configurazione non valida: ${problems.join("; ")}`);
+  if (!result.success || priceProblems.length > 0) {
+    const problems = (result.success ? [] : result.error.issues).map((issue) => `${issue.path.join(".")} ${issue.message}`);
+    throw new Error(`Configurazione non valida: ${[...problems, ...priceProblems].join("; ")}`);
   }
 
   const raw = result.data;

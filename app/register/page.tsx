@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { NarrowCard } from "@/components/narrow-card";
 import { RegisterForm } from "@/components/register-form";
-import { isPublicSignupEnabled } from "@/lib/auth/config";
+import { isPublicSignupOpen } from "@/lib/auth/credentials-input";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { LEGAL_TERMS_VERSION } from "@/lib/legal/version";
@@ -24,7 +24,7 @@ export default async function RegisterPage({
   const params = await searchParams;
   const nextValue = params.next;
   const nextPath = safeNextPath(Array.isArray(nextValue) ? nextValue[0] : nextValue);
-  const signupEnabled = isPublicSignupEnabled();
+  const signupEnabled = await isPublicSignupOpen();
   const t = await getTranslations("auth.register");
 
   return (

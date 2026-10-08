@@ -11,6 +11,7 @@ import { RegisterForm } from "@/components/register-form";
 import { proxy } from "@/proxy";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
+import { setCommercialLaunchForTests } from "../helpers/launch";
 
 const cookieJar = vi.hoisted(() => ({ session: undefined as string | undefined }));
 
@@ -75,6 +76,8 @@ afterAll(() => {
 beforeEach(async () => {
   cookieJar.session = undefined;
   await resetDatabase();
+  // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
+  await setCommercialLaunchForTests("live");
 });
 
 describe("middleware: file pubblici", () => {

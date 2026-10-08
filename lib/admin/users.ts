@@ -1,5 +1,6 @@
 import { Prisma, UserRole, UserStatus } from "@/lib/generated/prisma/client";
 import { type AuthUser, registerUser, updateUserAdminFields, validatePassword } from "@/lib/auth/credentials";
+import { isCommercialLive } from "@/lib/billing/launch";
 import { AppError } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma";
 
@@ -269,8 +270,15 @@ export async function createUserFromAdmin(
     throw new AdminActionError("Solo il root admin può creare altri admin", 403, "FORBIDDEN");
   }
 
-  // Email non valida 400 EMAIL_INVALID e già registrata 409 EMAIL_TAKEN: l'admin vede il motivo (T-1401).
-  const created = await registerUser({ email: input.email, displayName: input.displayName, password: input.password, role });
+  // Email non valida 400 EMAIL_INVALID e già registrata 409 EMAIL_TAKEN: l'admin vede il motivo (T-1401). Con il lancio
+  // in pausa l'admin garantisce l'indirizzo e l'utente nasce verificato: senza Resend la verifica non arriverebbe (T-1606).
+  const created = await registerUser({
+    email: input.email,
+    displayName: input.displayName,
+    password: input.password,
+    role,
+    emailVerified: !(await isCommercialLive()),
+  });
   const row = await findTargetUser(created.id);
 
   if (!row) {
