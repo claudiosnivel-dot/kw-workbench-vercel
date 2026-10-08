@@ -83,7 +83,7 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
     - "Esiti: token assente → 400 code CAPTCHA_REQUIRED; token più lungo di 2048 caratteri → 400 code CAPTCHA_INVALID senza chiamare siteverify; success false (ad esempio invalid-input-response o timeout-or-duplicate) oppure hostname o action diversi → 400 CAPTCHA_INVALID; errore di rete, timeout o internal-error → 503 code CAPTCHA_UNAVAILABLE."
     - "Rotte protette: app/api/auth/register/route.ts (action 'register') e rotta di richiesta reset di T-1404 (action 'password-reset'); ordine: rate limit (T-1701), poi CAPTCHA, poi logica."
     - "Client: components/register-form.tsx e il form di reset caricano https://challenges.cloudflare.com/turnstile/v0/api.js con data-action coerente e inviano il token (campo cf-turnstile-response) nel body come turnstileToken; la CSP di T-505, se già presente, consente challenges.cloudflare.com in script-src e frame-src."
-    - "Env validata (T-201): TURNSTILE_SECRET_KEY e NEXT_PUBLIC_TURNSTILE_SITE_KEY obbligatorie quando la registrazione pubblica è attiva (APP_PUBLIC_SIGNUP_ENABLED, oggi default true in lib/auth/config.ts); in production le chiavi di test Cloudflare (sitekey e secret che iniziano con 1x00000, 2x00000 o 3x00000) sono rifiutate; dev ed e2e usano proprio le chiavi di test che passano sempre."
+    - "Env validata (T-201): TURNSTILE_SECRET_KEY e NEXT_PUBLIC_TURNSTILE_SITE_KEY obbligatorie quando la registrazione pubblica è attiva (APP_PUBLIC_SIGNUP_ENABLED, oggi default true in lib/auth/config.ts, e lancio commerciale attivo, D-32: in pausa la registrazione pubblica è chiusa e le chiavi sono una voce della checklist di T-1606); in production le chiavi di test Cloudflare (sitekey e secret che iniziano con 1x00000, 2x00000 o 3x00000) sono rifiutate; dev ed e2e usano proprio le chiavi di test che passano sempre."
     - "Nei test di integrazione siteverify è sempre mockato con fetch mock; nessuna chiamata di rete reale."
 
   acceptance_criteria:
@@ -121,7 +121,7 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
 - id: T-1703
   title: "Quote d'uso per workspace"
   macrotask: "abuse-quotas"
-  depends_on: [T-1605, T-1204, T-1604, T-903]
+  depends_on: [T-1605, T-1204, T-1604, T-903, T-1606]
 
   objective: >
     Contare per ogni workspace le estrazioni al giorno e le keyword salvate nel mese,
@@ -136,6 +136,7 @@ Oggi `app/api/auth/login/route.ts` e `app/api/auth/register/route.ts` accettano 
     - "Oltre quota: 429 con error, code QUOTA_EXCEEDED, metric, limit e resetAt (ISO 8601); nessun job creato."
     - "Quota mensile di keyword: lo store finale della pipeline (T-1202) salva al massimo il minimo tra maxKeywordsPerRun e keywordsPerMonth meno le keyword già contate; keywords_month aumenta del numero di keyword effettivamente salvate; se si tronca per la quota, result.truncated = true e result.truncatedReason = 'monthly_quota'."
     - "Un'estrazione conta all'avvio e i job falliti non vengono stornati (scelta da confermare con D-14)."
+    - "Con il lancio commerciale in pausa (D-32, T-1606) le quote non si applicano: nessun 429 QUOTA_EXCEEDED né troncamento per quota; i contatori possono comunque registrare l'uso per il cruscotto."
     - "Quota del fornitore con licenza (D-30): prima di ogni richiesta al fornitore (T-902) la pipeline riserva in modo atomico, su licensed_metrics_keywords_month, il numero di keyword del batch entro licensedMetricsKeywordsPerMonth; le keyword oltre quota restano con metrics_status missing e result.metricsNotice = LICENSED_METRICS_QUOTA_EXCEEDED, senza far fallire il job. Si somma al tetto di spesa globale di T-903, che resta il limite di sicurezza dell'intero servizio."
     - "GET /api/billing/usage?workspaceId= (qualsiasi membro, non membro 404) → runsToday, runsPerDay, keywordsThisMonth, keywordsPerMonth, resetAt per metrica; components/usage-summary.tsx lo mostra ed è montato in /billing se T-1604 è già costruito, altrimenti lo monta T-1604."
 

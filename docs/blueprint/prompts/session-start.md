@@ -29,7 +29,9 @@ ridiscute il design.
    18 marketing-legal (03, 09, 13, 14, 15, 16, 17)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
-   decisione APERTA (D-14, D-15), non costruirlo: costruisci gli altri task e
+   decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15
+   servono solo ad attivare il lancio commerciale, D-32: i task si costruiscono con i
+   segnaposto dichiarati): costruisci gli altri task e
    chiedimi la decisione nel riepilogo finale.
 
 3) RIPETI i task atomici del macrotask scelto. Per ciascuno enuncia, dal blueprint:

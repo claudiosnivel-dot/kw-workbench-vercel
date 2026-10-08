@@ -3,7 +3,7 @@
 > Abbonamenti per workspace con Merchant of Record (Paddle Billing, D-06) e diritti configurabili (D-14); nasce dal piano di commercializzazione dell'audit 2026-10-02: oggi non esiste alcun modello di piano, nessun limite d'uso lato server e nessuna integrazione di pagamento.
 
 ## Obiettivo del macrotask
-Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/plans.ts`), un checkout per workspace avviato solo dall'OWNER, uno stato dell'abbonamento alimentato esclusivamente da webhook firmati e idempotenti, una pagina di fatturazione con portale cliente, cambio piano, disdetta e gestione dei pagamenti scaduti, e l'applicazione dei diritti in ogni API che crea risorse o usa funzioni a pagamento. Il provider resta dietro l'interfaccia `BillingProvider` (D-06: Paddle proposto, Lemon Squeezy alternativa). Nessun prezzo, limite, durata di trial o periodo di tolleranza viene deciso qui: i valori arrivano da D-14.
+Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/plans.ts`), un checkout per workspace avviato solo dall'OWNER, uno stato dell'abbonamento alimentato esclusivamente da webhook firmati e idempotenti, una pagina di fatturazione con portale cliente, cambio piano, disdetta e gestione dei pagamenti scaduti, e l'applicazione dei diritti in ogni API che crea risorse o usa funzioni a pagamento. Il provider resta dietro l'interfaccia `BillingProvider` (D-06: Paddle proposto, Lemon Squeezy alternativa). Nessun prezzo, limite, durata di trial o periodo di tolleranza viene deciso qui: i valori arrivano da D-14. Tutto resta in pausa dietro l'interruttore del lancio commerciale (D-32, T-1606): finché il root admin non lo attiva gli utenti non hanno limiti, non si compra nulla e la registrazione pubblica è chiusa; D-14 serve solo per attivarlo.
 
 ## Fonti verificate (developer.paddle.com, 2026-10-02)
 - Firma webhook: header `Paddle-Signature` nel formato `ts=<unix>;h1=<hex>`; payload firmato = `ts + ":" + corpo grezzo`; HMAC-SHA256 con il segreto della notification destination (prefisso `pdl_ntfset_`); più `h1` durante la rotazione del segreto; non trasformare il corpo; confronto a tempo costante; tolleranza predefinita 5 secondi — https://developer.paddle.com/webhooks/signature-verification
@@ -38,7 +38,7 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
     - "Valori: tutti da D-14. Finché l'utente non li fornisce il file contiene placeholder dichiarati e PLANS_CONFIG_STATUS = 'placeholder-D14'; isPlansConfigured() restituisce false e viene rispettata dal checkout (T-1602) e dalla pagina prezzi (T-1802). Il task non inventa prezzi, limiti, trial né tolleranze."
     - "Schema zod nello stesso modulo valida PLANS al caricamento: chiave mancante, tipo errato o valore negativo → errore all'avvio con nome del piano e della chiave. Esiste sempre il piano free (FREE_PLAN_ID)."
     - "resolveEntitlements(snapshot, now) è una funzione pura: snapshot nullo → free; status active o trialing → limiti del plan_id; qualunque altro status → free (la tolleranza di past_due arriva con T-1604); plan_id sconosciuto → free e un log warning con il solo planId."
-    - "getEntitlements(workspaceId) carica lo snapshot dell'abbonamento (fino a T-1603 non esiste e restituisce free) e chiama resolveEntitlements; setPlansForTesting(plans) sostituisce PLANS solo con NODE_ENV=test, così i test usano limiti noti senza dipendere da D-14."
+    - "getEntitlements(workspaceId) carica lo snapshot dell'abbonamento (fino a T-1603 non esiste e restituisce free) e chiama resolveEntitlements; con il lancio in pausa (D-32, T-1606) restituisce invece UNLIMITED_ENTITLEMENTS; setPlansForTesting(plans) sostituisce PLANS solo con NODE_ENV=test, così i test usano limiti noti senza dipendere da D-14."
 
   acceptance_criteria:
     - id: AC-1601-1
@@ -74,7 +74,7 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
 - id: T-1602
   title: "Checkout con Merchant of Record"
   macrotask: "billing"
-  depends_on: [T-1601, T-1502]
+  depends_on: [T-1601, T-1502, T-1606]
 
   objective: >
     Introdurre l'interfaccia BillingProvider con l'implementazione Paddle Billing e un
@@ -86,7 +86,7 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
     - "lib/billing/provider.ts: interfaccia BillingProvider (createCheckout, createPortalSession, cancelSubscription, changePlan) con tipi neutri; lib/billing/paddle.ts la implementa con fetch nativo verso l'API Paddle e header Authorization: Bearer con la API key."
     - "Env validata in lib/env.ts (T-201): PADDLE_ENV (sandbox o production), PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET (usato da T-1603), NEXT_PUBLIC_PADDLE_CLIENT_TOKEN e i price id elencati in priceEnv di lib/billing/plans.ts. Base URL derivata da PADDLE_ENV: https://sandbox-api.paddle.com oppure https://api.paddle.com; l'override PADDLE_API_BASE_URL è ammesso solo con NODE_ENV diverso da production (fake HTTP negli e2e)."
     - "Coerenza ambiente: le API key sandbox contengono 'sdbx' e i client token sandbox iniziano con 'test_'; una chiave sandbox con PADDLE_ENV=production o una chiave live con PADDLE_ENV=sandbox fa fallire la validazione all'avvio, con messaggio che nomina la variabile senza stamparne il valore."
-    - "POST /api/billing/checkout con workspaceId, planId, interval: requireWorkspaceRole con azione billing.manage (solo OWNER); isPlansConfigured() false in production → 503 code PLANS_NOT_CONFIGURED; planId inesistente, free o senza price id per l'intervallo → 400 code INVALID_PLAN; workspace con abbonamento trialing, active, past_due o paused → 409 code SUBSCRIPTION_EXISTS (si passa dal cambio piano di T-1604). Un campo custom_data o price nel body viene ignorato."
+    - "POST /api/billing/checkout con workspaceId, planId, interval: requireWorkspaceRole con azione billing.manage (solo OWNER); lancio in pausa (isCommercialLive() false, D-32) → 409 code BILLING_PAUSED; isPlansConfigured() false in production → 503 code PLANS_NOT_CONFIGURED; planId inesistente, free o senza price id per l'intervallo → 400 code INVALID_PLAN; workspace con abbonamento trialing, active, past_due o paused → 409 code SUBSCRIPTION_EXISTS (si passa dal cambio piano di T-1604). Un campo custom_data o price nel body viene ignorato."
     - "Transazione lato server: POST /transactions con items [price_id, quantity 1], custom_data con workspace_id e initiated_by_user_id, customer_id se il workspace ne ha già uno (record di T-1603, se presente); risposta 200 con transactionId."
     - "components/checkout-button.tsx: chiama l'endpoint e apre Paddle.Checkout.open con il solo transactionId; Paddle.js inizializzato con NEXT_PUBLIC_PADDLE_CLIENT_TOKEN e Paddle.Environment.set('sandbox') solo con PADDLE_ENV=sandbox. URL dello script Paddle.js e relativa voce nella CSP di T-505: da verificare nel task."
     - "Errori del provider (rete, 4xx, 5xx): 502 code BILLING_PROVIDER_ERROR senza il body di Paddle; log con status e requestId, mai la API key."
@@ -236,7 +236,7 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
 - id: T-1605
   title: "Applicazione dei diritti lato server"
   macrotask: "billing"
-  depends_on: [T-1601, T-1502, T-1503, T-902]
+  depends_on: [T-1601, T-1502, T-1503, T-902, T-1606]
 
   objective: >
     Verificare nelle API ogni limite di conteggio e ogni funzione a pagamento del piano del
@@ -287,9 +287,60 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
   out_of_scope:
     - "Quote per periodo (estrazioni al giorno, keyword al mese): T-1703."
     - "Valori dei limiti: D-14."
+
+- id: T-1606
+  title: "Interruttore del lancio commerciale"
+  macrotask: "billing"
+  depends_on: [T-1601, T-1105, T-507]
+
+  objective: >
+    Tenere in pausa tutto ciò che è commerciale finché il root admin non decide di lanciare (D-32): in pausa gli
+    utenti non hanno limiti né quote, non si compra nulla e la registrazione pubblica è chiusa; un interruttore nel
+    pannello admin attiva tutto solo quando la checklist di configurazione è verde, e si può rispegnere.
+
+  definition_of_done:
+    - "lib/billing/launch.ts: stato del lancio paused o live in app_settings (chiave COMMERCIAL_LAUNCH_STATUS), letto con la cache dati di T-1105 (tag dedicato, invalidato a ogni cambio); assente o illeggibile → paused (fail-safe). Esporta getLaunchStatus(), isCommercialLive() e getLaunchChecklist()."
+    - "Checklist calcolata solo lato server, senza mai mostrare valori segreti: plans (isPlansConfigured() di T-1601), paddle (PADDLE_ENV, PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET, NEXT_PUBLIC_PADDLE_CLIENT_TOKEN e i price id dei piani pubblici presenti e coerenti, T-1602), email (RESEND_API_KEY ed EMAIL_FROM presenti, D-11), legal (testi di T-1803 presenti con status diverso da placeholder e versione uguale a LEGAL_TERMS_VERSION), captcha (TURNSTILE_SECRET_KEY e NEXT_PUBLIC_TURNSTILE_SITE_KEY presenti e non di test in production, T-1702). Una voce il cui task non è ancora costruito risulta mancante, mai verde."
+    - "Effetti della pausa: getEntitlements di T-1601 restituisce UNLIMITED_ENTITLEMENTS (limiti di conteggio null, cioè illimitati; sheetsExport e plannerImport attivi; licensedMetrics invariato, del solo root admin come da T-902) qualunque sia l'abbonamento; checkout, cambio piano e portale di T-1602 e T-1604 rispondono 409 code BILLING_PAUSED; la pagina prezzi di T-1802 mostra pricing.comingSoon; la registrazione pubblica risponde 403 code SIGNUP_DISABLED anche con APP_PUBLIC_SIGNUP_ENABLED=true; gli utenti creati dal root admin dal pannello nascono con email_verified_at valorizzato (l'admin garantisce l'indirizzo; senza Resend la verifica via email non arriverebbe). Con live valgono piani, abbonamenti, limiti, quote e APP_PUBLIC_SIGNUP_ENABLED."
+    - "API: GET /api/admin/launch (solo root admin) → status, checklist con ok per voce, changedAt, changedBy; PATCH /api/admin/launch con status live o paused (solo root admin): live con almeno una voce mancante → 409 code LAUNCH_NOT_READY con missing (nomi delle voci) e stato invariato; altro utente → 403 FORBIDDEN. Ogni cambio scrive una riga di log con attore, stato precedente e nuovo (nel registro di T-1704 se già costruito)."
+    - "components/admin-launch-card.tsx nella pagina /admin, visibile solo al root admin: stato attuale, checklist con l'esito di ogni voce e il task o la variabile che la soddisfa, pulsante «Attiva il lancio» disabilitato finché una voce manca e pulsante per rimettere in pausa, con conferma; testi nei cataloghi it/en (T-1302)."
+    - "I task successivi leggono solo isCommercialLive(): T-1602 e T-1604 (409 BILLING_PAUSED), T-1605 e T-1703 (nessun 402 né 429 in pausa, perché i diritti sono illimitati e le quote non si applicano), T-1702 (CAPTCHA richiesto solo con registrazione pubblica aperta), T-1801 e T-1802 (CTA di registrazione e prezzi solo con live)."
+
+  acceptance_criteria:
+    - id: AC-1606-1
+      given: "nessuna riga COMMERCIAL_LAUNCH_STATUS in app_settings e un workspace senza abbonamento"
+      when: "si legge getLaunchStatus() e si chiama getEntitlements(workspaceId)"
+      then: "lo stato è paused e i diritti hanno tutti i limiti di conteggio null con sheetsExport e plannerImport true"
+    - id: AC-1606-2
+      given: "lancio in pausa con APP_PUBLIC_SIGNUP_ENABLED=true"
+      when: "un anonimo invia POST /api/auth/register con dati validi e il root admin crea un utente dal pannello admin"
+      then: "la registrazione risponde 403 con code SIGNUP_DISABLED e users non ha la nuova email; l'utente creato dal root admin ha email_verified_at non nullo"
+    - id: AC-1606-3
+      given: "lancio in pausa e PLANS_CONFIG_STATUS uguale a 'placeholder-D14'"
+      when: "il root admin invia PATCH /api/admin/launch con status live, e un admin non root invia la stessa richiesta"
+      then: "la prima risposta è 409 con code LAUNCH_NOT_READY e missing che contiene 'plans'; la seconda è 403 con code FORBIDDEN; lo stato resta paused"
+    - id: AC-1606-4
+      given: "checklist interamente soddisfatta con configurazione di test (piani validi con setPlansForTesting e variabili d'ambiente fittizie) e un workspace senza abbonamento"
+      when: "il root admin attiva il lancio, poi lo rimette in pausa"
+      then: "dopo l'attivazione GET /api/admin/launch riporta status live e getEntitlements restituisce i limiti del piano free; dopo la pausa lo stato è paused e i diritti tornano illimitati"
+
+  target_tests:
+    - file: "tests/integration/commercial-launch.test.ts"
+      covers: [AC-1606-1, AC-1606-2, AC-1606-3, AC-1606-4]
+
+  security_notes:
+    - "A01 Broken Access Control / CWE-285 (Improper Authorization): stato e checklist si leggono e si cambiano solo come root admin; nessun parametro del client cambia i diritti."
+    - "A02 Security Misconfiguration / CWE-1188 (Insecure Default Initialization of Resource): stato assente o illeggibile vale paused; l'attivazione richiede la checklist verde, così non si vende senza webhook firmati, email, testi legali o CAPTCHA."
+    - "A04 Cryptographic Failures / CWE-200 (Exposure of Sensitive Information): la checklist dice solo se una variabile è presente e coerente, mai il suo valore."
+    - "A06 Insecure Design / CWE-799 (Improper Control of Interaction Frequency): in pausa la registrazione pubblica è chiusa, quindi i diritti illimitati valgono solo per account creati dal root admin o invitati."
+
+  out_of_scope:
+    - "Valori di piani, prezzi, limiti, trial e tolleranza: D-14 (servono solo per attivare)."
+    - "Configurazione degli account esterni (Paddle, Resend, Cloudflare Turnstile) e redazione dei testi legali (D-15): azioni dell'utente prima dell'attivazione."
 ```
 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
+- Emendamento del 2026-10-08 (D-32, decisione dell'utente): T-1606 aggiunge l'interruttore del lancio commerciale; T-1602 e T-1605 ne dipendono; D-14 non blocca più la costruzione. T-1604 legge isCommercialLive() tramite T-1602 (stessa risposta 409 BILLING_PAUSED).
 - Rilievi da confermare nel 00-INDEX: `keywordsPerMonth` aggiunto ai limiti di T-1601 (serve a T-1703); seats agganciati agli inviti da chi arriva per secondo tra T-1503 e T-1605; riepilogo d'uso montato da chi arriva per secondo tra T-1604 e T-1703.
