@@ -503,6 +503,10 @@
     "TERMS_NOT_ACCEPTED": "To continue, accept the terms of service and the privacy policy.",
     "TERMS_VERSION_CHANGED": "The terms have changed: reload the page and accept the new version.",
     "RATE_LIMITED": "Too many requests: try again shortly.",
+    "CAPTCHA_REQUIRED": "Complete the anti-bot check.",
+    "CAPTCHA_INVALID": "The anti-bot check failed: try again.",
+    "CAPTCHA_UNAVAILABLE": "The anti-bot check is unavailable: try again later.",
+    "PASSWORD_CHANGE_REQUIRED": "You must change your password before continuing.",
     "LOCALE_UNSUPPORTED": "Unsupported language.",
     "PROJECT_NOT_FOUND": "Project not found.",
     "SECTION_NOT_FOUND": "Section not found.",
@@ -553,7 +557,8 @@
     "BILLING_PROVIDER_ERROR": "The payment service is not responding. Try again later.",
     "INVALID_SIGNATURE": "Invalid signature.",
     "PLAN_LIMIT": "You have reached a limit of the workspace plan.",
-    "LAUNCH_NOT_READY": "The launch checklist is not complete."
+    "LAUNCH_NOT_READY": "The launch checklist is not complete.",
+    "QUOTA_EXCEEDED": "You have used up the workspace usage quota for this period."
   },
   "errorPages": {
     "error": {
@@ -689,6 +694,10 @@
   "settings": {
     "title": "Personalize",
     "intro": "Manage visual preferences, account credentials and personal connections in one place.",
+    "passwordChange": {
+      "title": "Change your password",
+      "intro": "An administrator reset your password. Before continuing choose a new one: enter the password you received as the current password."
+    },
     "preferences": {
       "title": "Accessibility and theme",
       "intro": "Customize the interface with theme, text readability and color vision mode.",
@@ -904,6 +913,27 @@
       "deleteConfirm": "Permanently delete the user \"{name}\"?",
       "deleted": "User permanently deleted."
     },
+    "audit": {
+      "title": "Administrative action log",
+      "intro": "Every action on users, branding and the commercial launch, with author, target and date. Rows cannot be edited or deleted.",
+      "empty": "No actions recorded.",
+      "system": "System",
+      "loadMore": "Load more",
+      "loading": "Loading..."
+    },
+    "kpi": {
+      "title": "Platform indicators",
+      "intro": "Aggregate values only: no data from users' projects.",
+      "users": "Users: {total} (active {active}, suspended {suspended})",
+      "workspaces": "Workspaces: {total}",
+      "subscriptionsByStatus": "Subscriptions by status",
+      "subscriptionsByPlan": "Subscriptions by plan",
+      "none": "None",
+      "mrr": "Estimated MRR",
+      "extractions": "Extractions in the last 30 days: {total}",
+      "failedRate": "Failed jobs in the last 7 days: {rate}",
+      "failedRateNone": "Failed jobs in the last 7 days: no finished jobs"
+    },
     "spend": {
       "title": "Metrics provider spend",
       "body": "Month {month} (UTC): {spent} of a {budget} cap, {requests} requests for {keywords} keywords. Caps in METRICS_MONTHLY_BUDGET_USD and METRICS_RUN_BUDGET_USD."
@@ -1019,6 +1049,12 @@
       "action": "Accept the invitation",
       "expiry": "The invitation expires in 7 days."
     },
+    "adminPasswordReset": {
+      "subject": "Your password has been reset",
+      "intro": "an administrator reset the password of your account. Open sessions have been closed: the next time you sign in with the password you received you will have to choose a new one.",
+      "action": "Sign in",
+      "notYou": "If you did not expect this change, contact the administrator."
+    },
     "billingNotice": {
       "subject": "Notice about your subscription",
       "intro": "there is news about your {plan} subscription, with reference date {date}.",
@@ -1047,6 +1083,13 @@
     "ownerOnly": "Only the workspace owner manages billing.",
     "checkoutTitle": "Choose a plan",
     "noPaidPlans": "No paid plan available.",
+    "usage": {
+      "title": "Workspace usage",
+      "runs": "Extractions today: {used} of {limit}",
+      "keywords": "Keywords saved this month: {used} of {limit}",
+      "unlimited": "unlimited",
+      "resetAt": "Resets on {date}"
+    },
     "intervals": {
       "month": "monthly",
       "year": "yearly"

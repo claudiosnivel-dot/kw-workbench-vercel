@@ -14,6 +14,7 @@ import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { setCommercialLaunchForTests } from "../helpers/launch";
+import { configureTestTurnstile, TEST_TURNSTILE_TOKEN } from "../helpers/turnstile";
 
 type ErrorBody = { error?: string; code?: string; requestId?: string };
 
@@ -34,10 +35,13 @@ beforeEach(async () => {
   await resetDatabase();
   // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
   await setCommercialLaunchForTests("live");
+  // impacted-by: T-1702 (CAPTCHA obbligatorio sulla registrazione aperta: chiavi di prova e siteverify simulato)
+  configureTestTurnstile();
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 async function createRootAdmin() {
@@ -96,6 +100,7 @@ describe("errore imprevisto del DB", () => {
         confirmPassword: "password-503",
         acceptTerms: true,
         termsVersion: LEGAL_TERMS_VERSION,
+        turnstileToken: TEST_TURNSTILE_TOKEN,
       },
     });
     const text = await response.text();

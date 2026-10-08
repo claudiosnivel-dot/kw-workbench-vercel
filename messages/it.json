@@ -503,6 +503,10 @@
     "TERMS_NOT_ACCEPTED": "Per continuare accetta termini di servizio e informativa sulla privacy.",
     "TERMS_VERSION_CHANGED": "I termini sono cambiati: ricarica la pagina e accetta la nuova versione.",
     "RATE_LIMITED": "Troppe richieste: riprova tra poco.",
+    "CAPTCHA_REQUIRED": "Completa la verifica anti-bot.",
+    "CAPTCHA_INVALID": "Verifica anti-bot non riuscita: riprova.",
+    "CAPTCHA_UNAVAILABLE": "Verifica anti-bot non disponibile: riprova più tardi.",
+    "PASSWORD_CHANGE_REQUIRED": "Devi cambiare la password prima di continuare.",
     "LOCALE_UNSUPPORTED": "Lingua non supportata.",
     "PROJECT_NOT_FOUND": "Progetto non trovato.",
     "SECTION_NOT_FOUND": "Sezione non trovata.",
@@ -553,7 +557,8 @@
     "BILLING_PROVIDER_ERROR": "Il servizio di pagamento non risponde. Riprova più tardi.",
     "INVALID_SIGNATURE": "Firma non valida.",
     "PLAN_LIMIT": "Hai raggiunto un limite del piano del workspace.",
-    "LAUNCH_NOT_READY": "La checklist del lancio non è completa."
+    "LAUNCH_NOT_READY": "La checklist del lancio non è completa.",
+    "QUOTA_EXCEEDED": "Hai esaurito la quota d'uso del workspace per questo periodo."
   },
   "errorPages": {
     "error": {
@@ -689,6 +694,10 @@
   "settings": {
     "title": "Personalizza",
     "intro": "Gestisci preferenze visive, credenziali account e connessioni personali da un unico punto.",
+    "passwordChange": {
+      "title": "Cambia la password",
+      "intro": "Un amministratore ha reimpostato la tua password. Prima di continuare scegline una nuova: come password attuale inserisci quella che hai ricevuto."
+    },
     "preferences": {
       "title": "Accessibilità e tema",
       "intro": "Personalizza l'interfaccia con tema, leggibilità del testo e modalità daltonismo.",
@@ -904,6 +913,27 @@
       "deleteConfirm": "Eliminare definitivamente l'utente \"{name}\"?",
       "deleted": "Utente eliminato definitivamente."
     },
+    "audit": {
+      "title": "Registro delle azioni amministrative",
+      "intro": "Ogni azione su utenti, branding e lancio commerciale, con autore, bersaglio e data. Le righe non si modificano né si cancellano.",
+      "empty": "Nessuna azione registrata.",
+      "system": "Sistema",
+      "loadMore": "Carica altre",
+      "loading": "Caricamento..."
+    },
+    "kpi": {
+      "title": "Indicatori della piattaforma",
+      "intro": "Solo valori aggregati: nessun dato dei progetti degli utenti.",
+      "users": "Utenti: {total} (attivi {active}, sospesi {suspended})",
+      "workspaces": "Workspace: {total}",
+      "subscriptionsByStatus": "Abbonamenti per stato",
+      "subscriptionsByPlan": "Abbonamenti per piano",
+      "none": "Nessuno",
+      "mrr": "MRR stimato",
+      "extractions": "Estrazioni negli ultimi 30 giorni: {total}",
+      "failedRate": "Job falliti negli ultimi 7 giorni: {rate}",
+      "failedRateNone": "Job falliti negli ultimi 7 giorni: nessun job concluso"
+    },
     "spend": {
       "title": "Spesa fornitore metriche",
       "body": "Mese {month} (UTC): {spent} su un tetto di {budget}, {requests} richieste per {keywords} keyword. Tetti in METRICS_MONTHLY_BUDGET_USD e METRICS_RUN_BUDGET_USD."
@@ -1023,6 +1053,12 @@
       "subject": "Avviso sul tuo abbonamento",
       "intro": "ci sono novità sul tuo abbonamento {plan}, con data di riferimento {date}.",
       "action": "Apri l'app"
+    },
+    "adminPasswordReset": {
+      "subject": "La tua password è stata reimpostata",
+      "intro": "un amministratore ha reimpostato la password del tuo account. Le sessioni aperte sono state chiuse: al prossimo accesso con la password ricevuta dovrai sceglierne una nuova.",
+      "action": "Accedi",
+      "notYou": "Se non ti aspettavi questa modifica, contatta l'amministratore."
     }
   },
   "billing": {
@@ -1047,6 +1083,13 @@
     "ownerOnly": "Solo il proprietario del workspace gestisce la fatturazione.",
     "checkoutTitle": "Scegli un piano",
     "noPaidPlans": "Nessun piano a pagamento disponibile.",
+    "usage": {
+      "title": "Uso del workspace",
+      "runs": "Estrazioni oggi: {used} su {limit}",
+      "keywords": "Keyword salvate questo mese: {used} su {limit}",
+      "unlimited": "illimitate",
+      "resetAt": "Si azzera il {date}"
+    },
     "intervals": {
       "month": "mensile",
       "year": "annuale"

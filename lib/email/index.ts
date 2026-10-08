@@ -4,6 +4,7 @@ import { normalizeEmail } from "@/lib/auth/email-address";
 import { OutboxEmailSender, type OutboxStore, databaseOutbox } from "@/lib/email/outbox-sender";
 import { ResendEmailSender, unconfiguredResendSender } from "@/lib/email/resend-sender";
 import { render as accountExists } from "@/lib/email/templates/account-exists";
+import { render as adminPasswordReset } from "@/lib/email/templates/admin-password-reset";
 import { render as billingNotice } from "@/lib/email/templates/billing-notice";
 import type { RenderedEmail } from "@/lib/email/templates/layout";
 import { render as passwordReset } from "@/lib/email/templates/password-reset";
@@ -19,6 +20,7 @@ const RENDERERS = {
   "account-exists": accountExists,
   "workspace-invite": workspaceInvite,
   "billing-notice": billingNotice,
+  "admin-password-reset": adminPasswordReset,
 } satisfies Record<EmailTemplate, (locale: AppLocale, vars: never) => RenderedEmail>;
 
 type TemplateVars = { [K in EmailTemplate]: Parameters<(typeof RENDERERS)[K]>[1] };

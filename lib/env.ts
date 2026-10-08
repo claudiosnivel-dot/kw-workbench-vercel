@@ -31,6 +31,18 @@ export const INT_ENV = {
   PRISMA_POOL_TIMEOUT: { def: 15, min: 1, max: 120 },
   // Tolleranza sul timestamp della firma dei webhook di Paddle (T-1603): default di Paddle 5 s, al massimo 300.
   PADDLE_WEBHOOK_TOLERANCE_SECONDS: { def: 5, min: 1, max: 300 },
+  // Rate limit (T-1701, D-12): tentativi ammessi per finestra, valori iniziali PROPOSTI. Login per IP+email e per IP,
+  // registrazione per IP, richiesta di reset per email e per IP, avvii di estrazione per workspace (D-27 emendata).
+  RATE_LIMIT_LOGIN_IP_EMAIL_MAX: { def: 5, min: 1, max: 10_000 },
+  RATE_LIMIT_LOGIN_IP_MAX: { def: 50, min: 1, max: 100_000 },
+  RATE_LIMIT_LOGIN_WINDOW_SECONDS: { def: 900, min: 1, max: 86_400 },
+  RATE_LIMIT_REGISTER_IP_MAX: { def: 5, min: 1, max: 10_000 },
+  RATE_LIMIT_REGISTER_WINDOW_SECONDS: { def: 3_600, min: 1, max: 86_400 },
+  RATE_LIMIT_RESET_EMAIL_MAX: { def: 3, min: 1, max: 10_000 },
+  RATE_LIMIT_RESET_IP_MAX: { def: 20, min: 1, max: 100_000 },
+  RATE_LIMIT_RESET_WINDOW_SECONDS: { def: 3_600, min: 1, max: 86_400 },
+  RATE_LIMIT_RUN_START_MAX: { def: 30, min: 1, max: 10_000 },
+  RATE_LIMIT_RUN_START_WINDOW_SECONDS: { def: 3_600, min: 1, max: 86_400 },
 } as const;
 
 type IntEnvKey = keyof typeof INT_ENV;
@@ -148,6 +160,22 @@ const envSchema = z.object({
   // Solo fuori da production (fake HTTP nei test): sostituisce la base URL dell'API di Paddle.
   PADDLE_API_BASE_URL: optional,
   PADDLE_WEBHOOK_TOLERANCE_SECONDS: optional,
+  // Rate limit (T-1701): soglie e finestre in secondi, interi di INT_ENV.
+  RATE_LIMIT_LOGIN_IP_EMAIL_MAX: optional,
+  RATE_LIMIT_LOGIN_IP_MAX: optional,
+  RATE_LIMIT_LOGIN_WINDOW_SECONDS: optional,
+  RATE_LIMIT_REGISTER_IP_MAX: optional,
+  RATE_LIMIT_REGISTER_WINDOW_SECONDS: optional,
+  RATE_LIMIT_RESET_EMAIL_MAX: optional,
+  RATE_LIMIT_RESET_IP_MAX: optional,
+  RATE_LIMIT_RESET_WINDOW_SECONDS: optional,
+  RATE_LIMIT_RUN_START_MAX: optional,
+  RATE_LIMIT_RUN_START_WINDOW_SECONDS: optional,
+  // Variabile di sistema di Vercel (1 sulle deployment): solo lì x-forwarded-for è l'IP del client (T-1701).
+  VERCEL: optional,
+  // CAPTCHA Cloudflare Turnstile (T-1702, D-12): insieme o nessuna; voce captcha della checklist del lancio (T-1606).
+  TURNSTILE_SECRET_KEY: optional,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: optional,
 });
 
 type RawEnv = z.infer<typeof envSchema>;
@@ -298,6 +326,10 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
 
   checkEmailSettings(raw, isProduction, ctx);
 
+  for (const issue of turnstileSettingsIssues(raw)) {
+    ctx.addIssue({ code: "custom", path: [issue.name], message: issue.message });
+  }
+
   for (const issue of paddleSettingsIssues(raw)) {
     ctx.addIssue({ code: "custom", path: [issue.name], message: issue.message });
   }
@@ -373,6 +405,48 @@ function checkEmailSettings(raw: RawEnv, isProduction: boolean, ctx: z.Refinemen
   if (isProduction && present(raw.APP_PUBLIC_URL) === undefined) {
     ctx.addIssue({ code: "custom", path: ["APP_PUBLIC_URL"], message: "è obbligatoria in produzione" });
   }
+}
+
+// Chiavi di test di Cloudflare Turnstile (sitekey e secret): passano o falliscono sempre, mai in produzione (T-1702).
+const TURNSTILE_TEST_KEY_PATTERN = /^[123]x00000/;
+// Secret e site key di Turnstile: si impostano insieme.
+const TURNSTILE_ENV_NAMES = ["TURNSTILE_SECRET_KEY", "NEXT_PUBLIC_TURNSTILE_SITE_KEY"] as const;
+
+/** true per le chiavi di test documentate da Cloudflare (1x00000…, 2x00000…, 3x00000…). */
+export function isTurnstileTestKey(value: string): boolean {
+  return TURNSTILE_TEST_KEY_PATTERN.test(value);
+}
+
+/**
+ * Chiavi di Turnstile (T-1702): vanno impostate insieme; in produzione le chiavi di test sono rifiutate (CWE-798). Sono
+ * facoltative all'avvio perché il lancio commerciale è uno stato del DB (D-32): la loro presenza è la voce captcha della
+ * checklist di T-1606, che impedisce di attivare il lancio senza CAPTCHA. Gli errori nominano la variabile, mai il valore.
+ */
+function turnstileSettingsIssues(source: EnvSource): EnvIssue[] {
+  const values = TURNSTILE_ENV_NAMES.map((name) => present(source[name])?.trim());
+  const issues: EnvIssue[] = [];
+  const missing = values.findIndex((value) => value === undefined);
+  if (missing !== -1 && values.some((value) => value !== undefined)) {
+    issues.push({ name: TURNSTILE_ENV_NAMES[missing], message: `va impostata insieme a ${TURNSTILE_ENV_NAMES[1 - missing]}` });
+  }
+  if (source.NODE_ENV === "production") {
+    values.forEach((value, index) => {
+      if (value !== undefined && isTurnstileTestKey(value)) {
+        issues.push({ name: TURNSTILE_ENV_NAMES[index], message: "non può essere una chiave di test di Cloudflare in produzione" });
+      }
+    });
+  }
+  return issues;
+}
+
+/** Chiavi di Turnstile (T-1702); null se mancano o non sono coerenti con l'ambiente (CAPTCHA non configurato). */
+export function getTurnstileSettings(source: EnvSource = process.env): { secretKey: string; siteKey: string } | null {
+  const secretKey = present(source.TURNSTILE_SECRET_KEY)?.trim();
+  const siteKey = present(source.NEXT_PUBLIC_TURNSTILE_SITE_KEY)?.trim();
+  if (!secretKey || !siteKey || turnstileSettingsIssues(source).length > 0) {
+    return null;
+  }
+  return { secretKey, siteKey };
 }
 
 /** Ambienti di Paddle (T-1602): sandbox per sviluppo e preview, production per gli incassi reali. */
@@ -558,6 +632,11 @@ export function getResendSettings(source: EnvSource = process.env): { apiKey: st
 /** URL pubblico dell'app senza barra finale (T-1402): l'unica base dei link nelle email; null se non impostato. */
 export function getPublicAppUrl(source: EnvSource = process.env): string | null {
   return present(source.APP_PUBLIC_URL)?.trim().replace(/\/+$/, "") ?? null;
+}
+
+/** true sulle deployment di Vercel (VERCEL=1), dove la piattaforma sovrascrive x-forwarded-for (T-1701). */
+export function isVercelRuntime(source: EnvSource = process.env): boolean {
+  return present(source.VERCEL)?.trim() === "1";
 }
 
 /** Segreto di Protection Bypass for Automation di Vercel, se attivo sul progetto. */

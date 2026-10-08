@@ -11,19 +11,17 @@ import { setPlansForTesting } from "@/lib/billing/plans";
 import { resetEnvForTests } from "@/lib/env";
 import { areLegalTextsPublished, LEGAL_TERMS_VERSION } from "@/lib/legal/version";
 import { prisma } from "@/lib/prisma";
-import { isTurnstileReady } from "@/lib/security/turnstile";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { configureTestBilling, fakePaddleValue, TEST_FREE_LIMITS } from "../helpers/paddle";
 
-// Le voci legal e captcha appartengono a T-1803 e T-1702, non ancora costruiti: il test le simula pronte solo in
-// AC-1606-4 (configurazione di test della checklist completa).
+// La voce legal appartiene a T-1803, non ancora costruito: il test la simula pronta solo in AC-1606-4 (configurazione di
+// test della checklist completa). impacted-by: T-1702 (la voce captcha è costruita: in AC-1606-4 chiavi di prova).
 vi.mock("@/lib/legal/version", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/legal/version")>()),
   areLegalTextsPublished: vi.fn(() => false),
 }));
-vi.mock("@/lib/security/turnstile", () => ({ isTurnstileReady: vi.fn(() => false) }));
 
 beforeEach(async () => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");
@@ -110,7 +108,8 @@ describe("lancio commerciale attivo", () => {
     vi.stubEnv("RESEND_API_KEY", fakePaddleValue("re_"));
     vi.stubEnv("EMAIL_FROM", "noreply@example.test");
     vi.mocked(areLegalTextsPublished).mockReturnValue(true);
-    vi.mocked(isTurnstileReady).mockReturnValue(true);
+    vi.stubEnv("TURNSTILE_SECRET_KEY", fakePaddleValue("0x4AAAA"));
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", fakePaddleValue("0x4AAAA"));
     const root = await createUserWithSession({ displayName: "t1606-root", role: UserRole.ADMIN, isRootAdmin: true });
     const owner = await createUserWithSession({ displayName: "t1606-owner" });
     const change = (status: string) =>

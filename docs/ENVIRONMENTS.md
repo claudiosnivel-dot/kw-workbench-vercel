@@ -74,6 +74,19 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `PADDLE_API_BASE_URL` | no (rifiutata all'avvio in produzione) | no | facolt. (solo test: base URL di un fake HTTP dell'API di Paddle) | no | locale |
 | `PADDLE_WEBHOOK_TOLERANCE_SECONDS` | facolt. (intero 1…300, default 5: tolleranza sul timestamp della firma dei webhook) | facolt. | facolt. | no | Vercel / locale |
 | `PADDLE_PRICE_*` | come `PADDLE_ENV`: price id di Paddle (`pri_...`) dei piani pubblici a pagamento, una variabile per piano e intervallo, con i nomi dichiarati da `priceEnv` in `lib/billing/plans.ts` (D-14); un valore malformato è un errore all'avvio | come Production | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_LOGIN_IP_EMAIL_MAX` | facolt. (intero 1…10000, default 5: tentativi di login per IP+email nella finestra (T-1701, valore PROPOSTO)) | facolt. | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_LOGIN_IP_MAX` | facolt. (intero 1…100000, default 50: tentativi di login per IP nella finestra) | facolt. | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_LOGIN_WINDOW_SECONDS` | facolt. (intero 1…86400, default 900: finestra scorrevole del login) | facolt. | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_REGISTER_IP_MAX` | facolt. (intero 1…10000, default 5: registrazioni per IP nella finestra) | facolt. | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_REGISTER_WINDOW_SECONDS` | facolt. (intero 1…86400, default 3600: finestra della registrazione) | facolt. | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_RESET_EMAIL_MAX` | facolt. (intero 1…10000, default 3: richieste di reset password per email nella finestra) | facolt. | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_RESET_IP_MAX` | facolt. (intero 1…100000, default 20: richieste di reset password per IP nella finestra) | facolt. | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_RESET_WINDOW_SECONDS` | facolt. (intero 1…86400, default 3600: finestra della richiesta di reset) | facolt. | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_RUN_START_MAX` | facolt. (intero 1…10000, default 30: avvii di estrazione per workspace nella finestra, solo con il lancio commerciale attivo (D-27 emendata)) | facolt. | facolt. | no | Vercel / locale |
+| `RATE_LIMIT_RUN_START_WINDOW_SECONDS` | facolt. (intero 1…86400, default 3600: finestra degli avvii di estrazione) | facolt. | facolt. | no | Vercel / locale |
+| `VERCEL` | no (di sistema: `1` sulle deployment; solo lì `x-forwarded-for` è l'IP del client nelle chiavi del rate limit e nel `remoteip` del CAPTCHA, T-1701) | no (di sistema) | no (fuori da Vercel l'IP vale `unknown`) | no | piattaforma (Vercel) |
+| `TURNSTILE_SECRET_KEY` | facolt. finché il lancio commerciale è in pausa (D-32), poi obbl. (voce captcha della checklist di T-1606): secret di Cloudflare Turnstile, insieme a `NEXT_PUBLIC_TURNSTILE_SITE_KEY`; le chiavi di test di Cloudflare (`1x00000…`, `2x00000…`, `3x00000…`) sono rifiutate all'avvio; mai nel sorgente né nei log | come Production | facolt. (chiavi di test di Cloudflare che passano sempre) | sì | Vercel (Sensitive) / locale |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | come `TURNSTILE_SECRET_KEY` (insieme o nessuna): site key del widget; letta in build, accende il widget su registrazione e recupero password e aggiunge `challenges.cloudflare.com` a `script-src` e `frame-src` della CSP | come Production | facolt. | no (finisce nel bundle client) | Vercel / locale |
 
 ## Production
 

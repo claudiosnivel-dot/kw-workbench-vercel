@@ -1,7 +1,14 @@
 import type { AppLocale } from "@/lib/i18n/locale";
 
 /** Template delle email transazionali (T-1402), nei cataloghi sotto emails. */
-export type EmailTemplate = "verify-email" | "password-reset" | "account-exists" | "workspace-invite" | "billing-notice";
+export type EmailTemplate =
+  | "verify-email"
+  | "password-reset"
+  | "account-exists"
+  | "workspace-invite"
+  | "billing-notice"
+  // Password reimpostata da un admin (T-1704).
+  | "admin-password-reset";
 
 /** Messaggio pronto per l'invio: id è anche la Idempotency-Key di Resend, quindi un ritentativo non duplica l'email. */
 export type EmailMessage = {

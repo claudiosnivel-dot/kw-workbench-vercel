@@ -40,7 +40,10 @@ function testPlan(id: string, order: number, priceEnv: Record<string, string>, l
  * Piani di prova (free, pro, team) e ambiente Paddle sandbox fittizio (T-1602…T-1605): price id casuali nelle variabili
  * PADDLE_PRICE_*, chiave sandbox, segreto dei webhook e base URL del fake HTTP. Restituisce price id e segreto.
  */
-export function configureTestBilling(limits: Partial<typeof TEST_FREE_LIMITS> = {}, policy: { pastDueGraceMs?: number } = {}) {
+export function configureTestBilling(
+  limits: Partial<typeof TEST_FREE_LIMITS> = {},
+  policy: { pastDueGraceMs?: number; runRefundsPerMonth?: number } = {}
+) {
   const prices = {
     proMonth: fakePaddleValue("pri_"),
     proYear: fakePaddleValue("pri_"),

@@ -88,6 +88,13 @@ enum JobStatus {
   canceled
 }
 
+// Causa del fallimento di un job (T-1703, D-27 emendata): INTERNAL (errore nostro: eccezione, DB, tentativi esauriti,
+// fornitore esterno non disponibile) restituisce la quota; USER (input non valido) la consuma.
+enum JobFailureCause {
+  INTERNAL
+  USER
+}
+
 // Fase dell'estrazione a passi (T-1201, T-1202): expand calcola le query, autocomplete e metrics lavorano a
 // batch sullo staging del job, store scrive i risultati; done a job completed.
 enum JobPhase {
@@ -185,6 +192,8 @@ model User {
   /// null finché l'utente non sceglie: la lingua si risolve da cookie, Accept-Language e infine it.
   ui_locale                   UiLocale?
   session_version             Int                        @default(0)
+  /// Password impostata da un admin (T-1704): finché l'utente non la cambia, solo cambio password e logout.
+  must_change_password        Boolean                    @default(false)
   /// Versione dei termini accettata e momento dell'accettazione (T-1405); null finché l'utente non accetta.
   accepted_terms_version      String?
   accepted_terms_at           DateTime?
@@ -209,17 +218,18 @@ model User {
 
 /// Workspace di team (T-1501, D-08): possiede i progetti; l'isolamento è applicativo (D-02) e passa dalla membership.
 model Workspace {
-  id                   String            @id @default(cuid())
+  id                   String                 @id @default(cuid())
   name                 String
-  slug                 String            @unique
-  personal_for_user_id String?           @unique
-  created_at           DateTime          @default(now())
-  updated_at           DateTime          @updatedAt
-  personal_for_user    User?             @relation("PersonalWorkspace", fields: [personal_for_user_id], references: [id], onDelete: Cascade)
+  slug                 String                 @unique
+  personal_for_user_id String?                @unique
+  created_at           DateTime               @default(now())
+  updated_at           DateTime               @updatedAt
+  personal_for_user    User?                  @relation("PersonalWorkspace", fields: [personal_for_user_id], references: [id], onDelete: Cascade)
   memberships          Membership[]
   projects             Project[]
   invites              WorkspaceInvite[]
   subscription         WorkspaceSubscription?
+  usage_counters       UsageCounter[]
 
   @@map("workspaces")
 }
@@ -396,29 +406,32 @@ model KeywordCandidate {
 }
 
 model Job {
-  id               String          @id @default(cuid())
+  id               String           @id @default(cuid())
   project_id       String
   subproject_id    String
-  type             JobType         @default(extraction)
-  status           JobStatus       @default(pending)
+  type             JobType          @default(extraction)
+  status           JobStatus        @default(pending)
   payload          Json?
   result           Json?
   error_message    String?
   started_at       DateTime?
   completed_at     DateTime?
-  created_at       DateTime        @default(now())
-  updated_at       DateTime        @updatedAt
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
   // Esecuzione a passi ripartibile (T-1201): cursore della fase, avanzamento, heartbeat e lease del passo in corso.
-  phase            JobPhase        @default(expand)
-  cursor           Json            @default("{}")
-  progress_done    Int             @default(0)
-  progress_total   Int             @default(0)
+  phase            JobPhase         @default(expand)
+  cursor           Json             @default("{}")
+  progress_done    Int              @default(0)
+  progress_total   Int              @default(0)
   heartbeat_at     DateTime?
   locked_until     DateTime?
-  attempts         Int             @default(0)
-  cancel_requested Boolean         @default(false)
-  project          Project         @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  subproject       Subproject      @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
+  attempts         Int              @default(0)
+  cancel_requested Boolean          @default(false)
+  /// Causa di un job failed (T-1703, D-27 emendata): INTERNAL restituisce la quota entro il tetto dei rimborsi.
+  failure_cause    JobFailureCause?
+  quota_refunded   Boolean          @default(false)
+  project          Project          @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  subproject       Subproject       @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
   suggestions      JobSuggestion[]
   metrics          JobMetric[]
 
@@ -684,4 +697,54 @@ model BillingEvent {
   created_at      DateTime            @default(now())
 
   @@map("billing_events")
+}
+
+/// Rate limiter a finestra scorrevole (T-1701, D-12): una riga per tentativo ammesso, per chiave (regola, IP, email o
+/// workspace); le righe più vecchie della finestra si eliminano a ogni consumo e con pruneRateLimitHits.
+model RateLimitHit {
+  id         BigInt   @id @default(autoincrement())
+  key        String
+  created_at DateTime @default(now())
+
+  @@index([key, created_at])
+  @@map("rate_limit_hits")
+}
+
+/// Registro delle azioni amministrative (T-1704): solo inserimenti, nessuna API di modifica o cancellazione. actor nullo
+/// per gli eventi di sistema (tetto dei rimborsi, T-1703); metadata senza password, hash, token o data URL.
+model AdminAuditLog {
+  id            String   @id @default(cuid())
+  actor_user_id String?
+  action        String
+  target_type   String
+  target_id     String?
+  metadata      Json
+  ip            String?
+  created_at    DateTime @default(now())
+
+  @@index([created_at])
+  @@index([target_type, target_id])
+  @@map("admin_audit_log")
+}
+
+// Metriche d'uso per workspace (T-1703): avvii del giorno, keyword salvate e keyword arricchite dal fornitore con
+// licenza nel mese, rimborsi automatici della quota nel mese (D-27 emendata).
+enum UsageMetric {
+  runs_day
+  keywords_month
+  licensed_keywords_month
+  run_refunds_month
+}
+
+/// Contatore d'uso del workspace per periodo UTC (T-1703): incrementi condizionali atomici in SQL.
+model UsageCounter {
+  id           BigInt      @id @default(autoincrement())
+  workspace_id String
+  metric       UsageMetric
+  period_start DateTime
+  count        Int         @default(0)
+  workspace    Workspace   @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+
+  @@unique([workspace_id, metric, period_start])
+  @@map("usage_counters")
 }

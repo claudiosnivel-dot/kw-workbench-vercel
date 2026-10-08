@@ -100,10 +100,26 @@ export async function assertLicensedMetricsChoice(
   }
 }
 
-/** Limiti dell'estrazione per il job (T-1605): tetto di keyword salvate e accesso alle metriche con licenza. */
-export type ExtractionPlanLimits = { maxKeywordsPerRun: number | null; licensedMetrics: boolean };
+/**
+ * Limiti dell'estrazione letti all'avvio e salvati nel payload del job (T-1605, T-1703): tetto di keyword salvate,
+ * accesso alle metriche con licenza e quote mensili di keyword salvate e arricchite (null = nessuna quota, lancio in
+ * pausa).
+ */
+export type ExtractionPlanLimits = {
+  maxKeywordsPerRun: number | null;
+  licensedMetrics: boolean;
+  keywordsPerMonth?: number | null;
+  licensedMetricsKeywordsPerMonth?: number | null;
+};
 
-export async function extractionPlanLimits(workspaceId: string): Promise<ExtractionPlanLimits> {
+/** Limiti del job e avvii al giorno del workspace (la quota riservata all'avvio, T-1703). */
+export async function extractionPlanLimits(workspaceId: string): Promise<ExtractionPlanLimits & { runsPerDay: number | null }> {
   const { limits } = await getEntitlements(workspaceId);
-  return { maxKeywordsPerRun: limits.maxKeywordsPerRun, licensedMetrics: limits.licensedMetrics };
+  return {
+    maxKeywordsPerRun: limits.maxKeywordsPerRun,
+    licensedMetrics: limits.licensedMetrics,
+    keywordsPerMonth: limits.keywordsPerMonth,
+    licensedMetricsKeywordsPerMonth: limits.licensedMetricsKeywordsPerMonth,
+    runsPerDay: limits.runsPerDay,
+  };
 }

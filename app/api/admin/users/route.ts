@@ -4,6 +4,7 @@ import { createUserFromAdmin, listAdminUsers, parseUserRole, parseUserStatus } f
 import { readCredentialsRequest } from "@/lib/auth/credentials-input";
 import { requireAdminUserFromRequest } from "@/lib/auth/current-user";
 import { withApiErrors } from "@/lib/http/errors";
+import { getClientIp } from "@/lib/security/client-ip";
 
 export const GET = withApiErrors(async (request: Request) => {
   const actor = await requireAdminUserFromRequest(request);
@@ -32,7 +33,7 @@ export const POST = withApiErrors(async (request: Request) => {
   }
 
   const role = parseUserRole(String(read.payload.role ?? "")) ?? UserRole.SUBSCRIBER;
-  const user = await createUserFromAdmin(actor, { ...read.credentials, role });
+  const user = await createUserFromAdmin(actor, { ...read.credentials, role }, { ip: getClientIp(request) });
 
   return NextResponse.json({ data: user });
 });

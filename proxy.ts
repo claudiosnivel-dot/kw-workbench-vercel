@@ -85,7 +85,8 @@ function forward(request: NextRequest, requestId: string): NextResponse {
     nonce,
     process.env.NODE_ENV === "development",
     process.env.NEXT_PUBLIC_SENTRY_DSN,
-    process.env.PADDLE_ENV?.trim()
+    process.env.PADDLE_ENV?.trim(),
+    Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim())
   );
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);

@@ -15,6 +15,7 @@ import { callRoute } from "../helpers/http";
 import { flushAfter } from "../helpers/next-after";
 import { createTemporaryDatabase, type TemporaryDatabase } from "../helpers/migrations";
 import { setCommercialLaunchForTests } from "../helpers/launch";
+import { configureTestTurnstile, TEST_TURNSTILE_TOKEN } from "../helpers/turnstile";
 
 const WORKSPACES_MIGRATION = "0032_workspaces";
 
@@ -138,11 +139,14 @@ describe("workspace personale alla registrazione", () => {
     await resetDatabase();
     // impacted-by: T-1606 (registrazione pubblica aperta solo con il lancio commerciale attivo, D-32)
     await setCommercialLaunchForTests("live");
+    // impacted-by: T-1702 (CAPTCHA obbligatorio sulla registrazione aperta: chiavi di prova e siteverify simulato)
+    configureTestTurnstile();
   });
 
   afterEach(() => {
     personalWorkspace.fail = false;
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
     resetEnvForTests();
   });
 
@@ -152,7 +156,14 @@ describe("workspace personale alla registrazione", () => {
     const response = await callRoute(register, {
       method: "POST",
       url: "/api/auth/register",
-      body: { email: "nuovo@example.com", password, confirmPassword: password, acceptTerms: true, termsVersion: LEGAL_TERMS_VERSION },
+      body: {
+        email: "nuovo@example.com",
+        password,
+        confirmPassword: password,
+        acceptTerms: true,
+        termsVersion: LEGAL_TERMS_VERSION,
+        turnstileToken: TEST_TURNSTILE_TOKEN,
+      },
     });
     await flushAfter();
 

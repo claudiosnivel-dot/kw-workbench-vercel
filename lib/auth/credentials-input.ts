@@ -31,7 +31,16 @@ export async function registrationClosed(): Promise<Response | null> {
 export async function readCredentialsRequest(
   request: Request
 ): Promise<{ payload: Record<string, unknown>; credentials: CredentialsInput } | { invalid: Response }> {
-  const payload = (await request.json()) as Record<string, unknown>;
+  return parseCredentials((await request.json()) as Record<string, unknown>);
+}
+
+/**
+ * Credenziali da un body già letto (T-1702: la registrazione legge il token del CAPTCHA prima di validare le
+ * credenziali); stessi esiti di readCredentialsRequest.
+ */
+export function parseCredentials(
+  payload: Record<string, unknown>
+): { payload: Record<string, unknown>; credentials: CredentialsInput } | { invalid: Response } {
   const credentials: CredentialsInput = {
     email: String(payload.email ?? "").trim(),
     displayName: String(payload.displayName ?? "").trim(),

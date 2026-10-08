@@ -2,12 +2,15 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { BillingPortalButton, CancelSubscriptionButton, ChangePlanForm } from "@/components/billing-actions";
 import { CheckoutButton } from "@/components/checkout-button";
 import { PageIntro } from "@/components/page-intro";
+import { UsageSummary } from "@/components/usage-summary";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { canPerform } from "@/lib/authz/permissions";
 import { getPageWorkspace } from "@/lib/authz/workspace";
+import { getEntitlements } from "@/lib/billing/entitlements";
 import { isCommercialLive } from "@/lib/billing/launch";
 import { FREE_PLAN_ID, getPlan } from "@/lib/billing/plans";
 import { getBillingSummary, listPurchasableOptions } from "@/lib/billing/summary";
+import { getUsageSummary } from "@/lib/billing/usage";
 import { getPaddleClientToken, getPaddleSettings } from "@/lib/env";
 import { formatDate } from "@/lib/view/format";
 
@@ -43,6 +46,9 @@ export default async function BillingPage() {
   }
 
   // Nome del piano dal catalogo (nameKey di lib/billing/plans.ts); senza voce nel catalogo, l'id del piano.
+  // Uso del workspace con i limiti del piano (T-1703): solo con il lancio attivo, quando le quote si applicano.
+  const { limits } = await getEntitlements(workspace.id);
+  const usage = await getUsageSummary(workspace.id, { runsPerDay: limits.runsPerDay, keywordsPerMonth: limits.keywordsPerMonth });
   const planName = (planId: string) => {
     const key = getPlan(planId)?.nameKey as Parameters<typeof tAll>[0] | undefined;
     return key && tAll.has(key) ? tAll(key) : planId;
@@ -71,6 +77,8 @@ export default async function BillingPage() {
           summary.currentPeriodEnd && <p>{t("renewal", { date: formatDate(summary.currentPeriodEnd, format) })}</p>
         )}
       </section>
+
+      <UsageSummary usage={usage} />
 
       {!isOwner ? (
         <p className="text-sm text-slate-600">{t("ownerOnly")}</p>

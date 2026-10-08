@@ -4,7 +4,18 @@ import { cache } from "react";
 import { isAuthEnabled, SESSION_COOKIE_NAME } from "@/lib/auth/config";
 import { ensureLegacyDefaultUser, findAuthUserById, type AuthUser } from "@/lib/auth/credentials";
 import { verifySessionToken } from "@/lib/auth/session";
-import { AuthRequiredError, ForbiddenError } from "@/lib/http/errors";
+import { AppError, AuthRequiredError, ForbiddenError } from "@/lib/http/errors";
+
+/** Pagina del cambio password obbligato dopo un reset da admin (T-1704). */
+export const PASSWORD_CHANGE_PATH = "/account/password";
+
+/** 403 PASSWORD_CHANGE_REQUIRED: password impostata da un admin e non ancora cambiata (T-1704, CWE-269). */
+export class PasswordChangeRequiredError extends AppError {
+  constructor() {
+    super(403, "PASSWORD_CHANGE_REQUIRED", "Cambia la password prima di continuare", { redirect: PASSWORD_CHANGE_PATH });
+    this.name = "PasswordChangeRequiredError";
+  }
+}
 
 function readCookieValue(cookieHeader: string | null, key: string): string | null {
   if (!cookieHeader) {
@@ -74,10 +85,22 @@ export async function getOptionalAuthenticatedUserFromRequest(request: Request):
   return resolveUserFromToken(token);
 }
 
-export async function requireAuthenticatedUserFromRequest(request: Request): Promise<AuthUser> {
+/**
+ * Utente autenticato della rotta API. Con la password impostata da un admin e non ancora cambiata (T-1704) ogni API
+ * risponde 403 PASSWORD_CHANGE_REQUIRED, tranne quelle che passano allowPendingPasswordChange: cambio password e
+ * logout. La sola verifica della sessione resta in getOptionalAuthenticatedUserFromRequest.
+ */
+export async function requireAuthenticatedUserFromRequest(
+  request: Request,
+  options: { allowPendingPasswordChange?: boolean } = {}
+): Promise<AuthUser> {
   const user = await getOptionalAuthenticatedUserFromRequest(request);
   if (!user) {
     throw new AuthRequiredError();
+  }
+
+  if (user.mustChangePassword && !options.allowPendingPasswordChange) {
+    throw new PasswordChangeRequiredError();
   }
 
   return user;

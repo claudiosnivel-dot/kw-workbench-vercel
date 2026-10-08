@@ -1,12 +1,13 @@
 import { UserRole } from "@/lib/generated/prisma/enums";
 import { type NextRequest, NextResponse } from "next/server";
 import { EmailTakenError, registerUser } from "@/lib/auth/credentials";
-import { readCredentialsRequest, registrationClosed } from "@/lib/auth/credentials-input";
+import { parseCredentials, registrationClosed } from "@/lib/auth/credentials-input";
 import { issueVerificationToken, notifyExistingAccount } from "@/lib/auth/email-verification";
 import { runAfterResponse } from "@/lib/http/after-response";
 import { errorResponse, withApiErrors } from "@/lib/http/errors";
 import { isSupportedLocale, LOCALE_COOKIE } from "@/lib/i18n/locale";
 import { LEGAL_TERMS_VERSION } from "@/lib/legal/version";
+import { guardPublicForm } from "@/lib/security/captcha";
 
 /** Esito della registrazione (T-1403): non è un errore, quindi il code non sta in API_ERROR_CODES. */
 const CHECK_EMAIL_CODE = "CHECK_EMAIL";
@@ -15,7 +16,8 @@ const CHECK_EMAIL_CODE = "CHECK_EMAIL";
  * Registrazione pubblica (T-1401, T-1403, T-1405). Richiede l'accettazione dei termini correnti; poi risponde sempre
  * 202 CHECK_EMAIL con lo stesso corpo e senza cookie di sessione, per un'email nuova come per una già registrata
  * (CWE-204): un'email nuova crea l'utente e riceve verify-email, una esistente non modifica l'account e riceve
- * account-exists. Le email partono dopo la risposta; un loro fallimento non annulla la registrazione.
+ * account-exists. Le email partono dopo la risposta; un loro fallimento non annulla la registrazione. Con la
+ * registrazione aperta: rate limit per IP (T-1701), poi CAPTCHA (T-1702), poi validazione e logica.
  */
 export const POST = withApiErrors(async (request: NextRequest) => {
   const closed = await registrationClosed();
@@ -23,7 +25,14 @@ export const POST = withApiErrors(async (request: NextRequest) => {
     return closed;
   }
 
-  const read = await readCredentialsRequest(request);
+  const body = (await request.json()) as Record<string, unknown>;
+  await guardPublicForm(request, {
+    action: "register",
+    token: body.turnstileToken,
+    limits: (ip, rules) => [{ key: `register:ip:${ip}`, rule: rules.registerIp }],
+  });
+
+  const read = parseCredentials(body);
   if ("invalid" in read) {
     return read.invalid;
   }

@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { NarrowCard } from "@/components/narrow-card";
+import { getTurnstileSiteKey } from "@/lib/security/turnstile";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function ForgotPasswordPage() {
   return (
     <NarrowCard title={t("title")} action={<LocaleSwitcher />}>
       <p className="text-sm text-slate-600">{t("intro")}</p>
-      <ForgotPasswordForm />
+      <ForgotPasswordForm turnstileSiteKey={getTurnstileSiteKey()} />
     </NarrowCard>
   );
 }

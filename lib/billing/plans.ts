@@ -60,8 +60,11 @@ export type PlanLimits = z.infer<typeof limitsSchema>;
 export type PlanConfig = z.infer<typeof planSchema>;
 export type PlanId = string;
 
-/** Politica di fatturazione di D-14: tolleranza dei pagamenti scaduti (T-1604) e proration del cambio piano. */
-export type BillingPolicy = { pastDueGraceMs: number; prorationBillingMode: ProrationBillingMode };
+/**
+ * Politica di fatturazione di D-14: tolleranza dei pagamenti scaduti (T-1604), proration del cambio piano e tetto
+ * mensile per workspace dei rimborsi automatici della quota per errori nostri (T-1703, D-27 emendata).
+ */
+export type BillingPolicy = { pastDueGraceMs: number; prorationBillingMode: ProrationBillingMode; runRefundsPerMonth: number };
 
 /**
  * Valida i piani al caricamento (T-1601): chiave mancante, tipo errato o valore negativo → errore con il nome del piano
@@ -119,9 +122,13 @@ export const PLANS: Record<PlanId, PlanConfig> = validatePlans({
   },
 });
 
-// Segnaposto di D-14: nessuna tolleranza (past_due vale subito free, come ogni stato non pagato) e la proration
-// predefinita di Paddle.
-const PLACEHOLDER_POLICY: BillingPolicy = { pastDueGraceMs: 0, prorationBillingMode: "prorated_immediately" };
+// Segnaposto di D-14: nessuna tolleranza (past_due vale subito free, come ogni stato non pagato), la proration
+// predefinita di Paddle e nessun rimborso automatico (ogni errore nostro va all'admin, T-1703).
+const PLACEHOLDER_POLICY: BillingPolicy = {
+  pastDueGraceMs: 0,
+  prorationBillingMode: "prorated_immediately",
+  runRefundsPerMonth: 0,
+};
 
 type ActiveConfig = { status: PlansConfigStatus | "test"; plans: Record<PlanId, PlanConfig>; policy: BillingPolicy };
 const DEFAULT_CONFIG: ActiveConfig = { status: PLANS_CONFIG_STATUS, plans: PLANS, policy: PLACEHOLDER_POLICY };
