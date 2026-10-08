@@ -8,7 +8,9 @@ export type EmailTemplate =
   | "workspace-invite"
   | "billing-notice"
   // Password reimpostata da un admin (T-1704).
-  | "admin-password-reset";
+  | "admin-password-reset"
+  // Messaggio del modulo contatti verso l'indirizzo di supporto (T-1805).
+  | "contact-message";
 
 /** Messaggio pronto per l'invio: id è anche la Idempotency-Key di Resend, quindi un ritentativo non duplica l'email. */
 export type EmailMessage = {
@@ -19,6 +21,8 @@ export type EmailMessage = {
   subject: string;
   html: string;
   text: string;
+  /** Reply-To: l'email del mittente del modulo contatti (T-1805); assente per le altre email. */
+  replyTo?: string;
 };
 
 export interface EmailSender {

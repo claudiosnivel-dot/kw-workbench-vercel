@@ -43,6 +43,10 @@ export const INT_ENV = {
   RATE_LIMIT_RESET_WINDOW_SECONDS: { def: 3_600, min: 1, max: 86_400 },
   RATE_LIMIT_RUN_START_MAX: { def: 30, min: 1, max: 10_000 },
   RATE_LIMIT_RUN_START_WINDOW_SECONDS: { def: 3_600, min: 1, max: 86_400 },
+  // Modulo contatti (T-1805): invii per IP e per email del mittente, valori iniziali PROPOSTI.
+  RATE_LIMIT_CONTACT_IP_MAX: { def: 5, min: 1, max: 10_000 },
+  RATE_LIMIT_CONTACT_EMAIL_MAX: { def: 3, min: 1, max: 10_000 },
+  RATE_LIMIT_CONTACT_WINDOW_SECONDS: { def: 3_600, min: 1, max: 86_400 },
 } as const;
 
 type IntEnvKey = keyof typeof INT_ENV;
@@ -171,6 +175,11 @@ const envSchema = z.object({
   RATE_LIMIT_RESET_WINDOW_SECONDS: optional,
   RATE_LIMIT_RUN_START_MAX: optional,
   RATE_LIMIT_RUN_START_WINDOW_SECONDS: optional,
+  RATE_LIMIT_CONTACT_IP_MAX: optional,
+  RATE_LIMIT_CONTACT_EMAIL_MAX: optional,
+  RATE_LIMIT_CONTACT_WINDOW_SECONDS: optional,
+  // Destinatario del modulo contatti (T-1805); senza, APP_ADMIN_EMAIL.
+  SUPPORT_EMAIL: optional,
   // Variabile di sistema di Vercel (1 sulle deployment): solo lì x-forwarded-for è l'IP del client (T-1701).
   VERCEL: optional,
   // CAPTCHA Cloudflare Turnstile (T-1702, D-12): insieme o nessuna; voce captcha della checklist del lancio (T-1606).
@@ -322,6 +331,11 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
   if (adminEmail === undefined ? isProduction : normalizeEmail(adminEmail) === null) {
     const message = adminEmail === undefined ? "è obbligatoria in produzione" : "deve essere un indirizzo email valido";
     ctx.addIssue({ code: "custom", path: ["APP_ADMIN_EMAIL"], message });
+  }
+
+  const supportEmail = present(raw.SUPPORT_EMAIL);
+  if (supportEmail !== undefined && normalizeEmail(supportEmail) === null) {
+    ctx.addIssue({ code: "custom", path: ["SUPPORT_EMAIL"], message: "deve essere un indirizzo email valido" });
   }
 
   checkEmailSettings(raw, isProduction, ctx);
@@ -614,6 +628,14 @@ export function getInternalBaseUrl(source: EnvSource = process.env): string | nu
 /** Email normalizzata del root admin iniziale (T-1401); null se APP_ADMIN_EMAIL manca (ammesso fuori produzione). */
 export function getAdminEmail(source: EnvSource = process.env): string | null {
   return normalizeEmail(present(source.APP_ADMIN_EMAIL));
+}
+
+/**
+ * Destinatario del modulo contatti (T-1805): SUPPORT_EMAIL validata, altrimenti l'email del root admin iniziale
+ * (APP_ADMIN_EMAIL, obbligatoria in produzione); null se mancano entrambe (ammesso fuori produzione).
+ */
+export function getSupportEmail(source: EnvSource = process.env): string | null {
+  return normalizeEmail(present(source.SUPPORT_EMAIL)) ?? getAdminEmail(source);
 }
 
 /** Trasporto delle email (T-1402): EMAIL_TRANSPORT, default outbox (in produzione parseEnv impone resend). */

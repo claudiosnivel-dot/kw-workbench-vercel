@@ -102,6 +102,11 @@ export const API_ERROR_CODES = [
   "LAUNCH_NOT_READY",
   // Quote d'uso del workspace (T-1703).
   "QUOTA_EXCEEDED",
+  "INVALID_PASSWORD",
+  "ROOT_ADMIN",
+  "ACTIVE_SUBSCRIPTION",
+  "OWNERSHIP_TRANSFER_REQUIRED",
+  "CONTACT_UNAVAILABLE",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

@@ -3,7 +3,9 @@
 > Landing pubblica IT/EN con SEO tecnico, pagina prezzi dalla configurazione dei piani, pagine legali versionate, diritti GDPR (export e cancellazione account) e contatti; nasce dai rilievi dell'audit 2026-10-02: `/` richiede il login (il proxy reindirizza ogni anonimo a `/login`), nessuna pagina pubblica, nessun testo legale, nessun modo per l'utente di esportare o cancellare i propri dati.
 
 ## Obiettivo del macrotask
-Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API di autenticazione, `app/page.tsx` è la dashboard e `app/layout.tsx` ha `lang="it"` e un `metadata.title` statico. Il macrotask rende `/` una landing per gli anonimi e la dashboard per gli autenticati (D-16), aggiunge pagine marketing con URL per lingua (italiano senza prefisso, inglese con `/en`) incluse in sitemap e hreflang, una pagina prezzi letta dalla stessa configurazione che applica i limiti (`lib/billing/plans.ts`), le pagine legali renderizzate da file forniti dall'utente (D-15, l'agente non scrive testi legali), export e cancellazione dell'account, e un modulo contatti protetto da rate limit e CAPTCHA. Tutte le route pubbliche stanno in un unico elenco (`lib/marketing/routes.ts`) letto sia dal proxy sia dalla sitemap.
+Oggi `proxy.ts` (T-404) ammette senza sessione solo l'elenco esatto `PUBLIC_PATHS` (accesso, registrazione, verifica, recupero, health, cron, lingua, webhook) più i file di `public` a un segmento (T-302), `app/page.tsx` è la dashboard, `app/layout.tsx` prende `lang` dalla lingua risolta da T-1301 e il titolo dal branding (T-1104). Il macrotask porta l'anonimo su `/` alla landing nella sua lingua e lascia la dashboard agli autenticati (D-16, D-28 emendata), aggiunge pagine marketing con URL per lingua (prefisso `/it` e `/en`) incluse in sitemap e hreflang, una pagina prezzi letta dalla stessa configurazione che applica i limiti (`lib/billing/plans.ts`), le pagine legali renderizzate da file forniti dall'utente (D-15, l'agente non scrive testi legali), export e cancellazione dell'account, e un modulo contatti protetto da rate limit e CAPTCHA. Tutte le route pubbliche stanno in un unico elenco (`lib/marketing/routes.ts`) letto sia dal proxy sia dalla sitemap.
+
+**Emendamento 2026-10-08** (allineamento allo stato dei macrotask 01-17, il design non cambia): D-28 emendata il 2026-10-05 dall'utente entra nei task (prefisso `/it` e `/en` per landing, prezzi, pagine legali e contatti; `/` reindirizza l'anonimo in base alla lingua del browser, default `it`; hreflang `x-default` verso `/`); `middleware.ts` è `proxy.ts` (T-404); la costante di versione dei termini è `LEGAL_TERMS_VERSION` di `lib/legal/version.ts` (T-1405) e la voce `legal` della checklist del lancio (T-1606) passa al controllo dei file di T-1803; il CAPTCHA dei form pubblici passa da `guardPublicForm` di `lib/security/captcha.ts` (T-1701, T-1702); l'inventario dei cookie riflette i cookie attuali (`kwb_google_ads_oauth_state` è sparito con T-901); il registro admin (T-1704), gli inviti (T-1503) e l'helper di revoca di Google Sheets (T-906) esistono già.
 
 ## Task atomici
 
@@ -14,24 +16,25 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
   depends_on: [T-1302, T-302]
 
   objective: >
-    Mostrare agli anonimi una landing in italiano su / e in inglese su /en, lasciando la
-    dashboard agli autenticati (D-16), con metadata, Open Graph, hreflang, sitemap.xml e
-    robots.txt, senza rendere pubblica alcuna route dell'applicazione.
+    Mostrare agli anonimi una landing in italiano su /it e in inglese su /en, con / che porta
+    l'anonimo alla landing nella lingua del browser e resta la dashboard per gli autenticati
+    (D-16, D-28 emendata), con metadata, Open Graph, hreflang, sitemap.xml e robots.txt,
+    senza rendere pubblica alcuna route dell'applicazione.
 
   definition_of_done:
-    - "lib/marketing/routes.ts: elenco MARKETING_ROUTES (path, locale, alternate, inSitemap) letto dal proxy e dalla sitemap; T-1801 vi inserisce '/' e '/en'; T-1802, T-1803 e T-1805 vi aggiungono prezzi, pagine legali e contatti."
-    - "D-16: app/page.tsx risolve l'utente con getOptionalAuthenticatedUserFromCookies: anonimo → landing italiana (components/marketing/landing.tsx), autenticato → dashboard attuale; app/en/page.tsx rende la landing inglese. Le pagine marketing hanno URL per lingua perché sitemap e hreflang richiedono URL distinti; l'app autenticata continua a usare la risoluzione della lingua di T-1301."
-    - "Proxy (proxy.ts dopo T-404, meccanismo dei percorsi pubblici di T-302): ammessi senza sessione, a match esatto, i path di MARKETING_ROUTES più /sitemap.xml, /robots.txt e le immagini Open Graph in public/og/; tutte le altre route restano protette come oggi (pagine → /login?next=, API → 401)."
-    - "Metadata: generateMetadata per lingua con title, description, alternates.canonical, alternates.languages (it → /, en → /en, x-default → /), openGraph con title, description, url, siteName dal branding, locale it_IT o en_US, type website e immagine 1200x630 in public/og/; metadataBase da APP_PUBLIC_URL validata in lib/env.ts (T-201)."
+    - "lib/marketing/routes.ts: elenco MARKETING_ROUTES (path, locale, pagina, alternate, inSitemap) letto dal proxy e dalla sitemap, modulo puro usabile anche lato client; T-1801 vi inserisce '/it' e '/en'; T-1802, T-1803 e T-1805 vi aggiungono prezzi, pagine legali e contatti."
+    - "D-16 e D-28 emendata: su / il proxy reindirizza l'anonimo (307) a /it o /en con la risoluzione di T-1301 senza utente (cookie kwb_locale, poi Accept-Language, default it); l'autenticato su / vede la dashboard attuale (app/page.tsx invariata). app/[lang]/page.tsx rende la landing (components/marketing/landing.tsx) per lang it o en, 404 per ogni altro valore. Le pagine marketing hanno URL per lingua perché sitemap e hreflang richiedono URL distinti: il proxy passa la lingua del percorso marketing in un header della richiesta (sempre sovrascritto, o rimosso fuori dalle pagine marketing) che i18n/request.ts legge per primo, così html lang e cataloghi seguono l'URL; l'app autenticata continua a usare la risoluzione della lingua di T-1301."
+    - "Proxy (proxy.ts dopo T-404, meccanismo dei percorsi pubblici di T-302): ammessi senza sessione, a match esatto, i path di MARKETING_ROUTES più /sitemap.xml e /robots.txt (già ammessi dai file pubblici a un segmento di T-302) e le immagini Open Graph /og/<nome>.png; tutte le altre route restano protette come oggi (pagine → /login?next=, API → 401)."
+    - "Metadata: generateMetadata per lingua con title, description, alternates.canonical, alternates.languages (it → /it, en → /en, x-default → /), openGraph con title, description, url, siteName dal branding, locale it_IT o en_US, type website e immagine 1200x630 in public/og/; metadataBase da APP_PUBLIC_URL validata in lib/env.ts (T-201)."
     - "app/sitemap.ts: URL assoluti delle voci di MARKETING_ROUTES con inSitemap true e alternates per lingua; app/robots.ts: Allow /, Disallow per /api/, /projects, /admin, /onboarding, /personalizza, /workspace, /billing, /account, /invites, riga Sitemap con URL assoluto."
-    - "components/top-nav.tsx: per gli anonimi mostra solo logo, link ai prezzi, Accedi, Registrati e selettore lingua verso l'URL alternativo; nessun link dell'app né LogoutButton."
+    - "components/top-nav.tsx: per gli anonimi mostra solo logo, link ai prezzi della lingua corrente, Accedi, Registrati e selettore lingua (sulle pagine marketing un link all'URL alternativo, altrove il selettore a cookie di T-1301); nessun link dell'app né LogoutButton. Sulle pagine di accesso (isAuthRoute di T-1403…T-1405) resta il solo marchio, come oggi."
     - "Testi della landing nei cataloghi messages/it.json e messages/en.json (T-1302), rivedibili dall'utente; nessuna affermazione su clienti, numeri o certificazioni non forniti dall'utente."
 
   acceptance_criteria:
     - id: AC-1801-1
-      given: "un visitatore anonimo"
-      when: "apre / e poi /en"
-      then: "entrambe le pagine rispondono 200 senza redirect a /login; / ha html lang 'it' e /en html lang 'en'; entrambe contengono un link con href '/register' e 0 link verso /projects"
+      given: "un visitatore anonimo con il browser in inglese (Accept-Language en-US)"
+      when: "apre /, poi /it e /en"
+      then: "/ risponde con un redirect a /en; /it e /en rispondono 200 senza redirect a /login; /it ha html lang 'it' e /en html lang 'en'; entrambe contengono un link con href '/register' e 0 link verso /projects"
     - id: AC-1801-2
       given: "un utente autenticato e un visitatore anonimo"
       when: "l'utente autenticato apre / e l'anonimo apre /projects"
@@ -39,11 +42,11 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
     - id: AC-1801-3
       given: "un visitatore anonimo"
       when: "apre /en e ne legge il head"
-      then: "il head contiene link rel alternate con hreflang it (href /), en (href /en) e x-default, un link canonical verso /en e i meta og:title e og:locale con valore en_US"
+      then: "il head contiene link rel alternate con hreflang it (href /it), en (href /en) e x-default (href /), un link canonical verso /en e i meta og:title e og:locale con valore en_US"
     - id: AC-1801-4
       given: "APP_PUBLIC_URL=https://example.test"
       when: "si invocano le funzioni di app/sitemap.ts e app/robots.ts e si richiedono /sitemap.xml e /robots.txt da anonimo attraverso il proxy"
-      then: "la sitemap contiene https://example.test/ e https://example.test/en; robots contiene 'Disallow: /api/', 'Disallow: /projects' e 'Sitemap: https://example.test/sitemap.xml'; le due richieste anonime ricevono 200 senza redirect"
+      then: "la sitemap contiene https://example.test/it e https://example.test/en; robots contiene 'Disallow: /api/', 'Disallow: /projects' e 'Sitemap: https://example.test/sitemap.xml'; le due richieste anonime ricevono 200 senza redirect"
 
   target_tests:
     - file: "tests/e2e/landing.spec.ts"
@@ -67,20 +70,20 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
   depends_on: [T-1601, T-1801, T-1604, T-1606]
 
   objective: >
-    Pubblicare /pricing e /en/pricing generate da lib/billing/plans.ts, la stessa fonte
+    Pubblicare /it/pricing e /en/pricing generate da lib/billing/plans.ts, la stessa fonte
     usata dall'enforcement, con CTA verso registrazione o fatturazione; finché i valori di
     D-14 sono placeholder la pagina non mostra prezzi.
 
   definition_of_done:
     - "lib/billing/pricing-view.ts: buildPricingView(plans, locale, viewer) restituisce, per ogni piano con public true nell'ordine di order, nome (chiave i18n), prezzo visualizzato per intervallo e righe dei limiti generate dalle stesse chiavi usate da getEntitlements; components/marketing/pricing-table.tsx la rende; nessun valore numerico scritto nel markup."
-    - "Pagine app/pricing/page.tsx e app/en/pricing/page.tsx; /pricing e /en/pricing aggiunte a MARKETING_ROUTES (proxy pubblico e sitemap) con metadata canonical e alternates it/en come T-1801."
+    - "Pagina app/[lang]/pricing/page.tsx; /it/pricing e /en/pricing aggiunte a MARKETING_ROUTES (proxy pubblico e sitemap) con metadata canonical e alternates it/en come T-1801."
     - "CTA: anonimo → /register?plan=<id>; autenticato → /billing?plan=<id> (pagina di T-1604, dipendenza implicita segnalata nel Self-check); piano free → /register per l'anonimo e dashboard per l'autenticato."
     - "Con isPlansConfigured() false (placeholder di D-14) o con il lancio commerciale in pausa (D-32, T-1606) la pagina mostra l'avviso con chiave pricing.comingSoon e nessun prezzo né CTA di acquisto, in qualsiasi ambiente."
 
   acceptance_criteria:
     - id: AC-1802-1
       given: "piani di prova con 2 piani pubblici (prezzi '9 €' e '29 €', maxProjects 3 e 20) e 1 piano non pubblico"
-      when: "si rende la pagina /pricing"
+      when: "si rende la pagina /it/pricing"
       then: "la pagina contiene 2 elementi con data-testid pricing-plan, i testi '9 €' e '29 €' e i valori 3 e 20 per i progetti; il nome del piano non pubblico non compare"
     - id: AC-1802-2
       given: "i piani di prova e un workspace W su pro"
@@ -88,11 +91,11 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
       then: "sia la pagina sia getEntitlements riportano 25"
     - id: AC-1802-3
       given: "un visitatore anonimo e un utente autenticato"
-      when: "aprono /pricing"
-      then: "la CTA del piano pro ha href '/register?plan=pro' per l'anonimo e '/billing?plan=pro' per l'utente autenticato; /sitemap.xml contiene /pricing e /en/pricing"
+      when: "aprono /it/pricing"
+      then: "la CTA del piano pro ha href '/register?plan=pro' per l'anonimo e '/billing?plan=pro' per l'utente autenticato; /sitemap.xml contiene /it/pricing e /en/pricing"
     - id: AC-1802-4
       given: "PLANS_CONFIG_STATUS uguale a 'placeholder-D14'"
-      when: "si rende /pricing"
+      when: "si rende /it/pricing"
       then: "la pagina contiene il testo della chiave pricing.comingSoon e 0 elementi pricing-plan con prezzo o CTA di acquisto"
 
   target_tests:
@@ -119,34 +122,36 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
     cookie finché il sito usa solo cookie tecnici.
 
   definition_of_done:
-    - "Pagine /privacy, /terms, /cookies e /en/privacy, /en/terms, /en/cookies che rendono content/legal/<locale>/<doc>.md (locale it o en, doc privacy, terms o cookies); route aggiunte a MARKETING_ROUTES (proxy pubblico e sitemap)."
+    - "Pagine /it/privacy, /it/terms, /it/cookies e /en/privacy, /en/terms, /en/cookies (app/[lang]/[doc]/page.tsx, doc ristretto a privacy, terms e cookies, altrimenti 404) che rendono content/legal/<locale>/<doc>.md (locale it o en, doc privacy, terms o cookies); route aggiunte a MARKETING_ROUTES (proxy pubblico e sitemap); i link della casella di consenso di T-1405 puntano alle pagine della lingua corrente."
     - "Contenuti: l'agente crea solo segnaposto con front matter status placeholder e il testo 'Documento in preparazione', mai testi legali (D-15). Front matter obbligatorio: version e last_updated."
-    - "La pagina dei termini mostra la versione; la costante di versione introdotta da T-1405 per il consenso è la fonte e il front matter version di terms deve coincidere. npm run legal:check (scripts/legal-check.mjs) esce con codice 1 se un file manca, è placeholder o ha version diversa dalla costante; è un passo della checklist di rilascio (docs/RELEASE.md di T-605), non del build."
+    - "La pagina dei termini mostra la versione; la costante LEGAL_TERMS_VERSION di lib/legal/version.ts (T-1405) è la fonte e il front matter version di terms deve coincidere. npm run legal:check (scripts/legal-check.mjs) esce con codice 1 se un file manca, è placeholder o ha version diversa dalla costante; è un passo della checklist di rilascio (docs/RELEASE.md di T-605), non del build. Lo stesso controllo sostituisce areLegalTextsPublished() nella voce legal della checklist del lancio commerciale (T-1606, D-32)."
     - "Rendering markdown senza HTML grezzo (ad esempio react-markdown senza rehype-raw), dipendenza a versione esatta e npm audit senza advisory high o critical; link esterni con rel noopener noreferrer."
-    - "components/site-footer.tsx montato in app/layout.tsx su landing, pagine pubbliche e app, con link a privacy, termini e cookie nella lingua corrente."
-    - "lib/legal/cookie-inventory.ts: inventario con nome, scopo e categoria dei cookie impostati dall'app; oggi solo tecnici: kwb_session, kwb_google_sheets_oauth_state (kwb_google_ads_oauth_state sparisce con T-901), più il cookie di lingua di T-1301 e kwb_workspace di T-1504 quando presenti. Nessun banner cookie finché tutti sono tecnici. Eventuali cookie di terze parti di Paddle.js e Turnstile: da verificare nel task e da riportare all'utente per la cookie policy (D-15)."
+    - "components/site-footer.tsx montato in app/layout.tsx su landing, pagine pubbliche e app, con link a privacy, termini e cookie nella lingua corrente (prefisso /it o /en)."
+    - "lib/legal/cookie-inventory.ts: inventario con nome, scopo e categoria dei cookie impostati dall'app; oggi solo tecnici: kwb_session, kwb_google_sheets_oauth_state (kwb_google_ads_oauth_state è sparito con T-901), kwb_locale di T-1301 e kwb_workspace di T-1504. Nessun banner cookie finché tutti sono tecnici. Eventuali cookie di terze parti di Paddle.js e Turnstile: da verificare nel task e da riportare all'utente per la cookie policy (D-15)."
 
   acceptance_criteria:
     - id: AC-1803-1
       given: "i 6 file legali presenti (segnaposto o forniti)"
-      when: "un anonimo apre /privacy, /terms, /cookies, /en/privacy, /en/terms e /en/cookies"
+      when: "un anonimo apre /it/privacy, /it/terms, /it/cookies, /en/privacy, /en/terms e /en/cookies"
       then: "ogni pagina risponde 200 senza redirect, contiene un h1 e ha html lang uguale alla lingua del percorso"
     - id: AC-1803-2
-      given: "la costante di versione dei termini di T-1405 e una fixture con version discordante"
-      when: "si apre /terms ed esegue npm run legal:check sui file reali e sulla fixture"
-      then: "/terms mostra la stessa stringa di versione della costante; legal:check esce con codice 0 sui file reali conformi e con codice 1 sulla fixture discordante, nominando il file"
+      given: "la costante LEGAL_TERMS_VERSION di T-1405, una fixture conforme (6 file non segnaposto con version uguale alla costante) e una fixture con version discordante"
+      when: "si apre /it/terms ed esegue npm run legal:check sulla fixture conforme, sulla fixture discordante e sui file reali"
+      then: "/it/terms mostra la stessa stringa di versione della costante; legal:check esce con codice 0 sulla fixture conforme, con codice 1 sulla fixture discordante nominando il file e con codice 1 sui file reali finché sono segnaposto (D-15)"
     - id: AC-1803-3
       given: "la landing, /login e la dashboard e il codice sorgente dell'app"
       when: "si ispeziona il footer e si esegue la scansione dei nomi di cookie impostati in app/** e lib/**"
-      then: "il footer contiene 3 link con href /privacy, /terms e /cookies (con prefisso /en sulle pagine inglesi); nessuna pagina contiene un elemento con data-testid cookie-banner; la scansione trova 0 nomi di cookie assenti dall'inventario"
+      then: "il footer contiene 3 link con href /it/privacy, /it/terms e /it/cookies (con prefisso /en sulle pagine inglesi); nessuna pagina contiene un elemento con data-testid cookie-banner; la scansione trova 0 nomi di cookie assenti dall'inventario"
     - id: AC-1803-4
       given: "una fixture markdown che contiene un tag script con alert(1) e un tag img con attributo onerror"
-      when: "la pagina legale rende la fixture"
-      then: "il DOM della pagina non contiene elementi script né img provenienti dal contenuto e nessun dialog alert viene aperto"
+      when: "il componente markdown delle pagine legali rende la fixture"
+      then: "il DOM reso non contiene elementi script né img provenienti dal contenuto e nessun dialog alert viene aperto"
 
   target_tests:
     - file: "tests/e2e/legal-pages.spec.ts"
-      covers: [AC-1803-1, AC-1803-2, AC-1803-3, AC-1803-4]
+      covers: [AC-1803-1, AC-1803-2, AC-1803-3]
+    - file: "tests/component/legal-markdown.test.tsx"
+      covers: [AC-1803-4]
     - file: "tests/tooling/legal-check.test.ts"
       covers: [AC-1803-2]
     - file: "tests/tooling/cookie-inventory.test.ts"
@@ -176,9 +181,9 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
     - "GET /api/account/export (utente autenticato): risposta in streaming (ReadableStream) con Content-Type application/json, Content-Disposition attachment con filename account-export-<data>.json e Cache-Control no-store; contiene profilo (id, email, display_name, created_at, preferenze, versione e data di accettazione dei termini), membership (workspace id, nome, ruolo) e, per i workspace di cui l'utente è unico OWNER, progetti con sezioni, seed e keyword_candidates e stato dell'abbonamento (piano, status, periodo)."
     - "Esclusi dall'export: password_hash, session_version, refresh token cifrati, token_hash di verifica, reset e inviti, dati di altri utenti; dei workspace condivisi in cui l'utente non è unico OWNER si riportano solo id, nome e ruolo."
     - "DELETE /api/account con la password attuale: password errata → 403 code INVALID_PASSWORD; root admin → 409 code ROOT_ADMIN; unico OWNER di un workspace con abbonamento trialing, active, past_due o paused → 409 con code ACTIVE_SUBSCRIPTION, elenco dei workspace e invito a disdire da /billing (T-1604); unico OWNER di un workspace con altri membri → 409 code OWNERSHIP_TRANSFER_REQUIRED (trasferimento con T-1503)."
-    - "Prima della transazione: revoca del refresh token Google Sheets presso https://oauth2.googleapis.com/revoke (helper di T-906 se presente). In transazione: eliminazione dei workspace in cui l'utente è unico membro (incluso il personale) con i loro progetti in cascata, delle membership, degli inviti pendenti verso la sua email se la tabella esiste (T-1503), della GoogleSheetsCredential e della riga users; i cookie di sessione esistenti smettono di valere perché l'utente non esiste più."
-    - "Se admin_audit_log esiste (T-1704): le righe che citano l'utente restano, con actor_user_id o target_id impostati a null e metadata ripuliti da id, username ed email. billing_events conservati per obblighi contabili (base giuridica e durata da D-15)."
-    - "Pagina /account con 'Scarica i miei dati' ed 'Elimina account' (conferma con password), stringhe nei cataloghi it ed en."
+    - "Prima della transazione: revoca del refresh token Google Sheets presso https://oauth2.googleapis.com/revoke con revokeAndClearGoogleSheetsCredential di T-906. In transazione: eliminazione dei workspace in cui l'utente è unico membro (incluso il personale) con i loro progetti in cascata, delle membership, degli inviti verso la sua email (T-1503; pendenti e chiusi, perché contengono l'email e non servono più), della GoogleSheetsCredential e della riga users; il workspace personale che ha altri membri e un altro OWNER si stacca dall'utente (personal_for_user_id null) e resta ai membri invece di sparire in cascata; i cookie di sessione esistenti smettono di valere perché l'utente non esiste più."
+    - "admin_audit_log (T-1704): le righe che citano l'utente restano, con actor_user_id o target_id impostati a null e metadata ripuliti da id, nome mostrato (username fino a T-1401) ed email. billing_events conservati per obblighi contabili (base giuridica e durata da D-15)."
+    - "Pagina /account (accanto a /account/password di T-1704, raggiungibile da Personalizza) con 'Scarica i miei dati' ed 'Elimina account' (conferma con password), stringhe nei cataloghi it ed en."
 
   acceptance_criteria:
     - id: AC-1804-1
@@ -191,7 +196,7 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
       then: "la risposta è 409 con code ACTIVE_SUBSCRIPTION e W1 nell'elenco; la riga users di U esiste ancora"
     - id: AC-1804-3
       given: "U senza abbonamenti, unico membro di W1, con credenziale Google Sheets e una sessione attiva"
-      when: "U invia DELETE /api/account con la password giusta e poi riusa il vecchio cookie su GET /api/projects"
+      when: "U invia DELETE /api/account con la password giusta e poi riusa il vecchio cookie su GET /api/workspaces (GET /api/projects non esiste più da T-1101)"
       then: "la DELETE risponde 200; users, memberships, W1, i progetti di W1 e google_sheets_credentials di U hanno 0 righe; il mock della revoca Google ha ricevuto 1 chiamata; la GET riceve 401"
     - id: AC-1804-4
       given: "righe di admin_audit_log con U come bersaglio"
@@ -223,11 +228,11 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
     né l'uso come relay di spam, e un link Supporto nell'app.
 
   definition_of_done:
-    - "Pagine /contact e /en/contact aggiunte a MARKETING_ROUTES (proxy pubblico) con modulo: nome (massimo 100 caratteri), email, categoria (supporto, fatturazione, privacy, altro), messaggio (da 10 a 5000 caratteri) e widget Turnstile con action 'contact'; per gli utenti autenticati l'email è precompilata."
-    - "POST /api/contact pubblico: rate limit di T-1701 (chiavi contact:ip e contact:email, soglie iniziali proposte e configurabili da env), poi CAPTCHA di T-1702, poi validazione, poi EmailSender di T-1402 verso SUPPORT_EMAIL (env validata) con Reply-To uguale all'email del mittente; risposta 202 con ok true."
+    - "Pagine /it/contact e /en/contact (app/[lang]/contact/page.tsx) aggiunte a MARKETING_ROUTES (proxy pubblico) con modulo: nome (massimo 100 caratteri), email, categoria (supporto, fatturazione, privacy, altro), messaggio (da 10 a 5000 caratteri) e widget Turnstile con action 'contact'; per gli utenti autenticati l'email è precompilata."
+    - "POST /api/contact pubblico: guardPublicForm di T-1701 e T-1702 (rate limit con le chiavi contact:ip e contact:email, soglie iniziali proposte RATE_LIMIT_CONTACT_* configurabili da env, poi CAPTCHA con action 'contact'), poi validazione, poi EmailSender di T-1402 verso SUPPORT_EMAIL (env validata; senza, APP_ADMIN_EMAIL; senza entrambe 503 CONTACT_UNAVAILABLE) con Reply-To uguale all'email del mittente (EmailMessage.replyTo, colonna reply_to dell'outbox con una migrazione additiva); invio non riuscito → 503 EMAIL_UNAVAILABLE (D-11 emendata: finché Resend non è configurato); risposta 202 con ok true."
     - "Validazione: nome, email e categoria rifiutati se contengono CR, LF o caratteri di controllo; email conforme al formato e lunga al massimo 254 caratteri; categoria da elenco chiuso; oggetto costruito dal server con la sola categoria; corpo in solo testo o HTML con escape di ogni campo; errori → 400 code VALIDATION_ERROR."
     - "Se il mittente è autenticato l'email riporta l'id utente e l'id del workspace corrente, nessun altro dato di progetto."
-    - "Link Supporto verso /contact in components/top-nav.tsx (app) e nel footer di T-1803 (con /en/contact sulle pagine inglesi)."
+    - "Link Supporto verso /it/contact o /en/contact (lingua corrente) in components/top-nav.tsx (app) e nel footer di T-1803."
 
   acceptance_criteria:
     - id: AC-1805-1
@@ -245,7 +250,7 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
     - id: AC-1805-4
       given: "un utente autenticato nel workspace W"
       when: "invia il modulo contatti e si rende la TopNav dell'app"
-      then: "l'email nell'outbox contiene l'id dell'utente e l'id di W; la TopNav contiene un link con testo Supporto e href '/contact'"
+      then: "l'email nell'outbox contiene l'id dell'utente e l'id di W; la TopNav contiene un link con testo Supporto e href '/it/contact'"
 
   target_tests:
     - file: "tests/integration/contact.test.ts"
@@ -267,4 +272,6 @@ Oggi `middleware.ts` ammette senza sessione solo `/login`, `/register` e le API 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
-- Rilievi da confermare nel 00-INDEX: la CTA per utenti autenticati di T-1802 punta a `/billing` (T-1604, non tra le dipendenze); `/pricing` entra nella sitemap con T-1802 e non con T-1801 (la pagina nasce lì); anonimizzazione del registro admin in T-1804 condizionata all'esistenza di T-1704.
+- Rilievi da confermare nel 00-INDEX: la CTA per utenti autenticati di T-1802 punta a `/billing` (T-1604, ora tra le dipendenze); `/it/pricing` entra nella sitemap con T-1802 e non con T-1801 (la pagina nasce lì); anonimizzazione del registro admin in T-1804 (T-1704 è costruito).
+- Emendamento 2026-10-08 (D-28 emendata): le pagine marketing stanno sotto `app/[lang]/` con `lang` ristretto a `it` ed `en` (ogni altro valore 404, quindi il segmento dinamico non apre altre route: il proxy ammette solo i path esatti di `MARKETING_ROUTES`); `/` resta la dashboard per l'autenticato e il redirect dell'anonimo sta nel proxy, prima del rendering; la lingua della pagina marketing arriva dal proxy in un header della richiesta perché il layout radice (che scrive `html lang`) non riceve il parametro `lang`. AC-1803-2 cambia forma perché i file reali sono segnaposto finché D-15 non è fornita: il codice 0 si prova su una fixture conforme e i segnaposto reali devono dare 1. AC-1803-4 passa a un test di componente: l'E2E non può sostituire i file legali del server, mentre il componente markdown della pagina si rende con la fixture in jsdom. Il footer su `/login` e sulla dashboard (AC-1803-3) e il link Supporto nella barra dell'app (AC-1805-4) cambiano le baseline visive di T-103: la rigenerazione è un gate umano (modulo 04), quindi il merge resta sospeso finché l'utente non approva le nuove baseline.
+- Note di costruzione (2026-10-08), scelte da confermare dall'utente: su `/` l'anonimo va alla lingua del cookie `kwb_locale`, poi di Accept-Language (la risoluzione di T-1301 senza utente); il modulo contatti non entra in sitemap (il DoD di T-1805 non la cita); `x-default` punta a `/` per la landing e alla versione italiana per le altre pagine; sulle pagine di accesso la barra resta il solo marchio anche per l'anonimo; `SUPPORT_EMAIL` è facoltativa con ripiego su `APP_ADMIN_EMAIL` (senza entrambe 503 `CONTACT_UNAVAILABLE`) e un invio non riuscito risponde 503 `EMAIL_UNAVAILABLE` (in produzione finché Resend non è configurato, D-11 emendata); soglie PROPOSTE del modulo contatti 5 invii all'ora per IP e 3 per email (`RATE_LIMIT_CONTACT_*`); col lancio in pausa e senza chiavi di Turnstile il modulo contatti, come il recupero password, è protetto dal solo rate limit (`guardPublicForm`); la cancellazione elimina tutti gli inviti verso l'email (anche accettati o revocati), azzera anche l'`ip` delle righe del registro in cui l'utente era l'attore, non scrive una riga nuova nel registro (AC-1804-4 vuole il conteggio invariato) e non è limitata nel numero di tentativi di password (serve già la sessione); il markdown legale scarta anche le immagini; i nomi dei piani senza voce nel catalogo mostrano l'id. Le due ancore verso `/api/integrations/google-sheets/connect` hanno `eslint-disable-next-line @next/next/no-html-link-for-pages`: con un segmento dinamico alla radice la regola trasforma `[lang]` in un'espressione che combacia con ogni percorso senza punti e segnala come pagina anche una rotta API. `legal:check` gira con tsx perché importa il controllo TypeScript condiviso con la checklist del lancio. Cookie di terze parti (Paddle.js nel checkout, Turnstile) non verificati in un browser: da confermare con il primo checkout sandbox e con le chiavi di Turnstile, per la cookie policy di D-15.

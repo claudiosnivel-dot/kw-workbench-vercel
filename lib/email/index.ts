@@ -6,6 +6,7 @@ import { ResendEmailSender, unconfiguredResendSender } from "@/lib/email/resend-
 import { render as accountExists } from "@/lib/email/templates/account-exists";
 import { render as adminPasswordReset } from "@/lib/email/templates/admin-password-reset";
 import { render as billingNotice } from "@/lib/email/templates/billing-notice";
+import { render as contactMessage } from "@/lib/email/templates/contact-message";
 import type { RenderedEmail } from "@/lib/email/templates/layout";
 import { render as passwordReset } from "@/lib/email/templates/password-reset";
 import { render as verifyEmail } from "@/lib/email/templates/verify-email";
@@ -21,6 +22,7 @@ const RENDERERS = {
   "workspace-invite": workspaceInvite,
   "billing-notice": billingNotice,
   "admin-password-reset": adminPasswordReset,
+  "contact-message": contactMessage,
 } satisfies Record<EmailTemplate, (locale: AppLocale, vars: never) => RenderedEmail>;
 
 type TemplateVars = { [K in EmailTemplate]: Parameters<(typeof RENDERERS)[K]>[1] };
@@ -39,14 +41,16 @@ export function getEmailSender(outbox: OutboxStore = databaseOutbox): EmailSende
 }
 
 /**
- * Rende il template nella lingua indicata e lo invia (T-1402). Destinatario e subject con CR o LF sono rifiutati prima
- * dell'invio (CWE-93); un invio non riuscito arriva al chiamante come EmailDeliveryError, già registrato nei log.
+ * Rende il template nella lingua indicata e lo invia (T-1402). Destinatario, Reply-To (T-1805) e subject con CR o LF o
+ * non normalizzati sono rifiutati prima dell'invio (CWE-93); un invio non riuscito arriva al chiamante come
+ * EmailDeliveryError, già registrato nei log.
  */
 export async function sendTemplateEmail<K extends EmailTemplate>(input: {
   to: string;
   template: K;
   locale: AppLocale;
   vars: TemplateVars[K];
+  replyTo?: string;
 }): Promise<{ providerId: string }> {
   const render = RENDERERS[input.template] as (locale: AppLocale, vars: TemplateVars[K]) => RenderedEmail;
   const message: EmailMessage = {
@@ -55,9 +59,11 @@ export async function sendTemplateEmail<K extends EmailTemplate>(input: {
     template: input.template,
     locale: input.locale,
     ...render(input.locale, input.vars),
+    ...(input.replyTo === undefined ? {} : { replyTo: input.replyTo }),
   };
 
-  if (normalizeEmail(message.to) !== message.to || /[\r\n]/.test(message.subject)) {
+  const invalidReplyTo = message.replyTo !== undefined && normalizeEmail(message.replyTo) !== message.replyTo;
+  if (normalizeEmail(message.to) !== message.to || invalidReplyTo || /[\r\n]/.test(message.subject)) {
     throw new EmailDeliveryError(message, "destinatario o subject non validi");
   }
 

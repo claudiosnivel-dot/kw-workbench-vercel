@@ -97,7 +97,11 @@
     "personalize": "Personalizza",
     "newProject": "Nuovo progetto",
     "admin": "Admin",
-    "openMenu": "Apri menu"
+    "openMenu": "Apri menu",
+    "pricing": "Prezzi",
+    "login": "Accedi",
+    "register": "Registrati",
+    "support": "Supporto"
   },
   "dashboard": {
     "paused": {
@@ -558,7 +562,12 @@
     "INVALID_SIGNATURE": "Firma non valida.",
     "PLAN_LIMIT": "Hai raggiunto un limite del piano del workspace.",
     "LAUNCH_NOT_READY": "La checklist del lancio non è completa.",
-    "QUOTA_EXCEEDED": "Hai esaurito la quota d'uso del workspace per questo periodo."
+    "QUOTA_EXCEEDED": "Hai esaurito la quota d'uso del workspace per questo periodo.",
+    "INVALID_PASSWORD": "La password non è corretta.",
+    "ROOT_ADMIN": "Il root admin non può cancellare il proprio account.",
+    "ACTIVE_SUBSCRIPTION": "Disdici prima gli abbonamenti dei workspace di cui sei l'unico proprietario, dalla pagina Fatturazione.",
+    "OWNERSHIP_TRANSFER_REQUIRED": "Trasferisci prima la proprietà dei workspace condivisi con altri membri.",
+    "CONTACT_UNAVAILABLE": "Il modulo contatti non è disponibile in questo momento."
   },
   "errorPages": {
     "error": {
@@ -1059,6 +1068,20 @@
       "intro": "un amministratore ha reimpostato la password del tuo account. Le sessioni aperte sono state chiuse: al prossimo accesso con la password ricevuta dovrai sceglierne una nuova.",
       "action": "Accedi",
       "notYou": "Se non ti aspettavi questa modifica, contatta l'amministratore."
+    },
+    "contactMessage": {
+      "subject": "Modulo contatti: {category}",
+      "name": "Nome",
+      "email": "Email",
+      "category": "Categoria",
+      "userId": "Id utente",
+      "workspaceId": "Id workspace",
+      "categories": {
+        "support": "Supporto",
+        "billing": "Fatturazione",
+        "privacy": "Privacy",
+        "other": "Altro"
+      }
     }
   },
   "billing": {
@@ -1116,5 +1139,153 @@
       "ownerLink": "Cambia piano da Fatturazione",
       "member": "Hai raggiunto un limite del piano del workspace: chiedi al proprietario di passare a un piano superiore."
     }
+  },
+  "footer": {
+    "label": "Informazioni legali e supporto",
+    "privacy": "Privacy",
+    "terms": "Termini di servizio",
+    "cookies": "Cookie",
+    "support": "Supporto"
+  },
+  "marketing": {
+    "meta": {
+      "home": {
+        "title": "Keyword research dalle seed all'export",
+        "description": "Espandi le keyword di partenza con i suggerimenti di ricerca, classificale per intento e tipo ed esportale in CSV, Excel o Google Sheets."
+      },
+      "pricing": {
+        "title": "Prezzi",
+        "description": "Piani e limiti di Seo God Mode."
+      },
+      "privacy": {
+        "title": "Informativa sulla privacy",
+        "description": "Come Seo God Mode tratta i dati personali."
+      },
+      "terms": {
+        "title": "Termini di servizio",
+        "description": "Condizioni d'uso di Seo God Mode."
+      },
+      "cookies": {
+        "title": "Cookie policy",
+        "description": "Cookie usati da Seo God Mode."
+      },
+      "contact": {
+        "title": "Contatti",
+        "description": "Scrivi al supporto di Seo God Mode."
+      }
+    },
+    "landing": {
+      "eyebrow": "Keyword research per la SEO",
+      "title": "Dalle seed alle keyword pronte da esportare",
+      "intro": "Espandi le keyword di partenza con i suggerimenti di ricerca, classificale per intento e tipo e organizzale in progetti e sezioni, pronte per l'export.",
+      "register": "Crea un account",
+      "pricing": "Vedi i prezzi",
+      "login": "Accedi",
+      "features": {
+        "title": "Cosa fa",
+        "expansion": {
+          "title": "Espansione delle seed",
+          "body": "Ogni seed viene espansa con i suggerimenti di ricerca, con varianti alfabetiche, numeriche e per pattern."
+        },
+        "classification": {
+          "title": "Classificazione automatica",
+          "body": "Intento di ricerca, tipo di keyword e filtro dei brand separano le keyword utili da quelle da scartare."
+        },
+        "metrics": {
+          "title": "Volumi di ricerca",
+          "body": "Importa i volumi dal CSV del tuo Keyword Planner di Google, oppure usa un fornitore di metriche con licenza dove il piano lo prevede."
+        },
+        "export": {
+          "title": "Export e lavoro in team",
+          "body": "Esporta in CSV, Excel o Google Sheets e lavora con il tuo team in workspace condivisi."
+        }
+      },
+      "steps": {
+        "title": "Come funziona",
+        "project": "Crea un progetto con lingua e paese di riferimento.",
+        "seeds": "Aggiungi le seed in una sezione e avvia l'estrazione.",
+        "review": "Rivedi, filtra ed esporta le keyword."
+      },
+      "closing": "Inizia dal tuo primo progetto."
+    }
+  },
+  "pricing": {
+    "title": "Prezzi",
+    "intro": "Piani e limiti, dalla stessa configurazione che l'app applica.",
+    "comingSoon": "I prezzi saranno pubblicati a breve.",
+    "intervals": {
+      "month": "al mese",
+      "year": "all'anno"
+    },
+    "limits": {
+      "maxProjects": "Progetti",
+      "maxSectionsPerProject": "Sezioni per progetto",
+      "maxSeedsPerSection": "Seed per sezione",
+      "runsPerDay": "Estrazioni al giorno",
+      "maxKeywordsPerRun": "Keyword per estrazione",
+      "keywordsPerMonth": "Keyword al mese",
+      "licensedMetricsKeywordsPerMonth": "Keyword al mese con volumi del fornitore",
+      "seats": "Membri del workspace"
+    },
+    "features": {
+      "sheetsExport": "Export su Google Sheets",
+      "plannerImport": "Import da Keyword Planner",
+      "licensedMetrics": "Volumi del fornitore di metriche"
+    },
+    "included": "Incluso",
+    "notIncluded": "Non incluso",
+    "cta": {
+      "register": "Registrati",
+      "subscribe": "Scegli il piano",
+      "dashboard": "Vai alla dashboard"
+    }
+  },
+  "legal": {
+    "titles": {
+      "privacy": "Informativa sulla privacy",
+      "terms": "Termini di servizio",
+      "cookies": "Cookie policy"
+    },
+    "version": "Versione {version}",
+    "lastUpdated": "Ultimo aggiornamento: {date}"
+  },
+  "account": {
+    "title": "Dati dell'account",
+    "intro": "Scarica una copia dei tuoi dati o cancella l'account.",
+    "settingsLink": {
+      "title": "Dati dell'account",
+      "intro": "Export dei tuoi dati e cancellazione dell'account.",
+      "open": "Gestisci i tuoi dati"
+    },
+    "export": {
+      "title": "Scarica i tuoi dati",
+      "body": "Un file JSON con profilo, workspace e progetti dei workspace di cui sei l'unico proprietario.",
+      "action": "Scarica i miei dati"
+    },
+    "delete": {
+      "warning": "La cancellazione elimina l'account e i workspace in cui sei l'unico membro, con i loro progetti. Non si può annullare.",
+      "password": "Password attuale",
+      "action": "Elimina account",
+      "pending": "Eliminazione...",
+      "confirm": "Eliminare definitivamente l'account?",
+      "done": "Account eliminato."
+    }
+  },
+  "contact": {
+    "title": "Contatti",
+    "intro": "Scrivi al supporto: rispondiamo all'indirizzo email che indichi.",
+    "name": "Nome",
+    "email": "Email",
+    "category": "Categoria",
+    "message": "Messaggio",
+    "categories": {
+      "support": "Supporto",
+      "billing": "Fatturazione",
+      "privacy": "Privacy",
+      "other": "Altro"
+    },
+    "submit": "Invia",
+    "submitting": "Invio...",
+    "sent": "Messaggio inviato."
   }
 }

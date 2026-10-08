@@ -97,7 +97,11 @@
     "personalize": "Personalize",
     "newProject": "New project",
     "admin": "Admin",
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "pricing": "Pricing",
+    "login": "Sign in",
+    "register": "Sign up",
+    "support": "Support"
   },
   "dashboard": {
     "paused": {
@@ -558,7 +562,12 @@
     "INVALID_SIGNATURE": "Invalid signature.",
     "PLAN_LIMIT": "You have reached a limit of the workspace plan.",
     "LAUNCH_NOT_READY": "The launch checklist is not complete.",
-    "QUOTA_EXCEEDED": "You have used up the workspace usage quota for this period."
+    "QUOTA_EXCEEDED": "You have used up the workspace usage quota for this period.",
+    "INVALID_PASSWORD": "The password is not correct.",
+    "ROOT_ADMIN": "The root admin cannot delete their own account.",
+    "ACTIVE_SUBSCRIPTION": "First cancel the subscriptions of the workspaces you are the only owner of, from the Billing page.",
+    "OWNERSHIP_TRANSFER_REQUIRED": "First transfer the ownership of the workspaces shared with other members.",
+    "CONTACT_UNAVAILABLE": "The contact form is not available right now."
   },
   "errorPages": {
     "error": {
@@ -1059,6 +1068,20 @@
       "subject": "Notice about your subscription",
       "intro": "there is news about your {plan} subscription, with reference date {date}.",
       "action": "Open the app"
+    },
+    "contactMessage": {
+      "subject": "Contact form: {category}",
+      "name": "Name",
+      "email": "Email",
+      "category": "Category",
+      "userId": "User id",
+      "workspaceId": "Workspace id",
+      "categories": {
+        "support": "Support",
+        "billing": "Billing",
+        "privacy": "Privacy",
+        "other": "Other"
+      }
     }
   },
   "billing": {
@@ -1116,5 +1139,153 @@
       "ownerLink": "Change plan from Billing",
       "member": "You have reached a limit of the workspace plan: ask the owner to move to a higher plan."
     }
+  },
+  "footer": {
+    "label": "Legal information and support",
+    "privacy": "Privacy",
+    "terms": "Terms of service",
+    "cookies": "Cookies",
+    "support": "Support"
+  },
+  "marketing": {
+    "meta": {
+      "home": {
+        "title": "Keyword research from seeds to export",
+        "description": "Expand your seed keywords with search suggestions, classify them by intent and type and export them to CSV, Excel or Google Sheets."
+      },
+      "pricing": {
+        "title": "Pricing",
+        "description": "Seo God Mode plans and limits."
+      },
+      "privacy": {
+        "title": "Privacy policy",
+        "description": "How Seo God Mode processes personal data."
+      },
+      "terms": {
+        "title": "Terms of service",
+        "description": "Seo God Mode terms of use."
+      },
+      "cookies": {
+        "title": "Cookie policy",
+        "description": "Cookies used by Seo God Mode."
+      },
+      "contact": {
+        "title": "Contact",
+        "description": "Write to Seo God Mode support."
+      }
+    },
+    "landing": {
+      "eyebrow": "Keyword research for SEO",
+      "title": "From seed keywords to keywords ready to export",
+      "intro": "Expand your seed keywords with search suggestions, classify them by intent and type and organize them in projects and sections, ready to export.",
+      "register": "Create an account",
+      "pricing": "See pricing",
+      "login": "Sign in",
+      "features": {
+        "title": "What it does",
+        "expansion": {
+          "title": "Seed expansion",
+          "body": "Every seed is expanded with search suggestions, with alphabetical, numeric and pattern variants."
+        },
+        "classification": {
+          "title": "Automatic classification",
+          "body": "Search intent, keyword type and the brand filter separate useful keywords from the ones to discard."
+        },
+        "metrics": {
+          "title": "Search volumes",
+          "body": "Import volumes from the CSV of your Google Keyword Planner, or use a licensed metrics provider where your plan includes it."
+        },
+        "export": {
+          "title": "Export and teamwork",
+          "body": "Export to CSV, Excel or Google Sheets and work with your team in shared workspaces."
+        }
+      },
+      "steps": {
+        "title": "How it works",
+        "project": "Create a project with its target language and country.",
+        "seeds": "Add seeds to a section and start the extraction.",
+        "review": "Review, filter and export the keywords."
+      },
+      "closing": "Start with your first project."
+    }
+  },
+  "pricing": {
+    "title": "Pricing",
+    "intro": "Plans and limits, from the same configuration the app enforces.",
+    "comingSoon": "Pricing will be published soon.",
+    "intervals": {
+      "month": "per month",
+      "year": "per year"
+    },
+    "limits": {
+      "maxProjects": "Projects",
+      "maxSectionsPerProject": "Sections per project",
+      "maxSeedsPerSection": "Seeds per section",
+      "runsPerDay": "Extractions per day",
+      "maxKeywordsPerRun": "Keywords per extraction",
+      "keywordsPerMonth": "Keywords per month",
+      "licensedMetricsKeywordsPerMonth": "Keywords per month with provider volumes",
+      "seats": "Workspace members"
+    },
+    "features": {
+      "sheetsExport": "Google Sheets export",
+      "plannerImport": "Keyword Planner import",
+      "licensedMetrics": "Metrics provider volumes"
+    },
+    "included": "Included",
+    "notIncluded": "Not included",
+    "cta": {
+      "register": "Sign up",
+      "subscribe": "Choose plan",
+      "dashboard": "Go to dashboard"
+    }
+  },
+  "legal": {
+    "titles": {
+      "privacy": "Privacy policy",
+      "terms": "Terms of service",
+      "cookies": "Cookie policy"
+    },
+    "version": "Version {version}",
+    "lastUpdated": "Last updated: {date}"
+  },
+  "account": {
+    "title": "Account data",
+    "intro": "Download a copy of your data or delete your account.",
+    "settingsLink": {
+      "title": "Account data",
+      "intro": "Export your data and delete your account.",
+      "open": "Manage your data"
+    },
+    "export": {
+      "title": "Download your data",
+      "body": "A JSON file with your profile, workspaces and the projects of the workspaces you are the only owner of.",
+      "action": "Download my data"
+    },
+    "delete": {
+      "warning": "Deletion removes the account and the workspaces where you are the only member, with their projects. It cannot be undone.",
+      "password": "Current password",
+      "action": "Delete account",
+      "pending": "Deleting...",
+      "confirm": "Permanently delete the account?",
+      "done": "Account deleted."
+    }
+  },
+  "contact": {
+    "title": "Contact",
+    "intro": "Write to support: we reply to the email address you enter.",
+    "name": "Name",
+    "email": "Email",
+    "category": "Category",
+    "message": "Message",
+    "categories": {
+      "support": "Support",
+      "billing": "Billing",
+      "privacy": "Privacy",
+      "other": "Other"
+    },
+    "submit": "Send",
+    "submitting": "Sending...",
+    "sent": "Message sent."
   }
 }

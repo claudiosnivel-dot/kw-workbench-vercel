@@ -5,6 +5,7 @@ import { Manrope, Sora } from "next/font/google";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { PastDueBanner } from "@/components/past-due-banner";
 import { PlanLimitNotice } from "@/components/plan-limit-notice";
+import { SiteFooter } from "@/components/site-footer";
 import { TopNav } from "@/components/top-nav";
 import { WorkspaceCookieSync } from "@/components/workspace-cookie-sync";
 import { getOptionalAuthenticatedUserFromCookies } from "@/lib/auth/current-user";
@@ -98,6 +99,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               )}
               {children}
             </main>
+            <SiteFooter />
           </div>
         </NextIntlClientProvider>
       </body>

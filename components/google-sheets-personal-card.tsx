@@ -89,13 +89,18 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
         <p className="text-sm text-amber-700">{t("broaderScope")}</p>
       )}
 
+      {/* Rotta API che avvia il redirect OAuth, non una pagina: serve una navigazione completa, non <Link>. La regola
+          no-html-link-for-pages la scambia per una pagina perché il segmento dinamico app/[lang] (T-1801) combacia con
+          ogni percorso senza punti. */}
       {initial.connected && (initial.status === "reauth_required" || initial.needsReconnect) && (
+        // eslint-disable-next-line @next/next/no-html-link-for-pages
         <a className="btn-primary w-full text-center sm:w-auto" href="/api/integrations/google-sheets/connect">
           {t("reconnect")}
         </a>
       )}
 
       {!initial.connected ? (
+        // eslint-disable-next-line @next/next/no-html-link-for-pages
         <a className="btn-primary w-full text-center sm:w-auto" href="/api/integrations/google-sheets/connect">
           {t("connect")}
         </a>

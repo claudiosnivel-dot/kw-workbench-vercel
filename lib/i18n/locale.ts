@@ -1,5 +1,6 @@
 /**
- * Lingua dell'interfaccia (T-1301, D-07): italiano e inglese, default italiano, nessun prefisso negli URL.
+ * Lingua dell'interfaccia (T-1301, D-07): italiano e inglese, default italiano, nessun prefisso negli URL dell'app (le
+ * pagine pubbliche di T-1801 hanno /it e /en, D-28 emendata).
  * Modulo puro, senza import: lo usano i18n/request.ts, la rotta /api/locale e il selettore lato client.
  */
 
@@ -8,6 +9,12 @@ export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 
 export const DEFAULT_LOCALE: AppLocale = "it";
 export const LOCALE_COOKIE = "kwb_locale";
+
+/**
+ * Lingua del percorso di una pagina pubblica (/it, /en/pricing..., T-1801, D-28 emendata): la scrive il proxy sulla
+ * richiesta inoltrata, sempre sovrascritta o rimossa, mai il valore del client; i18n/request.ts la legge per prima.
+ */
+export const PAGE_LOCALE_HEADER = "x-kwb-page-locale";
 
 /** Fuso orario unico di date e ore formattate (server e client devono coincidere): quello del mercato di default. */
 export const APP_TIME_ZONE = "Europe/Rome";

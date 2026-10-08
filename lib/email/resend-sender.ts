@@ -84,6 +84,7 @@ export class ResendEmailSender implements EmailSender {
           subject: message.subject,
           html: message.html,
           text: message.text,
+          ...(message.replyTo ? { replyTo: message.replyTo } : {}),
           tags: [{ name: "template", value: message.template.replace(/-/g, "_") }],
         },
         { idempotencyKey: message.id }

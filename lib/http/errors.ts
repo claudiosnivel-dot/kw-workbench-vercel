@@ -38,8 +38,11 @@ export const JOB_ERROR_CODES = {
   notCancelable: "JOB_NOT_CANCELABLE",
 } as const;
 
-/** Campi pubblici aggiuntivi del body d'errore: missing di ONBOARDING_PRECONDITION e LAUNCH_NOT_READY, limit e max di PLAN_LIMIT. */
-export type ErrorFields = Record<string, string | number | readonly string[]>;
+/**
+ * Campi pubblici aggiuntivi del body d'errore: missing di ONBOARDING_PRECONDITION e LAUNCH_NOT_READY, limit e max di
+ * PLAN_LIMIT, workspaces (id e nome) dei 409 della cancellazione dell'account (T-1804).
+ */
+export type ErrorFields = Record<string, string | number | readonly string[] | readonly Readonly<Record<string, string>>[]>;
 
 export class AppError extends Error {
   readonly status: number;

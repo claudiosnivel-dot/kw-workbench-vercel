@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { LogoutButton } from "@/components/logout-button";
 import { type WorkspaceOption, WorkspaceSwitcher } from "@/components/workspace-switcher";
+import type { AppLocale } from "@/lib/i18n/locale";
+import { findMarketingRoute, marketingPath } from "@/lib/marketing/routes";
 
 // Pagine di accesso e dei link delle email (T-1403…T-1405): la navbar mostra solo il marchio.
 const AUTH_ROUTE_PREFIXES = [
@@ -33,9 +35,9 @@ function UserIdentity({ user, className }: { user: { displayName: string; email:
   );
 }
 
-type NavLabelKey = "overview" | "personalize" | "newProject" | "admin";
+type NavLabelKey = "overview" | "personalize" | "newProject" | "admin" | "support";
 
-function buildNavLinks(showAdminLink: boolean) {
+function buildNavLinks(showAdminLink: boolean, locale: AppLocale) {
   const links: { href: string; labelKey: NavLabelKey }[] = [
     { href: "/", labelKey: "overview" },
     { href: "/personalizza", labelKey: "personalize" },
@@ -46,7 +48,43 @@ function buildNavLinks(showAdminLink: boolean) {
     links.push({ href: "/admin", labelKey: "admin" });
   }
 
+  // Modulo contatti nella lingua corrente (T-1805).
+  links.push({ href: marketingPath("contact", locale), labelKey: "support" });
   return links;
+}
+
+/**
+ * Voci della barra per gli anonimi (T-1801): prezzi, accesso, registrazione e lingua; nessun link dell'app né logout.
+ * Sulle pagine pubbliche la lingua è un link alla stessa pagina nell'altra lingua (URL per lingua, D-28 emendata),
+ * altrove il selettore a cookie di T-1301.
+ */
+function AnonymousNavItems({ pathname, linkClassName, mobile = false }: { pathname: string; linkClassName: string; mobile?: boolean }) {
+  const t = useTranslations("nav");
+  const tLocale = useTranslations("common.locale");
+  const locale = useLocale();
+  const alternate = findMarketingRoute(pathname)?.alternate;
+  const otherLocale: AppLocale = locale === "it" ? "en" : "it";
+
+  return (
+    <>
+      <Link href={marketingPath("pricing", locale)} className={linkClassName}>
+        {t("pricing")}
+      </Link>
+      <Link href="/login" className={linkClassName}>
+        {t("login")}
+      </Link>
+      <Link href="/register" className={`btn-primary ${mobile ? "w-full text-center" : ""}`}>
+        {t("register")}
+      </Link>
+      {alternate ? (
+        <Link href={alternate} hrefLang={otherLocale} lang={otherLocale} aria-label={tLocale("label")} className={linkClassName}>
+          {tLocale(otherLocale)}
+        </Link>
+      ) : (
+        <LocaleSwitcher className={mobile ? "w-full" : undefined} />
+      )}
+    </>
+  );
 }
 
 function normalizeLogoUrl(value: string | null | undefined): string {
@@ -101,6 +139,7 @@ export function TopNav({
   activeWorkspaceId?: string | null;
 }) {
   const t = useTranslations("nav");
+  const locale = useLocale();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeThemeMode, setActiveThemeMode] = useState<"DARK" | "LIGHT">(themeMode);
@@ -122,7 +161,7 @@ export function TopNav({
   );
 
   const hasCustomLogo = resolvedLogoUrl.length > 0;
-  const navLinks = useMemo(() => buildNavLinks(showAdminLink), [showAdminLink]);
+  const navLinks = useMemo(() => buildNavLinks(showAdminLink, locale), [showAdminLink, locale]);
   const authView = isAuthRoute(pathname);
   const switcher =
     workspaces.length > 1 && activeWorkspaceId
@@ -202,25 +241,34 @@ export function TopNav({
               </button>
 
               <nav className="hidden items-center gap-2 md:flex">
-                {navLinks.map((item) => {
-                  const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`top-nav-link inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition ${
-                        active ? "is-active" : ""
-                      }`}
-                    >
-                      {t(item.labelKey)}
-                    </Link>
-                  );
-                })}
-                {user && <UserIdentity user={user} className="hidden max-w-[12rem] text-right xl:flex" />}
-                {/* Nomi scelti dagli utenti (T-1504): il selettore non allarga la barra oltre 14rem. */}
-                {switcher?.("max-w-56")}
-                <LocaleSwitcher />
-                <LogoutButton className="px-4 py-2" />
+                {user ? (
+                  <>
+                    {navLinks.map((item) => {
+                      const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`top-nav-link inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition ${
+                            active ? "is-active" : ""
+                          }`}
+                        >
+                          {t(item.labelKey)}
+                        </Link>
+                      );
+                    })}
+                    <UserIdentity user={user} className="hidden max-w-[12rem] text-right xl:flex" />
+                    {/* Nomi scelti dagli utenti (T-1504): il selettore non allarga la barra oltre 14rem. */}
+                    {switcher?.("max-w-56")}
+                    <LocaleSwitcher />
+                    <LogoutButton className="px-4 py-2" />
+                  </>
+                ) : (
+                  <AnonymousNavItems
+                    pathname={pathname}
+                    linkClassName="top-nav-link inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition"
+                  />
+                )}
               </nav>
             </>
           )}
@@ -228,25 +276,35 @@ export function TopNav({
 
         {!authView && menuOpen && (
           <nav id="mobile-nav" className="mt-3 grid gap-2 md:hidden">
-            {user && <UserIdentity user={user} className="flex px-1 text-center" />}
-            {navLinks.map((item) => {
-              const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={`top-nav-link top-nav-link-mobile inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition ${
-                    active ? "is-active" : ""
-                  }`}
-                >
-                  {t(item.labelKey)}
-                </Link>
-              );
-            })}
-            {switcher?.("w-full")}
-            <LocaleSwitcher className="w-full" />
-            <LogoutButton className="w-full justify-center rounded-xl px-4 py-2" />
+            {user ? (
+              <>
+                <UserIdentity user={user} className="flex px-1 text-center" />
+                {navLinks.map((item) => {
+                  const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      className={`top-nav-link top-nav-link-mobile inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition ${
+                        active ? "is-active" : ""
+                      }`}
+                    >
+                      {t(item.labelKey)}
+                    </Link>
+                  );
+                })}
+                {switcher?.("w-full")}
+                <LocaleSwitcher className="w-full" />
+                <LogoutButton className="w-full justify-center rounded-xl px-4 py-2" />
+              </>
+            ) : (
+              <AnonymousNavItems
+                pathname={pathname}
+                linkClassName="top-nav-link top-nav-link-mobile inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition"
+                mobile
+              />
+            )}
           </nav>
         )}
       </div>
