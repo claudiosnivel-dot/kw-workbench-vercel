@@ -37,8 +37,9 @@
 | `16-billing.md` | `billing` | T-1601…T-1606 | Piani e diritti, checkout Merchant of Record, webhook firmati, portale cliente, enforcement lato server, interruttore del lancio commerciale (D-32) |
 | `17-abuse-quotas.md` | `abuse-quotas` | T-1701…T-1705 | Rate limiting, CAPTCHA, quote d'uso, registro azioni admin, KPI |
 | `18-marketing-legal.md` | `marketing-legal` | T-1801…T-1805 | Landing IT/EN e SEO, prezzi, pagine legali versionate, GDPR (export/cancellazione), contatti |
+| `19-hub-spoke.md` | `hub-spoke` | T-1901…T-1907 | Strategia hub and spoke deterministica dalle keyword (D-33): hub e spoke, H1 e H2 a modelli fissi, modifiche in app, export CSV, Excel, Sheets e PDF (D-34) |
 
-Totale: 18 macrotask, 106 task atomici.
+Totale: 19 macrotask, 116 task atomici (il 19 aggiunto il 2026-10-09 su richiesta dell'utente, dopo il completamento dei primi 18).
 
 ## 1bis. Contratto di altitudine (abilita `arch_check` in BUILD)
 
@@ -84,13 +85,14 @@ macrotask                 dipende da (macrotask che contengono i task in depends
 16 billing                09, 15
 17 abuse-quotas           05, 09, 12, 14, 16
 18 marketing-legal        03, 09, 13, 14, 15, 16, 17
+19 hub-spoke              05, 07, 08, 13, 15
 ```
 
-Tabella calcolata dai `depends_on` reali dei 106 task (418 criteri di
+Tabella calcolata dai `depends_on` reali dei 116 task (459 criteri di
 accettazione). Ogni macrotask dipende solo da macrotask con numero inferiore.
 
 Ordine lineare consigliato: 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 →
-11 → 12 → 13 → 14 → 15 → 16 → 17 → 18. Il 03 dipende solo da 01 e viene prima
+11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19. Il 03 dipende solo da 01 e viene prima
 del 04 apposta, per correggere subito i difetti visibili in produzione. Il 07
 (dipende da 01 e 03) può essere anticipato subito dopo il 03.
 
@@ -153,6 +155,9 @@ APERTA = blocca i task che la citano finché l'utente non fornisce il valore.
 | D-30 | Fornitore di metriche con licenza: DataForSEO, endpoint Google Ads search volume in modalità live (fino a 1.000 keyword per richiesta, costo per richiesta indipendente dal numero di keyword: 0,09 USD live, 0,06 USD in coda con 1–3 ore; max 12 richieste/minuto). Credenziali solo da env validata; tetto di spesa mensile globale e per estrazione (T-903); metriche con licenza riservate ai piani che le includono, con quota mensile di keyword (T-1601, T-1605, T-1703; valori da D-14). Alternative valutabili: coda standard più economica dopo i job in background (12), altri fornitori. | DECISA (utente, 2026-10-05): T-902 si costruisce e si prova senza account, con risposte simulate; l'attivazione reale arriva con le credenziali dell'utente |
 | D-31 | Piano Supabase di produzione: Free, senza backup giornalieri automatici. Backup logico periodico con `scripts/db-backup.mjs` (T-604), conservato fuori dal repo e fuori da Supabase con accesso ristretto; prova di ripristino su un Postgres locale in Docker con conteggi e hash. Frequenza e conservazione da indicare in `docs/OPERATIONS.md` (T-604). | Piano DECISO (utente, 2026-10-05); frequenza e conservazione DECISE (utente, 2026-10-05): backup giornaliero più uno prima di ogni deploy con migrazione, 14 giornalieri e il primo di ogni mese per 6 mesi, prova di ripristino mensile |
 | D-32 | Lancio commerciale dietro un interruttore. Billing (piani, checkout, abbonamenti, limiti e quote), prezzi pubblici e registrazione pubblica si costruiscono ma restano in pausa finché il root admin non li attiva dal pannello admin (T-1606). In pausa: nessun limite né quota per gli utenti (diritti illimitati; il fornitore di metriche con licenza resta del solo root admin, T-902), nessun acquisto, registrazione pubblica chiusa (account creati dal root admin, già con l'email verificata, o inviti nei workspace). L'attivazione richiede una checklist tutta verde: valori di D-14, credenziali e prezzi Paddle (D-06), Resend (D-11), testi legali (D-15), chiavi Turnstile (D-12); l'interruttore si può rispegnere. D-14 e D-15 non bloccano più la costruzione: i task usano i segnaposto dichiarati. | DECISA (utente, 2026-10-08: nessun limite in pausa, account solo creati dal root admin, interruttore nel pannello admin con checklist) |
+| D-33 | Strategia hub and spoke (macrotask 19) deterministica e gratuita: hub e spoke dalle keyword già estratte (parole condivise, seed, modificatori, intento, volume), H1 e H2 da modelli fissi per tipo di contenuto e lingua, non validati sui contenuti dei competitor. Esclusi: analisi della SERP con API a pagamento, scraping di Google o dei siti dei competitor, modelli AI. Una strategia è una fotografia delle keyword: le estrazioni successive non la cambiano; rigenerare crea una strategia nuova. Modalità automatica (impostazioni predefinite) ed esperta (perimetro e regole). | DECISA (utente, 2026-10-09: «troviamo un modo completamente gratuito per generare h1 e h2 (anche se non sono validati)»; design approvato per sezioni) |
+| D-34 | Export PDF della strategia generato dal server con `@react-pdf/renderer` a versione esatta, senza browser headless né servizi esterni: documento da presentare con spiegazione, sintesi, ordine di lavoro, sezioni per hub e appendice. | DECISA (utente, 2026-10-09: scelta A) |
+| D-35 | Limiti tecnici delle strategie: al massimo 5000 keyword per strategia (oltre, le 5000 a priorità più alta, dichiarato nella sintesi) e 20 strategie per progetto; con il lancio commerciale attivo si potranno legare ai piani (D-14). | DECISA (utente, 2026-10-09: «ok procedi» sul modulo 19 che la proponeva insieme alle soglie predefinite del raggruppamento) |
 
 ## 5. Fonti di verità
 
