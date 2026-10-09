@@ -28,7 +28,8 @@ macrotask, senza chiedere conferme.
      05 auth-hardening · 06 observability-ops · 07 extraction-fixes ·
      08 results-export · 09 google-integrations · 10 onboarding · 11 cleanup ·
      12 background-jobs · 13 i18n · 14 accounts-email · 15 workspaces ·
-     16 billing · 17 abuse-quotas · 18 marketing-legal · 19 hub-spoke
+     16 billing · 17 abuse-quotas · 18 marketing-legal · 19 hub-spoke ·
+     20 adjustments
    • Baseline (.trueline/baseline.json, .trueline/hygiene-baseline.json) e budget
      consumato (MAX_RETRIES_PER_FINDING = 2, GLOBAL_WALL_CLOCK_MS = 242401).
    • Per ogni task chiuso: id, output prodotto, esito del gate (quale oracolo/test
