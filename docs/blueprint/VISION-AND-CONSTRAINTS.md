@@ -53,6 +53,9 @@ Seo God Mode diventa un SaaS vendibile:
    Record, quote e limiti anti-abuso;
 6. landing, prezzi, pagine legali e GDPR in IT/EN; errori tracciati, backup provati,
    rilascio da staging a produzione.
+7. (aggiunto il 2026-10-09, macrotask 19) dopo l'analisi, una strategia hub and spoke
+   con H1 e H2 suggeriti, modificabile ed esportabile anche in PDF, usabile in un clic dai
+   meno esperti (D-33, D-34).
 
 "Fatto" = `target_tests` verdi e checkpoint Trueline verde al confine di ogni
 macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
@@ -68,6 +71,8 @@ macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
 - Analytics di prodotto e A/B test (D-13).
 - Wrapping Electron (citato nel README: resta possibile, non è nel piano).
 - Lingue oltre italiano e inglese.
+- Analisi della SERP, scraping dei siti dei competitor e titoli scritti da modelli AI per la
+  strategia hub and spoke (D-33).
 - Testi legali definitivi scritti dall'agente (D-15).
 - TypeScript 7 e Prisma 8 (D-03).
 
