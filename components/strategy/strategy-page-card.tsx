@@ -38,6 +38,14 @@ export function StrategyPageCard({ projectId, strategyId, version, page, links, 
   const merged = Number(params.merged ?? 0);
   const faq = Number(params.faq ?? 0);
 
+  // Il modulo parte sempre dai titoli correnti: dopo un ricaricamento del piano quelli della prima resa sono vecchi.
+  const startEditing = () => {
+    setH1(page.h1);
+    setH2(page.h2.join("\n"));
+    setContentType(page.contentType);
+    setEditing(true);
+  };
+
   const saveTitles = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const patch: Record<string, unknown> = {};
@@ -141,7 +149,7 @@ export function StrategyPageCard({ projectId, strategyId, version, page, links, 
         </form>
       ) : (
         <div className="flex flex-wrap items-end gap-2">
-          <button className="btn-secondary" type="button" onClick={() => setEditing(true)}>
+          <button className="btn-secondary" type="button" onClick={startEditing}>
             {t("ui.editTitles")}
           </button>
           {page.kind === "SPOKE" && (
