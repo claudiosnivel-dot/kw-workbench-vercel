@@ -201,7 +201,7 @@ Oggi `proxy.ts` (T-404) ammette senza sessione solo l'elenco esatto `PUBLIC_PATH
     - id: AC-1804-4
       given: "righe di admin_audit_log con U come bersaglio"
       when: "U invia DELETE con una password sbagliata e poi con quella giusta"
-      then: "la prima risposta è 403 INVALID_PASSWORD e nessuna riga viene cancellata; dopo la seconda il numero di righe di audit è invariato e nessuna contiene id, username o email di U"
+      then: "la prima risposta è 403 INVALID_PASSWORD e nessuna riga viene cancellata; dopo la seconda il numero di righe di audit aumenta di 1 (la riga account.delete, emendamento di T-2001 del 2026-10-09) e nessuna contiene id, username o email di U"
 
   target_tests:
     - file: "tests/integration/gdpr.test.ts"
