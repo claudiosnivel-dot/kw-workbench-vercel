@@ -70,6 +70,9 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
             <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(project.id, { view: "all" })}>
               {t("projects.detail.projectResults")}
             </Link>
+            <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/strategy`}>
+              {t("strategy.ui.title")}
+            </Link>
             <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/settings`}>
               {t("projects.links.settings")}
             </Link>

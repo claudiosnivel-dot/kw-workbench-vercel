@@ -77,6 +77,7 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
   });
 
   // covers: AC-401-2
+  // covers: AC-1907-4
   it("npm audit non ha critical e ogni advisory high è nell'allowlist con un task di chiusura", () => {
     expect(audit.error).toBeUndefined();
     const report = JSON.parse(audit.stdout) as AuditOutput;
@@ -94,6 +95,16 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
       .filter(([ghsa, packages]) => !packages.has(allowed.get(ghsa) ?? ""))
       .map(([ghsa, packages]) => `${ghsa} (${[...packages].join(", ")})`);
     expect(unlisted).toEqual([]);
+  });
+
+  // covers: AC-1907-4
+  it("@react-pdf/renderer è nel lockfile alla versione esatta dichiarata in package.json (D-34)", () => {
+    const pkg = readJson<{ dependencies: Record<string, string> }>("package.json");
+    const lock = readJson<{ packages: Record<string, { version?: string }> }>("package-lock.json");
+    const declared = pkg.dependencies["@react-pdf/renderer"];
+
+    expect(declared).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(lock.packages["node_modules/@react-pdf/renderer"]?.version).toBe(declared);
   });
 
   // Ogni voce scade con il task che la chiude: una voce non più riportata va tolta.

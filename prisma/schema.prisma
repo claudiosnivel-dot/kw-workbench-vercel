@@ -210,6 +210,8 @@ model User {
   onboarding_idempotency_keys OnboardingIdempotencyKey[]
   email_verification_tokens   EmailVerificationToken[]
   password_reset_tokens       PasswordResetToken[]
+  /// Strategie hub and spoke generate dall'utente (T-1903): alla sua eliminazione restano, senza autore.
+  created_strategies          Strategy[]                 @relation("StrategyCreator")
 
   // Indice unico parziale users_single_root_admin_idx (migrazione 0005): un solo root admin. Prisma non esprime
   // gli indici parziali: c'è solo nella migrazione e tests/integration/schema-indexes.test.ts ne verifica la presenza.
@@ -304,6 +306,7 @@ model Project {
   metrics_provider_requests   MetricsProviderRequest[]
   onboarding_active_for_users UserOnboardingProgress[]   @relation("OnboardingActiveProject")
   onboarding_idempotency_keys OnboardingIdempotencyKey[]
+  strategies                  Strategy[]
 
   @@index([workspace_id])
   @@index([default_subproject_id])
@@ -749,4 +752,116 @@ model UsageCounter {
 
   @@unique([workspace_id, metric, period_start])
   @@map("usage_counters")
+}
+
+/// Modalità di generazione della strategia (T-1901, D-33): AUTO con perimetro e regole predefiniti, EXPERT con quelli
+/// scelti dall'utente.
+enum StrategyMode {
+  AUTO
+  EXPERT
+}
+
+/// Pagina del piano (T-1901): HUB è la pagina pilastro, SPOKE l'articolo satellite di un hub.
+enum StrategyPageKind {
+  HUB
+  SPOKE
+}
+
+/// Ruolo della keyword nella sua pagina (T-1901): una sola MAIN per pagina (indice unico parziale nella migrazione).
+enum StrategyKeywordRole {
+  MAIN
+  SECONDARY
+}
+
+/// Tipo di contenuto suggerito per la pagina (T-1901): guida, lista, confronto, categoria di prodotto, FAQ, locale, tool.
+enum StrategyContentType {
+  guide
+  list
+  comparison
+  product_category
+  faq
+  local
+  tool
+}
+
+/// Strategia hub and spoke di un progetto (T-1901, D-33): fotografia delle keyword al momento della generazione, le
+/// estrazioni successive non la cambiano. version cresce a ogni modifica e respinge le modifiche concorrenti (T-1904).
+model Strategy {
+  id                 String            @id @default(cuid())
+  project_id         String
+  name               String            @db.VarChar(120)
+  created_by_user_id String?
+  mode               StrategyMode
+  /// Perimetro e regole usati per generarla (lib/modules/strategy/rules.ts): li riporta l'appendice del PDF.
+  settings           Json
+  language           String
+  considered_count   Int
+  assigned_count     Int
+  unassigned_count   Int
+  /// true se il perimetro superava 5000 keyword e sono state prese le 5000 a priorità più alta (D-35).
+  truncated          Boolean           @default(false)
+  version            Int               @default(0)
+  created_at         DateTime          @default(now())
+  updated_at         DateTime          @updatedAt
+  project            Project           @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  created_by         User?             @relation("StrategyCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
+  pages              StrategyPage[]
+  keywords           StrategyKeyword[]
+
+  @@index([project_id, created_at])
+  @@map("strategies")
+}
+
+/// Pagina del piano (T-1901, T-1902): titoli suggeriti dai modelli finché l'utente non li riscrive (h1_edited, h2_edited).
+model StrategyPage {
+  id            String              @id @default(cuid())
+  strategy_id   String
+  kind          StrategyPageKind
+  /// Hub dello spoke; null per gli hub.
+  hub_page_id   String?
+  h1            String              @db.VarChar(200)
+  h2            String[]
+  h1_edited     Boolean             @default(false)
+  h2_edited     Boolean             @default(false)
+  content_type  StrategyContentType
+  priority      Int
+  /// Ordine di lavoro: gli hub in ordine di position, ciascuno seguito dai propri spoke in ordine di position.
+  position      Int
+  reason_code   String
+  reason_params Json
+  strategy      Strategy            @relation(fields: [strategy_id], references: [id], onDelete: Cascade)
+  hub           StrategyPage?       @relation("HubSpokes", fields: [hub_page_id], references: [id], onDelete: SetNull)
+  spokes        StrategyPage[]      @relation("HubSpokes")
+  keywords      StrategyKeyword[]
+
+  @@index([strategy_id, position])
+  @@index([hub_page_id])
+  @@map("strategy_pages")
+}
+
+/// Keyword fotografata nella strategia (T-1901): page_id null per le non assegnate; source_keyword_id è solo
+/// informativo, senza chiave esterna, perché la strategia sopravvive al re-run che rimuove le keyword (D-19).
+model StrategyKeyword {
+  id                String              @id @default(cuid())
+  strategy_id       String
+  page_id           String?
+  role              StrategyKeywordRole
+  keyword           String
+  canonical_keyword String
+  volume            Int?
+  score             Float?
+  score_source      ScoreSource
+  search_intent     SearchIntent
+  keyword_type      KeywordType
+  is_question       Boolean
+  is_local          Boolean
+  source_keyword_id String?
+  strategy          Strategy            @relation(fields: [strategy_id], references: [id], onDelete: Cascade)
+  page              StrategyPage?       @relation(fields: [page_id], references: [id], onDelete: SetNull)
+
+  // Indice unico parziale strategy_keywords_page_main_key (migrazione 0039): una sola keyword MAIN per pagina. Prisma
+  // non esprime gli indici parziali: c'è solo nella migrazione e tests/integration/strategy-schema.test.ts lo prova.
+  @@unique([strategy_id, canonical_keyword])
+  @@index([page_id])
+  @@map("strategy_keywords")
 }

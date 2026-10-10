@@ -459,7 +459,8 @@
       "exporting": "Exporting...",
       "exportNow": "Export now",
       "completed": "Export completed: {rows} keywords in {sheets} sheets.",
-      "openFile": "Open Google Sheets file"
+      "openFile": "Open Google Sheets file",
+      "strategyCompleted": "Export completed: {rows, plural, one {# page} other {# pages}} in the “strategia” sheet."
     },
     "planner": {
       "title": "Keyword Planner volumes",
@@ -567,7 +568,11 @@
     "ROOT_ADMIN": "The root admin cannot delete their own account.",
     "ACTIVE_SUBSCRIPTION": "First cancel the subscriptions of the workspaces you are the only owner of, from the Billing page.",
     "OWNERSHIP_TRANSFER_REQUIRED": "First transfer the ownership of the workspaces shared with other members.",
-    "CONTACT_UNAVAILABLE": "The contact form is not available right now."
+    "CONTACT_UNAVAILABLE": "The contact form is not available right now.",
+    "STRATEGY_NO_KEYWORDS": "No keywords in the chosen scope: widen the scope or run an extraction.",
+    "STRATEGY_LIMIT": "The project already has 20 strategies: delete one before generating another.",
+    "STRATEGY_NOT_FOUND": "Strategy not found.",
+    "STRATEGY_CONFLICT": "The strategy was changed in the meantime: reload the plan and try again."
   },
   "errorPages": {
     "error": {
@@ -1287,5 +1292,203 @@
     "submit": "Send",
     "submitting": "Sending...",
     "sent": "Message sent."
+  },
+  "strategy": {
+    "templates": {
+      "guide": {
+        "v1": "{keyword}: the complete guide ({year})",
+        "v2": "{keyword}: everything you need to know",
+        "v3": "{keyword} explained: a practical guide"
+      },
+      "list": {
+        "v1": "{keyword}: top picks for {year}",
+        "v2": "{keyword}: our ranking for {year}"
+      },
+      "comparison": {
+        "v1": "{keyword}: differences and how to choose",
+        "v2": "{keyword}: which one to pick in {year}"
+      },
+      "product_category": {
+        "v1": "{keyword}: models and prices ({year})",
+        "v2": "{keyword}: the {year} range"
+      },
+      "faq": {
+        "v1": "{keyword}: questions and answers",
+        "v2": "{keyword}: answers to the most common questions"
+      },
+      "local": {
+        "v1": "{keyword}: where to go and what to know",
+        "v2": "{keyword}: local options and tips"
+      },
+      "tool": {
+        "v1": "{keyword}: free online tool",
+        "v2": "{keyword}: how it works",
+        "v3": "{keyword}: instructions and tips"
+      }
+    },
+    "fixedH2": {
+      "faq": "Frequently asked questions",
+      "methodology": "How we chose"
+    },
+    "reasons": {
+      "HUB_SEED": "Pillar page for the seed “{seed}”: it gathers the searches that contain all of its words.",
+      "HUB_TERM": "Pillar page on “{term}”, the most searched topic among the keywords that match no seed.",
+      "SPOKE_MODIFIER": "Cluster article for {category, select, comparison {comparison and review} transactional {price and purchase} informational {informational} tool {online tool} local {local} other {same-modifier}} searches on the hub topic.",
+      "SPOKE_WORD": "Cluster article for the searches that add “{word}” to the hub topic.",
+      "SPOKE_QUESTION": "A question with {volume, number} monthly searches: it deserves its own article.",
+      "MERGED_INTO_PILLAR": "{count, plural, one {# keyword with too few searches for a spoke is on the pillar page.} other {# keywords with too few searches for a spoke are on the pillar page.}}",
+      "UNASSIGNED": "These keywords do not contain all the words of a seed and share no terms with other keywords: no hub gathers them."
+    },
+    "ui": {
+      "defaultName": "{mode, select, AUTO {Automatic} other {Expert}} strategy of {date, date, short}",
+      "title": "Hub and spoke strategy",
+      "intro": "Organise the project keywords into pillar pages (hubs) and cluster articles (spokes), with suggested H1 and H2 headings. The plan is computed from the keywords already extracted, with no paid services: it is a starting point to review.",
+      "generate": "Generate strategy",
+      "generating": "Generating...",
+      "nameLabel": "Strategy name (optional)",
+      "advanced": "Advanced settings",
+      "advancedHint": "With the advanced settings you choose scope and rules (expert mode). Without them, the strategy uses the whole project, the approved and pending keywords and the default rules.",
+      "scope": "Scope",
+      "scopeProject": "Whole project",
+      "reviewStatus": "Keywords to include",
+      "reviewApprovedPending": "Approved and pending",
+      "reviewApproved": "Approved only",
+      "minVolume": "Minimum volume",
+      "intent": "Intent",
+      "intentAny": "Any intent",
+      "keywordType": "Keyword type",
+      "keywordTypeAny": "Any type",
+      "rules": "Grouping rules",
+      "minKeywordsPerSpoke": "Minimum keywords per spoke",
+      "minSpokeVolume": "Minimum searches per spoke",
+      "maxSpokesPerHub": "Maximum spokes per hub",
+      "questionSpokeVolume": "Minimum searches for a question to become a spoke",
+      "questionsAs": "Questions below the threshold",
+      "questionsAsFaq": "In the FAQ of the closest page",
+      "questionsAsSpokes": "Always as spokes",
+      "listTitle": "Generated strategies",
+      "empty": "No strategies yet: generate one with the button above.",
+      "columns": {
+        "name": "Name",
+        "mode": "Mode",
+        "created": "Created",
+        "keywords": "Keywords",
+        "unassigned": "Unassigned"
+      },
+      "mode": {
+        "AUTO": "Automatic",
+        "EXPERT": "Expert"
+      },
+      "backToList": "All strategies",
+      "meta": "{mode} mode · created on {date} · heading language {language}",
+      "stats": {
+        "hubs": "Hubs",
+        "pages": "Pages",
+        "covered": "Keywords covered",
+        "volume": "Total volume",
+        "unassigned": "Unassigned"
+      },
+      "truncated": "The scope had more than 5000 keywords: the strategy uses the 5000 with the highest priority.",
+      "hubHeading": "Hub {number}: {title}",
+      "spokesEmpty": "This hub has no spokes.",
+      "spokeColumns": {
+        "h1": "H1",
+        "mainKeyword": "Main keyword",
+        "contentType": "Content type",
+        "priority": "Priority"
+      },
+      "kind": {
+        "HUB": "Pillar page",
+        "SPOKE": "Spoke"
+      },
+      "contentTypes": {
+        "guide": "Guide",
+        "list": "List",
+        "comparison": "Comparison",
+        "product_category": "Product category",
+        "faq": "FAQ",
+        "local": "Local page",
+        "tool": "Tool"
+      },
+      "priority": "Priority {value, number}",
+      "suggested": "suggested",
+      "noH2": "No H2",
+      "keywordsTitle": "Keywords",
+      "mainBadge": "main",
+      "volume": "{volume, number} searches",
+      "noVolume": "volume not available",
+      "reasonTitle": "Why this page",
+      "faqCount": "{count, plural, one {# question is in the page FAQ.} other {# questions are in the page FAQ.}}",
+      "linksTitle": "Planned internal links",
+      "noLinks": "No internal links planned.",
+      "selectKeyword": "Select {keyword}",
+      "moveTo": "Move the selected keywords to",
+      "moveToUnassigned": "Unassigned",
+      "move": "Move",
+      "editTitles": "Edit headings",
+      "save": "Save",
+      "cancel": "Cancel",
+      "h1Field": "H1",
+      "h2Field": "H2 (one per line, up to 30)",
+      "contentTypeField": "Content type",
+      "promote": "Promote to hub",
+      "mergeInto": "Merge this page into",
+      "merge": "Merge",
+      "deletePage": "Delete page",
+      "confirmDeletePage": "Confirm deletion",
+      "deletePageHint": "The page keywords will move to the unassigned ones.",
+      "working": "Updating...",
+      "unassignedTitle": "Unassigned",
+      "unassignedCount": "{count, plural, one {# unassigned keyword} other {# unassigned keywords}}",
+      "unassignedEmpty": "Every keyword is on a page.",
+      "deleteStrategy": "Delete strategy",
+      "h2Title": "H2",
+      "exportTitle": "Export the plan",
+      "exportCsv": "CSV",
+      "exportXlsx": "Excel",
+      "exportPdf": "PDF to present",
+      "exportHint": "One row per page in work order, with H1, H2, keywords and internal links."
+    },
+    "pdf": {
+      "coverTitle": "Hub and spoke strategy",
+      "coverProject": "Project: {name}",
+      "coverStrategy": "Strategy: {name}",
+      "coverDate": "Date: {date}",
+      "coverWorkspace": "Workspace: {name}",
+      "explainTitle": "What a hub and spoke strategy is",
+      "explainP1": "A hub and spoke strategy organises the content of a website around a few main topics. Each topic has a pillar page (hub) that covers it thoroughly and a set of cluster articles (spokes) that explore one aspect in depth: a comparison, prices, a frequent question, a variant.",
+      "explainP2": "The spokes link back to their pillar page and the pillar page links to its spokes. This network of internal links helps search engines understand that the site covers the topic in depth and helps readers find the answer they are looking for.",
+      "explainP3": "The plan in this document comes from the project keywords: similar searches are grouped on the same page and every page has a suggested H1 and a suggested H2 outline. Headings and groupings are a starting point to adapt to the tone and the offer of the site.",
+      "summaryTitle": "Summary",
+      "summaryHubs": "Hubs: {count, number}",
+      "summaryPages": "Pages to write: {count, number}",
+      "summaryKeywords": "Keywords covered: {count, number}",
+      "summaryVolume": "Monthly searches covered: {count, number}",
+      "summaryUnassigned": "Unassigned keywords: {count, number}",
+      "summaryTruncated": "The scope had more than 5000 keywords: the plan uses the 5000 with the highest priority.",
+      "workOrderTitle": "Work order",
+      "workOrderIntro": "The pages in the recommended order: each pillar page, then its spokes from the most important.",
+      "workOrderItem": "{number}. {kind}: {title}",
+      "hubTitle": "Hub {number}: {title}",
+      "mainKeyword": "Main keyword: {keyword}",
+      "secondaryKeywords": "Secondary keywords: {keywords}",
+      "contentType": "Content type: {type}",
+      "appendixTitle": "Appendix",
+      "noUnassigned": "No unassigned keywords.",
+      "criteriaTitle": "Strategy criteria",
+      "criteriaMode": "Mode: {mode}",
+      "criteriaScope": "Scope: {scope}",
+      "criteriaReview": "Keywords included: {value}",
+      "criteriaMinVolume": "Minimum volume: {value}",
+      "criteriaIntent": "Intent: {value}",
+      "criteriaKeywordType": "Keyword type: {value}",
+      "criteriaNone": "no filter",
+      "criteriaRules": "Rules: a spoke needs at least {minKeywords} keywords or {minVolume} monthly searches; at most {maxSpokes} spokes per hub; a question becomes a spoke from {questionVolume} monthly searches ({questionsAs, select, spokes {every question is a spoke} other {the others go to the FAQ of the closest page}}).",
+      "criteriaLanguage": "Heading language: {language}",
+      "footer": "{app} · page {page} of {pages}"
+    },
+    "delete": {
+      "confirm": "Delete the strategy “{name}”? This cannot be undone."
+    }
   }
 }

@@ -103,6 +103,13 @@ const I18N_MIGRATED_FILES = [
   "components/past-due-banner.tsx",
   "components/plan-limit-notice.tsx",
   "components/admin-launch-card.tsx",
+  // T-1905: pagine e componenti della strategia hub and spoke nascono già con il catalogo.
+  "app/projects/[id]/strategy/page.tsx",
+  "app/projects/[id]/strategy/[strategyId]/page.tsx",
+  "components/strategy/strategy-settings.tsx",
+  "components/strategy/strategy-page-card.tsx",
+  "components/strategy/strategy-unassigned.tsx",
+  "components/strategy/keyword-mover.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

@@ -51,7 +51,9 @@ type GoogleSheetsExportButtonProps = {
   subprojectId?: string | null;
   connected: boolean;
   defaultFileName: string;
-  filters: Record<string, string | string[] | undefined>;
+  filters?: Record<string, string | string[] | undefined>;
+  /** Rotta di un export senza scope, che riceve solo il nome del file (strategia, T-1906). */
+  endpoint?: string;
 };
 
 export function GoogleSheetsExportButton({
@@ -59,7 +61,8 @@ export function GoogleSheetsExportButton({
   subprojectId,
   connected,
   defaultFileName,
-  filters,
+  filters = {},
+  endpoint,
 }: GoogleSheetsExportButtonProps) {
   const t = useTranslations("export");
   const tErrors = useTranslations("errors");
@@ -137,15 +140,14 @@ export function GoogleSheetsExportButton({
     setResult(null);
 
     try {
-      const response = await fetch(`/api/projects/${projectId}/export/google-sheets`, {
+      const response = await fetch(endpoint ?? `/api/projects/${projectId}/export/google-sheets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: trimmedFileName,
-          scope,
-          subprojectId: subprojectId ?? undefined,
-          filters,
-        }),
+        body: JSON.stringify(
+          endpoint
+            ? { fileName: trimmedFileName }
+            : { fileName: trimmedFileName, scope, subprojectId: subprojectId ?? undefined, filters }
+        ),
       });
 
       const payload = await readApiResponse<ExportModalResponse>(response, tErrors);
@@ -210,25 +212,27 @@ export function GoogleSheetsExportButton({
                       />
                     </div>
 
-                    <div>
-                      <label className="label" htmlFor="google-sheets-scope">
-                        {t("sheets.scope")}
-                      </label>
-                      <select
-                        id="google-sheets-scope"
-                        className="select"
-                        value={scope}
-                        onChange={(event) => setScope(event.target.value as ExportScope)}
-                      >
-                        {EXPORT_SCOPE_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {t(`scopes.${option}`)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {!endpoint && (
+                      <div>
+                        <label className="label" htmlFor="google-sheets-scope">
+                          {t("sheets.scope")}
+                        </label>
+                        <select
+                          id="google-sheets-scope"
+                          className="select"
+                          value={scope}
+                          onChange={(event) => setScope(event.target.value as ExportScope)}
+                        >
+                          {EXPORT_SCOPE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {t(`scopes.${option}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
-                    <p className="text-xs text-slate-500">{t("sheets.hint")}</p>
+                    {!endpoint && <p className="text-xs text-slate-500">{t("sheets.hint")}</p>}
 
                     <button className="btn-primary w-full sm:w-auto" type="button" onClick={runExport} disabled={loading}>
                       {loading ? t("sheets.exporting") : t("sheets.exportNow")}
@@ -236,7 +240,11 @@ export function GoogleSheetsExportButton({
 
                     {result?.spreadsheetUrl && (
                       <div className="space-y-2 rounded-xl border border-emerald-400/40 bg-emerald-500/15 p-3 text-sm text-emerald-200">
-                        <p>{t("sheets.completed", { rows: result.exportedRows, sheets: result.sheetCount })}</p>
+                        <p>
+                          {endpoint
+                            ? t("sheets.strategyCompleted", { rows: result.exportedRows })
+                            : t("sheets.completed", { rows: result.exportedRows, sheets: result.sheetCount })}
+                        </p>
                         <a
                           className="btn-secondary w-full text-center sm:w-auto"
                           href={result.spreadsheetUrl}
