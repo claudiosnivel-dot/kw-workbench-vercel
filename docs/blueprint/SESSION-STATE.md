@@ -8,8 +8,8 @@
 |---|---|
 | **Progetto** | Seo God Mode (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
-| **Ultimo aggiornamento** | 2026-10-10 |
-| **Sessione corrente** | 2026-10-10 (ventunesima) — BUILD di `adjustments` (20): emendamento e note di costruzione del modulo 20 (`6405a28`), T-2001…T-2008 (`fc2de5d`), checkpoint **VERDE** alla prima esecuzione; CI verde, PR #50 mergiata (`dd970e0`), deploy di produzione verde con la migrazione 0040. Baseline visive invariate (la voce Fatturazione resta entro la tolleranza del confronto dopo la correzione della barra), quindi nessun gate umano. Blueprint completo: nessun macrotask resta |
+| **Ultimo aggiornamento** | 2026-10-11 |
+| **Sessione corrente** | 2026-10-11 — scelte aperte dei macrotask 19 e 20 chiuse dall'utente (D-37) e nuovo macrotask 21 `refinements` (T-2101…T-2104) da costruire |
 
 ---
 
@@ -37,11 +37,12 @@
 | `marketing-legal` (18) | chiuso | VERDE (2026-10-08, prima esecuzione) | T-1801…T-1805 chiusi; modulo emendato a D-28 emendata (prefisso `/it` e `/en`); testi legali segnaposto (D-15) e prezzi in attesa (D-14, D-32); baseline visive di dashboard e risultati approvate dall'utente; PR #44 mergiata su `master` (`5ea8d96`), CI verde, deploy di produzione verde con la migrazione 0038 |
 | `hub-spoke` (19) | chiuso | VERDE (2026-10-10; una prima esecuzione fermata a mano dopo circa un minuto, senza esito) | T-1901…T-1907 chiusi; note di costruzione con le scelte da confermare (modulo 19, Self-check); PR #48 mergiata su `master` (`c4f874e`), CI verde, deploy di produzione verde con la migrazione 0039; baseline visive invariate |
 | `adjustments` (20) | chiuso | VERDE (2026-10-10, prima esecuzione) | T-2001…T-2008 chiusi; AC-2003-1 e AC-2004-1 emendati (PLAN_LIMIT è 402) e AC-1804-4 emendato da T-2001; note di costruzione con le scelte da confermare (modulo 20, Self-check); PR #50 mergiata su `master` (`dd970e0`), CI verde, deploy di produzione verde con la migrazione 0040; baseline visive invariate |
+| `refinements` (21) | todo | — | Aggiunto il 2026-10-11 (D-37): estrazioni del root admin senza limiti d'uso, export della strategia e dei risultati nella lingua dell'utente, pagina pilastro fino a 20 H2 |
 
 ## 2. Macrotask corrente
 
 - **Ultimo chiuso**: `adjustments` (20), checkpoint VERDE, mergiato (`dd970e0`) e in produzione: cancellazione dell'account con tentativi limitati e riga anonima nel registro, annullamento gratuito entro 60 secondi, root admin sempre libero su DataForSEO, progetto dell'onboarding fuori da maxProjects, voce Fatturazione nella barra, trasferimento del workspace personale all'eliminazione dell'utente, uscita dal workspace personale, creazione di workspace di squadra; migrazione 0040.
-- **Prossimo**: nessun macrotask nel piano (01-20 chiusi). Restano le decisioni e le azioni esterne dell'utente (§6); un nuovo lavoro parte da un nuovo modulo del blueprint.
+- **Prossimo**: `refinements` (21), T-2101…T-2104 (D-37), dipendenze 08, 13, 17, 19, 20 tutte chiuse.
 - **Criteri/test di riferimento**: `docs/blueprint/20-adjustments.md` (ultimo modulo costruito).
 
 ## 3. Stato git
@@ -104,6 +105,10 @@
 - **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5, jsdom 30 e, da T-407, del progetto `24.x`: funziona con avviso; riferimento la CI su Node 24 da `.nvmrc`). E2E e Vitest su Linux con Node 24: container `mcr.microsoft.com/playwright:v1.63.0-noble` nella rete `kw-workbench-vercel_default`, copia del repo senza `node_modules`, `npm ci`, un proxy TCP in Node da `localhost:54329` a `postgres-test:5432` (la guardia ammette solo host locali), `CI=true`. Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
+
+### 2026-10-11 — scelte aperte dei macrotask 19 e 20 chiuse dall'utente e macrotask 21
+
+- **Domande e risposte** (sei giri di domande): confermate le scelte del macrotask 20 (tentativi sulla cancellazione, rimborso all'annullamento, progetto dell'onboarding, erede, nuovo workspace personale, limite di 10 workspace, barra) e quelle del 19 (raggruppamento, nucleo degli hub, principale della pilastro, PDF, eliminazione della strategia e le scelte minori). Cambiamenti chiesti, raccolti nel nuovo modulo `21-refinements.md` (T-2101…T-2104): estrazioni del root admin senza limiti del piano né limiti tecnici d'uso (restano un job attivo per sezione e i tetti di spesa DataForSEO), export della strategia e dei risultati nella lingua dell'utente (JSON e Keyword Planner invariati, booleani nativi in XLSX e Google Sheets), pagina pilastro fino a 20 H2. Conferma anticipata dell'aggiornamento delle sole asserzioni su intestazioni e foglio nella caratterizzazione dell'export. Ledger D-37, emendamenti di D-27 e D-30.
 
 ### Sessione 2026-10-10 (ventunesima) — BUILD di `adjustments` (20), chiuso
 
@@ -603,10 +608,10 @@
 
 ## 6. Prossimi passi
 
-- **Prossimo macrotask**: nessuno, il blueprint 01-20 è costruito e in produzione. Un nuovo lavoro (per esempio la revisione dei testi della landing e dell'immagine Open Graph) parte da un nuovo modulo.
-- **Scelte del macrotask 20 da confermare** (Self-check del modulo 20): 5 tentativi in 15 minuti sulla cancellazione, contati anche quando la password è giusta e sempre attivi; quota restituita quando il job diventa canceled, anche se un running si ferma dopo i 60 secondi, mai se si completa; root admin con gli altri limiti del piano del suo workspace; un solo progetto dell'onboarding fuori dal limite per workspace; posizione della voce Fatturazione e barra compatta (email troncata a 1280 px); erede del workspace personale per ruolo e anzianità; nuovo workspace personale vuoto con il nome mostrato; limite di 10 workspace creati e ancora esistenti per utente, solo con il lancio attivo.
+- **Prossimo macrotask**: `refinements` (21), T-2101…T-2104 (D-37). Nessuna baseline visiva cambia; la caratterizzazione dell'export cambia solo nelle intestazioni e nel nome del foglio, con la conferma anticipata dell'utente (ogni altra asserzione che cambia ferma la sessione). Testi della landing e immagine Open Graph da rivedere insieme in una sessione a parte.
+- **Scelte del macrotask 20**: confermate dall'utente il 2026-10-11 (D-37), tranne il root admin, che nelle proprie estrazioni non avrà alcun limite d'uso (T-2101).
 - **Utente (facoltativo)**: guardare la barra con la voce Fatturazione (il modulo prevedeva un gate sulla baseline della dashboard; il confronto è rimasto entro la tolleranza, quindi la baseline non è cambiata) e provare dal browser Crea workspace ed Esci dal workspace personale.
-- **Scelte del macrotask 19 da confermare** (note di costruzione del modulo 19): spoke per categoria di modificatore e non per parola; nucleo degli hub dai termini preso dalla keyword più corta e più cercata; principale della pilastro tra le varianti del nucleo; spoke di domanda di tipo faq con H1 uguale alla domanda; tabella dei tipi di contenuto; al massimo 12 H2 anche per la pilastro; limiti delle regole esperte (1-20, 0-1.000.000, 1-30, 0-1.000.000); spoke di un hub unito che passano all'hub che lo assorbe; eliminazione della strategia dall'interfaccia; PDF con i font standard (niente alfabeti non latini) e logo solo png o jpeg; colonne dell'export con nomi tecnici in inglese.
+- **Scelte del macrotask 19**: confermate dall'utente il 2026-10-11 (D-37), tranne due cambiamenti del macrotask 21: export nella lingua dell'utente (T-2102, insieme all'export dei risultati, T-2103) e pagina pilastro fino a 20 H2 (T-2104).
 - **Utente (facoltativo)**: generare una strategia reale in produzione e scaricare il PDF, per vederne l'impaginazione (l'agente ne ha verificato solo il testo).
 - **Scelte del macrotask 18**: confermate dall'utente il 2026-10-09 (D-36), tranne la cancellazione dell'account, che riceve tentativi limitati e una riga anonima nel registro (T-2001). Testi della landing e immagine Open Graph da rivedere insieme in una prossima sessione.
 - **Utente, per la cookie policy (D-15)**: l'app imposta solo cookie tecnici (`lib/legal/cookie-inventory.ts`: `kwb_session`, `kwb_workspace`, `kwb_locale`, `kwb_google_sheets_oauth_state`); vanno confermati i cookie di terze parti di Paddle.js (checkout) e Cloudflare Turnstile, non osservati in un browser. I testi vanno in `content/legal/<it|en>/<privacy|terms|cookies>.md` con `status` diverso da `placeholder`, `version` e `last_updated`; la `version` dei termini deve coincidere con `LEGAL_TERMS_VERSION` (cambiarla chiede a tutti di riaccettare) e `npm run legal:check` deve uscire con 0 prima di attivare il lancio.
