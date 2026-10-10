@@ -12,7 +12,7 @@ export const POST = withUserRoute(async (request: Request, user, { id, subprojec
   requireVerifiedEmail(user);
   const subproject = await requireSectionAccess(user, id, subprojectId, "extraction.run", { id: true, project_id: true });
 
-  const { job, created } = await startExtractionJob(subproject.project_id, subproject.id, subproject.project.workspace_id);
+  const { job, created } = await startExtractionJob(subproject.project_id, subproject.id, subproject.project.workspace_id, user);
   return startedJobResponse(job, created, subproject.id);
 });
 

@@ -1,16 +1,20 @@
 // Gate di T-1605 (AC-1605-1…5): diritti del piano applicati lato server, 402 PLAN_LIMIT, nessun limite superato da
 // richieste concorrenti, metriche con licenza solo con il diritto del piano.
-import { randomBytes } from "node:crypto";
+// Gate di T-2003 (AC-2003-1): il root admin usa sempre DATAFORSEO; gate di T-2004 (AC-2004-1): il progetto
+// dell'onboarding non conta nel limite dei progetti.
+import { randomBytes, randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as exportSheets } from "@/app/api/projects/[id]/export/google-sheets/route";
 import { POST as runSection } from "@/app/api/projects/[id]/subprojects/[subprojectId]/run/route";
 import { PATCH as patchSection } from "@/app/api/projects/[id]/subprojects/[subprojectId]/route";
 import { POST as createProject } from "@/app/api/projects/route";
+import { POST as createOnboardingProject } from "@/app/api/onboarding/project/route";
 import { POST as createInvite } from "@/app/api/workspaces/[workspaceId]/invites/route";
 import { setPlansForTesting } from "@/lib/billing/plans";
 import { resetEnvForTests } from "@/lib/env";
 import { runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
+import { createUserWithSession } from "../helpers/auth";
 import { billingTeam } from "../helpers/billing-team";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
@@ -248,5 +252,80 @@ describe("funzioni del piano", () => {
     });
 
     expect(response.status).toBe(201);
+  });
+});
+
+describe("rifiniture del macrotask 20 (D-36)", () => {
+  // covers: AC-2003-1
+  it("con il lancio attivo il root admin su un piano free usa DATAFORSEO; il MEMBER di un workspace free riceve 402 PLAN_LIMIT", async () => {
+    configureTestBilling({ licensedMetrics: false, licensedMetricsKeywordsPerMonth: 0 });
+    vi.stubEnv("DATAFORSEO_LOGIN", `login-${randomBytes(6).toString("hex")}`);
+    vi.stubEnv("DATAFORSEO_PASSWORD", randomBytes(12).toString("hex"));
+    vi.stubEnv("METRICS_MONTHLY_BUDGET_USD", "100");
+    vi.stubEnv("METRICS_RUN_BUDGET_USD", "10");
+    const enriched: string[] = [];
+    vi.stubGlobal("fetch", async (input: string | URL | Request, init?: RequestInit) => {
+      if (!String(input).includes("api.dataforseo.com")) {
+        return new Response("{}", { status: 500 });
+      }
+      const [task] = JSON.parse(String(init?.body)) as { keywords: string[] }[];
+      enriched.push(...task.keywords);
+      const result = task.keywords.map((keyword) => ({ keyword, spell: null, search_volume: 70 }));
+      return Response.json({ status_code: 20000, cost: 0.09, tasks: [{ id: "task-2003", status_code: 20000, cost: 0.09, result }] });
+    });
+    const root = await createUserWithSession({ displayName: "t2003-root", role: "ADMIN", isRootAdmin: true });
+    const { member, workspaceId } = await billingTeam("t2003");
+    const rootProject = await projectIn(root.workspaceId, "Root");
+    const rootSection = await sectionWithSeeds(rootProject.id, "Generale", ["zaini"]);
+    const memberProject = await projectIn(workspaceId, "Membro");
+    const memberSection = await sectionWithSeeds(memberProject.id, "Generale", ["zaini"]);
+    const chooseDataForSeo = (cookie: string, projectId: string, sectionId: string) =>
+      callRoute(patchSection, {
+        method: "PATCH",
+        url: `/api/projects/${projectId}/subprojects/${sectionId}`,
+        body: { metrics_provider_override: "DATAFORSEO" },
+        cookie,
+        params: { id: projectId, subprojectId: sectionId },
+      });
+
+    const rootChoice = await chooseDataForSeo(root.cookie, rootProject.id, rootSection.id);
+    const rootRun = await callRoute(runSection, {
+      method: "POST",
+      url: `/api/projects/${rootProject.id}/subprojects/${rootSection.id}/run`,
+      cookie: root.cookie,
+      params: { id: rootProject.id, subprojectId: rootSection.id },
+    });
+    const rootJob = await runJobById(((await rootRun.json()) as { data: { jobId: string } }).data.jobId);
+    const memberChoice = await chooseDataForSeo(member.cookie, memberProject.id, memberSection.id);
+
+    expect(rootChoice.status).toBe(200);
+    expect(rootJob?.status).toBe("completed");
+    expect((rootJob?.result as { metricsNotice?: string }).metricsNotice).toBeUndefined();
+    expect(enriched).toHaveLength(4);
+    expect(await prisma.keywordCandidate.count({ where: { subproject_id: rootSection.id, metrics_provider: "DATAFORSEO" } })).toBe(4);
+    expect(memberChoice.status).toBe(402);
+    expect((await memberChoice.json()) as ErrorBody).toMatchObject({ code: "PLAN_LIMIT", limit: "licensedMetrics" });
+  });
+
+  // covers: AC-2004-1
+  it("con maxProjects 1 e il progetto dell'onboarding il primo POST /api/projects è 201 e il secondo 402 PLAN_LIMIT", async () => {
+    configureTestBilling({ maxProjects: 1 });
+    const user = await createUserWithSession({ displayName: "t2004-user" });
+    const onboarding = await callRoute(createOnboardingProject, {
+      method: "POST",
+      url: "/api/onboarding/project",
+      body: { name: "Guidato", idempotencyKey: randomUUID() },
+      cookie: user.cookie,
+    });
+    const create = (name: string) => callRoute(createProject, { method: "POST", url: "/api/projects", body: { name }, cookie: user.cookie });
+
+    const first = await create("Primo");
+    const second = await create("Secondo");
+
+    expect(onboarding.status).toBe(201);
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(402);
+    expect((await second.json()) as ErrorBody).toMatchObject({ code: "PLAN_LIMIT", limit: "maxProjects", max: 1 });
+    expect(await prisma.project.count({ where: { workspace_id: user.workspaceId } })).toBe(2);
   });
 });

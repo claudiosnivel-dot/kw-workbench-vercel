@@ -49,7 +49,7 @@ export const POST = withUserRoute(async (request: Request, user, { id }: Project
     throw new SectionNotFoundError();
   }
 
-  const { job, created } = await startExtractionJob(project.id, targetSubproject.id, project.workspace_id);
+  const { job, created } = await startExtractionJob(project.id, targetSubproject.id, project.workspace_id, user);
   return startedJobResponse(job, created, targetSubproject.id);
 });
 

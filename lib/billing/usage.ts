@@ -141,6 +141,45 @@ export async function getUsageSummary(workspaceId: string, limits: QuotaLimits, 
 export type RefundOutcome = "refunded" | "cap_reached" | "no_reservation";
 
 /**
+ * Finestra dell'annullamento gratuito (D-27 emendata il 2026-10-09, T-2002): un'estrazione annullata entro 60 secondi
+ * dall'avvio (created_at del job) non consuma la quota. Costante di prodotto, non configurabile da env.
+ */
+export const FREE_CANCEL_WINDOW_MS = 60_000;
+
+/** true se l'annullamento chiesto in requestedAt cade nella finestra gratuita del job creato in createdAt. */
+export function isFreeCancel(createdAt: Date, requestedAt: Date): boolean {
+  return requestedAt.getTime() - createdAt.getTime() <= FREE_CANCEL_WINDOW_MS;
+}
+
+/**
+ * Restituzione dell'avvio riservato nella transazione che chiude il job: runs_day del giorno della riserva scende di 1,
+ * mai sotto 0, e il job (nello stato indicato) è segnato quota_refunded.
+ */
+async function returnRunReservation(
+  tx: Prisma.TransactionClient,
+  input: { jobId: string; reservation: RunReservation; status: "failed" | "canceled" }
+): Promise<void> {
+  await tx.usageCounter.updateMany({
+    where: {
+      workspace_id: input.reservation.workspaceId,
+      metric: "runs_day",
+      period_start: new Date(input.reservation.runsPeriodStart),
+      count: { gt: 0 },
+    },
+    data: { count: { decrement: 1 } },
+  });
+  await tx.job.updateMany({ where: { id: input.jobId, status: input.status }, data: { quota_refunded: true } });
+}
+
+/**
+ * Annullamento gratuito (T-2002): nella transazione che porta il job a canceled l'avvio torna al workspace come per un
+ * errore nostro, ma fuori dal tetto dei rimborsi automatici (run_refunds_month invariato, nessuna riga nel registro).
+ */
+export function releaseCanceledRun(tx: Prisma.TransactionClient, input: { jobId: string; reservation: RunReservation }): Promise<void> {
+  return returnRunReservation(tx, { ...input, status: "canceled" });
+}
+
+/**
  * Rimborso dell'avvio di un job fallito per errore nostro (T-1703, D-27 emendata), nella transazione che lo porta a
  * failed: entro il tetto mensile dei rimborsi del workspace (incremento condizionale di run_refunds_month) runs_day del
  * giorno della riserva scende di 1, mai sotto 0, e il job è segnato quota_refunded. Oltre il tetto nessun rimborso e una
@@ -169,15 +208,6 @@ export async function refundRunReservation(
     return "cap_reached";
   }
 
-  await tx.usageCounter.updateMany({
-    where: {
-      workspace_id: workspaceId,
-      metric: "runs_day",
-      period_start: new Date(input.reservation.runsPeriodStart),
-      count: { gt: 0 },
-    },
-    data: { count: { decrement: 1 } },
-  });
-  await tx.job.updateMany({ where: { id: input.jobId, status: "failed" }, data: { quota_refunded: true } });
+  await returnRunReservation(tx, { jobId: input.jobId, reservation: input.reservation, status: "failed" });
   return "refunded";
 }

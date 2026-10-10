@@ -78,6 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               brandLogoUrlLegacy={branding.logoUrl}
               themeMode={themeMode}
               showAdminLink={currentUser?.role === "ADMIN"}
+              showBillingLink={canManageBilling}
               user={currentUser ? { displayName: currentUser.displayName, email: currentUser.email } : null}
               workspaces={workspaceContext?.workspaces ?? []}
               activeWorkspaceId={workspaceContext?.workspace.id ?? null}

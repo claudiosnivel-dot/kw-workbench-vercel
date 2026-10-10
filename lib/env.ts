@@ -47,6 +47,9 @@ export const INT_ENV = {
   RATE_LIMIT_CONTACT_IP_MAX: { def: 5, min: 1, max: 10_000 },
   RATE_LIMIT_CONTACT_EMAIL_MAX: { def: 3, min: 1, max: 10_000 },
   RATE_LIMIT_CONTACT_WINDOW_SECONDS: { def: 3_600, min: 1, max: 86_400 },
+  // Cancellazione dell'account (T-2001): tentativi di password per utente, valori iniziali PROPOSTI.
+  RATE_LIMIT_ACCOUNT_DELETE_MAX: { def: 5, min: 1, max: 10_000 },
+  RATE_LIMIT_ACCOUNT_DELETE_WINDOW_SECONDS: { def: 900, min: 1, max: 86_400 },
 } as const;
 
 type IntEnvKey = keyof typeof INT_ENV;
@@ -178,6 +181,8 @@ const envSchema = z.object({
   RATE_LIMIT_CONTACT_IP_MAX: optional,
   RATE_LIMIT_CONTACT_EMAIL_MAX: optional,
   RATE_LIMIT_CONTACT_WINDOW_SECONDS: optional,
+  RATE_LIMIT_ACCOUNT_DELETE_MAX: optional,
+  RATE_LIMIT_ACCOUNT_DELETE_WINDOW_SECONDS: optional,
   // Destinatario del modulo contatti (T-1805); senza, APP_ADMIN_EMAIL.
   SUPPORT_EMAIL: optional,
   // Variabile di sistema di Vercel (1 sulle deployment): solo lì x-forwarded-for è l'IP del client (T-1701).

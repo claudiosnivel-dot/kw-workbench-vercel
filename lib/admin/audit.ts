@@ -14,6 +14,8 @@ export type AdminAuditAction =
   | "user.reactivate"
   | "user.role_change"
   | "user.delete"
+  // Cancellazione dell'account da parte dell'utente (T-2001): riga anonima, senza attore, bersaglio, metadata né IP.
+  | "account.delete"
   | "branding.update"
   // Cambio dell'interruttore del lancio commerciale (T-1606, D-32).
   | "launch.update"

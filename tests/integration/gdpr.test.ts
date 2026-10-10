@@ -1,4 +1,6 @@
 // Gate di T-1804 (AC-1804-1…4): export dei dati dell'account e cancellazione con password, blocchi e anonimizzazione.
+// Gate di T-2001 (AC-2001-1, AC-2001-2): tentativi limitati per utente e riga anonima account.delete nel registro.
+// impacted-by: T-2001 (AC-1804-4 emendato: dopo la cancellazione il registro ha una riga in più, account.delete)
 import { randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DELETE as deleteAccount } from "@/app/api/account/route";
@@ -156,11 +158,13 @@ describe("cancellazione dell'account", () => {
     const right = await deleteWith(u.cookie, TEST_USER_PASSWORD);
     expect(right.status).toBe(200);
     const rows = await prisma.adminAuditLog.findMany();
-    expect(rows).toHaveLength(auditCount);
+    expect(rows).toHaveLength(auditCount + 1);
     const serialized = JSON.stringify(rows);
     expect(serialized).not.toContain(u.user.id);
     expect(serialized).not.toContain("t1804-target");
-    expect(rows.every((row) => row.actor_user_id === admin.user.id)).toBe(true);
+    const previous = rows.filter((row) => row.action !== "account.delete");
+    expect(previous).toHaveLength(auditCount);
+    expect(previous.every((row) => row.actor_user_id === admin.user.id)).toBe(true);
   });
 
   it("il root admin riceve 409 ROOT_ADMIN e l'unico OWNER di un workspace con altri membri 409 OWNERSHIP_TRANSFER_REQUIRED", async () => {
@@ -201,5 +205,54 @@ describe("cancellazione dell'account", () => {
     expect(kept).toEqual({ personal_for_user_id: null });
     expect(await prisma.membership.count({ where: { workspace_id: u.workspaceId } })).toBe(1);
     expect(await prisma.workspaceInvite.count({ where: { email: "t1804-heir-from@example.test" } })).toBe(0);
+  });
+});
+
+describe("cancellazione dell'account: tentativi e registro (T-2001)", () => {
+  // covers: AC-2001-1
+  it("con RATE_LIMIT_ACCOUNT_DELETE_MAX = 2 le prime due password sbagliate sono 403 e la terza richiesta è 429 con Retry-After", async () => {
+    vi.stubEnv("RATE_LIMIT_ACCOUNT_DELETE_MAX", "2");
+    resetEnvForTests();
+    const u = await createUserWithSession({ displayName: "t2001-limit" });
+
+    const responses = [];
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      responses.push(await deleteWith(u.cookie, "password-sbagliata"));
+    }
+    const codes = await Promise.all(responses.map(async (response) => ((await response.json()) as { code: string }).code));
+
+    expect(responses.map((response) => response.status)).toEqual([403, 403, 429]);
+    expect(codes).toEqual(["INVALID_PASSWORD", "INVALID_PASSWORD", "RATE_LIMITED"]);
+    expect(Number(responses[2].headers.get("retry-after"))).toBeGreaterThan(0);
+    expect(await prisma.user.count({ where: { id: u.user.id } })).toBe(1);
+  });
+
+  // covers: AC-2001-2
+  it("dopo la cancellazione il registro ha una riga in più: account.delete senza attore, bersaglio né IP, e nessun dato dell'utente", async () => {
+    const admin = await createUserWithSession({ displayName: "t2001-admin", role: UserRole.ADMIN });
+    const u = await createUserWithSession({ displayName: "t2001-target" });
+    await prisma.adminAuditLog.create({
+      data: { actor_user_id: admin.user.id, action: "user.create", target_type: "user", target_id: u.user.id, metadata: { email: "t2001-target@example.test" } },
+    });
+    const before = await prisma.adminAuditLog.count();
+
+    const response = await deleteWith(u.cookie, TEST_USER_PASSWORD);
+
+    expect(response.status).toBe(200);
+    const rows = await prisma.adminAuditLog.findMany({ orderBy: [{ created_at: "asc" }, { id: "asc" }] });
+    expect(rows).toHaveLength(before + 1);
+    const last = rows[rows.length - 1];
+    expect([last.action, last.actor_user_id, last.target_type, last.target_id, last.ip, last.metadata]).toEqual([
+      "account.delete",
+      null,
+      "user",
+      null,
+      null,
+      {},
+    ]);
+    const serialized = JSON.stringify(rows);
+    expect(serialized).not.toContain(u.user.id);
+    expect(serialized).not.toContain("t2001-target");
+    expect(await prisma.rateLimitHit.count({ where: { key: { contains: u.user.id } } })).toBe(0);
   });
 });

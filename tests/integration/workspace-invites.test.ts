@@ -1,5 +1,6 @@
 // Gate di T-1503 (AC-1503-1…4): inviti con token monouso salvato solo come hash, accettazione legata all'email
 // verificata del destinatario, gestione dei membri e invariante «il workspace ha sempre un OWNER».
+// Gate di T-2007 (AC-2007-1, AC-2007-2): uscita dal workspace personale quando un altro membro ne è OWNER.
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DELETE as deleteUser } from "@/app/api/admin/users/[id]/route";
@@ -287,5 +288,57 @@ describe("membri e ultimo OWNER", () => {
     expect((await remove()).status).toBe(200);
     expect(await prisma.workspace.count({ where: { id: owner.workspaceId } })).toBe(0);
     expect(await prisma.membership.count({ where: { workspace_id: workspaceId, role: "OWNER" } })).toBe(1);
+  });
+});
+
+describe("uscita dal workspace personale (T-2007, D-08 emendata)", () => {
+  const leaveAs = (session: Session, workspaceId: string) =>
+    callRoute(leaveWorkspace, { method: "POST", url: `/api/workspaces/${workspaceId}/leave`, cookie: session.cookie, params: { workspaceId } });
+
+  // covers: AC-2007-1
+  it("dopo il trasferimento a O il creatore esce: W resta a O come workspace di squadra e il creatore riceve un personale vuoto", async () => {
+    const u = await createUserWithSession({ displayName: "t2007-u" });
+    const o = await createUserWithSession({ displayName: "t2007-o" });
+    await prisma.membership.create({ data: { workspace_id: u.workspaceId, user_id: o.user.id, role: "MEMBER" } });
+    await prisma.project.create({ data: { workspace_id: u.workspaceId, name: "P-2007", created_by_user_id: u.user.id } });
+    const transferred = await callRoute(transferOwnership, {
+      method: "POST",
+      url: `/api/workspaces/${u.workspaceId}/transfer`,
+      body: { userId: o.user.id },
+      cookie: u.cookie,
+      params: { workspaceId: u.workspaceId },
+    });
+    expect(transferred.status).toBe(200);
+
+    const response = await leaveAs(u, u.workspaceId);
+
+    expect(response.status).toBe(200);
+    expect(await prisma.membership.count({ where: { workspace_id: u.workspaceId, user_id: u.user.id } })).toBe(0);
+    const kept = await prisma.workspace.findUniqueOrThrow({ where: { id: u.workspaceId }, select: { personal_for_user_id: true } });
+    expect(kept.personal_for_user_id).toBeNull();
+    const owners = await prisma.membership.findMany({ where: { workspace_id: u.workspaceId, role: "OWNER" }, select: { user_id: true } });
+    expect(owners).toEqual([{ user_id: o.user.id }]);
+    expect(await prisma.project.count({ where: { workspace_id: u.workspaceId } })).toBe(1);
+    const fresh = await prisma.workspace.findUniqueOrThrow({
+      where: { personal_for_user_id: u.user.id },
+      select: { id: true, memberships: { select: { user_id: true, role: true } }, _count: { select: { projects: true } } },
+    });
+    expect(fresh.id).not.toBe(u.workspaceId);
+    expect(fresh.memberships).toEqual([{ user_id: u.user.id, role: "OWNER" }]);
+    expect(fresh._count.projects).toBe(0);
+  });
+
+  // covers: AC-2007-2
+  it("l'unico OWNER del proprio workspace personale con un MEMBER riceve 409 LAST_OWNER e le membership non cambiano", async () => {
+    const u = await createUserWithSession({ displayName: "t2007-solo" });
+    const m = await createUserWithSession({ displayName: "t2007-member" });
+    await prisma.membership.create({ data: { workspace_id: u.workspaceId, user_id: m.user.id, role: "MEMBER" } });
+    const before = await prisma.membership.findMany({ where: { workspace_id: u.workspaceId }, orderBy: { user_id: "asc" } });
+
+    const response = await leaveAs(u, u.workspaceId);
+
+    expect([response.status, ((await response.json()) as { code: string }).code]).toEqual([409, "LAST_OWNER"]);
+    expect(await prisma.membership.findMany({ where: { workspace_id: u.workspaceId }, orderBy: { user_id: "asc" } })).toEqual(before);
+    expect(await prisma.workspace.count({ where: { personal_for_user_id: u.user.id } })).toBe(1);
   });
 });

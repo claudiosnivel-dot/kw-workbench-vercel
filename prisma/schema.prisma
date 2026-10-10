@@ -201,8 +201,11 @@ model User {
   updated_at                  DateTime                   @updatedAt
   /// Progetti creati dall'utente (T-1501): la proprietà è del workspace, questo è solo l'autore.
   created_projects            Project[]                  @relation("ProjectCreator")
-  /// Workspace personale creato con l'utente (T-1501): uno e uno solo, mai abbandonabile dal suo OWNER.
+  /// Workspace personale creato con l'utente (T-1501): uno e uno solo; il creatore ne esce solo se c'è un altro OWNER
+  /// (T-2007, D-08 emendata), e allora riceve un nuovo workspace personale vuoto.
   personal_workspace          Workspace?                 @relation("PersonalWorkspace")
+  /// Workspace di squadra creati dall'utente dall'interfaccia (T-2008): limite tecnico con il lancio attivo.
+  created_workspaces          Workspace[]                @relation("WorkspaceCreator")
   memberships                 Membership[]
   sent_workspace_invites      WorkspaceInvite[]
   google_sheets_credential    GoogleSheetsCredential?
@@ -224,15 +227,20 @@ model Workspace {
   name                 String
   slug                 String                 @unique
   personal_for_user_id String?                @unique
+  /// Autore di un workspace di squadra creato con POST /api/workspaces (T-2008); null per i personali e per quelli nati
+  /// prima del macrotask 20.
+  created_by_user_id   String?
   created_at           DateTime               @default(now())
   updated_at           DateTime               @updatedAt
   personal_for_user    User?                  @relation("PersonalWorkspace", fields: [personal_for_user_id], references: [id], onDelete: Cascade)
+  created_by           User?                  @relation("WorkspaceCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
   memberships          Membership[]
   projects             Project[]
   invites              WorkspaceInvite[]
   subscription         WorkspaceSubscription?
   usage_counters       UsageCounter[]
 
+  @@index([created_by_user_id])
   @@map("workspaces")
 }
 
@@ -294,6 +302,8 @@ model Project {
   updated_at                  DateTime                   @updatedAt
   /// Ultima attività reale (estrazioni, sezioni, revisione, impostazioni): ordinamento della dashboard (T-810).
   last_activity_at            DateTime                   @default(now())
+  /// Progetto creato dall'onboarding (T-2004): non conta nel limite maxProjects del piano.
+  created_via_onboarding      Boolean                    @default(false)
   workspace                   Workspace                  @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
   created_by                  User?                      @relation("ProjectCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
   subprojects                 Subproject[]               @relation("ProjectSubprojects")
@@ -409,34 +419,36 @@ model KeywordCandidate {
 }
 
 model Job {
-  id               String           @id @default(cuid())
-  project_id       String
-  subproject_id    String
-  type             JobType          @default(extraction)
-  status           JobStatus        @default(pending)
-  payload          Json?
-  result           Json?
-  error_message    String?
-  started_at       DateTime?
-  completed_at     DateTime?
-  created_at       DateTime         @default(now())
-  updated_at       DateTime         @updatedAt
+  id                  String           @id @default(cuid())
+  project_id          String
+  subproject_id       String
+  type                JobType          @default(extraction)
+  status              JobStatus        @default(pending)
+  payload             Json?
+  result              Json?
+  error_message       String?
+  started_at          DateTime?
+  completed_at        DateTime?
+  created_at          DateTime         @default(now())
+  updated_at          DateTime         @updatedAt
   // Esecuzione a passi ripartibile (T-1201): cursore della fase, avanzamento, heartbeat e lease del passo in corso.
-  phase            JobPhase         @default(expand)
-  cursor           Json             @default("{}")
-  progress_done    Int              @default(0)
-  progress_total   Int              @default(0)
-  heartbeat_at     DateTime?
-  locked_until     DateTime?
-  attempts         Int              @default(0)
-  cancel_requested Boolean          @default(false)
+  phase               JobPhase         @default(expand)
+  cursor              Json             @default("{}")
+  progress_done       Int              @default(0)
+  progress_total      Int              @default(0)
+  heartbeat_at        DateTime?
+  locked_until        DateTime?
+  attempts            Int              @default(0)
+  cancel_requested    Boolean          @default(false)
+  /// Istante della prima richiesta di annullamento (T-2002): entro 60 secondi da created_at l'avvio non consuma la quota.
+  cancel_requested_at DateTime?
   /// Causa di un job failed (T-1703, D-27 emendata): INTERNAL restituisce la quota entro il tetto dei rimborsi.
-  failure_cause    JobFailureCause?
-  quota_refunded   Boolean          @default(false)
-  project          Project          @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  subproject       Subproject       @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
-  suggestions      JobSuggestion[]
-  metrics          JobMetric[]
+  failure_cause       JobFailureCause?
+  quota_refunded      Boolean          @default(false)
+  project             Project          @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  subproject          Subproject       @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
+  suggestions         JobSuggestion[]
+  metrics             JobMetric[]
 
   @@index([project_id, status])
   @@index([subproject_id, status])

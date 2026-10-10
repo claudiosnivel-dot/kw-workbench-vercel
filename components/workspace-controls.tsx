@@ -69,6 +69,39 @@ export function WorkspaceNameForm({ workspaceId, name, canEdit }: { workspaceId:
   );
 }
 
+/** Nuovo workspace di squadra (T-2008): diventa quello attivo, e con almeno due workspace la barra mostra il selettore. */
+export function CreateWorkspaceForm() {
+  const t = useTranslations("workspace.create");
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const { saving, error, success, save } = useSaveAction();
+
+  const create = () =>
+    save(async (tErrors) => {
+      await readApiResponse(await sendJson("POST", "/api/workspaces", { name }), tErrors);
+      setName("");
+      router.refresh();
+      return t("created");
+    });
+
+  return (
+    <SettingsCard
+      title={t("title")}
+      intro={t("intro")}
+      error={error}
+      success={success}
+      save={{ onClick: create, pending: saving, label: t("submit"), pendingLabel: t("submitting") }}
+    >
+      <div>
+        <label className="label" htmlFor="new-workspace-name">
+          {t("label")}
+        </label>
+        <input id="new-workspace-name" className="input" maxLength={80} value={name} onChange={(event) => setName(event.target.value)} />
+      </div>
+    </SettingsCard>
+  );
+}
+
 /** Ruolo di un membro, ADMIN o MEMBER: salvato alla scelta. */
 export function MemberRoleSelect({
   workspaceId,

@@ -96,6 +96,7 @@
     "overview": "Panoramica",
     "personalize": "Personalizza",
     "newProject": "Nuovo progetto",
+    "billing": "Fatturazione",
     "admin": "Admin",
     "openMenu": "Apri menu",
     "pricing": "Prezzi",
@@ -527,6 +528,7 @@
     "INVITE_INVALID": "L'invito non è valido: potrebbe essere scaduto, revocato o già usato.",
     "INVITE_EMAIL_MISMATCH": "L'invito è per un'altra email: accedi con l'account a cui è stato inviato.",
     "LAST_OWNER": "Il workspace deve avere un proprietario: trasferisci prima la proprietà.",
+    "WORKSPACE_LIMIT": "Hai raggiunto il numero massimo di workspace che puoi creare.",
     "JOB_SIGNATURE_INVALID": "Firma della continuazione non valida.",
     "CRON_UNAUTHORIZED": "Chiamata del cron non autorizzata.",
     "JOB_ALREADY_ACTIVE": "Un'estrazione è già in corso per questa sezione.",
@@ -796,7 +798,7 @@
     "page": {
       "heading": "Workspace: {name}",
       "intro": "Nome, membri, ruoli e inviti del workspace attivo. Cambia workspace dal selettore in alto.",
-      "personal": "Questo è il tuo workspace personale: puoi invitare altre persone, ma non puoi abbandonarlo.",
+      "personal": "Questo è il tuo workspace personale: puoi invitare altre persone e lo puoi abbandonare solo dopo averne trasferito la proprietà a un altro membro.",
       "yourRole": "Il tuo ruolo: {role}",
       "sheetsNote": "L'export su Google Sheets usa la connessione Google personale di chi esporta: ogni membro collega il proprio account da Personalizza.",
       "billingLink": "Piano e fatturazione"
@@ -848,9 +850,18 @@
       "submitting": "Trasferimento...",
       "confirm": "Trasferire la proprietà del workspace a {name}?"
     },
+    "create": {
+      "title": "Crea un workspace",
+      "intro": "Un workspace di squadra separato dal tuo workspace personale: ne sarai il proprietario e diventerà il workspace attivo.",
+      "label": "Nome del nuovo workspace",
+      "submit": "Crea workspace",
+      "submitting": "Creazione...",
+      "created": "Workspace creato: ora è quello attivo."
+    },
     "leave": {
       "title": "Abbandona il workspace",
       "intro": "Perderai l'accesso ai progetti di questo workspace finché qualcuno non ti invita di nuovo.",
+    "personalIntro": "Il workspace resta agli altri membri con i suoi progetti e riceverai un nuovo workspace personale vuoto.",
       "submit": "Abbandona",
       "submitting": "Uscita...",
       "confirm": "Abbandonare il workspace {name}?"

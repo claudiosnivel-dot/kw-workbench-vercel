@@ -57,6 +57,11 @@ export async function assertWithinLimit(
   }
 }
 
+/** Progetti del workspace che contano nel limite maxProjects: il progetto creato dall'onboarding no (T-2004). */
+export function countLimitedProjects(tx: Prisma.TransactionClient, workspaceId: string): Promise<number> {
+  return tx.project.count({ where: { workspace_id: workspaceId, created_via_onboarding: false } });
+}
+
 /** Funzione a pagamento del piano (export Sheets, import Planner, metriche con licenza): assente → 402. */
 export async function assertFeature(workspaceId: string, featureKey: FeatureKey): Promise<void> {
   if (!(await getEntitlements(workspaceId)).limits[featureKey]) {
@@ -80,9 +85,9 @@ export async function assertSeatAvailable(tx: Prisma.TransactionClient, guard: P
 }
 
 /**
- * Scelta del fornitore di metriche con licenza (DATAFORSEO, D-30) su progetto o sezione: chi lo ha già lo conserva. Con
- * il lancio in pausa resta del solo root admin (T-902: 403 FORBIDDEN_FIELD); con il lancio attivo lo decide il diritto
- * licensedMetrics del piano del workspace (402 PLAN_LIMIT).
+ * Scelta del fornitore di metriche con licenza (DATAFORSEO, D-30) su progetto o sezione: chi lo ha già lo conserva e il
+ * root admin lo sceglie sempre (D-30 emendata, T-2003). Per gli altri, con il lancio in pausa resta vietato (T-902: 403
+ * FORBIDDEN_FIELD); con il lancio attivo lo decide il diritto licensedMetrics del piano del workspace (402 PLAN_LIMIT).
  */
 export async function assertLicensedMetricsChoice(
   actor: { isRootAdmin: boolean },
@@ -90,12 +95,12 @@ export async function assertLicensedMetricsChoice(
   chosen: MetricsProvider | null | undefined,
   current: MetricsProvider | null | undefined
 ): Promise<void> {
-  if (chosen !== "DATAFORSEO" || chosen === current) {
+  if (chosen !== "DATAFORSEO" || chosen === current || actor.isRootAdmin) {
     return;
   }
   if (await isCommercialLive()) {
     await assertFeature(workspaceId, "licensedMetrics");
-  } else if (!actor.isRootAdmin) {
+  } else {
     throw new AppError(403, "FORBIDDEN_FIELD", "Il provider di metriche DATAFORSEO è riservato all'amministratore principale");
   }
 }
@@ -112,14 +117,21 @@ export type ExtractionPlanLimits = {
   licensedMetricsKeywordsPerMonth?: number | null;
 };
 
-/** Limiti del job e avvii al giorno del workspace (la quota riservata all'avvio, T-1703). */
-export async function extractionPlanLimits(workspaceId: string): Promise<ExtractionPlanLimits & { runsPerDay: number | null }> {
+/**
+ * Limiti del job e avvii al giorno del workspace (la quota riservata all'avvio, T-1703). Un'estrazione avviata dal root
+ * admin usa sempre il fornitore con licenza, senza la quota mensile di keyword arricchite (D-30 emendata, T-2003); gli
+ * altri limiti restano quelli del piano del workspace.
+ */
+export async function extractionPlanLimits(
+  workspaceId: string,
+  actor: { isRootAdmin: boolean }
+): Promise<ExtractionPlanLimits & { runsPerDay: number | null }> {
   const { limits } = await getEntitlements(workspaceId);
   return {
     maxKeywordsPerRun: limits.maxKeywordsPerRun,
-    licensedMetrics: limits.licensedMetrics,
+    licensedMetrics: actor.isRootAdmin || limits.licensedMetrics,
     keywordsPerMonth: limits.keywordsPerMonth,
-    licensedMetricsKeywordsPerMonth: limits.licensedMetricsKeywordsPerMonth,
+    licensedMetricsKeywordsPerMonth: actor.isRootAdmin ? null : limits.licensedMetricsKeywordsPerMonth,
     runsPerDay: limits.runsPerDay,
   };
 }

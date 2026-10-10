@@ -59,6 +59,8 @@ export const API_ERROR_CODES = [
   "INVITE_INVALID",
   "INVITE_EMAIL_MISMATCH",
   "LAST_OWNER",
+  // Limite tecnico dei workspace di squadra creati da un utente, con il lancio attivo (T-2008).
+  "WORKSPACE_LIMIT",
   // Job in background (T-1203, T-1204).
   "JOB_SIGNATURE_INVALID",
   "CRON_UNAUTHORIZED",

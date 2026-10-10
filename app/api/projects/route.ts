@@ -2,7 +2,7 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { requireRequestWorkspace, requireWorkspaceRole } from "@/lib/authz/workspace";
-import { assertLicensedMetricsChoice, assertWithinLimit, loadPlanGuard } from "@/lib/billing/enforce";
+import { assertLicensedMetricsChoice, assertWithinLimit, countLimitedProjects, loadPlanGuard } from "@/lib/billing/enforce";
 import { withApiErrors } from "@/lib/http/errors";
 import { parseProjectCreate } from "@/lib/modules/project-settings";
 import { prisma } from "@/lib/prisma";
@@ -19,8 +19,8 @@ function splitWorkspaceId(payload: unknown): { workspaceId: unknown; fields: unk
 /**
  * Nuovo progetto (T-1502, T-1504): nel workspace di workspaceId se indicato (membro con project.create, altrimenti 404
  * WORKSPACE_NOT_FOUND), altrimenti nel workspace attivo del cookie kwb_workspace riverificato; l'autore è l'utente.
- * Limiti del piano (T-1605): progetti del workspace, sezione iniziale e sue seed, metriche con licenza; i conteggi
- * stanno nella transazione della scrittura, sotto il lock del workspace.
+ * Limiti del piano (T-1605): progetti del workspace (escluso quello dell'onboarding, T-2004), sezione iniziale e sue
+ * seed, metriche con licenza; i conteggi stanno nella transazione della scrittura, sotto il lock del workspace.
  */
 export const POST = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);
@@ -36,7 +36,7 @@ export const POST = withApiErrors(async (request: NextRequest) => {
   const plan = await loadPlanGuard(workspace.id);
 
   const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    await assertWithinLimit(tx, plan, "maxProjects", async () => (await tx.project.count({ where: { workspace_id: workspace.id } })) + 1);
+    await assertWithinLimit(tx, plan, "maxProjects", async () => (await countLimitedProjects(tx, workspace.id)) + 1);
     if (input.createInitialSection) {
       await assertWithinLimit(tx, plan, "maxSectionsPerProject", () => 1);
       await assertWithinLimit(tx, plan, "maxSeedsPerSection", () => input.seeds.length);
