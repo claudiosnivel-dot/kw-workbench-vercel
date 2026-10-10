@@ -459,7 +459,8 @@
       "exporting": "Esportazione in corso...",
       "exportNow": "Esporta ora",
       "completed": "Export completato: {rows} keyword su {sheets} fogli.",
-      "openFile": "Apri file Google Sheets"
+      "openFile": "Apri file Google Sheets",
+      "strategyCompleted": "Export completato: {rows, plural, one {# pagina} other {# pagine}} nel foglio «strategia»."
     },
     "planner": {
       "title": "Volumi da Keyword Planner",
@@ -567,7 +568,11 @@
     "ROOT_ADMIN": "Il root admin non può cancellare il proprio account.",
     "ACTIVE_SUBSCRIPTION": "Disdici prima gli abbonamenti dei workspace di cui sei l'unico proprietario, dalla pagina Fatturazione.",
     "OWNERSHIP_TRANSFER_REQUIRED": "Trasferisci prima la proprietà dei workspace condivisi con altri membri.",
-    "CONTACT_UNAVAILABLE": "Il modulo contatti non è disponibile in questo momento."
+    "CONTACT_UNAVAILABLE": "Il modulo contatti non è disponibile in questo momento.",
+    "STRATEGY_NO_KEYWORDS": "Nessuna keyword nel perimetro scelto: allarga il perimetro o avvia un'estrazione.",
+    "STRATEGY_LIMIT": "Il progetto ha già 20 strategie: eliminane una prima di generarne un'altra.",
+    "STRATEGY_NOT_FOUND": "Strategia non trovata.",
+    "STRATEGY_CONFLICT": "La strategia è stata modificata nel frattempo: ricarica il piano e riprova."
   },
   "errorPages": {
     "error": {
@@ -1287,5 +1292,203 @@
     "submit": "Invia",
     "submitting": "Invio...",
     "sent": "Messaggio inviato."
+  },
+  "strategy": {
+    "templates": {
+      "guide": {
+        "v1": "{keyword}: guida completa {year}",
+        "v2": "{keyword}: tutto quello che c'è da sapere",
+        "v3": "{keyword}: la guida pratica"
+      },
+      "list": {
+        "v1": "{keyword}: classifica {year}",
+        "v2": "{keyword}: la nostra selezione {year}"
+      },
+      "comparison": {
+        "v1": "{keyword}: confronto e differenze",
+        "v2": "{keyword}: quale scegliere nel {year}"
+      },
+      "product_category": {
+        "v1": "{keyword}: modelli e prezzi {year}",
+        "v2": "{keyword}: catalogo e offerte {year}"
+      },
+      "faq": {
+        "v1": "{keyword}: domande e risposte",
+        "v2": "{keyword}: le risposte alle domande più frequenti"
+      },
+      "local": {
+        "v1": "{keyword}: indirizzi e consigli in zona",
+        "v2": "{keyword}: dove andare e cosa sapere"
+      },
+      "tool": {
+        "v1": "{keyword}: strumento online gratuito",
+        "v2": "{keyword}: calcola subito online",
+        "v3": "{keyword}: istruzioni per l'uso"
+      }
+    },
+    "fixedH2": {
+      "faq": "Domande frequenti",
+      "methodology": "Come abbiamo scelto"
+    },
+    "reasons": {
+      "HUB_SEED": "Pagina pilastro della seed «{seed}»: raccoglie le ricerche che ne contengono tutte le parole.",
+      "HUB_TERM": "Pagina pilastro sul tema «{term}», il più cercato tra le keyword che non corrispondono a nessuna seed.",
+      "SPOKE_MODIFIER": "Articolo satellite per le ricerche {category, select, comparison {di confronto e recensione} transactional {di prezzo e acquisto} informational {informative} tool {di strumenti online} local {locali} other {con lo stesso modificatore}} sul tema dell'hub.",
+      "SPOKE_WORD": "Articolo satellite per le ricerche che aggiungono «{word}» al tema dell'hub.",
+      "SPOKE_QUESTION": "Domanda con {volume, number} ricerche al mese: merita un articolo dedicato.",
+      "MERGED_INTO_PILLAR": "{count, plural, one {# keyword con troppe poche ricerche per uno spoke è nella pagina pilastro.} other {# keyword con troppe poche ricerche per uno spoke sono nella pagina pilastro.}}",
+      "UNASSIGNED": "Queste keyword non contengono tutte le parole di una seed e non condividono termini con altre keyword: nessun hub le raccoglie."
+    },
+    "ui": {
+      "defaultName": "Strategia {mode, select, AUTO {automatica} other {esperta}} del {date, date, short}",
+      "title": "Strategia hub and spoke",
+      "intro": "Organizza le keyword del progetto in pagine pilastro (hub) e articoli satellite (spoke), con H1 e H2 suggeriti. Il piano si calcola dalle keyword già estratte, senza servizi a pagamento: è un punto di partenza da rivedere.",
+      "generate": "Genera strategia",
+      "generating": "Generazione...",
+      "nameLabel": "Nome della strategia (facoltativo)",
+      "advanced": "Impostazioni avanzate",
+      "advancedHint": "Con le impostazioni avanzate scegli perimetro e regole (modalità esperta). Senza, la strategia usa tutto il progetto, le keyword approvate e da rivedere e le regole predefinite.",
+      "scope": "Perimetro",
+      "scopeProject": "Tutto il progetto",
+      "reviewStatus": "Keyword da includere",
+      "reviewApprovedPending": "Approvate e da rivedere",
+      "reviewApproved": "Solo approvate",
+      "minVolume": "Volume minimo",
+      "intent": "Intento",
+      "intentAny": "Qualsiasi intento",
+      "keywordType": "Tipo di keyword",
+      "keywordTypeAny": "Qualsiasi tipo",
+      "rules": "Regole del raggruppamento",
+      "minKeywordsPerSpoke": "Keyword minime per uno spoke",
+      "minSpokeVolume": "Ricerche minime per uno spoke",
+      "maxSpokesPerHub": "Spoke massimi per hub",
+      "questionSpokeVolume": "Ricerche minime perché una domanda diventi uno spoke",
+      "questionsAs": "Domande sotto la soglia",
+      "questionsAsFaq": "Nella FAQ della pagina più vicina",
+      "questionsAsSpokes": "Sempre come spoke",
+      "listTitle": "Strategie generate",
+      "empty": "Nessuna strategia: generane una con il pulsante qui sopra.",
+      "columns": {
+        "name": "Nome",
+        "mode": "Modalità",
+        "created": "Creata",
+        "keywords": "Keyword",
+        "unassigned": "Non assegnate"
+      },
+      "mode": {
+        "AUTO": "Automatica",
+        "EXPERT": "Esperta"
+      },
+      "backToList": "Tutte le strategie",
+      "meta": "Modalità {mode} · creata il {date} · lingua dei titoli {language}",
+      "stats": {
+        "hubs": "Hub",
+        "pages": "Pagine",
+        "covered": "Keyword coperte",
+        "volume": "Volume complessivo",
+        "unassigned": "Non assegnate"
+      },
+      "truncated": "Il perimetro superava 5000 keyword: la strategia usa le 5000 a priorità più alta.",
+      "hubHeading": "Hub {number}: {title}",
+      "spokesEmpty": "Questo hub non ha spoke.",
+      "spokeColumns": {
+        "h1": "H1",
+        "mainKeyword": "Keyword principale",
+        "contentType": "Tipo di contenuto",
+        "priority": "Priorità"
+      },
+      "kind": {
+        "HUB": "Pagina pilastro",
+        "SPOKE": "Spoke"
+      },
+      "contentTypes": {
+        "guide": "Guida",
+        "list": "Lista",
+        "comparison": "Confronto",
+        "product_category": "Categoria di prodotto",
+        "faq": "FAQ",
+        "local": "Pagina locale",
+        "tool": "Strumento"
+      },
+      "priority": "Priorità {value, number}",
+      "suggested": "suggerito",
+      "noH2": "Nessun H2",
+      "keywordsTitle": "Keyword",
+      "mainBadge": "principale",
+      "volume": "{volume, number} ricerche",
+      "noVolume": "volume non disponibile",
+      "reasonTitle": "Perché questa pagina",
+      "faqCount": "{count, plural, one {# domanda è nella FAQ della pagina.} other {# domande sono nella FAQ della pagina.}}",
+      "linksTitle": "Link interni previsti",
+      "noLinks": "Nessun link interno previsto.",
+      "selectKeyword": "Seleziona {keyword}",
+      "moveTo": "Sposta le keyword selezionate in",
+      "moveToUnassigned": "Non assegnate",
+      "move": "Sposta",
+      "editTitles": "Modifica titoli",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "h1Field": "H1",
+      "h2Field": "H2 (uno per riga, al massimo 30)",
+      "contentTypeField": "Tipo di contenuto",
+      "promote": "Promuovi a hub",
+      "mergeInto": "Unisci questa pagina in",
+      "merge": "Unisci",
+      "deletePage": "Elimina pagina",
+      "confirmDeletePage": "Conferma eliminazione",
+      "deletePageHint": "Le keyword della pagina finiranno tra le non assegnate.",
+      "working": "Aggiornamento...",
+      "unassignedTitle": "Non assegnate",
+      "unassignedCount": "{count, plural, one {# keyword non assegnata} other {# keyword non assegnate}}",
+      "unassignedEmpty": "Tutte le keyword sono in una pagina.",
+      "deleteStrategy": "Elimina strategia",
+      "h2Title": "H2",
+      "exportTitle": "Esporta il piano",
+      "exportCsv": "CSV",
+      "exportXlsx": "Excel",
+      "exportPdf": "PDF da presentare",
+      "exportHint": "Una riga per pagina nell'ordine di lavoro, con H1, H2, keyword e link interni."
+    },
+    "pdf": {
+      "coverTitle": "Strategia hub and spoke",
+      "coverProject": "Progetto: {name}",
+      "coverStrategy": "Strategia: {name}",
+      "coverDate": "Data: {date}",
+      "coverWorkspace": "Workspace: {name}",
+      "explainTitle": "Cos'è la strategia hub and spoke",
+      "explainP1": "Una strategia hub and spoke organizza i contenuti di un sito intorno a pochi temi principali. Ogni tema ha una pagina pilastro (hub) che lo tratta in modo completo e una serie di articoli satellite (spoke) che ne approfondiscono un aspetto: un confronto, i prezzi, una domanda frequente, una variante.",
+      "explainP2": "Gli spoke rimandano alla loro pagina pilastro e la pagina pilastro rimanda ai suoi spoke. Questa rete di link interni aiuta i motori di ricerca a capire che il sito copre il tema in profondità e aiuta i lettori a trovare la risposta che cercano.",
+      "explainP3": "Il piano di questo documento nasce dalle keyword del progetto: le ricerche simili sono raggruppate nella stessa pagina e ogni pagina ha un H1 e una scaletta di H2 suggeriti. Titoli e raggruppamenti sono un punto di partenza da adattare al tono e all'offerta del sito.",
+      "summaryTitle": "Sintesi",
+      "summaryHubs": "Hub: {count, number}",
+      "summaryPages": "Pagine da scrivere: {count, number}",
+      "summaryKeywords": "Keyword coperte: {count, number}",
+      "summaryVolume": "Ricerche mensili coperte: {count, number}",
+      "summaryUnassigned": "Keyword non assegnate: {count, number}",
+      "summaryTruncated": "Il perimetro superava 5000 keyword: il piano usa le 5000 a priorità più alta.",
+      "workOrderTitle": "Ordine di lavoro",
+      "workOrderIntro": "Le pagine nell'ordine consigliato: ogni pagina pilastro, poi i suoi spoke dal più importante.",
+      "workOrderItem": "{number}. {kind}: {title}",
+      "hubTitle": "Hub {number}: {title}",
+      "mainKeyword": "Keyword principale: {keyword}",
+      "secondaryKeywords": "Keyword secondarie: {keywords}",
+      "contentType": "Tipo di contenuto: {type}",
+      "appendixTitle": "Appendice",
+      "noUnassigned": "Nessuna keyword non assegnata.",
+      "criteriaTitle": "Criteri della strategia",
+      "criteriaMode": "Modalità: {mode}",
+      "criteriaScope": "Perimetro: {scope}",
+      "criteriaReview": "Keyword incluse: {value}",
+      "criteriaMinVolume": "Volume minimo: {value}",
+      "criteriaIntent": "Intento: {value}",
+      "criteriaKeywordType": "Tipo di keyword: {value}",
+      "criteriaNone": "nessun filtro",
+      "criteriaRules": "Regole: uno spoke nasce con almeno {minKeywords} keyword o {minVolume} ricerche al mese; al massimo {maxSpokes} spoke per hub; una domanda diventa uno spoke da {questionVolume} ricerche al mese ({questionsAs, select, spokes {tutte le domande sono spoke} other {le altre vanno nella FAQ della pagina più vicina}}).",
+      "criteriaLanguage": "Lingua dei titoli: {language}",
+      "footer": "{app} · pagina {page} di {pages}"
+    },
+    "delete": {
+      "confirm": "Eliminare la strategia «{name}»? L'operazione non si può annullare."
+    }
   }
 }

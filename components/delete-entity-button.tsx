@@ -6,8 +6,8 @@ import { useRefreshAction } from "@/lib/client/use-refresh-action";
 type DeleteEntityButtonProps = {
   /** Rotta che riceve la DELETE. */
   endpoint: string;
-  /** Progetto o sezione: sceglie i testi della conferma e dell'errore nel catalogo. */
-  kind: "project" | "section";
+  /** Progetto, sezione o strategia (T-1905): sceglie il testo della conferma nel catalogo. */
+  kind: "project" | "section" | "strategy";
   /** Nome mostrato nella conferma del browser, interpolato come testo. */
   name: string;
   buttonLabel?: string;
@@ -28,7 +28,7 @@ export function DeleteEntityButton({
 }: DeleteEntityButtonProps) {
   const t = useTranslations();
   const { loading, error, run } = useRefreshAction();
-  const namespace = kind === "project" ? "projects" : "sections";
+  const namespace = ({ project: "projects", section: "sections", strategy: "strategy" } as const)[kind];
 
   const remove = async () => {
     if (!window.confirm(t(`${namespace}.delete.confirm`, { name }))) {

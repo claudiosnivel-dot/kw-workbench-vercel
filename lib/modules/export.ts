@@ -147,15 +147,24 @@ function csvCell(value: unknown, dialect: CsvDialect): string {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
+/** Inizio di un file CSV: BOM (solo excel-it) e riga di intestazione con le colonne date. */
+export function csvHeader(columns: readonly string[], dialect: CsvDialect): string {
+  const { bom, separator } = CSV_DIALECTS[dialect];
+  return `${bom ? UTF8_BOM : ""}${columns.join(separator)}${CSV_EOL}`;
+}
+
+/** Riga CSV con la protezione dalle formule (CWE-1236): la usano anche gli export delle strategie (T-1906). */
+export function csvRecord(values: readonly unknown[], dialect: CsvDialect): string {
+  return `${values.map((value) => csvCell(value, dialect)).join(CSV_DIALECTS[dialect].separator)}${CSV_EOL}`;
+}
+
 /** Inizio del file: BOM (solo excel-it) e riga di intestazione con le colonne di ExportRow. */
 function csvHead(dialect: CsvDialect): string {
-  const { bom, separator } = CSV_DIALECTS[dialect];
-  return `${bom ? UTF8_BOM : ""}${EXPORT_COLUMNS.join(separator)}${CSV_EOL}`;
+  return csvHeader(EXPORT_COLUMNS, dialect);
 }
 
 function csvLine(row: ExportRow, dialect: CsvDialect): string {
-  const { separator } = CSV_DIALECTS[dialect];
-  return `${EXPORT_COLUMNS.map((column) => csvCell(row[column], dialect)).join(separator)}${CSV_EOL}`;
+  return csvRecord(EXPORT_COLUMNS.map((column) => row[column]), dialect);
 }
 
 export function serializeCsv(rows: ExportRow[], options: { dialect: CsvDialect }): Buffer<ArrayBuffer> {

@@ -1,0 +1,38 @@
+{
+  "description": "Fixture inglese di T-1901 (AC-1901-3): la seed 'yoga mat' non compare in nessuna keyword, quindi gli hub nascono dai termini più ricorrenti pesati per volume. Il piano atteso è scritto a mano dalle regole predefinite.",
+  "language": "en",
+  "seeds": ["yoga mat"],
+  "keywords": [
+    {"keyword": "running shoes", "volume": 12000, "score": 80, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "best running shoes", "volume": 6600, "score": 85, "searchIntent": "commercial", "keywordType": "generic"},
+    {"keyword": "running shoes for women", "volume": 3600, "score": 70, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "womens running shoes", "volume": 1900, "score": 68, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "running shoes sale", "volume": 1300, "score": 75, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "cheap running shoes", "volume": 880, "score": 72, "searchIntent": "commercial", "keywordType": "generic"},
+    {"keyword": "running shoe reviews", "volume": 720, "score": 74, "searchIntent": "commercial", "keywordType": "generic"},
+    {"keyword": "how to clean running shoes", "volume": 260, "score": 55, "searchIntent": "informational", "keywordType": "question", "isQuestion": true},
+    {"keyword": "running socks", "volume": 2400, "score": 60, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "best running socks", "volume": 480, "score": 70, "searchIntent": "commercial", "keywordType": "generic"},
+    {"keyword": "compression socks", "volume": 1600, "score": 55, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "compression socks for running", "volume": 390, "score": 52, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "marathon training plan", "volume": 1000, "score": 50, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "marathon training", "volume": 880, "score": 50, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "marathon pace calculator", "volume": 590, "score": 60, "searchIntent": "mixed", "keywordType": "tool"},
+    {"keyword": "hydration vest", "volume": 170, "score": 40, "searchIntent": "mixed", "keywordType": "generic"}
+  ],
+  "expected": {
+    "pages": [
+      {"kind": "HUB", "hub": null, "main": "running shoes", "secondary": [], "contentType": "guide", "priority": 12000, "reason": {"code": "HUB_TERM", "params": {"term": "running shoes", "merged": 0, "faq": 0}}},
+      {"kind": "SPOKE", "hub": "running shoes", "main": "best running shoes", "secondary": ["running shoe reviews"], "contentType": "list", "priority": 7320, "reason": {"code": "SPOKE_MODIFIER", "params": {"category": "comparison", "faq": 0}}},
+      {"kind": "SPOKE", "hub": "running shoes", "main": "running shoes for women", "secondary": ["womens running shoes"], "contentType": "guide", "priority": 5500, "reason": {"code": "SPOKE_WORD", "params": {"word": "women", "faq": 0}}},
+      {"kind": "SPOKE", "hub": "running shoes", "main": "running shoes sale", "secondary": ["cheap running shoes"], "contentType": "product_category", "priority": 2180, "reason": {"code": "SPOKE_MODIFIER", "params": {"category": "transactional", "faq": 0}}},
+      {"kind": "SPOKE", "hub": "running shoes", "main": "how to clean running shoes", "secondary": [], "contentType": "faq", "priority": 260, "reason": {"code": "SPOKE_QUESTION", "params": {"volume": 260, "faq": 0}}},
+      {"kind": "HUB", "hub": null, "main": "running socks", "secondary": [], "contentType": "guide", "priority": 2400, "reason": {"code": "HUB_TERM", "params": {"term": "running socks", "merged": 0, "faq": 0}}},
+      {"kind": "SPOKE", "hub": "running socks", "main": "best running socks", "secondary": [], "contentType": "list", "priority": 480, "reason": {"code": "SPOKE_MODIFIER", "params": {"category": "comparison", "faq": 0}}},
+      {"kind": "SPOKE", "hub": "running socks", "main": "compression socks for running", "secondary": [], "contentType": "guide", "priority": 390, "reason": {"code": "SPOKE_WORD", "params": {"word": "compression", "faq": 0}}},
+      {"kind": "HUB", "hub": null, "main": "marathon training", "secondary": [], "contentType": "guide", "priority": 880, "reason": {"code": "HUB_TERM", "params": {"term": "marathon training", "merged": 0, "faq": 0}}},
+      {"kind": "SPOKE", "hub": "marathon training", "main": "marathon training plan", "secondary": [], "contentType": "guide", "priority": 1000, "reason": {"code": "SPOKE_WORD", "params": {"word": "plan", "faq": 0}}}
+    ],
+    "unassigned": ["compression socks", "marathon pace calculator", "hydration vest"]
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "description": "Fixture italiana di T-1901 (AC-1901-1, AC-1901-2): seed 'scarpe running' e 'scarpe running trail', varianti di prezzo, confronto, plurali, domande, una keyword locale e due keyword senza hub. Il piano atteso è scritto a mano dalle regole predefinite.",
+  "language": "it",
+  "seeds": ["scarpe running", "scarpe running trail"],
+  "keywords": [
+    {"keyword": "scarpe running", "volume": 9900, "score": 80, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpe da running", "volume": 2400, "score": 70, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpa running", "volume": 880, "score": 60, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "running scarpe", "volume": 90, "score": 40, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpe running prezzo", "volume": 720, "score": 75, "searchIntent": "commercial", "keywordType": "generic"},
+    {"keyword": "scarpe running prezzi", "volume": 320, "score": 70, "searchIntent": "commercial", "keywordType": "generic"},
+    {"keyword": "scarpe running offerte", "volume": 1300, "score": 78, "searchIntent": "transactional", "keywordType": "generic"},
+    {"keyword": "scarpe running economiche", "volume": 480, "score": 65, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "migliori scarpe running", "volume": 2900, "score": 85, "searchIntent": "commercial", "keywordType": "generic"},
+    {"keyword": "scarpe running recensioni", "volume": 390, "score": 66, "searchIntent": "commercial", "keywordType": "generic"},
+    {"keyword": "scarpe running opinioni", "volume": 170, "score": 60, "searchIntent": "commercial", "keywordType": "generic"},
+    {"keyword": "scarpe running donna", "volume": 2100, "score": 72, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpe running da donna", "volume": 260, "score": 55, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpe running uomo", "volume": 1600, "score": 70, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpe running uomo asics", "volume": 140, "score": 50, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpe running asics", "volume": 590, "score": 62, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpe running bambino", "volume": 40, "score": 45, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "come scegliere le scarpe running", "volume": 320, "score": 58, "searchIntent": "informational", "keywordType": "question", "isQuestion": true},
+    {"keyword": "come allacciare le scarpe running", "volume": 90, "score": 50, "searchIntent": "informational", "keywordType": "question", "isQuestion": true},
+    {"keyword": "quanto durano le scarpe running", "volume": 70, "score": 48, "searchIntent": "informational", "keywordType": "question", "isQuestion": true},
+    {"keyword": "quali scarpe running donna comprare", "volume": 50, "score": 52, "searchIntent": "transactional", "keywordType": "question", "isQuestion": true},
+    {"keyword": "guida scarpe running", "volume": 210, "score": 60, "searchIntent": "mixed", "keywordType": "content_topic"},
+    {"keyword": "scarpe running vicino a me", "volume": 260, "score": 55, "searchIntent": "mixed", "keywordType": "local"},
+    {"keyword": "scarpe running trail", "volume": 1000, "score": 70, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpe trail running", "volume": 320, "score": 60, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "scarpe running trail donna", "volume": 140, "score": 50, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "calzini tecnici", "volume": 320, "score": 40, "searchIntent": "mixed", "keywordType": "generic"},
+    {"keyword": "borraccia sportiva", "volume": 210, "score": 40, "searchIntent": "mixed", "keywordType": "generic"}
+  ],
+  "expected": {
+    "pages": [
+      {"kind": "HUB", "hub": null, "main": "scarpe running", "secondary": ["scarpe da running", "scarpa running", "come allacciare le scarpe running", "running scarpe", "quanto durano le scarpe running", "scarpe running bambino"], "contentType": "guide", "priority": 13470, "reason": {"code": "HUB_SEED", "params": {"seed": "scarpe running", "merged": 1, "faq": 2}}},
+      {"kind": "SPOKE", "hub": "scarpe running", "main": "migliori scarpe running", "secondary": ["scarpe running recensioni", "scarpe running opinioni"], "contentType": "list", "priority": 3460, "reason": {"code": "SPOKE_MODIFIER", "params": {"category": "comparison", "faq": 0}}},
+      {"kind": "SPOKE", "hub": "scarpe running", "main": "scarpe running offerte", "secondary": ["scarpe running prezzo", "scarpe running economiche", "scarpe running prezzi"], "contentType": "product_category", "priority": 2820, "reason": {"code": "SPOKE_MODIFIER", "params": {"category": "transactional", "faq": 0}}},
+      {"kind": "SPOKE", "hub": "scarpe running", "main": "scarpe running donna", "secondary": ["scarpe running da donna", "quali scarpe running donna comprare"], "contentType": "guide", "priority": 2410, "reason": {"code": "SPOKE_WORD", "params": {"word": "donna", "faq": 1}}},
+      {"kind": "SPOKE", "hub": "scarpe running", "main": "scarpe running uomo", "secondary": ["scarpe running uomo asics"], "contentType": "guide", "priority": 1740, "reason": {"code": "SPOKE_WORD", "params": {"word": "uomo", "faq": 0}}},
+      {"kind": "SPOKE", "hub": "scarpe running", "main": "scarpe running asics", "secondary": [], "contentType": "guide", "priority": 590, "reason": {"code": "SPOKE_WORD", "params": {"word": "asics", "faq": 0}}},
+      {"kind": "SPOKE", "hub": "scarpe running", "main": "come scegliere le scarpe running", "secondary": [], "contentType": "faq", "priority": 320, "reason": {"code": "SPOKE_QUESTION", "params": {"volume": 320, "faq": 0}}},
+      {"kind": "SPOKE", "hub": "scarpe running", "main": "scarpe running vicino a me", "secondary": [], "contentType": "local", "priority": 260, "reason": {"code": "SPOKE_MODIFIER", "params": {"category": "local", "faq": 0}}},
+      {"kind": "SPOKE", "hub": "scarpe running", "main": "guida scarpe running", "secondary": [], "contentType": "guide", "priority": 210, "reason": {"code": "SPOKE_MODIFIER", "params": {"category": "informational", "faq": 0}}},
+      {"kind": "HUB", "hub": null, "main": "scarpe running trail", "secondary": ["scarpe trail running"], "contentType": "guide", "priority": 1320, "reason": {"code": "HUB_SEED", "params": {"seed": "scarpe running trail", "merged": 0, "faq": 0}}},
+      {"kind": "SPOKE", "hub": "scarpe running trail", "main": "scarpe running trail donna", "secondary": [], "contentType": "guide", "priority": 140, "reason": {"code": "SPOKE_WORD", "params": {"word": "donna", "faq": 0}}}
+    ],
+    "unassigned": ["calzini tecnici", "borraccia sportiva"]
+  }
+}

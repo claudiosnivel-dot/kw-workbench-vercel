@@ -1,12 +1,22 @@
 // Gate di T-1502 (AC-1502-4): nessuna scrittura di Prisma su project, subproject, seed, keywordCandidate e job in app/**
 // e lib/** ha un where composto dal solo id. Ogni update e delete porta il perimetro del workspace (workspace_id,
 // filtro project o perimetro dell'autorizzazione) o una condizione di stato del runner dei job.
+// impacted-by: T-1903 (la regola vale anche per strategy, strategyPage e strategyKeyword)
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-const SCOPED_MODELS = new Set(["project", "subproject", "seed", "keywordCandidate", "job"]);
+const SCOPED_MODELS = new Set([
+  "project",
+  "subproject",
+  "seed",
+  "keywordCandidate",
+  "job",
+  "strategy",
+  "strategyPage",
+  "strategyKeyword",
+]);
 const WRITE_METHODS = new Set(["update", "delete", "updateMany", "deleteMany"]);
 const ROOTS = ["app", "lib"];
 const EXCLUDED_DIRS = new Set(["generated", "node_modules"]);

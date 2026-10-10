@@ -257,6 +257,9 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
               {t(`export.links.${link.label}`)}
             </Link>
           ))}
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/strategy`}>
+            {t("strategy.ui.title")}
+          </Link>
         </div>
       </section>
 

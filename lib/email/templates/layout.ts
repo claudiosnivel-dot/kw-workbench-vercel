@@ -1,11 +1,7 @@
 import { createTranslator } from "next-intl";
 import { getPublicAppUrl } from "@/lib/env";
+import { MESSAGES } from "@/lib/i18n/catalogs";
 import { APP_TIME_ZONE, type AppLocale } from "@/lib/i18n/locale";
-import en from "@/messages/en.json";
-import it from "@/messages/it.json";
-
-// Cataloghi da una mappa statica indicizzata dalla lingua già validata (come i18n/request.ts).
-const MESSAGES: Record<AppLocale, typeof it> = { it, en };
 
 export type RenderedEmail = { subject: string; html: string; text: string };
 

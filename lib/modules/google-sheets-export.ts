@@ -41,10 +41,12 @@ export class GoogleReauthRequiredError extends AppError {
 }
 
 type SheetsGroup = {
-  subprojectId: string;
   sheetTitle: string;
   rowCount: number;
+  columnCount: number;
 };
+
+type SectionSheetsGroup = SheetsGroup & { subprojectId: string };
 
 type SheetCell = string | number | boolean;
 
@@ -144,7 +146,7 @@ function normalizeCellValue(value: unknown): SheetCell {
 }
 
 /** Un foglio per ogni sezione con righe da esportare, in ordine di position della sezione e poi di nome. */
-async function buildGroupedSheets(projectId: string, where: Prisma.KeywordCandidateWhereInput): Promise<SheetsGroup[]> {
+async function buildGroupedSheets(projectId: string, where: Prisma.KeywordCandidateWhereInput): Promise<SectionSheetsGroup[]> {
   const counts = await prisma.keywordCandidate.groupBy({ by: ["subproject_id"], where, _count: { _all: true } });
   if (counts.length === 0) {
     return [];
@@ -162,6 +164,7 @@ async function buildGroupedSheets(projectId: string, where: Prisma.KeywordCandid
     subprojectId: section.id,
     sheetTitle: titles[index],
     rowCount: rowCounts.get(section.id) ?? 0,
+    columnCount: EXPORT_COLUMNS.length,
   }));
 }
 
@@ -235,7 +238,7 @@ async function createSpreadsheet(accessToken: string, title: string, groups: She
       sheets: groups.map((group) => ({
         properties: {
           title: group.sheetTitle,
-          gridProperties: { rowCount: group.rowCount + 1, columnCount: EXPORT_COLUMNS.length },
+          gridProperties: { rowCount: group.rowCount + 1, columnCount: group.columnCount },
         },
       })),
     }),
@@ -277,28 +280,29 @@ async function writeValues(accessToken: string, spreadsheetId: string, range: st
   }
 }
 
-/** Scrive le righe della sezione nel suo foglio in richieste da SHEETS_ROWS_PER_WRITE righe; l'intestazione solo nella prima. */
-async function writeSheet(
+/** Scrive le righe nel foglio in richieste da SHEETS_ROWS_PER_WRITE righe; l'intestazione solo nella prima. */
+async function writeRows(
   accessToken: string,
   spreadsheetId: string,
-  group: SheetsGroup,
-  where: Prisma.KeywordCandidateWhereInput
+  sheetTitle: string,
+  header: readonly string[],
+  rows: Iterable<readonly unknown[]> | AsyncIterable<readonly unknown[]>
 ): Promise<number> {
-  let pending: SheetCell[][] = [EXPORT_COLUMNS.map(String)];
+  let pending: SheetCell[][] = [header.map(String)];
   let pendingRows = 0;
   let nextRow = 1;
   let written = 0;
 
   const flush = async () => {
-    await writeValues(accessToken, spreadsheetId, `${escapeRangeSheetTitle(group.sheetTitle)}!A${nextRow}`, pending);
+    await writeValues(accessToken, spreadsheetId, `${escapeRangeSheetTitle(sheetTitle)}!A${nextRow}`, pending);
     nextRow += pending.length;
     written += pendingRows;
     pending = [];
     pendingRows = 0;
   };
 
-  for await (const row of iterateExportRows({ AND: [where, { subproject_id: group.subprojectId }] })) {
-    pending.push(EXPORT_COLUMNS.map((column) => normalizeCellValue(row[column])));
+  for await (const row of rows) {
+    pending.push(row.map(normalizeCellValue));
     pendingRows += 1;
     if (pendingRows === SHEETS_ROWS_PER_WRITE) {
       await flush();
@@ -345,23 +349,25 @@ async function discardIncompleteSpreadsheet(
   return spreadsheet.url;
 }
 
-export async function exportProjectToGoogleSheets(params: {
-  userId: string;
-  projectId: string;
-  scope: ExportScope;
-  filters: ResultsFilters;
-  fileName: string;
-  subprojectId?: string | null;
-}) {
-  const where = buildExportWhere(params.projectId, params.scope, params.filters, params.subprojectId ?? null);
-  const groups = await buildGroupedSheets(params.projectId, where);
-
-  if (groups.length === 0) {
-    throw new GoogleSheetsExportError("Nessuna keyword da esportare con i filtri e scope selezionati.", 400, "SHEETS_NO_ROWS");
+/** Righe dell'export dei risultati di una sezione come celle, nell'ordine delle colonne. */
+async function* sectionCells(where: Prisma.KeywordCandidateWhereInput, subprojectId: string) {
+  for await (const row of iterateExportRows({ AND: [where, { subproject_id: subprojectId }] })) {
+    yield EXPORT_COLUMNS.map((column) => row[column]);
   }
+}
 
-  const accessToken = await refreshUserAccessToken(params.userId);
-  const title = sanitizeSpreadsheetTitle(params.fileName);
+/**
+ * Nuovo file Google Sheets dell'utente con i fogli dati, scritti da write (T-806): se la scrittura fallisce il file
+ * incompleto si elimina o si rinomina, e l'errore pubblico lo dice.
+ */
+async function exportToNewSpreadsheet(
+  userId: string,
+  fileName: string,
+  groups: SheetsGroup[],
+  write: (accessToken: string, spreadsheetId: string) => Promise<number>
+) {
+  const accessToken = await refreshUserAccessToken(userId);
+  const title = sanitizeSpreadsheetTitle(fileName);
   const spreadsheet = await createSpreadsheet(accessToken, title, groups);
 
   if (!spreadsheet.spreadsheetId) {
@@ -372,9 +378,7 @@ export async function exportProjectToGoogleSheets(params: {
     spreadsheet.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${spreadsheet.spreadsheetId}/edit`;
   let exportedRows = 0;
   try {
-    for (const group of groups) {
-      exportedRows += await writeSheet(accessToken, spreadsheet.spreadsheetId, group, where);
-    }
+    exportedRows = await write(accessToken, spreadsheet.spreadsheetId);
   } catch (error) {
     const leftUrl = await discardIncompleteSpreadsheet(accessToken, {
       id: spreadsheet.spreadsheetId,
@@ -399,4 +403,42 @@ export async function exportProjectToGoogleSheets(params: {
     sheetCount: groups.length,
     exportedRows,
   };
+}
+
+export async function exportProjectToGoogleSheets(params: {
+  userId: string;
+  projectId: string;
+  scope: ExportScope;
+  filters: ResultsFilters;
+  fileName: string;
+  subprojectId?: string | null;
+}) {
+  const where = buildExportWhere(params.projectId, params.scope, params.filters, params.subprojectId ?? null);
+  const groups = await buildGroupedSheets(params.projectId, where);
+
+  if (groups.length === 0) {
+    throw new GoogleSheetsExportError("Nessuna keyword da esportare con i filtri e scope selezionati.", 400, "SHEETS_NO_ROWS");
+  }
+
+  return exportToNewSpreadsheet(params.userId, params.fileName, groups, async (accessToken, spreadsheetId) => {
+    let written = 0;
+    for (const group of groups) {
+      written += await writeRows(accessToken, spreadsheetId, group.sheetTitle, EXPORT_COLUMNS, sectionCells(where, group.subprojectId));
+    }
+    return written;
+  });
+}
+
+/** Una tabella in un foglio di un nuovo file Google Sheets (export della strategia, T-1906), con lo stesso flusso. */
+export async function exportTableToGoogleSheets(params: {
+  userId: string;
+  fileName: string;
+  sheetTitle: string;
+  columns: readonly string[];
+  rows: readonly (readonly unknown[])[];
+}) {
+  const group = { sheetTitle: sanitizeSheetTitle(params.sheetTitle), rowCount: params.rows.length, columnCount: params.columns.length };
+  return exportToNewSpreadsheet(params.userId, params.fileName, [group], (accessToken, spreadsheetId) =>
+    writeRows(accessToken, spreadsheetId, group.sheetTitle, params.columns, params.rows)
+  );
 }

@@ -5,7 +5,8 @@ const ROLE_RANK: Record<WorkspaceRole, number> = { MEMBER: 1, ADMIN: 2, OWNER: 3
 
 /**
  * Tabella unica dei permessi per workspace (T-1502, D-08): ogni azione con il ruolo minimo che la può compiere. MEMBER
- * legge e modifica progetti e sezioni (eliminazione delle sezioni compresa), avvia estrazioni ed esporta; ADMIN in più
+ * legge e modifica progetti e sezioni (eliminazione delle sezioni compresa), avvia estrazioni, genera e modifica le
+ * strategie hub and spoke (T-1903) ed esporta; ADMIN in più
  * elimina progetti, gestisce membri e inviti e rinomina il workspace; OWNER in più fatturazione, eliminazione e
  * trasferimento del workspace. Rotte, pagine e test leggono solo questa tabella: cambiare una scelta tocca solo qui.
  */
@@ -17,6 +18,7 @@ export const WORKSPACE_PERMISSIONS = {
   "section.write": "MEMBER",
   "extraction.run": "MEMBER",
   "export.run": "MEMBER",
+  "strategy.write": "MEMBER",
   "project.delete": "ADMIN",
   "members.manage": "ADMIN",
   "workspace.update": "ADMIN",

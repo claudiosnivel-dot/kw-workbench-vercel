@@ -107,6 +107,11 @@ export const API_ERROR_CODES = [
   "ACTIVE_SUBSCRIPTION",
   "OWNERSHIP_TRANSFER_REQUIRED",
   "CONTACT_UNAVAILABLE",
+  // Strategie hub and spoke (T-1903, T-1904).
+  "STRATEGY_NO_KEYWORDS",
+  "STRATEGY_LIMIT",
+  "STRATEGY_NOT_FOUND",
+  "STRATEGY_CONFLICT",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
