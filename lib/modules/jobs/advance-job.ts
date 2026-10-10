@@ -5,7 +5,7 @@ import { getIntEnv } from "@/lib/env";
 import { prepareBlacklist } from "@/lib/modules/brand-filter";
 import { dedupeCandidates, type DedupedCandidate, type RawKeywordCandidate } from "@/lib/modules/dedupe";
 import { buildExpansionQueries } from "@/lib/modules/expansion-engine";
-import { ACTIVE_JOB_STATUSES, failActiveJob, failureCauseOf, toPublicJobError } from "@/lib/modules/jobs/job-state";
+import { ACTIVE_JOB_STATUSES, failActiveJob, failureCauseOf, releaseQuotaOnCancel, toPublicJobError } from "@/lib/modules/jobs/job-state";
 import {
   AUTOCOMPLETE_FAILURE_THRESHOLD,
   buildCandidateRows,
@@ -487,11 +487,15 @@ async function storeBatch(job: Job, lease: Lease): Promise<void> {
   });
 }
 
-/** Annullamento richiesto (T-1204): job canceled, staging eliminato, keyword_candidates della sezione invariati. */
+/**
+ * Annullamento richiesto (T-1204): job canceled, staging eliminato, keyword_candidates della sezione invariati; nella
+ * stessa transazione l'avvio torna al workspace se la richiesta era entro 60 secondi dall'avvio (T-2002).
+ */
 async function cancelJob(job: Job, lease: Lease): Promise<void> {
   await inTransaction(async (tx) => {
     await deleteStaging(tx, job.id);
     await writeJob(tx, lease, { status: "canceled", completed_at: new Date(), locked_until: null });
+    await releaseQuotaOnCancel(tx, job.id);
   });
 }
 

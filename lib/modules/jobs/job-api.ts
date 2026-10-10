@@ -3,7 +3,7 @@ import { canPerform, type WorkspaceAction } from "@/lib/authz/permissions";
 import { projectAccessWhere } from "@/lib/authz/workspace";
 import type { Job, JobStatus } from "@/lib/generated/prisma/client";
 import { AppError, ForbiddenError, JOB_ERROR_CODES } from "@/lib/http/errors";
-import { ACTIVE_JOB_STATUSES } from "@/lib/modules/jobs/job-state";
+import { ACTIVE_JOB_STATUSES, releaseQuotaOnCancel } from "@/lib/modules/jobs/job-state";
 import { prisma } from "@/lib/prisma";
 
 /** Job autorizzato per un'azione, con il perimetro delle scritture sul suo progetto (T-1502). */
@@ -55,23 +55,37 @@ export function jobStatusBody(job: Job) {
 /**
  * Annulla il job: pending -> canceled subito; running -> cancel_requested, l'annullamento avviene al batch successivo
  * (T-1202); già terminato -> 409 JOB_NOT_CANCELABLE. Ogni passaggio è un updateMany condizionale sullo stato, così
- * un job partito nel frattempo riceve la richiesta invece di essere chiuso a metà batch.
+ * un job partito nel frattempo riceve la richiesta invece di essere chiuso a metà batch. La prima richiesta fissa
+ * cancel_requested_at: entro 60 secondi dall'avvio la quota torna al workspace quando il job diventa canceled (T-2002),
+ * subito per un pending, al batch successivo per un running; un job che nel frattempo si completa la consuma.
  */
 export async function cancelAuthorizedJob({ job, perimeter }: AuthorizedJob): Promise<"canceled" | "running"> {
   // Perimetro del workspace nel where (T-1502): una membership revocata nel frattempo non annulla il job.
   const jobId = job.id;
-  const pending = await prisma.job.updateMany({
-    where: { id: jobId, status: "pending", project: perimeter },
-    data: { status: "canceled", completed_at: new Date() },
+  const now = new Date();
+  const canceled = await prisma.$transaction(async (tx) => {
+    const pending = await tx.job.updateMany({
+      where: { id: jobId, status: "pending", project: perimeter },
+      data: { status: "canceled", completed_at: now, cancel_requested_at: now },
+    });
+    if (pending.count === 1) {
+      await releaseQuotaOnCancel(tx, jobId);
+    }
+    return pending.count === 1;
   });
-  if (pending.count === 1) {
+  if (canceled) {
     return "canceled";
   }
 
-  const running = await prisma.job.updateMany({
-    where: { id: jobId, status: "running", project: perimeter },
-    data: { cancel_requested: true },
+  // Solo la prima richiesta fissa l'istante della finestra gratuita: una seconda non lo sposta.
+  const first = await prisma.job.updateMany({
+    where: { id: jobId, status: "running", cancel_requested_at: null, project: perimeter },
+    data: { cancel_requested: true, cancel_requested_at: now },
   });
+  const running =
+    first.count === 1
+      ? first
+      : await prisma.job.updateMany({ where: { id: jobId, status: "running", project: perimeter }, data: { cancel_requested: true } });
   if (running.count === 1) {
     return "running";
   }

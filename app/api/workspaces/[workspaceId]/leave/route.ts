@@ -4,7 +4,10 @@ import { leaveWorkspace } from "@/lib/workspaces/members";
 
 type WorkspaceParams = { workspaceId: string };
 
-/** Abbandono del workspace (T-1503): 409 LAST_OWNER per l'ultimo OWNER e per il workspace personale. */
+/**
+ * Abbandono del workspace (T-1503): 409 LAST_OWNER per l'ultimo OWNER e per il workspace personale senza un altro OWNER;
+ * chi esce dal proprio workspace personale riceve un nuovo workspace personale vuoto (T-2007).
+ */
 export const POST = withUserRoute(async (request: Request, user, { workspaceId }: WorkspaceParams) => {
   await leaveWorkspace(user, workspaceId);
   return NextResponse.json({ success: true });

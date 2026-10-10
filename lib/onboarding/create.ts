@@ -1,5 +1,5 @@
 import { projectAccessWhere } from "@/lib/authz/workspace";
-import { assertWithinLimit, loadPlanGuard } from "@/lib/billing/enforce";
+import { assertWithinLimit, countLimitedProjects, loadPlanGuard } from "@/lib/billing/enforce";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { OnboardingIdempotencyKind, OnboardingStatus, OnboardingStep } from "@/lib/generated/prisma/enums";
 import { AppError, NotFoundError } from "@/lib/http/errors";
@@ -8,6 +8,7 @@ import { parseProjectCreate, parseSubprojectCreate } from "@/lib/modules/project
 import { guardSectionName } from "@/lib/modules/sections";
 import { stepToPath } from "@/lib/onboarding/constants";
 import { prisma } from "@/lib/prisma";
+import { lockWorkspaceRow } from "@/lib/workspaces/lock";
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -100,7 +101,8 @@ async function createOnce(
 /**
  * Passo 2 (T-1001): crea il progetto (senza sezione iniziale) nel workspace indicato, già autorizzato dalla rotta
  * (workspace attivo, T-1504), e porta l'onboarding a PROJECT_TARGETING in una sola transazione; la stessa chiave
- * restituisce lo stesso progetto.
+ * restituisce lo stesso progetto. Il progetto dell'onboarding non conta nel limite dei progetti (T-2004): ogni workspace
+ * ne ha al massimo uno, così ripartire con l'onboarding crea progetti che contano come gli altri.
  */
 export async function createOnboardingProject(
   user: Actor,
@@ -116,12 +118,20 @@ export async function createOnboardingProject(
     createOnce(async () => {
       const plan = await loadPlanGuard(input.workspaceId);
       const projectId = await prisma.$transaction(async (tx) => {
-        // Limite dei progetti del piano (T-1605), come POST /api/projects.
-        await assertWithinLimit(tx, plan, "maxProjects", async () =>
-          (await tx.project.count({ where: { workspace_id: input.workspaceId } })) + 1
-        );
+        // Sotto il lock del workspace due onboarding concorrenti non segnano due progetti fuori dal limite.
+        await lockWorkspaceRow(tx, input.workspaceId);
+        const onboardingTaken = (await tx.project.count({ where: { workspace_id: input.workspaceId, created_via_onboarding: true } })) > 0;
+        if (onboardingTaken) {
+          // Limite dei progetti del piano (T-1605), come POST /api/projects.
+          await assertWithinLimit(tx, plan, "maxProjects", async () => (await countLimitedProjects(tx, input.workspaceId)) + 1);
+        }
         const project = await tx.project.create({
-          data: { workspace_id: input.workspaceId, created_by_user_id: user.id, ...parsed.data },
+          data: {
+            workspace_id: input.workspaceId,
+            created_by_user_id: user.id,
+            created_via_onboarding: !onboardingTaken,
+            ...parsed.data,
+          },
           select: { id: true },
         });
         await storeKey(tx, { user_id: user.id, key, kind: OnboardingIdempotencyKind.PROJECT, project_id: project.id });

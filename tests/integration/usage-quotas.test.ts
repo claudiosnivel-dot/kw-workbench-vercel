@@ -1,9 +1,11 @@
 // Gate di T-1703 (AC-1703-1…7): quote d'uso per workspace con il lancio commerciale attivo (avvii al giorno, keyword
 // del mese, keyword arricchite dal fornitore con licenza), rimborso della quota per errori nostri entro un tetto e un solo
 // job attivo per workspace (D-27 emendata). Pipeline e fornitore simulati, nessuna chiamata reale.
+// Gate di T-2002 (AC-2002-1, AC-2002-2): annullamento entro 60 secondi dall'avvio senza consumo della quota.
 import { randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as getUsage } from "@/app/api/billing/usage/route";
+import { POST as cancelJob } from "@/app/api/jobs/[id]/cancel/route";
 import { POST as runSection } from "@/app/api/projects/[id]/subprojects/[subprojectId]/run/route";
 import { setPlansForTesting } from "@/lib/billing/plans";
 import { resetEnvForTests } from "@/lib/env";
@@ -278,5 +280,74 @@ describe("rimborsi e job attivi (D-27 emendata)", () => {
     expect((await blocked.json()) as ErrorBody).toMatchObject({ code: "JOB_ALREADY_ACTIVE", jobId: data.jobId });
     expect(runsAfterBlocked).toBe(1);
     expect(paused.status).toBe(202);
+  });
+});
+
+describe("annullamento entro 60 secondi (T-2002, D-27 emendata)", () => {
+  const today = new Date("2026-10-08T00:00:00.000Z");
+  const month = new Date("2026-10-01T00:00:00.000Z");
+
+  /** Avvio con 1 avvio già usato su 3 al giorno: restituisce il job pending appena creato. */
+  async function startWithOneRunUsed() {
+    configureTestBilling({ runsPerDay: 3 });
+    const member = await memberWithSections(["Generale"]);
+    await setCounter(member.workspaceId, "runs_day", today, 1);
+    const response = await start(member.project.id, member.sections[0].id, member.cookie);
+    expect(response.status).toBe(202);
+    const { data } = (await response.json()) as { data: { jobId: string } };
+    const job = await prisma.job.findUniqueOrThrow({ where: { id: data.jobId } });
+    expect((await counter(member.workspaceId, "runs_day", today))?.count).toBe(2);
+    return { ...member, job };
+  }
+
+  function cancel(jobId: string, cookie: string) {
+    return callRoute(cancelJob, { method: "POST", url: `/api/jobs/${jobId}/cancel`, cookie, params: { id: jobId } });
+  }
+
+  const after = (job: { created_at: Date }, seconds: number) => new Date(job.created_at.getTime() + seconds * 1000);
+
+  // covers: AC-2002-1
+  it("un job pending annullato dopo 10 secondi restituisce l'avvio; i rimborsi del mese non cambiano", async () => {
+    const { cookie, workspaceId, job } = await startWithOneRunUsed();
+    vi.setSystemTime(after(job, 10));
+
+    const response = await cancel(job.id, cookie);
+
+    expect(response.status).toBe(200);
+    expect((await counter(workspaceId, "runs_day", today))?.count).toBe(1);
+    expect(await counter(workspaceId, "run_refunds_month", month)).toBeNull();
+    const canceled = await prisma.job.findUniqueOrThrow({ where: { id: job.id } });
+    expect([canceled.status, canceled.quota_refunded]).toEqual(["canceled", true]);
+  });
+
+  // covers: AC-2002-1
+  it("un job running annullato dopo 10 secondi restituisce l'avvio quando si ferma, anche se si ferma più tardi", async () => {
+    const { cookie, workspaceId, job } = await startWithOneRunUsed();
+    await prisma.job.updateMany({ where: { id: job.id, status: "pending" }, data: { status: "running" } });
+    vi.setSystemTime(after(job, 10));
+
+    const response = await cancel(job.id, cookie);
+    const runsWhileRunning = (await counter(workspaceId, "runs_day", today))?.count;
+    vi.setSystemTime(after(job, 90));
+    const stopped = await runJobById(job.id);
+
+    expect(response.status).toBe(202);
+    expect(runsWhileRunning).toBe(2);
+    expect([stopped?.status, stopped?.quota_refunded]).toEqual(["canceled", true]);
+    expect((await counter(workspaceId, "runs_day", today))?.count).toBe(1);
+    expect(await counter(workspaceId, "run_refunds_month", month)).toBeNull();
+  });
+
+  // covers: AC-2002-2
+  it("un job annullato dopo 61 secondi consuma l'avvio", async () => {
+    const { cookie, workspaceId, job } = await startWithOneRunUsed();
+    vi.setSystemTime(after(job, 61));
+
+    const response = await cancel(job.id, cookie);
+
+    expect(response.status).toBe(200);
+    expect((await counter(workspaceId, "runs_day", today))?.count).toBe(2);
+    const canceled = await prisma.job.findUniqueOrThrow({ where: { id: job.id } });
+    expect([canceled.status, canceled.quota_refunded]).toEqual(["canceled", false]);
   });
 });

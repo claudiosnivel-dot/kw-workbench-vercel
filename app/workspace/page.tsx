@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { PageIntro } from "@/components/page-intro";
 import {
+  CreateWorkspaceForm,
   InviteForm,
   LeaveWorkspaceButton,
   MemberRoleSelect,
@@ -20,8 +21,9 @@ import { listMembers } from "@/lib/workspaces/members";
 export const dynamic = "force-dynamic";
 
 /**
- * Impostazioni del workspace attivo (T-1504): nome, membri con ruolo e data di ingresso, inviti in attesa. I controlli
- * si rendono solo ai ruoli ammessi dalla tabella dei permessi (T-1502); la verifica resta nelle rotte di T-1503.
+ * Impostazioni del workspace attivo (T-1504): nome, membri con ruolo e data di ingresso, inviti in attesa, creazione di un
+ * workspace di squadra (T-2008). I controlli si rendono solo ai ruoli ammessi dalla tabella dei permessi (T-1502); la
+ * verifica resta nelle rotte di T-1503.
  */
 export default async function WorkspacePage() {
   const user = await requirePageUser();
@@ -35,6 +37,8 @@ export default async function WorkspacePage() {
   const canManage = canPerform(workspace.role, "members.manage");
   const canTransfer = canPerform(workspace.role, "workspace.transfer");
   const others = members.filter((member) => member.user.id !== user.id);
+  // Dal workspace personale si esce solo se un altro membro ne è OWNER (T-2007): poi l'utente ne riceve uno nuovo.
+  const canLeave = !workspace.isPersonal || others.some((member) => member.role === "OWNER");
 
   return (
     <div className="space-y-6">
@@ -136,15 +140,17 @@ export default async function WorkspacePage() {
         />
       )}
 
-      {!workspace.isPersonal && (
+      {canLeave && (
         <section className="card space-y-3">
           <div>
             <h2 className="text-lg font-semibold">{t("leave.title")}</h2>
-            <p className="text-sm text-slate-600">{t("leave.intro")}</p>
+            <p className="text-sm text-slate-600">{t(workspace.isPersonal ? "leave.personalIntro" : "leave.intro")}</p>
           </div>
           <LeaveWorkspaceButton workspaceId={workspace.id} workspaceName={workspace.name} />
         </section>
       )}
+
+      <CreateWorkspaceForm />
     </div>
   );
 }

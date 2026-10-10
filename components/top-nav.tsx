@@ -35,14 +35,19 @@ function UserIdentity({ user, className }: { user: { displayName: string; email:
   );
 }
 
-type NavLabelKey = "overview" | "personalize" | "newProject" | "admin" | "support";
+type NavLabelKey = "overview" | "personalize" | "newProject" | "billing" | "admin" | "support";
 
-function buildNavLinks(showAdminLink: boolean, locale: AppLocale) {
+function buildNavLinks(showAdminLink: boolean, showBillingLink: boolean, locale: AppLocale) {
   const links: { href: string; labelKey: NavLabelKey }[] = [
     { href: "/", labelKey: "overview" },
     { href: "/personalizza", labelKey: "personalize" },
     { href: "/projects/new", labelKey: "newProject" },
   ];
+
+  // Fatturazione del workspace attivo per chi ha billing.manage (T-2005); la pagina resta leggibile da tutti i membri.
+  if (showBillingLink) {
+    links.push({ href: "/billing", labelKey: "billing" });
+  }
 
   if (showAdminLink) {
     links.push({ href: "/admin", labelKey: "admin" });
@@ -123,6 +128,7 @@ export function TopNav({
   brandLogoUrlLegacy,
   themeMode,
   showAdminLink = false,
+  showBillingLink = false,
   user = null,
   workspaces = [],
   activeWorkspaceId = null,
@@ -133,6 +139,8 @@ export function TopNav({
   brandLogoUrlLegacy?: string;
   themeMode: "DARK" | "LIGHT";
   showAdminLink?: boolean;
+  /** true se l'utente ha billing.manage nel workspace attivo (T-2005), calcolato dal layout con la tabella dei permessi. */
+  showBillingLink?: boolean;
   user?: { displayName: string; email: string | null } | null;
   /** Workspace dell'utente (T-1504): il selettore compare solo se ce n'è più d'uno tra cui scegliere. */
   workspaces?: WorkspaceOption[];
@@ -161,7 +169,10 @@ export function TopNav({
   );
 
   const hasCustomLogo = resolvedLogoUrl.length > 0;
-  const navLinks = useMemo(() => buildNavLinks(showAdminLink, locale), [showAdminLink, locale]);
+  const navLinks = useMemo(
+    () => buildNavLinks(showAdminLink, showBillingLink, locale),
+    [showAdminLink, showBillingLink, locale]
+  );
   const authView = isAuthRoute(pathname);
   const switcher =
     workspaces.length > 1 && activeWorkspaceId
@@ -209,7 +220,7 @@ export function TopNav({
     <header className="top-nav-shell sticky top-0 z-40">
       <div className="mx-auto w-full max-w-[1180px] px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4">
-          <Link href="/" aria-label={normalizedBrandName} className="group inline-flex min-w-0 items-center gap-3">
+          <Link href="/" aria-label={normalizedBrandName} className="group inline-flex min-w-0 items-center gap-3 xl:shrink-0">
             {hasCustomLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={resolvedLogoUrl} alt={normalizedBrandName} className="top-nav-logo-image" />
@@ -240,7 +251,8 @@ export function TopNav({
                 </svg>
               </button>
 
-              <nav className="hidden items-center gap-2 md:flex">
+              {/* Da xl marchio e voci restano interi: se lo spazio non basta si accorcia solo l'identità (T-2005). */}
+              <nav className="hidden min-w-0 items-center gap-2 md:flex">
                 {user ? (
                   <>
                     {navLinks.map((item) => {
@@ -249,7 +261,7 @@ export function TopNav({
                         <Link
                           key={item.href}
                           href={item.href}
-                          className={`top-nav-link inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition ${
+                          className={`top-nav-link inline-flex items-center rounded-xl px-3 py-2 text-sm font-medium transition xl:whitespace-nowrap ${
                             active ? "is-active" : ""
                           }`}
                         >

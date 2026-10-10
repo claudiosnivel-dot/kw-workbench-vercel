@@ -1,3 +1,4 @@
+import { writeAuditLog } from "@/lib/admin/audit";
 import type { AuthUser } from "@/lib/auth/credentials";
 import { verifyUserPassword } from "@/lib/auth/credentials";
 import type { Prisma } from "@/lib/generated/prisma/client";
@@ -5,6 +6,8 @@ import type { SubscriptionStatus } from "@/lib/generated/prisma/enums";
 import { AppError } from "@/lib/http/errors";
 import { revokeAndClearGoogleSheetsCredential } from "@/lib/integrations/google-sheets";
 import { prisma } from "@/lib/prisma";
+import { enforceRateLimits } from "@/lib/security/rate-limit";
+import { rateLimitRules } from "@/lib/security/rate-limit-config";
 
 // Abbonamenti ancora da disdire (T-1604) prima di poter cancellare l'account: canceled è l'unico stato chiuso.
 const OPEN_SUBSCRIPTION_STATUSES: ReadonlySet<SubscriptionStatus> = new Set(["trialing", "active", "past_due", "paused"]);
@@ -52,16 +55,20 @@ function scrubMetadata(value: Prisma.JsonValue, identity: { id: string; email: s
 }
 
 /**
- * Cancellazione dell'account da parte dell'utente (T-1804, GDPR). Controlli in ordine: password attuale (403
+ * Cancellazione dell'account da parte dell'utente (T-1804, GDPR). Controlli in ordine: tentativi per utente (T-2001:
+ * oltre la soglia 429 RATE_LIMITED con Retry-After prima di leggere la password, CWE-307), password attuale (403
  * INVALID_PASSWORD, CWE-306), root admin (409 ROOT_ADMIN), unico OWNER di un workspace con un abbonamento non disdetto
  * (409 ACTIVE_SUBSCRIPTION) o con altri membri (409 OWNERSHIP_TRANSFER_REQUIRED, D-29), ciascuno con l'elenco dei
  * workspace. Poi revoca del token di Google Sheets presso Google (T-906) e, in una transazione: workspace in cui
  * l'utente è l'unico membro (progetti in cascata), workspace personale con altri membri staccato dall'utente, inviti
- * verso la sua email, righe del registro admin anonimizzate (restano, senza id, nome ed email), riga users (membership,
- * credenziali e token in cascata). billing_events restano per gli obblighi contabili (D-15). Le sessioni esistenti
- * smettono di valere perché l'utente non esiste più.
+ * verso la sua email, righe del registro admin anonimizzate (restano, senza id, nome ed email), tentativi del rate
+ * limit della cancellazione (la chiave contiene l'id), riga users (membership, credenziali e token in cascata) e una riga
+ * account.delete anonima nel registro (T-2001: nessun attore, bersaglio, metadata o IP). billing_events restano per gli
+ * obblighi contabili (D-15). Le sessioni esistenti smettono di valere perché l'utente non esiste più.
  */
 export async function deleteOwnAccount(user: AuthUser, password: unknown): Promise<void> {
+  const rateLimitKey = `account-delete:user:${user.id}`;
+  await enforceRateLimits([{ key: rateLimitKey, rule: rateLimitRules().accountDelete }]);
   if (typeof password !== "string" || password.length === 0 || !(await verifyUserPassword(user.id, password))) {
     throw new AppError(403, "INVALID_PASSWORD", "Password non corretta");
   }
@@ -108,6 +115,8 @@ export async function deleteOwnAccount(user: AuthUser, password: unknown): Promi
         },
       })
     ),
+    prisma.rateLimitHit.deleteMany({ where: { key: rateLimitKey } }),
     prisma.user.delete({ where: { id: user.id } }),
+    writeAuditLog(prisma, { actorUserId: null, action: "account.delete", targetType: "user" }),
   ]);
 }

@@ -1,6 +1,12 @@
 import * as Sentry from "@sentry/nextjs";
 import { getBillingPolicy } from "@/lib/billing/plans";
-import { type RefundOutcome, refundRunReservation, type RunReservation } from "@/lib/billing/usage";
+import {
+  isFreeCancel,
+  type RefundOutcome,
+  refundRunReservation,
+  releaseCanceledRun,
+  type RunReservation,
+} from "@/lib/billing/usage";
 import { Prisma, type Job, type JobFailureCause, type JobStatus } from "@/lib/generated/prisma/client";
 import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { jobProject, touchProjectActivity } from "@/lib/modules/project-activity";
@@ -41,6 +47,22 @@ export function toPublicJobError(error: unknown): string {
 function runReservationOf(payload: Prisma.JsonValue | null): RunReservation | null {
   const quota = (payload as { quota?: RunReservation } | null)?.quota;
   return quota?.workspaceId && quota.runsPeriodStart ? quota : null;
+}
+
+/**
+ * Annullamento gratuito (T-2002, D-27 emendata): chiamata nella transazione che porta il job a canceled. Se la prima
+ * richiesta di annullamento (cancel_requested_at) cade entro FREE_CANCEL_WINDOW_MS da created_at e l'avvio aveva una
+ * quota riservata, l'avvio torna al workspace fuori dal tetto dei rimborsi; altrimenti la quota resta consumata.
+ */
+export async function releaseQuotaOnCancel(tx: Prisma.TransactionClient, jobId: string): Promise<void> {
+  const job = await tx.job.findUniqueOrThrow({
+    where: { id: jobId },
+    select: { created_at: true, cancel_requested_at: true, payload: true },
+  });
+  const reservation = runReservationOf(job.payload);
+  if (reservation && job.cancel_requested_at && isFreeCancel(job.created_at, job.cancel_requested_at)) {
+    await releaseCanceledRun(tx, { jobId, reservation });
+  }
 }
 
 /**

@@ -7,6 +7,7 @@ import { runAfterResponse } from "@/lib/http/after-response";
 import { AppError } from "@/lib/http/errors";
 import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
 import { prisma } from "@/lib/prisma";
+import { handOverPersonalWorkspace } from "@/lib/workspaces/personal";
 
 /** Errore delle azioni admin: status e code espliciti, messaggio pubblico (T-503). */
 export class AdminActionError extends AppError {
@@ -421,8 +422,9 @@ export async function updateUserFromAdmin(
 }
 
 /**
- * Eliminazione di un utente dall'admin. Il suo workspace personale va via in cascata con i progetti; un workspace di
- * altri di cui è l'unico OWNER non può restare senza proprietario (T-1503): 409 LAST_OWNER finché non trasferisce.
+ * Eliminazione di un utente dall'admin. Il suo workspace personale con altri membri passa al membro di ruolo più alto e
+ * resta con i progetti (T-2006); senza altri membri va via in cascata. Un workspace di altri di cui è l'unico OWNER non
+ * può restare senza proprietario (T-1503): 409 LAST_OWNER finché non trasferisce.
  */
 export async function deleteUserFromAdmin(actor: AuthUser, targetUserId: string, context: AuditContext = {}): Promise<void> {
   const target = await findManageableTarget(actor, targetUserId);
@@ -439,16 +441,18 @@ export async function deleteUserFromAdmin(actor: AuthUser, targetUserId: string,
   if (ownedWithoutHeir > 0) {
     throw new AdminActionError("L'utente è l'unico proprietario di un workspace di altri", 409, "LAST_OWNER");
   }
-  // Riga user.delete nella stessa transazione dell'eliminazione (T-1704).
-  await prisma.$transaction([
-    prisma.user.delete({ where: { id: target.id } }),
-    writeAuditLog(prisma, {
+  // Passaggio del workspace personale e riga user.delete nella stessa transazione dell'eliminazione (T-1704, T-2006):
+  // il registro conserva gli id del workspace e del nuovo OWNER, mai un'email.
+  await prisma.$transaction(async (tx) => {
+    const workspaceTransfer = await handOverPersonalWorkspace(tx, target.id);
+    await tx.user.delete({ where: { id: target.id } });
+    await writeAuditLog(tx, {
       actorUserId: actor.id,
       action: "user.delete",
       targetType: "user",
       targetId: target.id,
-      metadata: { role: { before: target.role, after: null } },
+      metadata: { role: { before: target.role, after: null }, ...(workspaceTransfer ? { workspaceTransfer } : {}) },
       ip: context.ip,
-    }),
-  ]);
+    });
+  });
 }
