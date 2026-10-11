@@ -236,7 +236,7 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
     - id: AC-805-2
       given: "lo stesso progetto con 30.000 candidate"
       when: "si richiedono format=xlsx e format=json"
-      then: "il file xlsx letto con exceljs ha il foglio 'keywords' con 30.001 righe; il json analizzato con JSON.parse è un array di 30.000 elementi il cui primo elemento è la prima riga secondo RESULTS_ORDER_BY"
+      then: "il file xlsx letto con exceljs ha il foglio 'keywords' con 30.001 righe; il json analizzato con JSON.parse è un array di 30.000 elementi il cui primo elemento è la prima riga secondo RESULTS_ORDER_BY (emendato da T-2103 il 2026-10-11: il foglio è la traduzione di export.sheet, non più 'keywords')"
     - id: AC-805-3
       given: "lo stesso progetto e lo spy su findMany"
       when: "il test legge solo il primo chunk del body CSV"
