@@ -1,11 +1,14 @@
 // Gate di T-806 (AC-806-1…4): l'export Google Sheets scrive a blocchi di 5.000 righe, non lascia file
 // incompleti sul Drive dell'utente, ordina e deduplica i fogli come Google si aspetta e non restituisce
 // al client il messaggio di eccezioni interne. Le API Google sono simulate con un fetch mockato.
+// Gate di T-2103 (AC-2103-3): intestazione nella lingua dell'utente, uguale a quella del CSV.
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { GET as exportFile } from "@/app/api/projects/[id]/export/route";
 import { POST as exportToSheets } from "@/app/api/projects/[id]/export/google-sheets/route";
 import { exportProjectToGoogleSheets } from "@/lib/modules/google-sheets-export";
 import { prisma } from "@/lib/prisma";
+import it_ from "@/messages/it.json";
 import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
@@ -83,7 +86,7 @@ async function createOwnerProject() {
   const project = await prisma.project.create({
     data: { name: "Sheets", workspace_id: await personalWorkspaceId(owner.user.id), language_code: "it", country_code: "IT" },
   });
-  return { cookie: owner.cookie, projectId: project.id };
+  return { cookie: owner.cookie, projectId: project.id, userId: owner.user.id };
 }
 
 async function createSectionWithRows(projectId: string, name: string, position: number, rows: number) {
@@ -167,8 +170,9 @@ describe("export Google Sheets a blocchi", () => {
       expect(response.status).toBe(200);
       expect(body.data.exportedRows).toBe(12_000);
       expect(writes.map((write) => write.values.length)).toEqual([5001, 5000, 2000]);
-      expect(writes[0].values[0]).toContain("keyword");
-      expect(writes[1].values[0]).not.toContain("keyword");
+      // impacted-by: T-2103 (l'intestazione è tradotta: la colonna keyword si chiama come nel catalogo italiano)
+      expect(writes[0].values[0]).toContain(it_.export.columns.keyword);
+      expect(writes[1].values[0]).not.toContain(it_.export.columns.keyword);
       expect(calls.every((call) => call.hasSignal)).toBe(true);
     },
     TIMEOUT_MS
@@ -249,5 +253,26 @@ describe("errori interni", () => {
     expect(text).not.toContain("secret_field");
     // Il log degli errori è il logger JSON di T-602 su stdout (come per AC-706-3), non console.error.
     expect(errorLines(written)).toHaveLength(1);
+  });
+});
+
+describe("intestazione nella lingua dell'utente (T-2103)", () => {
+  // covers: AC-2103-3
+  it("con la lingua dell'interfaccia it la riga di intestazione del primo blocco è quella del CSV italiano", async () => {
+    const { cookie, projectId, userId } = await createOwnerProject();
+    await prisma.user.update({ where: { id: userId }, data: { ui_locale: "it" } });
+    const sectionId = await createSectionWithRows(projectId, "Generale", 0, 3);
+    const csv = await callRoute(exportFile, {
+      url: `/api/projects/${projectId}/export?format=csv&scope=filtered&subprojectId=${sectionId}`,
+      cookie,
+      params: { id: projectId },
+    });
+    const csvHeader = (await csv.text()).replace(/^\uFEFF/, "").split("\r\n")[0].split(";");
+    const calls = mockGoogle();
+
+    const response = await exportRequest(cookie, projectId, sectionId);
+
+    expect(response.status).toBe(200);
+    expect(valueWrites(calls)[0].values[0]).toEqual(csvHeader);
   });
 });

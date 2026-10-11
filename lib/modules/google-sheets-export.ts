@@ -1,6 +1,6 @@
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { AppError } from "@/lib/http/errors";
-import { buildExportWhere, EXPORT_COLUMNS, iterateExportRows } from "@/lib/modules/export";
+import { buildExportWhere, EXPORT_COLUMNS, type ExportLabels, exportLabels, iterateExportRows } from "@/lib/modules/export";
 import type { ExportScope } from "@/lib/modules/export-types";
 import { ResultsFilters } from "@/lib/modules/results-filters";
 import {
@@ -349,10 +349,10 @@ async function discardIncompleteSpreadsheet(
   return spreadsheet.url;
 }
 
-/** Righe dell'export dei risultati di una sezione come celle, nell'ordine delle colonne. */
-async function* sectionCells(where: Prisma.KeywordCandidateWhereInput, subprojectId: string) {
+/** Righe dell'export dei risultati di una sezione come celle tradotte, nell'ordine delle colonne (T-2103). */
+async function* sectionCells(where: Prisma.KeywordCandidateWhereInput, subprojectId: string, labels: ExportLabels) {
   for await (const row of iterateExportRows({ AND: [where, { subproject_id: subprojectId }] })) {
-    yield EXPORT_COLUMNS.map((column) => row[column]);
+    yield labels.cells(row);
   }
 }
 
@@ -405,6 +405,10 @@ async function exportToNewSpreadsheet(
   };
 }
 
+/**
+ * Export dei risultati su Google Sheets (T-806): un foglio per sezione con intestazioni e valori nella lingua data da
+ * locale (T-2103), booleani nativi.
+ */
 export async function exportProjectToGoogleSheets(params: {
   userId: string;
   projectId: string;
@@ -412,6 +416,7 @@ export async function exportProjectToGoogleSheets(params: {
   filters: ResultsFilters;
   fileName: string;
   subprojectId?: string | null;
+  locale: string;
 }) {
   const where = buildExportWhere(params.projectId, params.scope, params.filters, params.subprojectId ?? null);
   const groups = await buildGroupedSheets(params.projectId, where);
@@ -420,10 +425,12 @@ export async function exportProjectToGoogleSheets(params: {
     throw new GoogleSheetsExportError("Nessuna keyword da esportare con i filtri e scope selezionati.", 400, "SHEETS_NO_ROWS");
   }
 
+  const labels = exportLabels(params.locale);
   return exportToNewSpreadsheet(params.userId, params.fileName, groups, async (accessToken, spreadsheetId) => {
     let written = 0;
     for (const group of groups) {
-      written += await writeRows(accessToken, spreadsheetId, group.sheetTitle, EXPORT_COLUMNS, sectionCells(where, group.subprojectId));
+      const cells = sectionCells(where, group.subprojectId, labels);
+      written += await writeRows(accessToken, spreadsheetId, group.sheetTitle, labels.columns, cells);
     }
     return written;
   });

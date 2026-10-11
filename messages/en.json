@@ -461,7 +461,7 @@
       "exportNow": "Export now",
       "completed": "Export completed: {rows} keywords in {sheets} sheets.",
       "openFile": "Open Google Sheets file",
-      "strategyCompleted": "Export completed: {rows, plural, one {# page} other {# pages}} in the “strategia” sheet."
+      "strategyCompleted": "Export completed: {rows, plural, one {# page} other {# pages}} in the “Strategy” sheet."
     },
     "planner": {
       "title": "Keyword Planner volumes",
@@ -478,6 +478,58 @@
       "importing": "Importing...",
       "submit": "Import volumes",
       "summary": "{matched} rows matched ({rangeRows} with a range volume), {updated} keywords updated, {unmatched} rows without a matching keyword, {withoutVolume} rows without volume, {skippedRows} rows skipped because they have no keyword or unreadable values."
+    },
+    "columns": {
+      "subproject_name": "Section",
+      "keyword": "Keyword",
+      "normalized_keyword": "Normalized keyword",
+      "canonical_keyword": "Canonical keyword",
+      "source": "Source",
+      "source_query": "Source query",
+      "brand_status": "Brand status",
+      "review_status": "Review status",
+      "selected_for_export": "Selected for export",
+      "keyword_type": "Keyword type",
+      "search_intent": "Search intent",
+      "is_question": "Question",
+      "is_local_intent": "Local intent",
+      "is_tool_intent": "Tool intent",
+      "is_commercial_intent": "Commercial intent",
+      "metrics_status": "Metrics status",
+      "metrics_provider": "Metrics provider",
+      "avg_monthly_searches": "Avg. monthly searches",
+      "competition": "Competition",
+      "low_top_of_page_bid_micros": "Top of page bid low (micros)",
+      "high_top_of_page_bid_micros": "Top of page bid high (micros)",
+      "score": "Score",
+      "score_source": "Score source"
+    },
+    "sheet": "Keywords",
+    "values": {
+      "yes": "Yes",
+      "no": "No",
+      "source": {
+        "seed": "Seed",
+        "google-direct": "Google Autocomplete",
+        "mock-autocomplete": "Test autocomplete"
+      },
+      "metricsStatus": {
+        "missing": "missing",
+        "mock": "test",
+        "fetched": "fetched",
+        "imported": "imported",
+        "failed": "failed"
+      },
+      "metricsProvider": {
+        "NONE": "None",
+        "MOCK": "Test",
+        "DATAFORSEO": "DataForSEO",
+        "PLANNER_CSV": "Keyword Planner (file)"
+      },
+      "scoreSource": {
+        "metrics": "metrics",
+        "heuristic": "heuristic"
+      }
     }
   },
   "errors": {
@@ -861,7 +913,7 @@
     "leave": {
       "title": "Leave the workspace",
       "intro": "You will lose access to this workspace's projects until someone invites you again.",
-    "personalIntro": "The workspace stays with the other members and its projects, and you will get a new empty personal workspace.",
+      "personalIntro": "The workspace stays with the other members and its projects, and you will get a new empty personal workspace.",
       "submit": "Leave",
       "submitting": "Leaving...",
       "confirm": "Leave the workspace {name}?"
@@ -1500,6 +1552,21 @@
     },
     "delete": {
       "confirm": "Delete the strategy “{name}”? This cannot be undone."
+    },
+    "export": {
+      "columns": {
+        "hub": "Hub",
+        "page_type": "Page type",
+        "h1": "H1",
+        "h2": "H2",
+        "main_keyword": "Main keyword",
+        "secondary_keywords": "Secondary keywords",
+        "content_type": "Content type",
+        "volume": "Volume",
+        "priority": "Priority",
+        "internal_links": "Internal links"
+      },
+      "sheet": "Strategy"
     }
   }
 }

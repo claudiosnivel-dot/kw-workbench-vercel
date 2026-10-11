@@ -1,11 +1,16 @@
 // Gate di T-1906 (AC-1906-1…4): export della strategia in CSV ed Excel nell'ordine di lavoro con la protezione dalle
-// formule, 404 fuori dal workspace e foglio «strategia» di Google Sheets uguale al CSV. Le API Google sono simulate.
+// formule, 404 fuori dal workspace e foglio di Google Sheets uguale al CSV. Le API Google sono simulate.
+// Gate di T-2102 (AC-2102-1, AC-2102-2): intestazioni, valori e foglio nella lingua dell'utente. impacted-by: T-2102
+// (intestazioni, tipi di pagina e di contenuto e nome del foglio sono le traduzioni dei cataloghi, non più i nomi tecnici).
 import { randomUUID } from "node:crypto";
 import ExcelJS from "exceljs";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as exportToSheets } from "@/app/api/projects/[id]/strategies/[strategyId]/export/google-sheets/route";
 import { GET as exportStrategy } from "@/app/api/projects/[id]/strategies/[strategyId]/export/route";
+import { STRATEGY_EXPORT_COLUMNS } from "@/lib/modules/strategy/export";
 import { prisma } from "@/lib/prisma";
+import en from "@/messages/en.json";
+import it_ from "@/messages/it.json";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
@@ -77,6 +82,47 @@ function download(session: Session, projectId: string, strategyId: string, query
   });
 }
 
+/** Intestazione dell'export nella lingua del catalogo (T-2102). */
+function headerOf(catalog: typeof it_): string[] {
+  return STRATEGY_EXPORT_COLUMNS.map((column) => catalog.strategy.export.columns[column]);
+}
+
+/**
+ * API di Google Sheets simulate: token, creazione del file (fogli richiesti in sheets) e scritture dei valori (written).
+ */
+function stubGoogleSheets() {
+  const calls: { sheets: unknown; written: { range: string; values: unknown[][] }[] } = { sheets: null, written: [] };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const body = typeof init?.body === "string" && init.body.startsWith("{") ? JSON.parse(init.body) : null;
+      const json = (payload: unknown) => new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
+      if (url.startsWith("https://oauth2.googleapis.com/token")) return json({ access_token: randomUUID(), token_type: "Bearer" });
+      if (url === "https://sheets.googleapis.com/v4/spreadsheets") {
+        calls.sheets = body.sheets;
+        return json({ spreadsheetId: "foglio", spreadsheetUrl: "https://docs.google.com/spreadsheets/d/foglio/edit" });
+      }
+      if (url.endsWith("/foglio/values:batchUpdate")) {
+        calls.written.push(body.data[0]);
+        return json({});
+      }
+      return new Response("{}", { status: 404 });
+    })
+  );
+  return calls;
+}
+
+function exportSheets(session: Session, projectId: string, strategyId: string, query = "") {
+  return callRoute(exportToSheets, {
+    method: "POST",
+    url: `/api/projects/${projectId}/strategies/${strategyId}/export/google-sheets${query}`,
+    cookie: session.cookie,
+    params: { id: projectId, strategyId },
+    body: { fileName: "Strategia Q4" },
+  });
+}
+
 /** Parser CSV minimo per i file dell'app: ogni campo tra doppi apici, apici interni raddoppiati, righe CRLF. */
 function parseCsv(text: string, separator: string): string[][] {
   const rows: string[][] = [];
@@ -124,9 +170,7 @@ describe("export della strategia", () => {
     expect(response.headers.get("content-type")).toBe("text/csv; charset=utf-8");
     expect(response.headers.get("content-disposition")).toMatch(/^attachment; filename="seo-god-mode-strategy-piano-q4-\d{4}-\d{2}-\d{2}\.csv"$/);
     const [header, ...rows] = parseCsv(await response.text(), ";");
-    expect(header).toEqual([
-      "hub", "page_type", "h1", "h2", "main_keyword", "secondary_keywords", "content_type", "volume", "priority", "internal_links",
-    ]);
+    expect(header).toEqual(headerOf(it_)); // impacted-by: T-2102
     expect(rows).toHaveLength(3);
     expect(rows.map((row) => row[2])).toEqual([
       "Scarpe running: la guida pratica",
@@ -140,7 +184,8 @@ describe("export della strategia", () => {
     ]);
     expect(rows[0][9]).toBe("Migliori scarpe running: classifica 2026 | Scarpe running donna: guida completa 2026");
     expect(rows.slice(1).map((row) => row[9])).toEqual(["Scarpe running: la guida pratica", "Scarpe running: la guida pratica"]);
-    expect(rows[1].slice(4, 8)).toEqual(["migliori scarpe running", "scarpe running recensioni", "guide", "3290"]);
+    // impacted-by: T-2102 (tipo di contenuto tradotto)
+    expect(rows[1].slice(4, 8)).toEqual(["migliori scarpe running", "scarpe running recensioni", it_.strategy.ui.contentTypes.guide, "3290"]);
   });
 
   // covers: AC-1906-2
@@ -156,7 +201,7 @@ describe("export della strategia", () => {
     expect(xlsx.status).toBe(200);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(Buffer.from(await xlsx.arrayBuffer()) as unknown as ExcelJS.Buffer);
-    const cell = workbook.getWorksheet("strategia")!.getCell("C2");
+    const cell = workbook.getWorksheet(it_.strategy.export.sheet)!.getCell("C2"); // impacted-by: T-2102
     expect(cell.type).toBe(ExcelJS.ValueType.String);
     expect(cell.value).toBe("=HYPERLINK(\"http://x\")");
   });
@@ -174,42 +219,61 @@ describe("export della strategia", () => {
   });
 
   // covers: AC-1906-4
-  it("su Google Sheets il foglio «strategia» riceve le stesse righe dell'export CSV", async () => {
+  // Aggiornato da T-2102 (impacted-by): il foglio ha il nome di strategy.export.sheet nella lingua dell'utente.
+  it("su Google Sheets il foglio della strategia riceve le stesse righe dell'export CSV", async () => {
     const { owner, projectId, strategyId } = await ownerStrategy();
     const csvRows = parseCsv(await (await download(owner, projectId, strategyId, "format=csv&csvDialect=rfc4180")).text(), ",");
-    const written: { range: string; values: unknown[][] }[] = [];
-    let createdSheets: unknown = null;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = String(input);
-        const body = typeof init?.body === "string" && init.body.startsWith("{") ? JSON.parse(init.body) : null;
-        const json = (payload: unknown) => new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
-        if (url.startsWith("https://oauth2.googleapis.com/token")) return json({ access_token: randomUUID(), token_type: "Bearer" });
-        if (url === "https://sheets.googleapis.com/v4/spreadsheets") {
-          createdSheets = body.sheets;
-          return json({ spreadsheetId: "foglio", spreadsheetUrl: "https://docs.google.com/spreadsheets/d/foglio/edit" });
-        }
-        if (url.endsWith("/foglio/values:batchUpdate")) {
-          written.push(body.data[0]);
-          return json({});
-        }
-        return new Response("{}", { status: 404 });
-      })
-    );
+    const google = stubGoogleSheets();
 
-    const response = await callRoute(exportToSheets, {
-      method: "POST",
-      url: `/api/projects/${projectId}/strategies/${strategyId}/export/google-sheets`,
-      cookie: owner.cookie,
-      params: { id: projectId, strategyId },
-      body: { fileName: "Strategia Q4" },
-    });
+    const response = await exportSheets(owner, projectId, strategyId);
 
+    const sheet = it_.strategy.export.sheet;
     expect(response.status).toBe(200);
     expect(((await response.json()) as { data: { exportedRows: number } }).data.exportedRows).toBe(3);
-    expect(createdSheets).toEqual([{ properties: { title: "strategia", gridProperties: { rowCount: 4, columnCount: 10 } } }]);
-    expect(written.map((write) => write.range)).toEqual(["'strategia'!A1"]);
-    expect(written[0].values.map((row) => row.map((cell) => String(cell)))).toEqual(csvRows);
+    expect(google.sheets).toEqual([{ properties: { title: sheet, gridProperties: { rowCount: 4, columnCount: 10 } } }]);
+    expect(google.written.map((write) => write.range)).toEqual([`'${sheet}'!A1`]);
+    expect(google.written[0].values.map((row) => row.map((cell) => String(cell)))).toEqual(csvRows);
+  });
+});
+
+describe("export della strategia nella lingua dell'utente (T-2102)", () => {
+  // covers: AC-2102-1
+  it("il CSV ha intestazioni e tipo di pagina tradotti in italiano con lang it e in inglese con lang en", async () => {
+    const { owner, projectId, strategyId } = await ownerStrategy();
+
+    const [italianHeader, italianFirst] = parseCsv(await (await download(owner, projectId, strategyId, "format=csv&lang=it")).text(), ";");
+    const [englishHeader, englishFirst] = parseCsv(await (await download(owner, projectId, strategyId, "format=csv&lang=en")).text(), ";");
+
+    expect(italianHeader).toEqual(headerOf(it_));
+    expect(italianFirst[1]).toBe(it_.strategy.ui.kind.HUB);
+    expect(englishHeader).toEqual(headerOf(en));
+    expect(englishFirst[1]).toBe(en.strategy.ui.kind.HUB);
+    for (const header of [...italianHeader, ...englishHeader]) {
+      expect(STRATEGY_EXPORT_COLUMNS as readonly string[]).not.toContain(header);
+    }
+  });
+
+  // covers: AC-2102-2
+  it("l'XLSX inglese ha il foglio inglese con l'intestazione del CSV; il foglio Google italiano coincide con il CSV", async () => {
+    const { owner, projectId, strategyId } = await ownerStrategy();
+    const englishCsv = parseCsv(await (await download(owner, projectId, strategyId, "format=csv&lang=en")).text(), ";");
+    const italianCsv = parseCsv(
+      await (await download(owner, projectId, strategyId, "format=csv&csvDialect=rfc4180&lang=it")).text(),
+      ","
+    );
+    const xlsx = await download(owner, projectId, strategyId, "format=xlsx&lang=en");
+    const google = stubGoogleSheets();
+
+    const response = await exportSheets(owner, projectId, strategyId, "?lang=it");
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(Buffer.from(await xlsx.arrayBuffer()) as unknown as ExcelJS.Buffer);
+    expect(workbook.worksheets.map((worksheet) => worksheet.name)).toEqual([en.strategy.export.sheet]);
+    expect((workbook.worksheets[0].getRow(1).values as unknown[]).slice(1)).toEqual(englishCsv[0]);
+    expect(response.status).toBe(200);
+    expect((google.sheets as { properties: { title: string } }[]).map((sheet) => sheet.properties.title)).toEqual([
+      it_.strategy.export.sheet,
+    ]);
+    expect(google.written[0].values.map((row) => row.map((cell) => String(cell)))).toEqual(italianCsv);
   });
 });

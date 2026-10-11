@@ -1,6 +1,6 @@
 // Gate di T-1902 (AC-1902-1…5): H1 e H2 a modelli fissi senza parole ripetute, H2 per gruppo di varianti con le
 // domande, pilastro con gli spoke in ordine di priorità e la FAQ in chiusura, titoli stabili, lingue senza modelli e
-// cataloghi allineati con un motivo per ogni reason_code.
+// cataloghi allineati con un motivo per ogni reason_code. Gate di T-2104 (AC-2104-1): pilastro fino a 20 H2.
 import { parse } from "@formatjs/icu-messageformat-parser";
 import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
@@ -87,6 +87,24 @@ describe("buildPageTitles", () => {
     const { h2 } = buildPageTitles(page, italianContext());
 
     expect(h2.slice(0, 3)).toEqual(["Migliori scarpe running", "Scarpe running offerte", "Scarpe running donna"]);
+    expect(h2.at(-1)).toBe(it_.strategy.fixedH2.faq);
+  });
+
+  // covers: AC-2104-1
+  it("la pilastro arriva a 20 H2: i 19 spoke a priorità più alta e la FAQ in chiusura", () => {
+    const spokeMains = Array.from({ length: 25 }, (_, index) => kw(`scarpe running modello ${index + 1}`));
+    const page: TitlePage = {
+      kind: "HUB",
+      contentType: "guide",
+      main: kw("scarpe running"),
+      secondary: [kw("quanto durano le scarpe running", "it", true)],
+      spokeMains,
+    };
+
+    const { h2 } = buildPageTitles(page, italianContext());
+
+    expect(h2).toHaveLength(20);
+    expect(h2.slice(0, 19)).toEqual(spokeMains.slice(0, 19).map((spoke) => `S${spoke.keyword.slice(1)}`));
     expect(h2.at(-1)).toBe(it_.strategy.fixedH2.faq);
   });
 

@@ -119,19 +119,28 @@ export type ExtractionPlanLimits = {
 
 /**
  * Limiti del job e avvii al giorno del workspace (la quota riservata all'avvio, T-1703). Un'estrazione avviata dal root
- * admin usa sempre il fornitore con licenza, senza la quota mensile di keyword arricchite (D-30 emendata, T-2003); gli
- * altri limiti restano quelli del piano del workspace.
+ * admin non ha limiti d'uso e usa sempre il fornitore con licenza (D-30 emendata, T-2003; D-37, T-2101): restano solo i
+ * tetti di spesa del fornitore (T-903). Per gli altri decide il piano del workspace.
  */
 export async function extractionPlanLimits(
   workspaceId: string,
   actor: { isRootAdmin: boolean }
 ): Promise<ExtractionPlanLimits & { runsPerDay: number | null }> {
+  if (actor.isRootAdmin) {
+    return {
+      maxKeywordsPerRun: null,
+      licensedMetrics: true,
+      keywordsPerMonth: null,
+      licensedMetricsKeywordsPerMonth: null,
+      runsPerDay: null,
+    };
+  }
   const { limits } = await getEntitlements(workspaceId);
   return {
     maxKeywordsPerRun: limits.maxKeywordsPerRun,
-    licensedMetrics: actor.isRootAdmin || limits.licensedMetrics,
+    licensedMetrics: limits.licensedMetrics,
     keywordsPerMonth: limits.keywordsPerMonth,
-    licensedMetricsKeywordsPerMonth: actor.isRootAdmin ? null : limits.licensedMetricsKeywordsPerMonth,
+    licensedMetricsKeywordsPerMonth: limits.licensedMetricsKeywordsPerMonth,
     runsPerDay: limits.runsPerDay,
   };
 }
