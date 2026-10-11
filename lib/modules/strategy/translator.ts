@@ -7,8 +7,8 @@ export type CatalogTranslator = (key: string, values?: Record<string, string | n
 
 /**
  * Traduttore dei cataloghi in una lingua data, indipendente dalla richiesta: titoli nella lingua del perimetro
- * (T-1902), spiegazioni del PDF nella lingua scelta (T-1907). Una lingua senza catalogo usa l'italiano. Con un
- * namespace le chiavi sono relative a quel namespace.
+ * (T-1902), spiegazioni del PDF nella lingua scelta (T-1907), export della strategia e dei risultati (T-2102, T-2103).
+ * Una lingua senza catalogo usa l'italiano. Con un namespace le chiavi sono relative a quel namespace.
  */
 export function catalogTranslator(language: string, namespace?: "strategy"): CatalogTranslator {
   const locale: AppLocale = isSupportedLocale(language) ? language : DEFAULT_LOCALE;

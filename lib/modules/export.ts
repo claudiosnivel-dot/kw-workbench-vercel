@@ -1,10 +1,21 @@
 import { PassThrough, Readable } from "node:stream";
 import ExcelJS from "exceljs";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import {
+  BrandStatus,
+  KeywordType,
+  MetricsProvider,
+  MetricsStatus,
+  ReviewStatus,
+  ScoreSource,
+  SearchIntent,
+} from "@/lib/generated/prisma/enums";
 import { textStream } from "@/lib/http/text-stream";
+import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
 import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 import { buildResultsClauses, type ResultsFilters } from "@/lib/modules/results-filters";
 import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
+import { catalogTranslator } from "@/lib/modules/strategy/translator";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -77,6 +88,58 @@ export type ExportRow = {
 const EXPORT_COLUMN_SET: Record<keyof ExportRow, true> = { subproject_name: true, ...EXPORT_FIELD_SELECT };
 export const EXPORT_COLUMNS = Object.keys(EXPORT_COLUMN_SET) as (keyof ExportRow)[];
 
+/**
+ * Valori codificati con un'etichetta nei cataloghi (T-2103): gruppo del catalogo e valori noti. Le etichette sono quelle
+ * della pagina dei risultati dove esistono; le sorgenti sono quelle scritte dalla pipeline.
+ */
+const VALUE_LABELS: Partial<Record<keyof ExportRow, { group: string; values: readonly string[] }>> = {
+  source: { group: "export.values.source", values: ["seed", "google-direct", "mock-autocomplete"] },
+  brand_status: { group: "results.brand", values: Object.values(BrandStatus) },
+  review_status: { group: "results.review", values: Object.values(ReviewStatus) },
+  keyword_type: { group: "results.type", values: Object.values(KeywordType) },
+  search_intent: { group: "results.intent", values: Object.values(SearchIntent) },
+  metrics_status: { group: "export.values.metricsStatus", values: Object.values(MetricsStatus) },
+  metrics_provider: { group: "export.values.metricsProvider", values: Object.values(MetricsProvider) },
+  score_source: { group: "export.values.scoreSource", values: Object.values(ScoreSource) },
+};
+
+type ExportCell = string | number | boolean | null;
+
+/**
+ * Testi di CSV, XLSX e Google Sheets in una lingua (T-2103): nome del foglio XLSX, intestazioni nell'ordine di
+ * EXPORT_COLUMNS e celle della riga con i valori codificati tradotti (un valore senza etichetta, come una sorgente
+ * sconosciuta, resta com'è). I booleani restano booleani, nativi in XLSX e Google Sheets; il CSV li scrive con yes e no.
+ * L'export JSON non li usa: chiavi e valori restano tecnici.
+ */
+export type ExportLabels = {
+  sheet: string;
+  columns: string[];
+  yes: string;
+  no: string;
+  cells: (row: ExportRow) => ExportCell[];
+};
+
+export function exportLabels(locale: string): ExportLabels {
+  const t = catalogTranslator(locale);
+  const labels = new Map(
+    Object.entries(VALUE_LABELS).map(([column, { group, values }]) => [
+      column,
+      new Map(values.map((value) => [value, t(`${group}.${value}`)])),
+    ])
+  );
+  return {
+    sheet: t("export.sheet"),
+    columns: EXPORT_COLUMNS.map((column) => t(`export.columns.${column}`)),
+    yes: t("export.values.yes"),
+    no: t("export.values.no"),
+    cells: (row) =>
+      EXPORT_COLUMNS.map((column) => {
+        const value = row[column];
+        return typeof value === "string" ? (labels.get(column)?.get(value) ?? value) : value;
+      }),
+  };
+}
+
 function toExportRow(row: ExportSourceRow): ExportRow {
   return {
     subproject_name: row.subproject.name,
@@ -129,6 +192,10 @@ const CSV_EOL = "\r\n";
 // CWE-1236: un testo che inizia con uno di questi caratteri diventerebbe una formula nel foglio di calcolo.
 const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
 
+function neutralizeFormula(text: string): string {
+  return FORMULA_TRIGGER.test(text) ? `'${text}` : text;
+}
+
 function csvCell(value: unknown, dialect: CsvDialect): string {
   let text: string;
   if (value == null) {
@@ -138,19 +205,19 @@ function csvCell(value: unknown, dialect: CsvDialect): string {
   } else if (typeof value === "boolean") {
     text = String(value);
   } else {
-    text = String(value);
-    if (FORMULA_TRIGGER.test(text)) {
-      text = `'${text}`;
-    }
+    text = neutralizeFormula(String(value));
   }
 
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-/** Inizio di un file CSV: BOM (solo excel-it) e riga di intestazione con le colonne date. */
+/**
+ * Inizio di un file CSV: BOM (solo excel-it) e riga di intestazione con le colonne date, con la stessa protezione dalle
+ * formule delle celle (le intestazioni tradotte, T-2102 e T-2103).
+ */
 export function csvHeader(columns: readonly string[], dialect: CsvDialect): string {
   const { bom, separator } = CSV_DIALECTS[dialect];
-  return `${bom ? UTF8_BOM : ""}${columns.join(separator)}${CSV_EOL}`;
+  return `${bom ? UTF8_BOM : ""}${columns.map(neutralizeFormula).join(separator)}${CSV_EOL}`;
 }
 
 /** Riga CSV con la protezione dalle formule (CWE-1236): la usano anche gli export delle strategie (T-1906). */
@@ -158,17 +225,16 @@ export function csvRecord(values: readonly unknown[], dialect: CsvDialect): stri
   return `${values.map((value) => csvCell(value, dialect)).join(CSV_DIALECTS[dialect].separator)}${CSV_EOL}`;
 }
 
-/** Inizio del file: BOM (solo excel-it) e riga di intestazione con le colonne di ExportRow. */
-function csvHead(dialect: CsvDialect): string {
-  return csvHeader(EXPORT_COLUMNS, dialect);
+/** Riga CSV dell'export dei risultati: valori tradotti e sì/no nella lingua dell'export (T-2103). */
+function csvLine(row: ExportRow, dialect: CsvDialect, labels: ExportLabels): string {
+  const cells = labels.cells(row).map((cell) => (typeof cell === "boolean" ? (cell ? labels.yes : labels.no) : cell));
+  return csvRecord(cells, dialect);
 }
 
-function csvLine(row: ExportRow, dialect: CsvDialect): string {
-  return csvRecord(EXPORT_COLUMNS.map((column) => row[column]), dialect);
-}
-
-export function serializeCsv(rows: ExportRow[], options: { dialect: CsvDialect }): Buffer<ArrayBuffer> {
-  const text = csvHead(options.dialect) + rows.map((row) => csvLine(row, options.dialect)).join("");
+/** CSV dei risultati nella lingua data (T-2103), di default l'italiano. */
+export function serializeCsv(rows: ExportRow[], options: { dialect: CsvDialect; locale?: string }): Buffer<ArrayBuffer> {
+  const labels = exportLabels(options.locale ?? DEFAULT_LOCALE);
+  const text = csvHeader(labels.columns, options.dialect) + rows.map((row) => csvLine(row, options.dialect, labels)).join("");
   return Buffer.from(text, "utf8");
 }
 
@@ -243,6 +309,8 @@ type ExportParams = {
   scope: ExportScope;
   filters: ResultsFilters;
   csvDialect?: CsvDialect;
+  /** Lingua di intestazioni, valori e foglio di CSV e XLSX (T-2103); il JSON resta tecnico. */
+  locale: string;
 };
 
 const CONTENT_TYPES: Record<ExportFormat, string> = {
@@ -264,10 +332,10 @@ export function exportFileInfo(params: Pick<ExportParams, "projectId" | "subproj
 // Testo accumulato prima di consegnare un pezzo allo stream.
 const CHUNK_TARGET_LENGTH = 64 * 1024;
 
-async function* csvChunks(rows: AsyncIterable<ExportRow>, dialect: CsvDialect): AsyncGenerator<string> {
-  let chunk = csvHead(dialect);
+async function* csvChunks(rows: AsyncIterable<ExportRow>, dialect: CsvDialect, labels: ExportLabels): AsyncGenerator<string> {
+  let chunk = csvHeader(labels.columns, dialect);
   for await (const row of rows) {
-    chunk += csvLine(row, dialect);
+    chunk += csvLine(row, dialect, labels);
     if (chunk.length >= CHUNK_TARGET_LENGTH) {
       yield chunk;
       chunk = "";
@@ -294,23 +362,27 @@ async function* jsonChunks(rows: AsyncIterable<ExportRow>): AsyncGenerator<strin
 }
 
 /**
- * Foglio "keywords" scritto con il WorkbookWriter di exceljs su uno stream di passaggio, con commit di
- * ogni riga. I valori sono numeri, booleani o stringhe (mai formule: un testo che inizia con = resta
- * testo); null resta una cella vuota. Con 0 righe il foglio è vuoto (T-406).
+ * Foglio con il nome tradotto (T-2103) scritto con il WorkbookWriter di exceljs su uno stream di passaggio, con commit
+ * di ogni riga. I valori sono numeri, booleani o stringhe (mai formule: un testo che inizia con = resta testo); null
+ * resta una cella vuota. Con 0 righe il foglio è vuoto (T-406).
  */
-function xlsxStream(rows: AsyncIterable<ExportRow>, onError: (error: unknown) => void): ReadableStream<Uint8Array> {
+function xlsxStream(
+  rows: AsyncIterable<ExportRow>,
+  labels: ExportLabels,
+  onError: (error: unknown) => void
+): ReadableStream<Uint8Array> {
   const output = new PassThrough();
   const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: output, useStyles: false, useSharedStrings: false });
-  const sheet = workbook.addWorksheet("keywords");
+  const sheet = workbook.addWorksheet(labels.sheet);
 
   const write = async () => {
     let empty = true;
     for await (const row of rows) {
       if (empty) {
-        sheet.addRow(EXPORT_COLUMNS).commit();
+        sheet.addRow(labels.columns).commit();
         empty = false;
       }
-      sheet.addRow(EXPORT_COLUMNS.map((column) => row[column])).commit();
+      sheet.addRow(labels.cells(row)).commit();
     }
     sheet.commit();
     await workbook.commit();
@@ -340,9 +412,12 @@ export function streamExport(params: ExportParams): ReadableStream<Uint8Array> {
     });
 
   if (params.format === "xlsx") {
-    return xlsxStream(rows, onError);
+    return xlsxStream(rows, exportLabels(params.locale), onError);
   }
 
-  const chunks = params.format === "csv" ? csvChunks(rows, params.csvDialect ?? CSV_DIALECT_DEFAULT) : jsonChunks(rows);
+  const chunks =
+    params.format === "csv"
+      ? csvChunks(rows, params.csvDialect ?? CSV_DIALECT_DEFAULT, exportLabels(params.locale))
+      : jsonChunks(rows);
   return textStream(chunks, onError);
 }

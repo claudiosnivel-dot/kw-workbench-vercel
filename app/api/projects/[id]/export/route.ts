@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { errorResponse } from "@/lib/http/errors";
 import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
+import { routeLocale } from "@/lib/i18n/route-locale";
 import {
   CSV_DIALECT_DEFAULT,
   countExportRows,
@@ -43,8 +44,10 @@ export const GET = withUserRoute(async (request: NextRequest, user, { id }: Proj
 
   const filters = parseResultsFilters(request.nextUrl.searchParams);
 
-  // Autenticazione, progetto e sezione sono verificati sopra: solo ora si apre lo stream (T-805).
-  const params = { projectId: id, subprojectId: subprojectId || null, format, scope, filters, csvDialect };
+  // Autenticazione, progetto e sezione sono verificati sopra: solo ora si apre lo stream (T-805). CSV e XLSX nella
+  // lingua della richiesta (T-2103).
+  const locale = routeLocale(request, user);
+  const params = { projectId: id, subprojectId: subprojectId || null, format, scope, filters, csvDialect, locale };
   const { contentType, filename } = exportFileInfo(params);
   const stream = streamExport(params);
 

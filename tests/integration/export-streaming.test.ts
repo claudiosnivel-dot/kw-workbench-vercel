@@ -1,11 +1,16 @@
 // Gate di T-805 (AC-805-1…4): l'export si scrive in streaming leggendo a blocchi di 1000 righe, così
 // non si ferma al limite delle risposte Vercel e non tiene in memoria l'intero set; un errore
 // dell'onboarding non rompe un export già generato e un utente senza accesso non legge nulla.
+// Gate di T-2103 (AC-2103-1): intestazioni e valori del CSV nella lingua dell'utente, sì/no come Sì/No.
 import ExcelJS from "exceljs";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { POST as postLocale } from "@/app/api/locale/route";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
+import { EXPORT_COLUMNS } from "@/lib/modules/export";
 import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
+import en from "@/messages/en.json";
+import it_ from "@/messages/it.json";
 import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
@@ -108,8 +113,9 @@ describe("export in streaming", () => {
   );
 
   // covers: AC-805-2
+  // Aggiornato da T-2103 (impacted-by): il foglio ha il nome di export.sheet nella lingua dell'utente.
   it(
-    "XLSX con il foglio keywords di 30.001 righe e JSON di 30.000 elementi nell'ordine dei risultati",
+    "XLSX con il foglio delle keyword di 30.001 righe e JSON di 30.000 elementi nell'ordine dei risultati",
     async () => {
       const xlsx = await callRoute(exportProject, { url: exportUrl("xlsx"), cookie: ownerCookie, params: { id: projectId } });
       const json = await callRoute(exportProject, { url: exportUrl("json"), cookie: ownerCookie, params: { id: projectId } });
@@ -119,7 +125,7 @@ describe("export in streaming", () => {
       const rows = JSON.parse(await json.text()) as { keyword: string }[];
 
       expect(xlsx.status).toBe(200);
-      expect(workbook.getWorksheet("keywords")?.actualRowCount).toBe(ROWS + 1);
+      expect(workbook.getWorksheet(it_.export.sheet)?.actualRowCount).toBe(ROWS + 1);
       expect(json.status).toBe(200);
       expect(rows).toHaveLength(ROWS);
       expect(rows[0].keyword).toBe(FIRST_KEYWORD);
@@ -191,4 +197,53 @@ describe("export in streaming", () => {
     },
     TIMEOUT_MS
   );
+});
+
+describe("export CSV nella lingua dell'utente (T-2103)", () => {
+  // covers: AC-2103-1
+  it("intestazioni, stato di revisione e Sì in italiano; dopo il passaggio all'inglese le traduzioni inglesi e Yes", async () => {
+    const owner = await createUserWithSession({ displayName: "t2103-csv" });
+    const project = await prisma.project.create({ data: { name: "Lingua", workspace_id: owner.workspaceId } });
+    const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
+    const keyword = "migliori scarpe running";
+    await prisma.keywordCandidate.create({
+      data: {
+        project_id: project.id,
+        subproject_id: section.id,
+        keyword,
+        normalized_keyword: keyword,
+        canonical_keyword: keyword,
+        source: "seed",
+        source_query: keyword,
+        review_status: "approved",
+        search_intent: "commercial",
+        is_question: true,
+      },
+    });
+    const chooseLocale = (locale: string) =>
+      callRoute(postLocale, { method: "POST", url: "/api/locale", cookie: owner.cookie, body: { locale } });
+    const download = async () => {
+      const response = await callRoute(exportProject, {
+        url: `/api/projects/${project.id}/export?format=csv&scope=approved`,
+        cookie: owner.cookie,
+        params: { id: project.id },
+      });
+      return csvLines(await response.text());
+    };
+    const header = (line: string) => line.replace(/^\uFEFF/, "").split(";");
+    const cell = (line: string, column: (typeof EXPORT_COLUMNS)[number]) => line.slice(1, -1).split('";"')[EXPORT_COLUMNS.indexOf(column)];
+
+    expect((await chooseLocale("it")).status).toBe(200);
+    const italian = await download();
+    expect((await chooseLocale("en")).status).toBe(200);
+    const english = await download();
+
+    expect(header(italian[0])).toEqual(EXPORT_COLUMNS.map((column) => it_.export.columns[column]));
+    expect(header(italian[0])).toHaveLength(23);
+    expect(cell(italian[1], "review_status")).toBe(it_.results.review.approved);
+    expect(cell(italian[1], "is_question")).toBe("Sì");
+    expect(header(english[0])).toEqual(EXPORT_COLUMNS.map((column) => en.export.columns[column]));
+    expect(cell(english[1], "review_status")).toBe(en.results.review.approved);
+    expect(cell(english[1], "is_question")).toBe("Yes");
+  });
 });

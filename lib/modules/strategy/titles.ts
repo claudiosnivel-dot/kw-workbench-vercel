@@ -38,7 +38,8 @@ export const TEMPLATE_VARIANTS: Record<StrategyContentType, readonly string[]> =
   tool: ["v1", "v2", "v3"],
 };
 
-const MAX_H2 = 12;
+/** Massimo di H2 per tipo di pagina, chiusure comprese (T-1902; pilastro fino a 20, T-2104). */
+const MAX_H2: Record<StrategyPageKind, number> = { HUB: 20, SPOKE: 12 };
 export const MAX_TITLE_LENGTH = 200;
 
 function capitalize(text: string): string {
@@ -124,7 +125,7 @@ function h2Of(page: TitlePage, context: TitleContext): string[] {
         ...(page.secondary.some((keyword) => keyword.isQuestion) ? [context.translate("fixedH2.faq")] : []),
       ]
     : [];
-  return [...entries.slice(0, MAX_H2 - closings.length), ...closings];
+  return [...entries.slice(0, MAX_H2[page.kind] - closings.length), ...closings];
 }
 
 /** H1 e H2 suggeriti per una pagina del piano (T-1902): stessa pagina, stessi titoli. */

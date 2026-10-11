@@ -340,7 +340,7 @@ se rompe un comportamento esistente.
     - id: AC-107-2
       given: "la stessa fixture"
       when: "si chiama l'export con format=xlsx e scope=selected"
-      then: "Content-Type application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; letto con exceljs il file ha un solo foglio keywords, la riga 1 contiene le 22 intestazioni nello stesso ordine del CSV e le righe dati sono pari al conteggio atteso per selected"
+      then: "Content-Type application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; letto con exceljs il file ha un solo foglio keywords, la riga 1 contiene le 22 intestazioni nello stesso ordine del CSV e le righe dati sono pari al conteggio atteso per selected (emendato da T-2103 il 2026-10-11: il foglio è la traduzione di export.sheet e le intestazioni sono le etichette tradotte, in italiano per la fixture)"
     - id: AC-107-3
       given: "la stessa fixture, con la candidata allowed e rejected"
       when: "si chiama l'export con format=json per ciascuno scope approved, selected, review, non-excluded e filtered con searchIntent=commercial"

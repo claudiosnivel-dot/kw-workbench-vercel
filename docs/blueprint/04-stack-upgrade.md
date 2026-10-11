@@ -310,7 +310,7 @@ Le versioni sono fissate in modo esatto, perché al 2026-10-02 i dist-tag `lates
     - id: AC-406-1
       given: "progetto di test con 3 keyword e scope filtered"
       when: "si chiama GET /api/projects/[id]/export?format=xlsx con la sessione del proprietario"
-      then: "la risposta è 200 con Content-Type application/vnd.openxmlformats-officedocument.spreadsheetml.sheet e, riletto con ExcelJS, il foglio 'keywords' ha 4 righe e intestazioni identiche alle 22 chiavi di ExportRow nello stesso ordine"
+      then: "la risposta è 200 con Content-Type application/vnd.openxmlformats-officedocument.spreadsheetml.sheet e, riletto con ExcelJS, il foglio 'keywords' ha 4 righe e intestazioni identiche alle 22 chiavi di ExportRow nello stesso ordine (emendato da T-2103 il 2026-10-11: il foglio è la traduzione di export.sheet e le intestazioni sono le etichette tradotte delle chiavi, nello stesso ordine)"
     - id: AC-406-2
       given: "keyword con avg_monthly_searches 1200, is_question true e low_top_of_page_bid_micros 1500000"
       when: "si rilegge la riga esportata in xlsx"

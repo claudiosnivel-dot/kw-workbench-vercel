@@ -1,6 +1,6 @@
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import type { CsvDialect } from "@/lib/modules/export";
-import { strategyCsv, strategyFileName, strategyXlsx } from "@/lib/modules/strategy/export";
+import { strategyCsv, strategyExportTable, strategyFileName, strategyXlsx } from "@/lib/modules/strategy/export";
 import { renderStrategyPdf } from "@/lib/modules/strategy/pdf";
 import { loadPdfLogo } from "@/lib/modules/strategy/pdf-logo";
 import type { StrategyView } from "@/lib/modules/strategy/types";
@@ -20,7 +20,7 @@ type DownloadParams = {
   strategy: StrategyView;
   format: StrategyDownloadFormat;
   csvDialect: CsvDialect;
-  /** Lingua delle spiegazioni del PDF. */
+  /** Lingua del file: spiegazioni del PDF (T-1907), intestazioni ed etichette di CSV e XLSX (T-2102). */
   locale: string;
 };
 
@@ -52,9 +52,9 @@ async function pdfOf({ project, strategy, locale }: DownloadParams): Promise<Buf
 export async function strategyDownload(params: DownloadParams): Promise<Response> {
   const body =
     params.format === "csv"
-      ? strategyCsv(params.strategy, params.csvDialect)
+      ? strategyCsv(strategyExportTable(params.strategy, params.locale), params.csvDialect)
       : params.format === "xlsx"
-        ? await strategyXlsx(params.strategy)
+        ? await strategyXlsx(strategyExportTable(params.strategy, params.locale))
         : await pdfOf(params);
   const filename = strategyFileName(params.strategy.name, params.format);
   const headers = new Headers({ "Content-Type": CONTENT_TYPES[params.format], "Cache-Control": "no-store" });

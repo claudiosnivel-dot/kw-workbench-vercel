@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AppError, errorResponse } from "@/lib/http/errors";
 import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
+import { routeLocale } from "@/lib/i18n/route-locale";
 import { requireProjectScope } from "@/lib/authz/workspace";
 import { assertFeature } from "@/lib/billing/enforce";
 import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
@@ -87,6 +88,7 @@ export const POST = withUserRoute(async (request: NextRequest, user, { id }: Pro
       scope,
       subprojectId,
       filters,
+      locale: routeLocale(request, user),
     });
   } catch (error) {
     // GoogleSheetsExportError e GoogleReauthRequiredError (409, T-906) portano status e messaggio pubblici;

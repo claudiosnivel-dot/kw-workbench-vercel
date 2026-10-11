@@ -2,6 +2,7 @@
 // del mese, keyword arricchite dal fornitore con licenza), rimborso della quota per errori nostri entro un tetto e un solo
 // job attivo per workspace (D-27 emendata). Pipeline e fornitore simulati, nessuna chiamata reale.
 // Gate di T-2002 (AC-2002-1, AC-2002-2): annullamento entro 60 secondi dall'avvio senza consumo della quota.
+// Gate di T-2101 (AC-2101-1…3): le estrazioni del root admin non hanno limiti d'uso, resta un job attivo per sezione.
 import { randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as getUsage } from "@/app/api/billing/usage/route";
@@ -56,8 +57,12 @@ const T0 = new Date("2026-10-08T10:00:00.000Z");
 
 type ErrorBody = { code?: string; metric?: string; limit?: number; resetAt?: string; jobId?: string };
 
-async function memberWithSections(names: string[], data: Record<string, unknown> = {}) {
-  const member = await createUserWithSession({ displayName: `t1703-${names.length}-${randomBytes(3).toString("hex")}` });
+async function memberWithSections(
+  names: string[],
+  data: Record<string, unknown> = {},
+  user: Parameters<typeof createUserWithSession>[0] = {}
+) {
+  const member = await createUserWithSession({ displayName: `t1703-${names.length}-${randomBytes(3).toString("hex")}`, ...user });
   const project = await prisma.project.create({
     data: {
       name: "Quote",
@@ -349,5 +354,69 @@ describe("annullamento entro 60 secondi (T-2002, D-27 emendata)", () => {
     expect((await counter(workspaceId, "runs_day", today))?.count).toBe(2);
     const canceled = await prisma.job.findUniqueOrThrow({ where: { id: job.id } });
     expect([canceled.status, canceled.quota_refunded]).toEqual(["canceled", false]);
+  });
+});
+
+describe("estrazioni del root admin senza limiti d'uso (T-2101, D-37)", () => {
+  const today = new Date("2026-10-08T00:00:00.000Z");
+  const rootAdmin = { role: "ADMIN", isRootAdmin: true } as const;
+
+  async function jobOf(response: Response) {
+    const { data } = (await response.json()) as { data: { jobId: string } };
+    return prisma.job.findUniqueOrThrow({ where: { id: data.jobId } });
+  }
+
+  // covers: AC-2101-1
+  it("il root admin avvia due sezioni con un job pending, senza riserva di quota né tetto di keyword", async () => {
+    configureTestBilling({ runsPerDay: 1, maxKeywordsPerRun: 5 });
+    const { cookie, workspaceId, project, sections } = await memberWithSections(["S1", "S2"], {}, rootAdmin);
+
+    const first = await start(project.id, sections[0].id, cookie);
+    const second = await start(project.id, sections[1].id, cookie);
+
+    expect([first.status, second.status]).toEqual([202, 202]);
+    const jobs = [await jobOf(first), await jobOf(second)];
+    expect(await prisma.job.count({ where: { project: { workspace_id: workspaceId }, status: { in: ["pending", "running"] } } })).toBe(2);
+    for (const job of jobs) {
+      const payload = job.payload as { quota?: unknown; plan?: { maxKeywordsPerRun?: number | null } };
+      expect(payload.quota).toBeUndefined();
+      expect(payload.plan?.maxKeywordsPerRun).toBeNull();
+    }
+    expect((await counter(workspaceId, "runs_day", today))?.count ?? 0).toBe(0);
+  });
+
+  // covers: AC-2101-2
+  it("oltre la soglia degli avvii l'OWNER non root riceve 429 RATE_LIMITED e il root admin 202", async () => {
+    vi.stubEnv("RATE_LIMIT_RUN_START_MAX", "1");
+    configureTestBilling({ runsPerDay: 10 });
+    const root = await memberWithSections(["Prima", "Seconda"], {}, rootAdmin);
+    const owner = await memberWithSections(["Prima", "Seconda"]);
+
+    const startBoth = async (member: typeof owner) => {
+      const responses = [];
+      for (const section of member.sections) {
+        responses.push(await start(member.project.id, section.id, member.cookie));
+      }
+      return responses;
+    };
+    const ownerResponses = await startBoth(owner);
+    const rootResponses = await startBoth(root);
+
+    expect(ownerResponses.map((response) => response.status)).toEqual([202, 429]);
+    expect(((await ownerResponses[1].json()) as ErrorBody).code).toBe("RATE_LIMITED");
+    expect(rootResponses.map((response) => response.status)).toEqual([202, 202]);
+  });
+
+  // covers: AC-2101-3
+  it("un secondo avvio del root admin sulla sezione con un job attivo è un 409 JOB_ALREADY_ACTIVE", async () => {
+    configureTestBilling();
+    const { cookie, project, sections } = await memberWithSections(["S1"], {}, rootAdmin);
+    const active = await jobOf(await start(project.id, sections[0].id, cookie));
+
+    const again = await start(project.id, sections[0].id, cookie);
+
+    expect(again.status).toBe(409);
+    expect((await again.json()) as ErrorBody).toMatchObject({ code: "JOB_ALREADY_ACTIVE", jobId: active.id });
+    expect(await prisma.job.count({ where: { subproject_id: sections[0].id, status: { in: ["pending", "running"] } } })).toBe(1);
   });
 });

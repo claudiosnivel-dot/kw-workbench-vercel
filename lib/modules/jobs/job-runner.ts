@@ -75,7 +75,9 @@ function activeJobOfSection(subprojectId: string): Promise<Job | null> {
  * avvii del workspace (429 RATE_LIMITED, D-27 emendata), poi in una transazione sotto il lock della riga del workspace
  * la riserva dell'avvio (429 QUOTA_EXCEEDED), il controllo di un solo job attivo per workspace (created=false con quel
  * job: la transazione si annulla con la riserva) e la creazione del job con la riserva nel payload. actor è chi avvia:
- * il root admin ha sempre le metriche con licenza (T-2003).
+ * il root admin ha sempre le metriche con licenza (T-2003) e nessun limite d'uso nemmeno con il lancio attivo (D-37,
+ * T-2101): il suo job nasce come in pausa, senza rate limit, riserva né controllo del job attivo nel workspace; resta
+ * l'indice di un solo job attivo per sezione.
  */
 export async function startExtractionJob(
   projectId: string,
@@ -84,7 +86,7 @@ export async function startExtractionJob(
   actor: { isRootAdmin: boolean }
 ): Promise<{ job: Job; created: boolean }> {
   const { runsPerDay, ...plan } = await extractionPlanLimits(workspaceId, actor);
-  if (!(await isCommercialLive())) {
+  if (actor.isRootAdmin || !(await isCommercialLive())) {
     return enqueueExtractionJob(projectId, subprojectId, plan);
   }
 

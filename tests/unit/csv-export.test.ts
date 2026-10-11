@@ -2,7 +2,7 @@
 // virgola, CRLF), il dialetto rfc4180 resta disponibile, le celle testuali che inizierebbero una
 // formula sono neutralizzate con un apostrofo (CWE-1236) e con 0 righe resta l'intestazione.
 import { describe, expect, it } from "vitest";
-import { serializeCsv, type ExportRow } from "@/lib/modules/export";
+import { EXPORT_COLUMNS, serializeCsv, type ExportRow } from "@/lib/modules/export";
 
 const BOM = [0xef, 0xbb, 0xbf];
 
@@ -36,6 +36,9 @@ function exportRow(overrides: Partial<ExportRow> = {}): ExportRow {
 }
 
 const COLUMN_COUNT = Object.keys(exportRow()).length;
+
+// impacted-by: T-2103 (intestazioni tradotte: le colonne si cercano per posizione in EXPORT_COLUMNS, non per nome)
+const column = (name: keyof ExportRow) => EXPORT_COLUMNS.indexOf(name);
 
 /** Parser CSV minimo per i test: campi tra doppi apici con apici raddoppiati, righe chiuse da CRLF. */
 function parseCsv(text: string, separator: string): string[][] {
@@ -95,9 +98,9 @@ describe("serializeCsv", () => {
     const dangerous = ["=1+1", "+39 333 1234567", "-sconto", "@SUM(A1)", "\tx", "\ry"];
     const rows = [...dangerous, "scarpe running"].map((keyword) => exportRow({ keyword }));
 
-    const [header, ...records] = parseCsv(decode(serializeCsv(rows, { dialect: "excel-it" })), ";");
-    const keywordCells = records.map((record) => record[header.indexOf("keyword")]);
-    const volumeCells = records.map((record) => record[header.indexOf("avg_monthly_searches")]);
+    const [, ...records] = parseCsv(decode(serializeCsv(rows, { dialect: "excel-it" })), ";");
+    const keywordCells = records.map((record) => record[column("keyword")]);
+    const volumeCells = records.map((record) => record[column("avg_monthly_searches")]);
 
     expect(keywordCells.slice(0, 6)).toEqual(["'=1+1", "'+39 333 1234567", "'-sconto", "'@SUM(A1)", "'\tx", "'\ry"]);
     expect(keywordCells[6]).toBe("scarpe running");
@@ -113,10 +116,11 @@ describe("serializeCsv", () => {
     const [excelHeader, excelRecord] = parseCsv(decode(excelBuffer), ";");
     const [rfcHeader, rfcRecord] = parseCsv(decode(rfcBuffer), ",");
 
-    expect(excelRecord[excelHeader.indexOf("competition")]).toBe("0,35");
-    expect(excelRecord[excelHeader.indexOf("score")]).toBe("51,25");
-    expect(rfcRecord[rfcHeader.indexOf("competition")]).toBe("0.35");
-    expect(rfcRecord[rfcHeader.indexOf("score")]).toBe("51.25");
+    expect(excelHeader).toHaveLength(COLUMN_COUNT);
+    expect(excelRecord[column("competition")]).toBe("0,35");
+    expect(excelRecord[column("score")]).toBe("51,25");
+    expect(rfcRecord[column("competition")]).toBe("0.35");
+    expect(rfcRecord[column("score")]).toBe("51.25");
     expect(rfcHeader).toHaveLength(COLUMN_COUNT);
     expect(Array.from(rfcBuffer.slice(0, 3))).not.toEqual(BOM);
   });

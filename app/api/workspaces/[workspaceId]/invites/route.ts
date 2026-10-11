@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withUserRoute } from "@/lib/http/user-route";
-import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/locale";
+import { routeLocale } from "@/lib/i18n/route-locale";
 import { createInvite } from "@/lib/workspaces/invites";
 
 type WorkspaceParams = { workspaceId: string };
@@ -11,11 +11,6 @@ type WorkspaceParams = { workspaceId: string };
  */
 export const POST = withUserRoute(async (request: NextRequest, user, { workspaceId }: WorkspaceParams) => {
   const body = (await request.json()) as { email?: unknown; role?: unknown } | null;
-  const locale = resolveLocale({
-    userLocale: user.uiLocale,
-    cookieLocale: request.cookies.get(LOCALE_COOKIE)?.value,
-    acceptLanguage: request.headers.get("accept-language"),
-  });
-  const invite = await createInvite(user, workspaceId, { email: body?.email, role: body?.role }, locale);
+  const invite = await createInvite(user, workspaceId, { email: body?.email, role: body?.role }, routeLocale(request, user));
   return NextResponse.json({ data: invite }, { status: 201 });
 });

@@ -7,10 +7,13 @@
 // covers: AC-403-4
 // Oracolo di T-1102: il consolidamento dei duplicati non cambia il comportamento fotografato.
 // covers: AC-1102-4
+// impacted-by: T-2103 (intestazioni e nome del foglio nella lingua dell'utente, italiano di default; aggiornamento delle
+// sole asserzioni su intestazioni e foglio confermato in anticipo dall'utente con D-37, 2026-10-11)
 import ExcelJS from "exceljs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
 import { prisma } from "@/lib/prisma";
+import it_ from "@/messages/it.json";
 import { createUserWithSession, personalWorkspaceId } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";
@@ -68,7 +71,7 @@ const HEADERS = [
   "score",
   // impacted-by: T-707 (sorgente del punteggio dopo score)
   "score_source",
-];
+].map((column) => it_.export.columns[column as keyof typeof it_.export.columns]); // impacted-by: T-2103 (etichette italiane)
 
 function keywordFor(index: number): string {
   if (index === 6) return REJECTED_ALLOWED_KEYWORD;
@@ -181,7 +184,7 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
     expect(response.headers.get("content-type")).toBe(
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    expect(workbook.worksheets.map((worksheet) => worksheet.name)).toEqual(["keywords"]);
+    expect(workbook.worksheets.map((worksheet) => worksheet.name)).toEqual([it_.export.sheet]); // impacted-by: T-2103
     expect((sheet.getRow(1).values as unknown[]).slice(1)).toEqual(HEADERS);
     expect(sheet.actualRowCount - 1).toBe(EXPECTED.selected);
   });

@@ -74,7 +74,7 @@ Oggi Titan SEO si ferma alla lista di keyword revisionate ed esportate: l'utente
   definition_of_done:
     - "lib/modules/strategy/titles.ts: buildPageTitles(page, context) funzione pura con il traduttore iniettato; lingua dei titoli = lingua del perimetro (language_code_override della sezione, altrimenti language_code del progetto); modelli solo per italiano e inglese, per le altre lingue H1 = keyword principale con l'iniziale maiuscola e H2 = secondarie con l'iniziale maiuscola."
     - "Modelli degli H1 nei cataloghi messages/it.json e messages/en.json (namespace strategy.templates), almeno due varianti per guide, list, comparison, product_category, faq, local e tool, con i segnaposto {keyword} e {year}; variante scelta in modo stabile da un hash della keyword principale; nessun modello che richieda l'accordo di genere o numero; se la keyword contiene già una parola del modello (guida, migliori, online…) quella parola non viene ripetuta."
-    - "H2 di uno spoke: uno per gruppo di keyword secondarie (le varianti dello stesso gruppo danno un solo H2, dalla più cercata), domande con iniziale maiuscola e punto interrogativo, altre keyword con iniziale maiuscola, H2 fisso di chiusura per tipo (Domande frequenti se ci sono domande, Come abbiamo scelto per le liste), al massimo 12 H2. H2 della pagina pilastro: uno per spoke in ordine di priorità, poi i gruppi confluiti, poi Domande frequenti se ci sono domande."
+    - "H2 di uno spoke: uno per gruppo di keyword secondarie (le varianti dello stesso gruppo danno un solo H2, dalla più cercata), domande con iniziale maiuscola e punto interrogativo, altre keyword con iniziale maiuscola, H2 fisso di chiusura per tipo (Domande frequenti se ci sono domande, Come abbiamo scelto per le liste), al massimo 12 H2. H2 della pagina pilastro: uno per spoke in ordine di priorità, poi i gruppi confluiti, poi Domande frequenti se ci sono domande (emendato da T-2104 il 2026-10-11: «al massimo 12 H2» vale per gli spoke, la pagina pilastro ne ha al massimo 20, chiusure comprese)."
     - "Spiegazioni dei motivi nei cataloghi (namespace strategy.reasons) per ogni reason_code di T-1901 (hub da seed, hub da termine ricorrente, spoke per modificatore, spoke per parola, spoke di domanda, gruppo confluito nella pilastro, non assegnata), con i parametri del motivo."
 
   acceptance_criteria:
@@ -270,8 +270,8 @@ Oggi Titan SEO si ferma alla lista di keyword revisionate ed esportate: l'utente
     protezioni.
 
   definition_of_done:
-    - "GET /api/projects/[id]/strategies/[strategyId]/export?format=csv|xlsx: colonne hub, tipo pagina, H1, H2 uniti da ' | ', keyword principale, keyword secondarie unite da ' | ', tipo di contenuto, volume, priorità, link interni (gli spoke verso il proprio hub, l'hub verso i propri spoke); righe nell'ordine di lavoro; CSV nel dialetto excel-it di default con l'opzione rfc4180 (T-804); stessa protezione dalle formule dell'export dei risultati; nomi di file con nome della strategia normalizzato."
-    - "Export su Google Sheets della strategia con il flusso OAuth e lo scope di T-906 e T-806, foglio 'strategia', stesse colonne."
+    - "GET /api/projects/[id]/strategies/[strategyId]/export?format=csv|xlsx: colonne hub, tipo pagina, H1, H2 uniti da ' | ', keyword principale, keyword secondarie unite da ' | ', tipo di contenuto, volume, priorità, link interni (gli spoke verso il proprio hub, l'hub verso i propri spoke); righe nell'ordine di lavoro; CSV nel dialetto excel-it di default con l'opzione rfc4180 (T-804); stessa protezione dalle formule dell'export dei risultati; nomi di file con nome della strategia normalizzato (emendato da T-2102 il 2026-10-11: intestazioni, tipo di pagina e tipo di contenuto nella lingua dell'utente, dai cataloghi)."
+    - "Export su Google Sheets della strategia con il flusso OAuth e lo scope di T-906 e T-806, foglio 'strategia', stesse colonne (emendato da T-2102 il 2026-10-11: il foglio, anche nell'XLSX, ha il nome di strategy.export.sheet nella lingua dell'utente, Strategia o Strategy)."
     - "Permesso export.run; progetto fuori dal workspace 404."
 
   acceptance_criteria:
@@ -290,7 +290,7 @@ Oggi Titan SEO si ferma alla lista di keyword revisionate ed esportate: l'utente
     - id: AC-1906-4
       given: "un account Google Sheets collegato e l'API di Google simulata"
       when: "si esporta la strategia su Google Sheets"
-      then: "le righe scritte nel foglio 'strategia' coincidono con le righe dell'export CSV"
+      then: "le righe scritte nel foglio della strategia coincidono con le righe dell'export CSV (emendato da T-2102 il 2026-10-11: il foglio è la traduzione di strategy.export.sheet, non più 'strategia')"
 
   target_tests:
     - file: "tests/integration/strategy-export.test.ts"
