@@ -11,7 +11,7 @@ const KEYS = {
   logoUrlLight: "APP_BRAND_LOGO_URL_LIGHT",
 } as const;
 
-const FALLBACK_APP_NAME = "Seo God Mode";
+const FALLBACK_APP_NAME = "Titan SEO";
 const MAX_APP_NAME_LENGTH = 80;
 const MAX_LOGO_URL_LENGTH = 2048;
 // Il logo inline finisce nell'HTML di ogni pagina (TopNav nel layout): al massimo 100 KB decodificati.

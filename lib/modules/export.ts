@@ -325,7 +325,7 @@ export function exportFileInfo(params: Pick<ExportParams, "projectId" | "subproj
   const filenameScope = params.subprojectId ? `subproject-${params.subprojectId}` : "project";
   return {
     contentType: CONTENT_TYPES[params.format],
-    filename: `seo-god-mode-${params.projectId}-${filenameScope}-${params.scope}-${date}.${params.format}`,
+    filename: `titan-seo-${params.projectId}-${filenameScope}-${params.scope}-${date}.${params.format}`,
   };
 }
 

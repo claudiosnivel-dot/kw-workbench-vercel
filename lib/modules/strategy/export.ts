@@ -91,5 +91,5 @@ export function strategyFileName(name: string, extension: string, date = new Dat
       .replace(/^-+|-+$/g, "")
       .slice(0, 60)
       .replace(/-+$/g, "") || "strategy";
-  return `seo-god-mode-strategy-${slug}-${date.toISOString().slice(0, 10)}.${extension}`;
+  return `titan-seo-strategy-${slug}-${date.toISOString().slice(0, 10)}.${extension}`;
 }

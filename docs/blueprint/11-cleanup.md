@@ -222,7 +222,7 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
     - "Modale di components/google-sheets-export-button.tsx: all'apertura il focus va al primo campo, Tab e Shift+Tab restano dentro il dialog, Esc chiude, alla chiusura il focus torna al pulsante che l'ha aperta"
     - "Pulsanti con sola icona o simbolo segnalati da axe hanno aria-label descrittivo (i pulsanti di riordino delle sezioni sono in T-808)"
     - "components/personalization-settings-card.tsx: uscendo dalla pagina senza salvare (unmount) data-theme, data-font-scale e data-color-vision tornano ai valori salvati"
-    - "app/layout.tsx: generateMetadata usa branding.appName per il titolo al posto del valore statico 'Seo God Mode'"
+    - "app/layout.tsx: generateMetadata usa branding.appName per il titolo al posto del nome statico del prodotto"
 
   acceptance_criteria:
     - id: AC-1104-1

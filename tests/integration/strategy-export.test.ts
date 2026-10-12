@@ -168,7 +168,9 @@ describe("export della strategia", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("text/csv; charset=utf-8");
-    expect(response.headers.get("content-disposition")).toMatch(/^attachment; filename="seo-god-mode-strategy-piano-q4-\d{4}-\d{2}-\d{2}\.csv"$/);
+    // covers: AC-2201-2
+    // impacted-by: T-2201 (prefisso titan-seo-strategy del nome del file, D-38)
+    expect(response.headers.get("content-disposition")).toMatch(/^attachment; filename="titan-seo-strategy-piano-q4-\d{4}-\d{2}-\d{2}\.csv"$/);
     const [header, ...rows] = parseCsv(await response.text(), ";");
     expect(header).toEqual(headerOf(it_)); // impacted-by: T-2102
     expect(rows).toHaveLength(3);

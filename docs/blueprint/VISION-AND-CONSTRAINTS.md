@@ -1,8 +1,8 @@
-# VISION & CONSTRAINTS — Seo God Mode
+# VISION & CONSTRAINTS — Titan SEO
 
 | | |
 |---|---|
-| **Progetto** | Seo God Mode (`kw-workbench-vercel`) |
+| **Progetto** | Titan SEO (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts`: Next.js App Router + Prisma su Postgres Supabase, deploy Vercel |
 | **Owner / stakeholder** | `claudiosnivel-dot` (sviluppo e prodotto) |
 
@@ -11,7 +11,7 @@
 ## 1. Perché esiste (problema)
 
 Chi fa SEO deve trasformare poche parole seme in liste ampie di keyword reali,
-pulite, classificate e misurate, per poi decidere su quali lavorare. Seo God Mode
+pulite, classificate e misurate, per poi decidere su quali lavorare. Titan SEO
 espande le seed con Google Autocomplete, normalizza e deduplica i suggerimenti, li
 classifica per intento, li arricchisce con i volumi di ricerca e
 permette di revisionarli ed esportarli (CSV, XLSX, JSON, Google Sheets).
@@ -41,7 +41,7 @@ difetti in produzione e lacune che impediscono di venderla:
 
 ## 3. Obiettivo (cosa significa "fatto")
 
-Seo God Mode diventa un SaaS vendibile:
+Titan SEO diventa un SaaS vendibile:
 
 1. i difetti dell'audit sono corretti e coperti da test;
 2. lo stack gira sui major stabili (D-03) con CI verde;

@@ -1,6 +1,6 @@
-# Seo God Mode
+# Titan SEO
 
-`Seo God Mode` e una web app Next.js + Prisma deployabile su Vercel. La logica applicativa e invariata.
+`Titan SEO` e una web app Next.js + Prisma deployabile su Vercel. La logica applicativa e invariata.
 
 ## Stack
 

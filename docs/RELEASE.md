@@ -1,4 +1,4 @@
-# Rilascio di Seo God Mode
+# Rilascio di Titan SEO
 
 > Pipeline di rilascio senza staging (T-605, D-04 emendata 2026-10-05): ogni modifica arriva in produzione
 > solo passando da branch, checkpoint Trueline, pull request e CI verdi. `master` è accoppiato al deploy di

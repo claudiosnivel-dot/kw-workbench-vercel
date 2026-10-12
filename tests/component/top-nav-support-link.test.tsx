@@ -18,7 +18,7 @@ describe("barra di navigazione", () => {
   // covers: AC-1805-4
   it("per l'utente autenticato contiene il link Supporto verso /it/contact", () => {
     navigation.pathname = "/";
-    renderWithIntl(<TopNav brandName="Seo God Mode" themeMode="DARK" user={{ displayName: "Utente", email: "utente@example.test" }} />);
+    renderWithIntl(<TopNav brandName="Titan SEO" themeMode="DARK" user={{ displayName: "Utente", email: "utente@example.test" }} />);
 
     const desktop = screen.getAllByRole("navigation")[0];
     expect(within(desktop).getByRole("link", { name: "Supporto" })).toHaveAttribute("href", "/it/contact");
@@ -26,7 +26,7 @@ describe("barra di navigazione", () => {
 
   it("per l'anonimo su una pagina pubblica mostra prezzi, accesso, registrazione e la lingua alternativa", () => {
     navigation.pathname = "/it/pricing";
-    renderWithIntl(<TopNav brandName="Seo God Mode" themeMode="DARK" user={null} />);
+    renderWithIntl(<TopNav brandName="Titan SEO" themeMode="DARK" user={null} />);
 
     const desktop = screen.getAllByRole("navigation")[0];
     const hrefs = within(desktop)
@@ -42,7 +42,7 @@ describe("barra di navigazione", () => {
     const billingHrefs = (role: "OWNER" | "MEMBER") => {
       renderWithIntl(
         <TopNav
-          brandName="Seo God Mode"
+          brandName="Titan SEO"
           themeMode="DARK"
           user={{ displayName: role, email: `${role.toLowerCase()}@example.test` }}
           showBillingLink={canPerform(role, "billing.manage")}

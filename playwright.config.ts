@@ -44,7 +44,7 @@ const appEnv: Record<string, string> = {
   RESEND_API_KEY: `re_e2e_${testSecret()}`,
   EMAIL_FROM: "noreply@example.test",
   APP_COOKIE_SECURE: "false",
-  APP_BRAND_NAME: "Seo God Mode",
+  APP_BRAND_NAME: "Titan SEO",
   APP_BRAND_LOGO_URL: "",
   APP_BRAND_LOGO_URL_DARK: "",
   APP_BRAND_LOGO_URL_LIGHT: "",
