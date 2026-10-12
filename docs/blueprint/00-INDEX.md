@@ -1,4 +1,4 @@
-# 00-INDEX — Blueprint di Seo God Mode
+# 00-INDEX — Blueprint di Titan SEO
 
 > Blueprint di correzione e completamento, generato con Trueline (piano in stile
 > BOOTSTRAP su codice esistente, D-01) a partire dall'audit del 2026-10-02.
@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| **Progetto** | Seo God Mode (`kw-workbench-vercel`), in produzione su `titanseo.vercel.app` |
+| **Progetto** | Titan SEO (`kw-workbench-vercel`), in produzione su `titanseo.vercel.app` |
 | **Ecosistema** | `postgres-jsts` (rilevato da `scripts/ecosystem/resolve.mjs`): Next.js + Prisma su Postgres Supabase, autorizzazione applicativa sulle rotte |
 | **Obiettivo** | Correggere i difetti emersi dall'audit, aggiornare lo stack ai major stabili e portare l'app a SaaS vendibile (workspace, abbonamenti, email, IT/EN, anti-abuso, pagine pubbliche e legali, osservabilità) |
 | **Schema task** | `atomic-task-schema.md` (`L-COL-019`): ogni task ha `definition_of_done`, `acceptance_criteria`, `target_tests` |
@@ -40,8 +40,9 @@
 | `19-hub-spoke.md` | `hub-spoke` | T-1901…T-1907 | Strategia hub and spoke deterministica dalle keyword (D-33): hub e spoke, H1 e H2 a modelli fissi, modifiche in app, export CSV, Excel, Sheets e PDF (D-34) |
 | `20-adjustments.md` | `adjustments` | T-2001…T-2008 | Rifiniture decise dall'utente il 2026-10-09 (D-36): cancellazione dell'account protetta e tracciata, annullamento gratuito entro 60 s, root admin libero su DataForSEO, progetto dell'onboarding fuori dal limite, voce Fatturazione nella barra, trasferimento del workspace all'eliminazione, uscita dal workspace personale, creazione di workspace di squadra |
 | `21-refinements.md` | `refinements` | T-2101…T-2104 | Cambiamenti decisi dall'utente il 2026-10-11 (D-37): estrazioni del root admin senza limiti d'uso, export della strategia e dei risultati nella lingua dell'utente, pagina pilastro fino a 20 H2 |
+| `22-rebrand.md` | `rebrand` | T-2201…T-2202 | Cambio del nome del prodotto in Titan SEO deciso dall'utente il 2026-10-11 (D-38): nome, testi, metadati, file di export e identificativi tecnici, documenti compreso lo storico, immagine Open Graph con il logo del sito |
 
-Totale: 21 macrotask, 128 task atomici (il 19 e il 20 aggiunti il 2026-10-09 su richiesta dell'utente, dopo il completamento dei primi 18; il 21 aggiunto il 2026-10-11 dopo il completamento del 20).
+Totale: 22 macrotask, 130 task atomici (il 19 e il 20 aggiunti il 2026-10-09 su richiesta dell'utente, dopo il completamento dei primi 18; il 21 aggiunto il 2026-10-11 dopo il completamento del 20; il 22 aggiunto il 2026-10-11 dopo il completamento del 21).
 
 ## 1bis. Contratto di altitudine (abilita `arch_check` in BUILD)
 
@@ -90,13 +91,14 @@ macrotask                 dipende da (macrotask che contengono i task in depends
 19 hub-spoke              05, 07, 08, 13, 15
 20 adjustments            09, 10, 12, 15, 16, 17, 18
 21 refinements            08, 13, 17, 19, 20
+22 rebrand                18, 21
 ```
 
-Tabella calcolata dai `depends_on` reali dei 128 task (481 criteri di
+Tabella calcolata dai `depends_on` reali dei 130 task (485 criteri di
 accettazione). Ogni macrotask dipende solo da macrotask con numero inferiore.
 
 Ordine lineare consigliato: 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 →
-11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21. Il 03 dipende solo da 01 e viene prima
+11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22. Il 03 dipende solo da 01 e viene prima
 del 04 apposta, per correggere subito i difetti visibili in produzione. Il 07
 (dipende da 01 e 03) può essere anticipato subito dopo il 03.
 
@@ -164,6 +166,7 @@ APERTA = blocca i task che la citano finché l'utente non fornisce il valore.
 | D-35 | Limiti tecnici delle strategie: al massimo 5000 keyword per strategia (oltre, le 5000 a priorità più alta, dichiarato nella sintesi) e 20 strategie per progetto; con il lancio commerciale attivo si potranno legare ai piani (D-14). | DECISA (utente, 2026-10-09: «ok procedi» sul modulo 19 che la proponeva insieme alle soglie predefinite del raggruppamento) |
 | D-36 | Scelte rimaste aperte dei macrotask 13-18, chiuse dall'utente il 2026-10-09: confermate le soglie del rate limit e del modulo contatti, il destinatario dei contatti (APP_ADMIN_EMAIL senza SUPPORT_EMAIL), le scelte tecniche di lingue (fuso Europe/Rome, errori del server e dei job in italiano, chip dei risultati grezzi) e quelle di 15-18 non elencate qui (contatti fuori dalla sitemap, x-default, barra con il solo marchio sulle pagine di accesso, registrazione 503 senza Turnstile col lancio attivo, recupero password e contatti senza CAPTCHA in pausa senza chiavi, inviti 503 senza Resend), il link alla pagina Strategia anche dai risultati (macrotask 19, con gate sulla baseline visiva). Cambiamenti da costruire nel macrotask 20 (dopo il 19): tentativi limitati e riga anonima nel registro alla cancellazione dell'account; annullamento gratuito entro 60 s; root admin libero su DataForSEO; progetto dell'onboarding fuori da maxProjects; voce Fatturazione nella barra per chi gestisce la fatturazione; trasferimento del workspace personale all'eliminazione dell'utente; uscita dal workspace personale dopo il trasferimento; creazione di workspace di squadra. Testi della landing e immagine Open Graph da rivedere insieme in una prossima sessione; azioni esterne da pianificare più avanti. | DECISA (utente, 2026-10-09, risposte alle domande sulle scelte aperte) |
 | D-37 | Scelte rimaste aperte dei macrotask 19 e 20, chiuse dall'utente il 2026-10-11. Confermate quelle del 20: 5 tentativi in 15 minuti sulla cancellazione dell'account, quota restituita all'annullamento come costruita, un solo progetto dell'onboarding fuori dal limite per workspace, erede del workspace personale per ruolo e poi anzianità, nuovo workspace personale vuoto per chi esce dal proprio, limite di 10 workspace creati a lancio attivo, voce Fatturazione e barra compatta. Confermate quelle del 19: spoke per categoria di modificatore, nucleo degli hub, principale della pilastro, spoke di domanda, tabella dei tipi di contenuto, limiti delle regole esperte, unione di un hub, nome predefinito, eliminazione della strategia dall'interfaccia, PDF con i font standard e logo PNG o JPEG. Cambiamenti da costruire nel macrotask 21: estrazioni del root admin senza limiti del piano né limiti tecnici d'uso (restano un job attivo per sezione e i tetti di spesa DataForSEO); export della strategia e dei risultati (CSV, XLSX, Google Sheets) con intestazioni, valori e foglio nella lingua dell'utente, booleani nativi in XLSX e Google Sheets, export JSON e per Keyword Planner invariati; pagina pilastro fino a 20 H2, spoke a 12. Conferma anticipata dell'aggiornamento delle sole asserzioni su intestazioni e foglio nella caratterizzazione dell'export. | DECISA (utente, 2026-10-11, risposte alle domande sulle scelte aperte) |
+| D-38 | Nome del prodotto: Titan SEO al posto del nome precedente. Grafia «Titan SEO»; rinominati anche gli identificativi tecnici (prefisso titan-seo dei file di export, titolo predefinito del file Google Sheets, User-Agent dell'autocomplete, nome del pacchetto); documenti e blueprint rinominati anche nello storico, tranne i nomi reali esterni del progetto Vercel; immagine Open Graph con il logo del sito. Modulo 22-rebrand. | DECISA (utente, 2026-10-11) |
 
 ## 5. Fonti di verità
 

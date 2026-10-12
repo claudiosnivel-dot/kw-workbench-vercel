@@ -1,4 +1,4 @@
-# session-end — Seo God Mode
+# session-end — Titan SEO
 
 > Da incollare alla chiusura di ogni sessione di lavoro.
 
@@ -7,7 +7,7 @@
 ## ▶ Prompt da incollare
 
 ```
-Chiudiamo la sessione di lavoro su **Seo God Mode** (postgres-jsts). Niente nuovo
+Chiudiamo la sessione di lavoro su **Titan SEO** (postgres-jsts). Niente nuovo
 lavoro: consolida, registra, lascia tutto riprendibile. Il "fatto" si dichiara per
 FATTI verificati, mai a sensazione (L-COL-006). In modalità silenziosa
 (~/.claude/CLAUDE.md) questo prompt si esegue in autonomia al termine del
@@ -29,7 +29,7 @@ macrotask, senza chiedere conferme.
      08 results-export · 09 google-integrations · 10 onboarding · 11 cleanup ·
      12 background-jobs · 13 i18n · 14 accounts-email · 15 workspaces ·
      16 billing · 17 abuse-quotas · 18 marketing-legal · 19 hub-spoke ·
-     20 adjustments · 21 refinements
+     20 adjustments · 21 refinements · 22 rebrand
    • Baseline (.trueline/baseline.json, .trueline/hygiene-baseline.json) e budget
      consumato (MAX_RETRIES_PER_FINDING = 2, GLOBAL_WALL_CLOCK_MS = 242401).
    • Per ogni task chiuso: id, output prodotto, esito del gate (quale oracolo/test
@@ -52,7 +52,7 @@ macrotask, senza chiedere conferme.
 
 5) FRAMING ONESTO (L-COL-006)
    Usa "trovato e verificata la correzione di X" / "questi controlli sono passati",
-   MAI "Seo God Mode è sicuro/pronto". Dichiara sempre la COPERTURA: cosa è stato
+   MAI "Titan SEO è sicuro/pronto". Dichiara sempre la COPERTURA: cosa è stato
    verificato e cosa no.
 
 Applica l'aggiornamento a docs/blueprint/SESSION-STATE.md e committalo sul branch
