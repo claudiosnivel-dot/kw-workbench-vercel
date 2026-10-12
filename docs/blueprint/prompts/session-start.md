@@ -1,4 +1,4 @@
-# session-start — Seo God Mode
+# session-start — Titan SEO
 
 > Da incollare all'apertura di ogni sessione di lavoro (dopo la prima, che usa
 > `project-start.md`).
@@ -8,7 +8,7 @@
 ## ▶ Prompt da incollare
 
 ```
-Riprendiamo il lavoro su **Seo God Mode** (postgres-jsts: Next.js + Prisma su
+Riprendiamo il lavoro su **Titan SEO** (postgres-jsts: Next.js + Prisma su
 Postgres Supabase). Il blueprint è il piano: si costruisce secondo i task, non si
 ridiscute il design.
 
@@ -27,7 +27,8 @@ ridiscute il design.
    14 accounts-email (02, 05, 12, 13) · 15 workspaces (11, 12, 13, 14) ·
    16 billing (09, 15) · 17 abuse-quotas (05, 09, 12, 14, 16) ·
    18 marketing-legal (03, 09, 13, 14, 15, 16, 17) · 19 hub-spoke (05, 07, 08, 13, 15) ·
-   20 adjustments (09, 10, 12, 15, 16, 17, 18) · 21 refinements (08, 13, 17, 19, 20)
+   20 adjustments (09, 10, 12, 15, 16, 17, 18) · 21 refinements (08, 13, 17, 19, 20) ·
+   22 rebrand (18, 21)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15

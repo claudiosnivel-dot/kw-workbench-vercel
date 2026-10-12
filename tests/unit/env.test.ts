@@ -14,7 +14,7 @@ const PRODUCTION = {
   APP_ADMIN_EMAIL: "root@example.com",
   EMAIL_TRANSPORT: "resend",
   RESEND_API_KEY: "re_test_non_reale",
-  EMAIL_FROM: "Seo God Mode <noreply@example.com>",
+  EMAIL_FROM: "Titan SEO <noreply@example.com>",
   APP_PUBLIC_URL: "https://app.example.com",
 };
 

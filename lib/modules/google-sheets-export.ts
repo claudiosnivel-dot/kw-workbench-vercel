@@ -69,14 +69,14 @@ function sanitizeSpreadsheetTitle(input: string): string {
     .trim();
 
   if (!cleaned) {
-    return "SEO God Mode Export";
+    return "Titan SEO Export";
   }
 
   if (cleaned.length <= MAX_SPREADSHEET_TITLE_LENGTH) {
     return cleaned;
   }
 
-  return cleaned.slice(0, MAX_SPREADSHEET_TITLE_LENGTH).trim() || "SEO God Mode Export";
+  return cleaned.slice(0, MAX_SPREADSHEET_TITLE_LENGTH).trim() || "Titan SEO Export";
 }
 
 function sanitizeSheetTitle(input: string): string {

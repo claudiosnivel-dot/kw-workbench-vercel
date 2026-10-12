@@ -1,4 +1,4 @@
-# CI di Seo God Mode (T-110): nessun segreto, nessun database remoto, nessun deploy.
+# CI di Titan SEO (T-110): nessun segreto, nessun database remoto, nessun deploy.
 # Ogni azione è fissata allo SHA di commit completo; la versione è nel commento.
 name: CI
 

@@ -153,8 +153,10 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("text/csv; charset=utf-8");
     expect(response.headers.get("cache-control")).toBe("no-store");
+    // covers: AC-2201-2
+    // impacted-by: T-2201 (prefisso titan-seo del nome del file, D-38)
     expect(response.headers.get("content-disposition")).toMatch(
-      new RegExp(`filename="seo-god-mode-${projectId}-project-non-excluded-\\d{4}-\\d{2}-\\d{2}\\.csv"`)
+      new RegExp(`filename="titan-seo-${projectId}-project-non-excluded-\\d{4}-\\d{2}-\\d{2}\\.csv"`)
     );
     expect(Array.from(bytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf]); // impacted-by: T-804
     expect(text.endsWith("\r\n")).toBe(true); // impacted-by: T-804

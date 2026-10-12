@@ -154,7 +154,7 @@ export function TopNav({
 
   const normalizedBrandName = useMemo(() => {
     const clean = brandName.trim();
-    return clean || "Seo God Mode";
+    return clean || "Titan SEO";
   }, [brandName]);
 
   const resolvedLogoUrl = useMemo(

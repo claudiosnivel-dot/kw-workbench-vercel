@@ -336,7 +336,7 @@ se rompe un comportamento esistente.
     - id: AC-107-1
       given: "la fixture di 12 candidate del proprietario"
       when: "si chiama GET /api/projects/{id}/export?format=csv&scope=non-excluded"
-      then: "status 200, Content-Type text/csv; charset=utf-8, Cache-Control no-store, Content-Disposition con filename seo-god-mode-{id}-project-non-excluded-AAAA-MM-GG.csv; i primi byte non sono EF BB BF; la prima riga elenca le 22 colonne da subproject_name a score separate da virgola; le righe sono il conteggio atteso più 1"
+      then: "status 200, Content-Type text/csv; charset=utf-8, Cache-Control no-store, Content-Disposition con filename titan-seo-{id}-project-non-excluded-AAAA-MM-GG.csv; i primi byte non sono EF BB BF; la prima riga elenca le 22 colonne da subproject_name a score separate da virgola; le righe sono il conteggio atteso più 1 (emendato da T-2201 il 2026-10-11: prefisso del nome del file titan-seo, D-38)"
     - id: AC-107-2
       given: "la stessa fixture"
       when: "si chiama l'export con format=xlsx e scope=selected"

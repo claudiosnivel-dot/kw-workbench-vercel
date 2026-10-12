@@ -57,7 +57,7 @@ describe("ResendEmailSender", () => {
       .mockResolvedValueOnce(failure(503))
       .mockResolvedValueOnce(failure(503))
       .mockResolvedValueOnce({ data: { id: "re_123" }, error: null, headers: null });
-    const sender = new ResendEmailSender({ emails: { send: sendMock } }, "Seo God Mode <noreply@example.com>", noWait);
+    const sender = new ResendEmailSender({ emails: { send: sendMock } }, "Titan SEO <noreply@example.com>", noWait);
 
     const result = await sender.send(message({ id: "msg-1" }));
 
@@ -74,7 +74,7 @@ describe("ResendEmailSender", () => {
   it("con 503 tenta 3 volte, con 422 una; lancia EmailDeliveryError e registra un solo errore senza chiave né indirizzo", async () => {
     vi.stubEnv("EMAIL_TRANSPORT", "resend");
     vi.stubEnv("RESEND_API_KEY", "re_test_secret");
-    vi.stubEnv("EMAIL_FROM", "Seo God Mode <noreply@example.com>");
+    vi.stubEnv("EMAIL_FROM", "Titan SEO <noreply@example.com>");
 
     for (const [status, expectedCalls] of [
       [503, 3],

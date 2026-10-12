@@ -110,6 +110,8 @@ describe("accesso riservato al root admin", () => {
 });
 
 describe("lettura dei valori salvati prima di T-506", () => {
+  // covers: AC-2201-3
+  // impacted-by: T-2201 (il nome predefinito è Titan SEO, D-38)
   it("ignora un logo http e un nome con caratteri di controllo usando i valori predefiniti", async () => {
     await upsertSettingValue({ key: "APP_BRAND_LOGO_URL_DARK", value: "http://example.com/vecchio.png" });
     await upsertSettingValue({ key: "APP_BRAND_NAME", value: "Nomerotto" });
@@ -117,6 +119,6 @@ describe("lettura dei valori salvati prima di T-506", () => {
     const snapshot = await getBrandingSnapshot();
 
     expect(snapshot.logoUrlDark).toBe("");
-    expect(snapshot.appName).toBe("Seo God Mode");
+    expect(snapshot.appName).toBe("Titan SEO");
   });
 });

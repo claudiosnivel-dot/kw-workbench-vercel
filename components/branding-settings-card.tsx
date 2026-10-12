@@ -41,7 +41,7 @@ export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSn
 
   const effectiveName = useMemo(() => {
     const normalized = appName.trim();
-    return normalized || "Seo God Mode";
+    return normalized || "Titan SEO";
   }, [appName]);
 
   const previewDarkLogo = logoUrlDark || logoUrlLight || legacyLogoUrl;

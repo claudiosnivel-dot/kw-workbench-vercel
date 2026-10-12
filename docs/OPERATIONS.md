@@ -1,4 +1,4 @@
-# Operazioni di Seo God Mode
+# Operazioni di Titan SEO
 
 > Procedure operative per il servizio in produzione (macrotask 06, D-04, D-13, D-31). Niente staging:
 > c'è un solo ambiente da sorvegliare, la produzione su Vercel con il DB Supabase di produzione.

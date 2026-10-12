@@ -1,4 +1,4 @@
-# Ambienti di Seo God Mode
+# Ambienti di Titan SEO
 
 > Matrice delle variabili d'ambiente per Production, Preview e Development (T-203, D-04).
 > Le variabili sono dichiarate in `ENV_KEYS` di `lib/env.ts` e validate all'avvio (T-201):

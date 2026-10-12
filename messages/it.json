@@ -808,7 +808,7 @@
       "intro": "Configura loghi dedicati per tema scuro e chiaro. In navbar viene usato il logo del tema corrente con fallback automatico.",
       "readOnly": "Il branding è globale: solo il root admin può modificarlo.",
       "appName": "Nome applicazione",
-      "appNamePlaceholder": "Seo God Mode",
+      "appNamePlaceholder": "Titan SEO",
       "darkLogo": "Logo tema scuro",
       "darkPlaceholder": "https://miosito.it/logo-dark.svg",
       "uploadDark": "Carica logo dark",
@@ -1223,23 +1223,23 @@
       },
       "pricing": {
         "title": "Prezzi",
-        "description": "Piani e limiti di Seo God Mode."
+        "description": "Piani e limiti di Titan SEO."
       },
       "privacy": {
         "title": "Informativa sulla privacy",
-        "description": "Come Seo God Mode tratta i dati personali."
+        "description": "Come Titan SEO tratta i dati personali."
       },
       "terms": {
         "title": "Termini di servizio",
-        "description": "Condizioni d'uso di Seo God Mode."
+        "description": "Condizioni d'uso di Titan SEO."
       },
       "cookies": {
         "title": "Cookie policy",
-        "description": "Cookie usati da Seo God Mode."
+        "description": "Cookie usati da Titan SEO."
       },
       "contact": {
         "title": "Contatti",
-        "description": "Scrivi al supporto di Seo God Mode."
+        "description": "Scrivi al supporto di Titan SEO."
       }
     },
     "landing": {

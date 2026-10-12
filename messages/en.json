@@ -808,7 +808,7 @@
       "intro": "Set dedicated logos for the dark and light themes. The navbar uses the current theme's logo with automatic fallback.",
       "readOnly": "Branding is global: only the root admin can change it.",
       "appName": "Application name",
-      "appNamePlaceholder": "Seo God Mode",
+      "appNamePlaceholder": "Titan SEO",
       "darkLogo": "Dark theme logo",
       "darkPlaceholder": "https://mysite.com/logo-dark.svg",
       "uploadDark": "Upload dark logo",
@@ -1223,23 +1223,23 @@
       },
       "pricing": {
         "title": "Pricing",
-        "description": "Seo God Mode plans and limits."
+        "description": "Titan SEO plans and limits."
       },
       "privacy": {
         "title": "Privacy policy",
-        "description": "How Seo God Mode processes personal data."
+        "description": "How Titan SEO processes personal data."
       },
       "terms": {
         "title": "Terms of service",
-        "description": "Seo God Mode terms of use."
+        "description": "Titan SEO terms of use."
       },
       "cookies": {
         "title": "Cookie policy",
-        "description": "Cookies used by Seo God Mode."
+        "description": "Cookies used by Titan SEO."
       },
       "contact": {
         "title": "Contact",
-        "description": "Write to Seo God Mode support."
+        "description": "Write to Titan SEO support."
       }
     },
     "landing": {

@@ -1,4 +1,4 @@
-# project-start — Seo God Mode
+# project-start — Titan SEO
 
 > Da incollare **una volta**, all'avvio dei lavori sul blueprint. Le sessioni
 > successive si aprono con `session-start.md` e si chiudono con `session-end.md`.
@@ -10,7 +10,7 @@
 ## ▶ Prompt da incollare
 
 ```
-Stai per lavorare su **Seo God Mode** (repo kw-workbench-vercel; ecosistema
+Stai per lavorare su **Titan SEO** (repo kw-workbench-vercel; ecosistema
 postgres-jsts: Next.js App Router + Prisma su Postgres Supabase, deploy Vercel),
 seguendo un metodo blueprint-first con verifica oracle-first. Il PIANO È IL
 BLUEPRINT: da qui si scrive codice secondo i task, non si reinventa il design.
