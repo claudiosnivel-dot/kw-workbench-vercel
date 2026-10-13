@@ -28,7 +28,9 @@ ridiscute il design.
    16 billing (09, 15) · 17 abuse-quotas (05, 09, 12, 14, 16) ·
    18 marketing-legal (03, 09, 13, 14, 15, 16, 17) · 19 hub-spoke (05, 07, 08, 13, 15) ·
    20 adjustments (09, 10, 12, 15, 16, 17, 18) · 21 refinements (08, 13, 17, 19, 20) ·
-   22 rebrand (18, 21)
+   22 rebrand (18, 21) · 23 ux-shell (08, 10, 12, 13, 15, 19, 20) ·
+   24 ux-keywords (07, 08, 09, 12, 19, 20, 21, 23) · 25 ux-plan (19, 23, 24) ·
+   26 ux-settings (07, 08, 13, 15, 23, 24, 25)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15

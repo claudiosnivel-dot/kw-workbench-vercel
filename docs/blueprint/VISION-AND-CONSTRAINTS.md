@@ -56,6 +56,11 @@ Titan SEO diventa un SaaS vendibile:
 7. (aggiunto il 2026-10-09, macrotask 19) dopo l'analisi, una strategia hub and spoke
    con H1 e H2 suggeriti, modificabile ed esportabile anche in PDF, usabile in un clic dai
    meno esperti (D-33, D-34).
+8. (aggiunto il 2026-10-13, macrotask 23-26) un'esperienza d'uso chiara e guidata: un
+   percorso unico idea → keyword → piano → scrittura, con il prossimo passo sempre
+   indicato, l'avvio da un solo campo, il gesto unico tieni/scarta, il piano come
+   bacheca con lo stato di scrittura e gli strumenti da esperto chiusi finché non
+   servono (D-39).
 
 "Fatto" = `target_tests` verdi e checkpoint Trueline verde al confine di ogni
 macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).

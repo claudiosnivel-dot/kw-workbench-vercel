@@ -8,8 +8,8 @@
 |---|---|
 | **Progetto** | Titan SEO (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
-| **Ultimo aggiornamento** | 2026-10-12 |
-| **Sessione corrente** | 2026-10-11/12 (ventiduesima) — BUILD di `refinements` (21) e, su richiesta dell'utente, di `rebrand` (22): entrambi chiusi e in produzione; blueprint 01-22 completo |
+| **Ultimo aggiornamento** | 2026-10-13 |
+| **Sessione corrente** | 2026-10-12/13 (ventitreesima) — brainstorming con l'utente sulla nuova esperienza d'uso: moduli 23-26 e D-39 scritti sul branch `trueline/blueprint-ux-redesign`, in revisione dall'utente; nessun codice di prodotto |
 
 ---
 
@@ -43,7 +43,7 @@
 ## 2. Macrotask corrente
 
 - **Ultimo chiuso**: `rebrand` (22), checkpoint VERDE, mergiato (`c21a691`) e in produzione: il prodotto si chiama Titan SEO (D-38). Precedente: `refinements` (21), checkpoint VERDE, mergiato (`11911c5`) e in produzione: estrazioni del root admin senza limiti d'uso (restano un job attivo per sezione e i tetti di spesa DataForSEO), export della strategia e dei risultati (CSV, XLSX, Google Sheets) nella lingua dell'utente, pagina pilastro fino a 20 H2; nessuna migrazione. Precedente: `adjustments` (20), mergiato (`dd970e0`).
-- **Prossimo**: nessun macrotask resta nel piano (blueprint 01-22 completo): un nuovo lavoro richiede un nuovo modulo. Testi della landing e immagine Open Graph da rivedere insieme all'utente in una sessione a parte.
+- **Prossimo**: `ux-shell` (23), primo dei moduli 23-26 della nuova esperienza d'uso (D-39), dopo l'approvazione dei moduli da parte dell'utente e il merge del branch `trueline/blueprint-ux-redesign`. Poi 24 `ux-keywords`, 25 `ux-plan`, 26 `ux-settings`, uno per sessione. Testi della landing e immagine Open Graph da rivedere insieme all'utente in una sessione a parte.
 - **Criteri/test di riferimento**: `docs/blueprint/22-rebrand.md` (ultimo modulo costruito).
 
 ## 3. Stato git
@@ -108,6 +108,12 @@
 - **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5, jsdom 30 e, da T-407, del progetto `24.x`: funziona con avviso; riferimento la CI su Node 24 da `.nvmrc`). E2E e Vitest su Linux con Node 24: container `mcr.microsoft.com/playwright:v1.63.0-noble` nella rete `kw-workbench-vercel_default`, copia del repo senza `node_modules`, `npm ci`, un proxy TCP in Node da `localhost:54329` a `postgres-test:5432` (la guardia ammette solo host locali), `CI=true`. Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
+
+### 2026-10-12/13 — nuova esperienza d'uso, moduli 23-26 (brainstorming con l'utente)
+
+- **Richiesta dell'utente**: «rivedere la ux: non si capisce niente, troppe funzioni che portano confusione»; un modo nuovo di approcciare l'app, chiaro e coinvolgente. Fotografie dell'app attuale (38 schermate) e diagnosi condivisa: pulsanti doppi, gergo interno, keyword sotto filtri ed export, nessun filo del percorso, onboarding confuso, strategia lunghissima.
+- **Design approvato per sezioni con mockup nel browser**: profilo a strati, traguardo = piano, progetto = sito con argomenti e ingresso in un campo; struttura «M1» (barra laterale numerata più barra del prossimo passo, mix tra percorso a tappe e area di lavoro); home in due stati e rimozione dell'onboarding; keyword con tieni/scarta e tutto tenuto all'inizio; piano come bacheca in stile Trello (mappa concettuale scartata) con il monitoraggio della scrittura; un piano per progetto e «Rigenera» che non tocca le pagine iniziate; finestra Esporta; impostazioni a tre blocchi con la lista dei marchi; stile «A».
+- **Blueprint**: moduli `23-ux-shell.md` (T-2301…T-2306), `24-ux-keywords.md` (T-2401…T-2406), `25-ux-plan.md` (T-2501…T-2506), `26-ux-settings.md` (T-2601…T-2605); ledger D-39 ed emendamenti di D-19, D-21, D-23, D-33 e D-35; indice, visione e prompt aggiornati sul branch `trueline/blueprint-ux-redesign`. `validate_blueprint` e `ac_observability_check` OK (153 task). In attesa della revisione dell'utente.
 
 ### Sessione 2026-10-11/12 (ventiduesima, dopo la chiusura del 21) — DataForSEO configurato e BUILD di `rebrand` (22), chiuso
 
