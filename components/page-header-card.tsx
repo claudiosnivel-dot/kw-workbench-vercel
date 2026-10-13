@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 type PageHeaderCardProps = {
   title: ReactNode;
   subtitle: ReactNode;
-  action: ReactNode;
+  action?: ReactNode;
   children?: ReactNode;
 };
 

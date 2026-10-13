@@ -93,68 +93,25 @@
     }
   },
   "nav": {
-    "overview": "Overview",
     "personalize": "Personalize",
-    "newProject": "New project",
     "billing": "Billing",
-    "admin": "Admin",
+    "admin": "Administration",
     "openMenu": "Open menu",
     "pricing": "Pricing",
     "login": "Sign in",
     "register": "Sign up",
-    "support": "Support"
-  },
-  "dashboard": {
-    "paused": {
-      "eyebrow": "Onboarding paused",
-      "title": "Resume the A-Z guided path",
-      "body": "You can continue from where you paused and reach your first export."
-    },
-    "eyebrow": "Overview",
-    "title": "Check your SEO projects and organize the work by section",
-    "intro": "Each project can contain one or more sections: work in a single block or split by category, cluster or funnel.",
-    "createProject": "Create project",
-    "adminDashboard": "Admin dashboard",
-    "stats": {
-      "projects": "Projects",
-      "sections": "Sections",
-      "keywords": "Keywords"
-    },
-    "projects": {
-      "title": "Projects",
-      "new": "New project",
-      "columns": {
-        "name": "Name",
-        "sections": "Sections",
-        "seeds": "Seeds",
-        "keywords": "Keywords",
-        "updated": "Updated",
-        "actions": "Actions"
-      },
-      "open": "Open",
-      "results": "Results",
-      "empty": "No projects yet."
-    },
-    "jobs": {
-      "title": "Latest jobs",
-      "columns": {
-        "project": "Project",
-        "section": "Section",
-        "status": "Status",
-        "started": "Started",
-        "completed": "Completed"
-      },
-      "empty": "No jobs found."
-    }
+    "support": "Support",
+    "account": "Account",
+    "workspace": "Workspace",
+    "userMenu": "Menu for {name}",
+    "projectMenu": "Project {name}: switch project",
+    "recentProjects": "Recent projects",
+    "allProjects": "All projects",
+    "projectNav": "Project menu"
   },
   "projects": {
     "links": {
-      "backToProject": "Back to project",
       "settings": "Project settings"
-    },
-    "new": {
-      "title": "New project",
-      "intro": "Create the project step by step: first the basics (name, first section, seeds), then any advanced options."
     },
     "delete": {
       "confirm": "Delete the project \"{name}\"? The project, its seeds, candidate keywords and jobs will be permanently removed."
@@ -586,11 +543,6 @@
     "JOB_ALREADY_ACTIVE": "An extraction is already running for this section.",
     "JOB_NOT_FOUND": "Extraction not found.",
     "JOB_NOT_CANCELABLE": "The extraction has already finished.",
-    "ONBOARDING_ENTRY_MODE_FORBIDDEN": "The guided path mode cannot be changed here.",
-    "ONBOARDING_STATUS_FORBIDDEN": "The guided path is completed by the first export.",
-    "ONBOARDING_PRECONDITION": "The requested step is not available yet.",
-    "INVALID_IDEMPOTENCY_KEY": "Invalid idempotency key.",
-    "IDEMPOTENCY_KEY_CONFLICT": "The idempotency key has already been used for another operation.",
     "EXPORT_FORMAT_INVALID": "Invalid export format.",
     "EXPORT_SCOPE_INVALID": "Invalid export scope.",
     "EXPORT_DIALECT_INVALID": "Invalid CSV dialect: use excel-it or rfc4180.",
@@ -639,124 +591,6 @@
       "title": "Page not found",
       "body": "The requested page does not exist or is not accessible with your account.",
       "back": "Back to dashboard"
-    }
-  },
-  "onboarding": {
-    "eyebrow": "Guided path",
-    "skip": "Skip for now",
-    "stepOf": "Step {index} of {total} ({label})",
-    "back": "Back to the previous step",
-    "continue": "Continue",
-    "activeProject": "Active project:",
-    "activeSection": "Active section:",
-    "steps": {
-      "WELCOME": {
-        "shortLabel": "Start",
-        "title": "Welcome to the guided path",
-        "description": "Choose whether to resume from your existing data or start the path over."
-      },
-      "PROJECT_CREATE": {
-        "shortLabel": "Project",
-        "title": "Create the parent project",
-        "description": "Create the main container you will work on in the wizard."
-      },
-      "PROJECT_TARGETING": {
-        "shortLabel": "Targeting",
-        "title": "Set language and country",
-        "description": "Set the base targeting that will drive the autocomplete extraction."
-      },
-      "SECTION_CREATE": {
-        "shortLabel": "Section",
-        "title": "Create the first section",
-        "description": "Define the working section where you will run the first extraction."
-      },
-      "SEEDS": {
-        "shortLabel": "Seeds",
-        "title": "Enter the seed keywords",
-        "description": "Add the section's initial seeds to prepare the first job."
-      },
-      "RUN": {
-        "shortLabel": "Run",
-        "title": "Start the first extraction",
-        "description": "Run a real job on the active section and check the result."
-      },
-      "REVIEW_EXPORT": {
-        "shortLabel": "Export",
-        "title": "Review and make the first export",
-        "description": "Review is recommended, then export in any format to complete the path."
-      }
-    },
-    "done": {
-      "projectHeading": "Step 2: Project created",
-      "projectLabel": "Active project",
-      "sectionHeading": "Step 4: Section created",
-      "sectionLabel": "Active section"
-    },
-    "projectCreate": {
-      "title": "Step 2: Create project",
-      "intro": "The project is the main container (e.g. domain, brand or client).",
-      "namePlaceholder": "e.g. example.com",
-      "nameRequired": "Enter the project name.",
-      "creating": "Creating...",
-      "submit": "Create project and continue"
-    },
-    "targeting": {
-      "title": "Step 3: Project targeting",
-      "hint": "Set the main language and country.",
-      "submit": "Save targeting and continue",
-      "advanceFailed": "Targeting saved, but the guided path could not advance."
-    },
-    "sectionCreate": {
-      "title": "Step 4: Create section",
-      "hint": "For example: blog category, topic cluster, funnel, market or any working logic.",
-      "nameRequired": "Enter the section name.",
-      "submit": "Create section and continue"
-    },
-    "seeds": {
-      "title": "Step 5: Enter seeds",
-      "label": "Seed keywords",
-      "hint": "One keyword per line. Seeds detected: {count}.",
-      "empty": "Enter at least one seed: the section run starts from the seeds.",
-      "submit": "Save seeds and continue",
-      "advanceFailed": "Seeds saved, but the guided path could not advance."
-    },
-    "run": {
-      "title": "Step 6: Start extraction",
-      "projectLabel": "Project",
-      "sectionLabel": "Section",
-      "info": "We will immediately run a real job on the active section with the seeds entered in the previous step.",
-      "submit": "Start first extraction",
-      "advanceFailed": "Extraction completed, but the guided path could not advance.",
-      "success": "Extraction completed. Now move on to review/export."
-    },
-    "review": {
-      "title": "Step 7: Review (recommended) + first export",
-      "intro": "Open the results to refine the keywords, then run at least one export to finish the path.",
-      "sectionKeywords": "Active section keywords",
-      "projectKeywords": "Project keywords",
-      "openResults": "Open section results (review recommended)",
-      "quickExport": "Quick export",
-      "exporting": "Exporting {format}...",
-      "csv": "Export CSV (non-excluded)",
-      "xlsx": "Export XLSX (current view)",
-      "json": "Export JSON (review)",
-      "completedRedirect": "Export completed. Guided path finished, redirecting...",
-      "completed": "Export completed. If you don't see the completion, refresh the page.",
-      "goToDashboard": "Go to dashboard"
-    },
-    "welcome": {
-      "title": "Choose how to start",
-      "existing": "You already have data: you can resume from the first missing step or restart the guided path.",
-      "fresh": "Let's start from scratch: the wizard guides you step by step to your first export.",
-      "opening": "Opening...",
-      "resume": "Resume where you left off",
-      "start": "Start guided path",
-      "preparing": "Preparing...",
-      "restart": "Start over"
-    },
-    "resume": {
-      "opening": "Opening path...",
-      "submit": "Resume guided path"
     }
   },
   "settings": {
@@ -1567,6 +1401,94 @@
         "internal_links": "Internal links"
       },
       "sheet": "Strategy"
+    }
+  },
+  "project": {
+    "shell": {
+      "label": "Project path",
+      "keywords": "Keywords",
+      "keptCount": "{count, plural, one {# kept} other {# kept}}",
+      "newTopic": {
+        "title": "New topic",
+        "fieldLabel": "What is the topic about?",
+        "placeholder": "e.g. trail running shoes",
+        "hint": "Titan SEO looks for the Google searches that start from these words.",
+        "more": "Add more starting words",
+        "moreLabel": "More starting words, one per line",
+        "submit": "Find keywords",
+        "submitting": "Creating…",
+        "cancel": "Cancel",
+        "required": "Write what the topic is about.",
+        "nameTaken": "A topic with this name already exists."
+      },
+      "plan": "Content plan",
+      "planToCreate": "to create",
+      "planPages": "{count, plural, one {# page} other {# pages}}",
+      "settings": "Settings",
+      "closeMenu": "Close menu",
+      "status": {
+        "done": "done",
+        "todo": "to do"
+      },
+      "addTopic": "New topic"
+    }
+  },
+  "nextStep": {
+    "label": "Next step",
+    "text": {
+      "add_topic": "add a topic, Titan SEO finds keywords starting from its words.",
+      "searching": "Looking for keywords…",
+      "run_topic": "the topic “{topic}” has no keywords yet.",
+      "build_plan": "{count, plural, one {# kept keyword is ready} other {# kept keywords are ready}} to become pages.",
+      "open_plan": "the content plan is ready, organize and write the pages."
+    },
+    "actions": {
+      "add_topic": "Add a topic",
+      "run_topic": "Start the search",
+      "build_plan": "Build the plan",
+      "building": "Building the plan…",
+      "open_plan": "Open the plan",
+      "searching": "Follow the search"
+    },
+    "notStarted": "The search did not start: {reason}"
+  },
+  "dashboard": {
+    "quickStart": {
+      "title": "What is your site about?",
+      "intro": "Write a topic: Titan SEO finds what people search for on Google and turns it into a plan of pages to write.",
+      "compactLabel": "New project: what is the site about?",
+      "placeholder": "e.g. running shoes",
+      "submit": "Find keywords",
+      "submitting": "Starting the search…",
+      "required": "Write what the site is about.",
+      "targeting": "Searches in {language} · {country}",
+      "change": "change",
+      "languageLabel": "Search language",
+      "countryLabel": "Search country",
+      "examplesLabel": "Or try an example:",
+      "examples": {
+        "one": "b&b in cornwall",
+        "two": "dentist in london",
+        "three": "online yoga classes"
+      }
+    },
+    "projects": {
+      "title": "Your projects"
+    },
+    "card": {
+      "keywords": "Keywords · {count, plural, one {# kept} other {# kept}}",
+      "noKeywords": "No keywords yet",
+      "planToCreate": "Plan to create",
+      "planPages": "Plan · {count, plural, one {# page} other {# pages}}",
+      "menu": "Actions for project {name}",
+      "rename": "Rename",
+      "renameTitle": "Rename the project",
+      "nameLabel": "Project name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "settings": "Settings",
+      "delete": "Delete",
+      "deleteTitle": "Delete the project?"
     }
   }
 }

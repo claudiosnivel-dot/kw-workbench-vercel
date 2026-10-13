@@ -68,9 +68,6 @@ export default async function SubprojectSettingsPage({
         }
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${subproject.project_id}`}>
-            {t("projects.links.backToProject")}
-          </Link>
           <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(subproject.project_id, { subprojectId: subproject.id })}>
             {t("sections.settings.viewSectionResults")}
           </Link>

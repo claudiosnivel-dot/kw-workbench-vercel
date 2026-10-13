@@ -93,68 +93,25 @@
     }
   },
   "nav": {
-    "overview": "Panoramica",
     "personalize": "Personalizza",
-    "newProject": "Nuovo progetto",
     "billing": "Fatturazione",
-    "admin": "Admin",
+    "admin": "Amministrazione",
     "openMenu": "Apri menu",
     "pricing": "Prezzi",
     "login": "Accedi",
     "register": "Registrati",
-    "support": "Supporto"
-  },
-  "dashboard": {
-    "paused": {
-      "eyebrow": "Onboarding in pausa",
-      "title": "Riprendi il percorso guidato A-Z",
-      "body": "Puoi continuare dal punto in cui hai messo in pausa e arrivare al primo export."
-    },
-    "eyebrow": "Panoramica",
-    "title": "Controlla i tuoi progetti SEO e organizza il lavoro per sezioni",
-    "intro": "Ogni progetto può contenere una o più sezioni: puoi lavorare in blocco unico oppure separare per categoria, cluster o funnel.",
-    "createProject": "Crea progetto",
-    "adminDashboard": "Dashboard admin",
-    "stats": {
-      "projects": "Progetti",
-      "sections": "Sezioni",
-      "keywords": "Keyword"
-    },
-    "projects": {
-      "title": "Progetti",
-      "new": "Nuovo progetto",
-      "columns": {
-        "name": "Nome",
-        "sections": "Sezioni",
-        "seeds": "Seed",
-        "keywords": "Keyword",
-        "updated": "Aggiornato",
-        "actions": "Azioni"
-      },
-      "open": "Apri",
-      "results": "Risultati",
-      "empty": "Nessun progetto al momento."
-    },
-    "jobs": {
-      "title": "Ultimi job",
-      "columns": {
-        "project": "Progetto",
-        "section": "Sezione",
-        "status": "Stato",
-        "started": "Avviato",
-        "completed": "Completato"
-      },
-      "empty": "Nessun job trovato."
-    }
+    "support": "Supporto",
+    "account": "Account",
+    "workspace": "Workspace",
+    "userMenu": "Menu di {name}",
+    "projectMenu": "Progetto {name}: cambia progetto",
+    "recentProjects": "Progetti recenti",
+    "allProjects": "Tutti i progetti",
+    "projectNav": "Menu del progetto"
   },
   "projects": {
     "links": {
-      "backToProject": "Torna al progetto",
       "settings": "Impostazioni progetto"
-    },
-    "new": {
-      "title": "Nuovo progetto",
-      "intro": "Crea il progetto in modo guidato: prima imposti le basi (nome, prima sezione, seed), poi eventuali opzioni avanzate."
     },
     "delete": {
       "confirm": "Eliminare il progetto \"{name}\"? Verranno rimossi in modo permanente progetto, seed, keyword candidate e job."
@@ -586,11 +543,6 @@
     "JOB_ALREADY_ACTIVE": "Un'estrazione è già in corso per questa sezione.",
     "JOB_NOT_FOUND": "Estrazione non trovata.",
     "JOB_NOT_CANCELABLE": "L'estrazione è già terminata.",
-    "ONBOARDING_ENTRY_MODE_FORBIDDEN": "La modalità del percorso guidato non si modifica da qui.",
-    "ONBOARDING_STATUS_FORBIDDEN": "Il percorso guidato si completa con il primo export.",
-    "ONBOARDING_PRECONDITION": "Il passo richiesto non è ancora disponibile.",
-    "INVALID_IDEMPOTENCY_KEY": "Chiave di idempotenza non valida.",
-    "IDEMPOTENCY_KEY_CONFLICT": "La chiave di idempotenza è già stata usata per un'altra operazione.",
     "EXPORT_FORMAT_INVALID": "Formato di export non valido.",
     "EXPORT_SCOPE_INVALID": "Scope di export non valido.",
     "EXPORT_DIALECT_INVALID": "Dialetto CSV non valido: usa excel-it o rfc4180.",
@@ -639,124 +591,6 @@
       "title": "Pagina non trovata",
       "body": "La pagina richiesta non esiste o non è accessibile con il tuo account.",
       "back": "Torna alla dashboard"
-    }
-  },
-  "onboarding": {
-    "eyebrow": "Percorso guidato",
-    "skip": "Salta per ora",
-    "stepOf": "Step {index} di {total} ({label})",
-    "back": "Torna allo step precedente",
-    "continue": "Continua",
-    "activeProject": "Progetto attivo:",
-    "activeSection": "Sezione attiva:",
-    "steps": {
-      "WELCOME": {
-        "shortLabel": "Start",
-        "title": "Benvenuto nel percorso guidato",
-        "description": "Scegli se riprendere dai dati esistenti o ricominciare il percorso."
-      },
-      "PROJECT_CREATE": {
-        "shortLabel": "Progetto",
-        "title": "Crea il progetto padre",
-        "description": "Crea il contenitore principale su cui lavorerai nel wizard."
-      },
-      "PROJECT_TARGETING": {
-        "shortLabel": "Targeting",
-        "title": "Configura lingua e paese",
-        "description": "Imposta il targeting base che guiderà l'estrazione autocomplete."
-      },
-      "SECTION_CREATE": {
-        "shortLabel": "Sezione",
-        "title": "Crea la prima sezione",
-        "description": "Definisci la sezione operativa in cui lancerai la prima estrazione."
-      },
-      "SEEDS": {
-        "shortLabel": "Seed",
-        "title": "Inserisci le keyword seed",
-        "description": "Aggiungi le seed iniziali della sezione per preparare il primo job."
-      },
-      "RUN": {
-        "shortLabel": "Run",
-        "title": "Avvia la prima estrazione",
-        "description": "Esegui un job reale sulla sezione attiva e verifica il risultato."
-      },
-      "REVIEW_EXPORT": {
-        "shortLabel": "Export",
-        "title": "Rivedi e fai il primo export",
-        "description": "Revisione consigliata, poi esporta in qualsiasi formato per completare il percorso."
-      }
-    },
-    "done": {
-      "projectHeading": "Step 2: Progetto creato",
-      "projectLabel": "Progetto attivo",
-      "sectionHeading": "Step 4: Sezione creata",
-      "sectionLabel": "Sezione attiva"
-    },
-    "projectCreate": {
-      "title": "Step 2: Crea progetto",
-      "intro": "Il progetto è il contenitore principale (es. dominio, brand o cliente).",
-      "namePlaceholder": "es. sermonescristiano.com",
-      "nameRequired": "Inserisci il nome progetto.",
-      "creating": "Creazione...",
-      "submit": "Crea progetto e continua"
-    },
-    "targeting": {
-      "title": "Step 3: Targeting progetto",
-      "hint": "Imposta lingua e paese principali.",
-      "submit": "Salva targeting e continua",
-      "advanceFailed": "Targeting salvato, ma avanzamento onboarding non riuscito."
-    },
-    "sectionCreate": {
-      "title": "Step 4: Crea sezione",
-      "hint": "Esempio: categoria blog, cluster tematico, funnel, mercato o qualunque logica operativa.",
-      "nameRequired": "Inserisci il nome sezione.",
-      "submit": "Crea sezione e continua"
-    },
-    "seeds": {
-      "title": "Step 5: Inserisci seed",
-      "label": "Keyword seed",
-      "hint": "Una keyword per riga. Seed rilevate: {count}.",
-      "empty": "Inserisci almeno una seed: il run della sezione parte dalle seed.",
-      "submit": "Salva seed e continua",
-      "advanceFailed": "Seed salvate, ma avanzamento onboarding non riuscito."
-    },
-    "run": {
-      "title": "Step 6: Avvia estrazione",
-      "projectLabel": "Progetto",
-      "sectionLabel": "Sezione",
-      "info": "Lanceremo subito un job reale sulla sezione attiva con le seed inserite al passo precedente.",
-      "submit": "Avvia prima estrazione",
-      "advanceFailed": "Estrazione completata, ma avanzamento onboarding non riuscito.",
-      "success": "Estrazione completata. Ora passa alla revisione/export."
-    },
-    "review": {
-      "title": "Step 7: Revisione (consigliata) + primo export",
-      "intro": "Apri i risultati per rifinire le keyword, poi esegui almeno un export per concludere il percorso.",
-      "sectionKeywords": "Keyword sezione attiva",
-      "projectKeywords": "Keyword progetto",
-      "openResults": "Apri risultati sezione (review consigliata)",
-      "quickExport": "Export rapido",
-      "exporting": "Export {format}...",
-      "csv": "Esporta CSV (non escluse)",
-      "xlsx": "Esporta XLSX (vista corrente)",
-      "json": "Esporta JSON (review)",
-      "completedRedirect": "Export completato. Percorso guidato concluso, reindirizzamento in corso...",
-      "completed": "Export completato. Se non vedi il completamento, aggiorna la pagina.",
-      "goToDashboard": "Vai alla dashboard"
-    },
-    "welcome": {
-      "title": "Seleziona come partire",
-      "existing": "Hai già dati presenti: puoi riprendere dal primo step mancante o ricominciare il percorso guidato.",
-      "fresh": "Iniziamo da zero: il wizard ti accompagna passo dopo passo fino al primo export.",
-      "opening": "Apertura...",
-      "resume": "Riprendi da dove sei",
-      "start": "Inizia percorso guidato",
-      "preparing": "Preparazione...",
-      "restart": "Ricomincia da zero"
-    },
-    "resume": {
-      "opening": "Apertura percorso...",
-      "submit": "Riprendi percorso guidato"
     }
   },
   "settings": {
@@ -1567,6 +1401,94 @@
         "internal_links": "Link interni"
       },
       "sheet": "Strategia"
+    }
+  },
+  "project": {
+    "shell": {
+      "label": "Percorso del progetto",
+      "keywords": "Keyword",
+      "keptCount": "{count, plural, one {# tenuta} other {# tenute}}",
+      "newTopic": {
+        "title": "Nuovo argomento",
+        "fieldLabel": "Di cosa parla l'argomento?",
+        "placeholder": "es. scarpe da trail",
+        "hint": "Titan SEO cerca su Google le ricerche che partono da queste parole.",
+        "more": "Aggiungi altre parole di partenza",
+        "moreLabel": "Altre parole di partenza, una per riga",
+        "submit": "Trova le keyword",
+        "submitting": "Creazione…",
+        "cancel": "Annulla",
+        "required": "Scrivi di cosa parla l'argomento.",
+        "nameTaken": "Esiste già un argomento con questo nome."
+      },
+      "plan": "Piano dei contenuti",
+      "planToCreate": "da creare",
+      "planPages": "{count, plural, one {# pagina} other {# pagine}}",
+      "settings": "Impostazioni",
+      "closeMenu": "Chiudi il menu",
+      "status": {
+        "done": "fatto",
+        "todo": "da fare"
+      },
+      "addTopic": "Nuovo argomento"
+    }
+  },
+  "nextStep": {
+    "label": "Prossimo passo",
+    "text": {
+      "add_topic": "aggiungi un argomento, Titan SEO cerca le keyword a partire dalle sue parole.",
+      "searching": "Sto cercando le keyword…",
+      "run_topic": "l'argomento «{topic}» non ha ancora keyword.",
+      "build_plan": "{count, plural, one {# keyword tenuta è pronta} other {# keyword tenute sono pronte}} per diventare pagine.",
+      "open_plan": "il piano dei contenuti è pronto, organizza e scrivi le pagine."
+    },
+    "actions": {
+      "add_topic": "Aggiungi un argomento",
+      "run_topic": "Avvia la ricerca",
+      "build_plan": "Costruisci il piano",
+      "building": "Costruzione del piano…",
+      "open_plan": "Apri il piano",
+      "searching": "Segui la ricerca"
+    },
+    "notStarted": "La ricerca non è partita: {reason}"
+  },
+  "dashboard": {
+    "quickStart": {
+      "title": "Di cosa parla il tuo sito?",
+      "intro": "Scrivi un argomento: Titan SEO trova le ricerche che la gente fa su Google e le trasforma in un piano di pagine da scrivere.",
+      "compactLabel": "Nuovo progetto: di cosa parla il sito?",
+      "placeholder": "es. scarpe running",
+      "submit": "Trova le keyword",
+      "submitting": "Avvio della ricerca…",
+      "required": "Scrivi di cosa parla il sito.",
+      "targeting": "Ricerche in {language} · {country}",
+      "change": "cambia",
+      "languageLabel": "Lingua delle ricerche",
+      "countryLabel": "Paese delle ricerche",
+      "examplesLabel": "Oppure prova con un esempio:",
+      "examples": {
+        "one": "b&b in puglia",
+        "two": "dentista a roma",
+        "three": "corsi di yoga in italiano"
+      }
+    },
+    "projects": {
+      "title": "I tuoi progetti"
+    },
+    "card": {
+      "keywords": "Keyword · {count, plural, one {# tenuta} other {# tenute}}",
+      "noKeywords": "Nessuna keyword ancora",
+      "planToCreate": "Piano da creare",
+      "planPages": "Piano · {count, plural, one {# pagina} other {# pagine}}",
+      "menu": "Azioni del progetto {name}",
+      "rename": "Rinomina",
+      "renameTitle": "Rinomina il progetto",
+      "nameLabel": "Nome del progetto",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "settings": "Impostazioni",
+      "delete": "Elimina",
+      "deleteTitle": "Eliminare il progetto?"
     }
   }
 }

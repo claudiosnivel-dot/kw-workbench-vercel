@@ -1,12 +1,17 @@
-// Gate di T-1205 (AC-1205-1…AC-1205-3): avanzamento con polling e backoff, esito finale esplicito e onboarding che
-// avanza solo a job completed.
+// Gate di T-1205 (AC-1205-1…AC-1205-3): avanzamento con polling e backoff, esito finale esplicito e nessun link ai
+// risultati per un job fallito.
+// impacted-by: T-2306 (onboarding rimosso: AC-1205-3 emendato sul pulsante di avvio dell'estrazione)
 import { act, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { JobProgress } from "@/components/job-progress";
-import { OnboardingRunStep } from "@/components/onboarding-run-step";
+import { RunExtractionButton } from "@/components/run-extraction-button";
 import { renderWithIntl } from "./intl";
 
 const RESULTS_HREF = "/projects/p1/results?subprojectId=s1";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -72,35 +77,23 @@ describe("JobProgress", () => {
   });
 });
 
-describe("OnboardingRunStep con JobProgress", () => {
+describe("RunExtractionButton con JobProgress", () => {
   // covers: AC-1205-3
-  it("a job failed mostra l'errore, nessun link ai risultati e nessuna PATCH dell'onboarding", async () => {
+  it("a job failed mostra l'errore e nessun link ai risultati", async () => {
     fetchMock.mockImplementation(async (input, init) => {
       if (String(input) === "/api/projects/p1/run" && init?.method === "POST") {
         return jsonResponse(202, { data: { jobId: "job-1", status: "pending", phase: "expand" }, meta: { subprojectId: "s1" } });
       }
       return jsonResponse(200, jobState("failed", "expand", 0, 0, "Nessuna seed nella sezione"));
     });
-    renderWithIntl(
-      <OnboardingRunStep
-        projectId="p1"
-        subprojectId="s1"
-        projectName="Progetto"
-        subprojectName="Sezione"
-        resultsHref={RESULTS_HREF}
-      />
-    );
+    renderWithIntl(<RunExtractionButton projectId="p1" subprojectId="s1" resultsHref={RESULTS_HREF} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Avvia prima estrazione" }));
+      fireEvent.click(screen.getByRole("button", { name: "Avvia estrazione" }));
     });
     await advance(2000);
 
     expect(screen.getByText("Nessuna seed nella sezione")).toBeVisible();
     expect(screen.queryByRole("link", { name: "Vedi risultati" })).toBeNull();
-    const patches = fetchMock.mock.calls.filter(
-      ([input, init]) => String(input) === "/api/onboarding/state" && init?.method === "PATCH"
-    );
-    expect(patches).toHaveLength(0);
   });
 });

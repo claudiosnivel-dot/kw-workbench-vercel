@@ -54,7 +54,9 @@ const appEnv: Record<string, string> = {
   AUTOCOMPLETE_RATE_LIMIT_MS: "180",
   AUTOCOMPLETE_CACHE_TTL_MS: "300000",
   AUTOCOMPLETE_CONCURRENCY: "6",
-  GOOGLE_AUTOCOMPLETE_ENDPOINT: "",
+  // Finto autocomplete avviato dal global setup (tests/e2e/global-setup.ts): le ricerche degli E2E non escono verso
+  // Google e restano in corso qualche secondo, come in produzione.
+  GOOGLE_AUTOCOMPLETE_ENDPOINT: "http://127.0.0.1:3199/complete/search",
   GOOGLE_AUTOCOMPLETE_CLIENT: "",
   GOOGLE_SHEETS_OAUTH_CLIENT_ID: "",
   GOOGLE_SHEETS_OAUTH_CLIENT_SECRET: "",

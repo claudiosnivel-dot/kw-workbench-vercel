@@ -66,7 +66,7 @@ describe("safeNextPath", () => {
 
   // covers: AC-303-2
   it("restituisce identici i percorsi della stessa origine", () => {
-    for (const input of ["/", "/projects/abc/results?view=all&page=2", "/onboarding/run"]) {
+    for (const input of ["/", "/projects/abc/results?view=all&page=2", "/projects/abc/strategy"]) {
       expect(safeNextPath(input)).toBe(input);
     }
   });

@@ -124,15 +124,15 @@ beforeEach(async () => {
 describe("query per richiesta (T-1105)", () => {
   // covers: AC-1105-1
   it("layout e DashboardPage della stessa richiesta leggono users una sola volta", async () => {
-    const { cookie, user } = await createUserWithSession({ displayName: "dashboard-user" });
-    await prisma.userOnboardingProgress.create({ data: { user_id: user.id, status: "COMPLETED", current_step: "REVIEW_EXPORT" } });
+    // impacted-by: T-2305, T-2306 (home al primo accesso al posto della dashboard, onboarding rimosso)
+    const { cookie } = await createUserWithSession({ displayName: "dashboard-user" });
     signedInWith(cookie);
     newRequest();
 
     const { default: DashboardPage } = await import("@/app/page");
     const markup = await renderRequest(() => DashboardPage({ searchParams: Promise.resolve({}) }));
 
-    expect(markup).toContain("Panoramica");
+    expect(markup).toContain("Di cosa parla il tuo sito?");
     expect(counter().count("users", "SELECT")).toBe(1);
   });
 

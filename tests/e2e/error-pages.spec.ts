@@ -21,9 +21,6 @@ test.describe("pagine di errore", () => {
   }) => {
     await prisma.user.deleteMany({ where: { email: SUSPENDED_EMAIL } });
     const user = await createE2EUser(SUSPENDED_EMAIL, E2E_USER_PASSWORD);
-    await prisma.userOnboardingProgress.create({
-      data: { user_id: user.id, status: "COMPLETED", current_step: "REVIEW_EXPORT", completed_at: new Date() },
-    });
 
     await submitLogin(page, SUSPENDED_EMAIL);
     await prisma.user.update({ where: { id: user.id }, data: { status: "SUSPENDED" } });

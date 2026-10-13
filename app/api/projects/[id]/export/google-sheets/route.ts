@@ -4,7 +4,6 @@ import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
 import { routeLocale } from "@/lib/i18n/route-locale";
 import { requireProjectScope } from "@/lib/authz/workspace";
 import { assertFeature } from "@/lib/billing/enforce";
-import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
 import { EXPORT_SCOPES } from "@/lib/modules/export-types";
 import type { ExportScope } from "@/lib/modules/export-types";
 import {
@@ -99,9 +98,6 @@ export const POST = withUserRoute(async (request: NextRequest, user, { id }: Pro
     logger.error("google_sheets_export_failed", { projectId: id, subprojectId, error });
     throw new AppError(500, "INTERNAL_ERROR", INTERNAL_EXPORT_ERROR);
   }
-
-  // Best-effort come l'export su file: l'onboarding non fa fallire un export già scritto (T-1003).
-  await recordOnboardingExport(user.id, id, async () => output.exportedRows);
 
   return NextResponse.json({ data: output });
 });

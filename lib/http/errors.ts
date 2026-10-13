@@ -3,7 +3,7 @@
  *
  * Ogni risposta d'errore prodotta da withApiErrors ha il body
  *   { error: string, code: string, requestId: string }
- * (più gli eventuali fields di un AppError, per esempio missing di ONBOARDING_PRECONDITION, T-1003)
+ * (più gli eventuali fields di un AppError, per esempio limit e max di PLAN_LIMIT, T-1605)
  * e l'header x-request-id con lo stesso requestId.
  * - error: messaggio pubblico, scritto apposta in un AppError; mai il messaggio di un'eccezione
  *   non prevista (Prisma, host del DB, stack).
@@ -39,7 +39,7 @@ export const JOB_ERROR_CODES = {
 } as const;
 
 /**
- * Campi pubblici aggiuntivi del body d'errore: missing di ONBOARDING_PRECONDITION e LAUNCH_NOT_READY, limit e max di
+ * Campi pubblici aggiuntivi del body d'errore: missing di LAUNCH_NOT_READY, limit e max di
  * PLAN_LIMIT, workspaces (id e nome) dei 409 della cancellazione dell'account (T-1804).
  */
 export type ErrorFields = Record<string, string | number | readonly string[] | readonly Readonly<Record<string, string>>[]>;
@@ -65,13 +65,6 @@ export class ValidationError extends AppError {
   constructor(message: string) {
     super(400, "VALIDATION_ERROR", message);
     this.name = "ValidationError";
-  }
-}
-
-export class NotFoundError extends AppError {
-  constructor(message = "Risorsa non trovata") {
-    super(404, "NOT_FOUND", message);
-    this.name = "NotFoundError";
   }
 }
 

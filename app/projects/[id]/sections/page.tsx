@@ -31,11 +31,6 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
             {t("sections.manage.projectLabel")} <span className="font-medium">{project.name}</span>
           </>
         }
-        action={
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}`}>
-            {t("projects.links.backToProject")}
-          </Link>
-        }
       />
 
       <section className="card space-y-3">

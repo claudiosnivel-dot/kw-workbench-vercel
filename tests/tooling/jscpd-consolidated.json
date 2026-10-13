@@ -28,7 +28,6 @@
     "components/delete-entity-button.tsx",
     "components/set-default-section-button.tsx",
     "components/page-header-card.tsx",
-    "components/google-sheets-export-button.tsx",
-    "components/onboarding-review-export-step.tsx"
+    "components/google-sheets-export-button.tsx"
   ]
 }

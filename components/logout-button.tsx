@@ -6,9 +6,11 @@ import { useState } from "react";
 
 type LogoutButtonProps = {
   className?: string;
+  /** menuitem dentro il menu dell'utente (T-2304): stesso comportamento, senza lo stile del pulsante. */
+  role?: "menuitem";
 };
 
-export function LogoutButton({ className }: LogoutButtonProps) {
+export function LogoutButton({ className, role }: LogoutButtonProps) {
   const t = useTranslations("auth.logout");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -22,8 +24,9 @@ export function LogoutButton({ className }: LogoutButtonProps) {
 
   return (
     <button
-      className={["btn", "btn-secondary", className].filter(Boolean).join(" ")}
+      className={[role ? null : "btn btn-secondary", className].filter(Boolean).join(" ")}
       type="button"
+      role={role}
       onClick={logout}
       disabled={loading}
     >

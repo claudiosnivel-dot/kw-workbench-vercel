@@ -17,8 +17,11 @@ type JobSnapshot = {
 
 type JobProgressProps = {
   jobId: string;
-  resultsHref: string;
+  /** Pagina dei risultati, linkata a estrazione completata; senza, nessun link (barra del prossimo passo, T-2302). */
+  resultsHref?: string;
   onCompleted?: () => void;
+  /** Senza pulsante Annulla: la barra del prossimo passo mostra solo l'avanzamento (T-2302). */
+  cancelable?: boolean;
 };
 
 const POLL_INTERVAL_MS = 2_000;
@@ -30,7 +33,7 @@ const TERMINAL_STATUSES = new Set<JobStatus>(["completed", "failed", "canceled"]
  * (rete o 5xx) l'intervallo raddoppia fino a 16 s e torna a 2 s al primo successo. Il polling si ferma a job
  * terminato e allo smontaggio. Il messaggio d'errore del job è reso come testo (CWE-79).
  */
-export function JobProgress({ jobId, resultsHref, onCompleted }: JobProgressProps) {
+export function JobProgress({ jobId, resultsHref, onCompleted, cancelable = true }: JobProgressProps) {
   const t = useTranslations("jobs");
   const tErrors = useTranslations("errors");
   const [job, setJob] = useState<JobSnapshot>({ status: "pending", phase: "expand", progress: { done: 0, total: 0 }, error: null });
@@ -141,7 +144,7 @@ export function JobProgress({ jobId, resultsHref, onCompleted }: JobProgressProp
           {done} / {total}
         </span>
       </p>
-      {job.status === "completed" && (
+      {job.status === "completed" && resultsHref && (
         <Link className="btn-secondary inline-block w-full text-center sm:w-auto" href={resultsHref}>
           {t("progress.viewResults")}
         </Link>
@@ -149,7 +152,7 @@ export function JobProgress({ jobId, resultsHref, onCompleted }: JobProgressProp
       {job.status === "failed" && <p className="text-sm text-red-700">{job.error?.trim() || t("run.failed")}</p>}
       {job.status === "canceled" && <p className="text-sm text-slate-600">{t("progress.canceled")}</p>}
       {pollError && <p className="text-sm text-red-700">{pollError}</p>}
-      {active && (
+      {active && cancelable && (
         <button type="button" className="btn-secondary w-full sm:w-auto" onClick={cancel} disabled={canceling}>
           {canceling ? t("progress.canceling") : t("progress.cancel")}
         </button>

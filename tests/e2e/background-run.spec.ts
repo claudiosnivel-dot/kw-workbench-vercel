@@ -17,9 +17,6 @@ let runningJobId = "";
 test.beforeAll(async () => {
   const user = await createE2EUser(EMAIL, PASSWORD);
   userId = user.id;
-  await prisma.userOnboardingProgress.create({
-    data: { user_id: user.id, status: "COMPLETED", current_step: "REVIEW_EXPORT", completed_at: new Date() },
-  });
   const project = await prisma.project.create({
     data: {
       name: "Estrazione in background",

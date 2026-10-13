@@ -1,6 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 
+/** Esci sta nel menu dell'utente della barra in alto (T-2304): si apre il menu e si cerca la voce. */
+async function expectLogoutItem(page: Page): Promise<void> {
+  await page.getByRole("button", { name: /^Menu di / }).click();
+  await expect(page.getByRole("menuitem", { name: "Esci" })).toBeVisible();
+}
+
 async function submitLogin(page: Page, password: string): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("Email").fill(E2E_EMAIL);
@@ -16,7 +22,8 @@ test.describe("smoke di login", () => {
     await page.waitForURL((url) => url.pathname === "/");
     expect(new URL(page.url()).pathname).toBe("/");
     expect((await context.cookies()).map((cookie) => cookie.name)).toContain("kwb_session");
-    await expect(page.getByRole("button", { name: "Esci" }).first()).toBeVisible();
+    // impacted-by: T-2304 (AC-103-1 emendato: Esci è una voce del menu dell'utente)
+    await expectLogoutItem(page);
   });
 
   // covers: AC-401-4
@@ -27,7 +34,7 @@ test.describe("smoke di login", () => {
 
     const dashboard = await page.goto("/");
     expect(dashboard?.status()).toBe(200);
-    await expect(page.getByRole("button", { name: "Esci" }).first()).toBeVisible();
+    await expectLogoutItem(page);
   });
 
   // Rimozione di T-901 (AC-901-1): la rotta Google Ads non esiste più, Next risponde 404 a un utente autenticato.

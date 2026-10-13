@@ -62,9 +62,6 @@ test.beforeAll(async ({ browser }) => {
   const [owner, member] = await Promise.all([OWNER_EMAIL, MEMBER_EMAIL].map((email) => createE2EUser(email, PASSWORD)));
   ids.users = [owner.id, member.id];
   ids.workspace = owner.workspaceId;
-  await prisma.userOnboardingProgress.createMany({
-    data: ids.users.map((userId) => ({ user_id: userId, status: "COMPLETED", current_step: "REVIEW_EXPORT", completed_at: new Date() })),
-  });
   // Il MEMBER lavora nel workspace dell'OWNER, che resta il suo workspace attivo (unico oltre al personale).
   await prisma.membership.create({ data: { workspace_id: owner.workspaceId, user_id: member.id, role: "MEMBER" } });
   const page = await browser.newPage();

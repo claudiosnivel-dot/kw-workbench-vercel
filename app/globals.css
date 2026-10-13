@@ -357,6 +357,305 @@ a {
   background: var(--menu-toggle-bg);
 }
 
+/* Menu dell'utente e menu dei progetti nella barra in alto (T-2304). */
+.user-menu-button,
+.project-switcher-button {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 14px;
+  border: 1px solid var(--menu-toggle-border);
+  background: var(--menu-toggle-bg);
+  color: var(--menu-toggle-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.user-menu-button {
+  padding: 0.3rem 0.55rem 0.3rem 0.3rem;
+}
+
+.project-switcher-button {
+  max-width: min(22rem, 46vw);
+  padding: 0.5rem 0.75rem;
+}
+
+.user-menu-button:hover,
+.user-menu-button[aria-expanded="true"],
+.project-switcher-button:hover,
+.project-switcher-button[aria-expanded="true"] {
+  background: var(--nav-link-hover-bg);
+  color: var(--nav-link-hover-text);
+}
+
+.user-menu-avatar {
+  display: inline-flex;
+  height: 1.9rem;
+  width: 1.9rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--nav-logo-ring);
+  background: var(--nav-logo-bg);
+  color: var(--semantic-success-text);
+}
+
+.user-menu-popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 50;
+  width: 16.5rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  border-radius: 18px;
+  border: 1px solid var(--surface-border-strong);
+  background: var(--input-bg-focus);
+  padding: 0.4rem;
+  box-shadow: var(--card-shadow);
+}
+
+.user-menu-popover.is-start {
+  right: auto;
+  left: 0;
+}
+
+.user-menu-identity {
+  margin-bottom: 0.3rem;
+  border-bottom: 1px solid var(--surface-border);
+  padding: 0.4rem 0.6rem 0.55rem;
+}
+
+.user-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 10px;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--nav-link-text);
+}
+
+.user-menu-item:hover,
+.user-menu-item:focus {
+  background: var(--nav-link-hover-bg);
+  color: var(--nav-link-hover-text);
+  outline: none;
+}
+
+.user-menu-item[aria-checked="true"]::after,
+.user-menu-item[aria-current="page"]::after {
+  content: "✓";
+  margin-left: auto;
+  color: var(--semantic-success-text);
+}
+
+.user-menu-group {
+  margin-top: 0.3rem;
+  border-top: 1px solid var(--surface-border);
+  padding-top: 0.3rem;
+}
+
+.user-menu-separator {
+  margin: 0.3rem 0;
+  height: 1px;
+  background: var(--surface-border);
+}
+
+/* Barra laterale del progetto (T-2303): tappe numerate, argomenti e impostazioni. */
+.project-sidebar-shell {
+  position: sticky;
+  top: 5.5rem;
+}
+
+.project-sidebar {
+  display: grid;
+  gap: 0.15rem;
+  border-radius: 20px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  padding: 0.75rem;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(12px);
+}
+
+.project-drawer .project-sidebar {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.project-step,
+.project-topic {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 12px;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  text-decoration: none;
+}
+
+.project-step {
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--text-800);
+}
+
+.project-topics {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+  padding-left: 1.6rem;
+  list-style: none;
+}
+
+.project-topic {
+  font-size: 0.875rem;
+  color: var(--text-700);
+}
+
+.project-topic-add {
+  color: var(--text-500);
+}
+
+.project-step:hover,
+.project-topic:hover {
+  background: var(--nav-link-hover-bg);
+  color: var(--nav-link-hover-text);
+}
+
+.project-step.is-current,
+.project-topic.is-current {
+  background: var(--nav-link-active-bg);
+  color: var(--nav-link-active-text);
+  box-shadow: inset 0 0 0 1px var(--nav-link-active-ring);
+  font-weight: 600;
+}
+
+.project-step-marker {
+  display: inline-flex;
+  height: 1.4rem;
+  width: 1.4rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border-strong);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-600);
+}
+
+.project-step-marker.is-done {
+  border-color: var(--status-success-border);
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
+}
+
+.project-step-marker.is-current {
+  border: 2px solid var(--brand-500);
+  color: var(--semantic-success-text);
+}
+
+.project-sidebar-separator {
+  margin: 0.5rem 0.2rem;
+  height: 1px;
+  background: var(--surface-border);
+}
+
+/* Modali e pannello a scomparsa del progetto (T-2303). */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow-y: auto;
+  background: rgb(0 0 0 / 0.55);
+  padding: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .modal-backdrop {
+    align-items: center;
+    padding: 1.5rem;
+  }
+}
+
+.modal-backdrop.is-drawer {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: 32rem;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.project-drawer {
+  height: 100%;
+  width: min(20rem, 86vw);
+  overflow-y: auto;
+  border-right: 1px solid var(--surface-border-strong);
+  background: var(--input-bg-focus);
+  padding: 1rem;
+  box-shadow: var(--card-shadow);
+}
+
+/* Scheda di un progetto nella home (T-2305): nome e tappe, ultima attività, prossimo passo e menu. */
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 18px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-muted);
+  padding: 0.85rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .project-card {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+/* Barra del prossimo passo in fondo all'area del progetto (T-2302): resta visibile scorrendo la pagina. */
+.next-step-bar {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 18px;
+  border: 1px solid var(--surface-border-strong);
+  border-top: 2px solid var(--brand-500);
+  background: var(--input-bg-focus);
+  padding: 0.85rem 1rem;
+  box-shadow: var(--card-shadow);
+}
+
+@media (min-width: 640px) {
+  .next-step-bar {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
 .input,
 .select {
   width: 100%;
@@ -396,9 +695,8 @@ a {
   padding-right: 2.1rem;
 }
 
-/* Selettori della lingua (T-1301) e del workspace (T-1504): compatti, alti come i link della navbar. */
-.select.locale-switcher,
-.select.workspace-switcher {
+/* Selettore della lingua (T-1301): compatto, alto come i link della navbar. */
+.select.locale-switcher {
   width: auto;
   padding: 0.5rem 2.1rem 0.5rem 0.75rem;
   font-size: 0.875rem;

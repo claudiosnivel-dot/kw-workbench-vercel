@@ -5,8 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { LocaleSwitcher } from "@/components/locale-switcher";
-import { LogoutButton } from "@/components/logout-button";
-import { type WorkspaceOption, WorkspaceSwitcher } from "@/components/workspace-switcher";
+import { UserMenu, type WorkspaceOption } from "@/components/user-menu";
 import type { AppLocale } from "@/lib/i18n/locale";
 import { findMarketingRoute, marketingPath } from "@/lib/marketing/routes";
 
@@ -14,7 +13,6 @@ import { findMarketingRoute, marketingPath } from "@/lib/marketing/routes";
 const AUTH_ROUTE_PREFIXES = [
   "/login",
   "/register",
-  "/onboarding",
   "/verify-email",
   "/forgot-password",
   "/reset-password",
@@ -25,38 +23,11 @@ function isAuthRoute(pathname: string): boolean {
   return AUTH_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
-/** Nome mostrato ed email dell'utente della sessione (T-1401): mai nel cookie, letti dal DB dal layout. */
-function UserIdentity({ user, className }: { user: { displayName: string; email: string | null }; className: string }) {
-  return (
-    <span className={`min-w-0 flex-col leading-tight ${className}`}>
-      <span className="truncate text-sm font-medium">{user.displayName}</span>
-      {user.email && <span className="truncate text-xs text-slate-500">{user.email}</span>}
-    </span>
-  );
-}
-
-type NavLabelKey = "overview" | "personalize" | "newProject" | "billing" | "admin" | "support";
-
-function buildNavLinks(showAdminLink: boolean, showBillingLink: boolean, locale: AppLocale) {
-  const links: { href: string; labelKey: NavLabelKey }[] = [
-    { href: "/", labelKey: "overview" },
-    { href: "/personalizza", labelKey: "personalize" },
-    { href: "/projects/new", labelKey: "newProject" },
-  ];
-
-  // Fatturazione del workspace attivo per chi ha billing.manage (T-2005); la pagina resta leggibile da tutti i membri.
-  if (showBillingLink) {
-    links.push({ href: "/billing", labelKey: "billing" });
-  }
-
-  if (showAdminLink) {
-    links.push({ href: "/admin", labelKey: "admin" });
-  }
-
-  // Modulo contatti nella lingua corrente (T-1805).
-  links.push({ href: marketingPath("contact", locale), labelKey: "support" });
-  return links;
-}
+/**
+ * Contenitore della barra in alto in cui la struttura del progetto (T-2303) porta il pulsante ☰ della barra laterale e
+ * il menu dei progetti: la barra sta nel layout radice, i dati del progetto nel layout del progetto.
+ */
+export const PROJECT_NAV_SLOT_ID = "project-nav-slot";
 
 /**
  * Voci della barra per gli anonimi (T-1801): prezzi, accesso, registrazione e lingua; nessun link dell'app né logout.
@@ -147,7 +118,6 @@ export function TopNav({
   activeWorkspaceId?: string | null;
 }) {
   const t = useTranslations("nav");
-  const locale = useLocale();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeThemeMode, setActiveThemeMode] = useState<"DARK" | "LIGHT">(themeMode);
@@ -169,15 +139,7 @@ export function TopNav({
   );
 
   const hasCustomLogo = resolvedLogoUrl.length > 0;
-  const navLinks = useMemo(
-    () => buildNavLinks(showAdminLink, showBillingLink, locale),
-    [showAdminLink, showBillingLink, locale]
-  );
   const authView = isAuthRoute(pathname);
-  const switcher =
-    workspaces.length > 1 && activeWorkspaceId
-      ? (className?: string) => <WorkspaceSwitcher workspaces={workspaces} activeId={activeWorkspaceId} className={className} />
-      : null;
 
   useEffect(() => {
     setMenuOpen(false);
@@ -216,108 +178,88 @@ export function TopNav({
     return () => observer.disconnect();
   }, []);
 
+  const appBar = Boolean(user) && !authView;
+  // Nella barra dell'app, sotto i 640 px, il nome del marchio lascia spazio al progetto e al menu (T-2304).
+  const brand = (
+    <Link href="/" aria-label={normalizedBrandName} className="group inline-flex min-w-0 items-center gap-3 xl:shrink-0">
+      {hasCustomLogo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={resolvedLogoUrl} alt={normalizedBrandName} className="top-nav-logo-image" />
+      ) : (
+        <>
+          <span className="top-nav-logo flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl transition group-hover:scale-[1.02]">
+            <span className="top-nav-logo-fallback font-heading text-base font-semibold">
+              {normalizedBrandName.slice(0, 1).toUpperCase()}
+            </span>
+          </span>
+          <span
+            className={`top-nav-brand-name font-heading truncate text-lg font-semibold tracking-tight ${appBar ? "hidden sm:inline" : ""}`}
+          >
+            {normalizedBrandName}
+          </span>
+        </>
+      )}
+    </Link>
+  );
+
   return (
     <header className="top-nav-shell sticky top-0 z-40">
       <div className="mx-auto w-full max-w-[1180px] px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4">
-          <Link href="/" aria-label={normalizedBrandName} className="group inline-flex min-w-0 items-center gap-3 xl:shrink-0">
-            {hasCustomLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={resolvedLogoUrl} alt={normalizedBrandName} className="top-nav-logo-image" />
-            ) : (
-              <>
-                <span className="top-nav-logo flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl transition group-hover:scale-[1.02]">
-                  <span className="top-nav-logo-fallback font-heading text-base font-semibold">
-                    {normalizedBrandName.slice(0, 1).toUpperCase()}
-                  </span>
-                </span>
-                <span className="top-nav-brand-name font-heading truncate text-lg font-semibold tracking-tight">{normalizedBrandName}</span>
-              </>
-            )}
-          </Link>
+        {user && appBar ? (
+          // Barra dell'app ridotta (T-2304, D-39): marchio, progetto corrente con il suo menu e menu dell'utente.
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              {brand}
+              <div id={PROJECT_NAV_SLOT_ID} className="flex min-w-0 items-center gap-2" />
+            </div>
+            <UserMenu
+              user={user}
+              showBillingLink={showBillingLink}
+              showAdminLink={showAdminLink}
+              workspaces={workspaces}
+              activeWorkspaceId={activeWorkspaceId}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-4">
+              {brand}
 
-          {!authView && (
-            <>
-              <button
-                type="button"
-                className="top-nav-menu-toggle inline-flex h-10 w-10 items-center justify-center rounded-xl md:hidden"
-                onClick={() => setMenuOpen((current) => !current)}
-                aria-expanded={menuOpen}
-                aria-controls="mobile-nav"
-                aria-label={t("openMenu")}
-              >
-                <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden="true">
-                  <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </button>
+              {!authView && (
+                <>
+                  <button
+                    type="button"
+                    className="top-nav-menu-toggle inline-flex h-10 w-10 items-center justify-center rounded-xl md:hidden"
+                    onClick={() => setMenuOpen((current) => !current)}
+                    aria-expanded={menuOpen}
+                    aria-controls="mobile-nav"
+                    aria-label={t("openMenu")}
+                  >
+                    <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden="true">
+                      <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </button>
 
-              {/* Da xl marchio e voci restano interi: se lo spazio non basta si accorcia solo l'identità (T-2005). */}
-              <nav className="hidden min-w-0 items-center gap-2 md:flex">
-                {user ? (
-                  <>
-                    {navLinks.map((item) => {
-                      const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={`top-nav-link inline-flex items-center rounded-xl px-3 py-2 text-sm font-medium transition xl:whitespace-nowrap ${
-                            active ? "is-active" : ""
-                          }`}
-                        >
-                          {t(item.labelKey)}
-                        </Link>
-                      );
-                    })}
-                    <UserIdentity user={user} className="hidden max-w-[12rem] text-right xl:flex" />
-                    {/* Nomi scelti dagli utenti (T-1504): il selettore non allarga la barra oltre 14rem. */}
-                    {switcher?.("max-w-56")}
-                    <LocaleSwitcher />
-                    <LogoutButton className="px-4 py-2" />
-                  </>
-                ) : (
-                  <AnonymousNavItems
-                    pathname={pathname}
-                    linkClassName="top-nav-link inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition"
-                  />
-                )}
+                  <nav className="hidden min-w-0 items-center gap-2 md:flex">
+                    <AnonymousNavItems
+                      pathname={pathname}
+                      linkClassName="top-nav-link inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition"
+                    />
+                  </nav>
+                </>
+              )}
+            </div>
+
+            {!authView && menuOpen && (
+              <nav id="mobile-nav" className="mt-3 grid gap-2 md:hidden">
+                <AnonymousNavItems
+                  pathname={pathname}
+                  linkClassName="top-nav-link top-nav-link-mobile inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition"
+                  mobile
+                />
               </nav>
-            </>
-          )}
-        </div>
-
-        {!authView && menuOpen && (
-          <nav id="mobile-nav" className="mt-3 grid gap-2 md:hidden">
-            {user ? (
-              <>
-                <UserIdentity user={user} className="flex px-1 text-center" />
-                {navLinks.map((item) => {
-                  const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMenuOpen(false)}
-                      className={`top-nav-link top-nav-link-mobile inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition ${
-                        active ? "is-active" : ""
-                      }`}
-                    >
-                      {t(item.labelKey)}
-                    </Link>
-                  );
-                })}
-                {switcher?.("w-full")}
-                <LocaleSwitcher className="w-full" />
-                <LogoutButton className="w-full justify-center rounded-xl px-4 py-2" />
-              </>
-            ) : (
-              <AnonymousNavItems
-                pathname={pathname}
-                linkClassName="top-nav-link top-nav-link-mobile inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition"
-                mobile
-              />
             )}
-          </nav>
+          </>
         )}
       </div>
     </header>

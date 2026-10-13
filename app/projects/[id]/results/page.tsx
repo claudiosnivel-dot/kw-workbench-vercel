@@ -130,9 +130,6 @@ export default async function ResultsPage({ params, searchParams }: ProjectPageP
               : t("results.titleAll", { project: project.name })}
           </h1>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-            <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}`}>
-              {t("projects.links.backToProject")}
-            </Link>
             <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}/settings`}>
               {t("projects.links.settings")}
             </Link>

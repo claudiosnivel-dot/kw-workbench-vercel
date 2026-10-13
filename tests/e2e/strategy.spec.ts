@@ -21,9 +21,6 @@ test.beforeAll(async () => {
   await prisma.user.deleteMany({ where: { email: EMAIL } });
   const user = await createE2EUser(EMAIL, PASSWORD);
   ids.user = user.id;
-  await prisma.userOnboardingProgress.create({
-    data: { user_id: user.id, status: "COMPLETED", current_step: "REVIEW_EXPORT", completed_at: new Date() },
-  });
   const project = await prisma.project.create({
     data: { name: "Progetto strategia E2E", workspace_id: user.workspaceId, created_by_user_id: user.id, language_code: "it", country_code: "IT" },
   });

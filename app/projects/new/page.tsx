@@ -1,22 +1,6 @@
-import { getTranslations } from "next-intl/server";
-import { PageIntro } from "@/components/page-intro";
-import { ProjectForm } from "@/components/project-form";
-import { requirePageUser } from "@/lib/auth/page-guard";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function NewProjectPage() {
-  const user = await requirePageUser();
-  const t = await getTranslations("projects.new");
-
-  return (
-    <div className="space-y-6">
-      <PageIntro title={t("title")} intro={t("intro")} />
-
-      <section className="card">
-        <ProjectForm mode="create" canEditAutocompleteProvider={user.isRootAdmin} showSeeds={true} showInitialSubprojectName={true} />
-      </section>
-    </div>
-  );
+/** La creazione di un progetto parte dal campo della home (T-2305): il vecchio indirizzo porta lì. */
+export default function NewProjectPage() {
+  redirect("/");
 }
-

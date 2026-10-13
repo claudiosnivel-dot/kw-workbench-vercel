@@ -66,7 +66,8 @@ test("l'utente autenticato su / vede la dashboard; l'anonimo su /projects va al 
 
   await page.goto("/");
   expect(new URL(page.url()).pathname).toBe("/");
-  await expect(page.locator("main").getByText("Panoramica", { exact: true })).toBeVisible();
+  // impacted-by: T-2305 (AC-1801-2 emendato: la home dell'app ha l'intestazione «I tuoi progetti», non più Panoramica)
+  await expect(page.getByRole("heading", { name: "I tuoi progetti" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Dalle seed alle keyword pronte da esportare" })).toHaveCount(0);
 
   const anonymous = await request.get("/projects", { maxRedirects: 0 });

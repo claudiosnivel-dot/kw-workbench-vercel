@@ -224,6 +224,29 @@ export function parseProjectCreate(payload: unknown, actor: Actor): ProjectCreat
   };
 }
 
+// Avvio rapido (T-2301): il topic diventa la seed dell'argomento, quindi ha il limite delle seed (D-24); gli spazi
+// ripetuti e gli a capo diventano uno spazio, così il campo resta una sola seed.
+const quickStartSchema = z.strictObject({
+  topic: z
+    .string()
+    .transform((value) => value.replace(/\s+/g, " ").trim())
+    .pipe(z.string().min(1, `da 1 a ${SEED_MAX_LENGTH} caratteri`).max(SEED_MAX_LENGTH, `da 1 a ${SEED_MAX_LENGTH} caratteri`)),
+  languageCode: languageField.optional(),
+  countryCode: countryField.optional(),
+});
+
+export type QuickStartInput = z.output<typeof quickStartSchema>;
+
+/** Corpo di POST /api/projects/quick-start: topic obbligatorio, lingua e paese facoltativi validati come nel progetto. */
+export function parseQuickStart(payload: unknown): QuickStartInput {
+  return parseOrThrow(quickStartSchema, payload);
+}
+
+/** Nome del progetto e del primo argomento dall'avvio rapido: il topic con l'iniziale maiuscola, al massimo 120 caratteri. */
+export function quickStartName(topic: string): string {
+  return `${topic.slice(0, 1).toUpperCase()}${topic.slice(1)}`.slice(0, NAME_MAX_LENGTH).trim();
+}
+
 /** Aggiornamento parziale del progetto: nel data ci sono solo i campi inviati. */
 export function parseProjectPatch(payload: unknown, actor: Actor, current: { metrics_provider: MetricsProvider }) {
   const input = parseOrThrow(projectPatchSchema, payload);

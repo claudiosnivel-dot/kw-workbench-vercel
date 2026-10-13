@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ApiErrorPayload, messageOf, readApiResponse } from "@/lib/client/http";
+import { useModalFocus } from "@/lib/client/use-modal-focus";
 import type { ExportScope } from "@/lib/modules/export-types";
 
 type ExportModalResponse = ApiErrorPayload & {
@@ -14,35 +15,6 @@ type ExportModalResponse = ApiErrorPayload & {
     exportedRows: number;
   };
 };
-
-// Elementi che ricevono il focus con Tab dentro la modale.
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/** Primo campo del modulo, altrimenti il primo elemento attivabile della modale. */
-function initialFocusTarget(dialog: HTMLElement): HTMLElement | null {
-  return dialog.querySelector<HTMLElement>("input, select, textarea") ?? dialog.querySelector<HTMLElement>(FOCUSABLE);
-}
-
-/** Tab e Maiusc+Tab restano dentro la modale: dall'ultimo elemento si torna al primo e viceversa. */
-function keepFocusInside(event: KeyboardEvent, dialog: HTMLElement): void {
-  const focusable = [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)];
-  if (focusable.length === 0) {
-    event.preventDefault();
-    return;
-  }
-
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  const active = document.activeElement;
-  if (event.shiftKey && (active === first || !dialog.contains(active))) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
-    event.preventDefault();
-    first.focus();
-  }
-}
 
 const EXPORT_SCOPE_OPTIONS = ["approved", "selected", "review", "non-excluded", "filtered"] as const satisfies ReadonlyArray<ExportScope>;
 
@@ -73,44 +45,7 @@ export function GoogleSheetsExportButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ExportModalResponse["data"] | null>(null);
-  const openerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
-
-  // All'apertura il focus va al primo campo; alla chiusura torna al pulsante che ha aperto la modale (T-1104).
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const opener = openerRef.current;
-    if (dialogRef.current) {
-      initialFocusTarget(dialogRef.current)?.focus();
-    }
-    return () => opener?.focus();
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      document.body.style.overflow = "";
-      return;
-    }
-
-    document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !loading) {
-        setIsOpen(false);
-      } else if (event.key === "Tab" && dialogRef.current) {
-        keepFocusInside(event, dialogRef.current);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isOpen, loading]);
 
   const openModal = () => {
     setError(null);
@@ -127,6 +62,10 @@ export function GoogleSheetsExportButton({
 
     setIsOpen(false);
   };
+
+  // All'apertura il focus va al primo campo, Tab resta nella modale, Esc la chiude; alla chiusura il focus torna al
+  // pulsante che l'ha aperta (T-1104).
+  useModalFocus(isOpen, dialogRef, closeModal);
 
   const runExport = async () => {
     const trimmedFileName = fileName.trim();
@@ -162,7 +101,7 @@ export function GoogleSheetsExportButton({
 
   return (
     <>
-      <button ref={openerRef} className="btn-primary w-full sm:w-auto" type="button" onClick={openModal}>
+      <button className="btn-primary w-full sm:w-auto" type="button" onClick={openModal}>
         {t("sheets.open")}
       </button>
 

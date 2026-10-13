@@ -13,9 +13,6 @@ let userId = "";
 test.beforeAll(async () => {
   const user = await createE2EUser(EMAIL, PASSWORD, { ui_locale: "en" });
   userId = user.id;
-  await prisma.userOnboardingProgress.create({
-    data: { user_id: user.id, status: "COMPLETED", current_step: "REVIEW_EXPORT", completed_at: new Date() },
-  });
 });
 
 test.afterAll(async () => {
