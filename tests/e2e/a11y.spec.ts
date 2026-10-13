@@ -70,7 +70,8 @@ test.describe("accessibilità di base", () => {
     await page.getByRole("button", { name: "Chiaro" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "LIGHT");
 
-    await page.getByRole("link", { name: "Panoramica" }).first().click();
+    // impacted-by: T-2304 (la barra non ha più la voce Panoramica: alla home porta il marchio)
+    await page.getByRole("link", { name: "Titan SEO" }).first().click();
     await page.waitForURL((url) => url.pathname === "/");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "DARK");
   });

@@ -293,7 +293,7 @@ Oggi le keyword stanno sotto 12 filtri, 7 pulsanti di export e il blocco di Keyw
 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
-- Moduli 23-26 approvati dall'utente il 2026-10-13 («approvo»), con le differenze dai mockup e le scelte dell'agente elencate nei Self-check.
+- Modulo 24 approvato dall'utente il 2026-10-13 («approvo», insieme ai moduli 23, 25 e 26), con le differenze dai mockup e le scelte dell'agente elencate in questo Self-check.
 - Design approvato dall'utente il 2026-10-13: gesto unico tieni/scarta con tutto tenuto all'inizio e i marchi esclusi già scartati, tre colonne, chip, scartate in fondo, filtri da esperto chiusi, ricerca in corso in una frase, «Aggiungi i volumi», pagina da telefono, finestra Esporta con impostazioni iniziali per pagina.
 - Emendamenti dichiarati: D-19 (selected_for_export sparisce, il re-run conserva review_status), D-23 (scope kept, all, filtered; kept e all senza filtri della vista). Caratterizzazione dell'export aggiornata solo su selezione, scope e valori della revisione: confermata in anticipo con D-39.
 - Gate umani: baseline visiva dei risultati spostata sulla nuova pagina e rigenerata, da approvare prima del merge (T-2403).

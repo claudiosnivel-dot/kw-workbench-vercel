@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
 import { createE2EUser, E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 
-const ONBOARDING_EMAIL = "e2e-onboarding-csp@example.test";
+const FIRST_ACCESS_EMAIL = "e2e-first-access-csp@example.test";
 
 function nonceOf(csp: string): string | null {
   return csp.match(/'nonce-([^']+)'/)?.[1] ?? null;
@@ -75,14 +75,15 @@ test.describe("header di sicurezza", () => {
   });
 
   // covers: AC-505-3
-  test("login, dashboard, risultati e onboarding non registrano violazioni CSP", async ({ browser }) => {
+  test("login, dashboard, risultati e home del primo accesso non registrano violazioni CSP", async ({ browser }) => {
     // impacted-by: T-1501 (il progetto dell'utente seed sta nel suo workspace personale)
+    // impacted-by: T-2304, T-2306 (Esci nel menu dell'utente; al posto dell'onboarding la home del primo accesso)
     const project = await prisma.project.findFirstOrThrow({
       where: { name: "Progetto E2E", workspace: { personal_for_user: { email: E2E_EMAIL } } },
       select: { id: true },
     });
-    await prisma.user.deleteMany({ where: { email: ONBOARDING_EMAIL } });
-    await createE2EUser(ONBOARDING_EMAIL, E2E_USER_PASSWORD);
+    await prisma.user.deleteMany({ where: { email: FIRST_ACCESS_EMAIL } });
+    await createE2EUser(FIRST_ACCESS_EMAIL, E2E_USER_PASSWORD);
 
     const userContext = await browser.newContext();
     const userPage = await userContext.newPage();
@@ -91,19 +92,19 @@ test.describe("header di sicurezza", () => {
     await expect(userPage.getByRole("button", { name: "Accedi" })).toBeVisible();
     await login(userPage, E2E_EMAIL);
     await userPage.goto("/");
-    await expect(userPage.getByRole("button", { name: "Esci" }).first()).toBeVisible();
+    await expect(userPage.getByRole("button", { name: /^Menu di / })).toBeVisible();
     await userPage.goto(`/projects/${project.id}/results`);
-    await expect(userPage.getByRole("button", { name: "Esci" }).first()).toBeVisible();
+    await expect(userPage.getByRole("button", { name: /^Menu di / })).toBeVisible();
 
-    const onboardingContext = await browser.newContext();
-    const onboardingPage = await onboardingContext.newPage();
-    const onboardingViolations = await trackCspViolations(onboardingPage);
-    await login(onboardingPage, ONBOARDING_EMAIL);
-    await onboardingPage.goto("/onboarding/welcome");
-    await expect(onboardingPage.getByText("Percorso guidato", { exact: true })).toBeVisible();
+    const firstAccessContext = await browser.newContext();
+    const firstAccessPage = await firstAccessContext.newPage();
+    const firstAccessViolations = await trackCspViolations(firstAccessPage);
+    await login(firstAccessPage, FIRST_ACCESS_EMAIL);
+    await firstAccessPage.goto("/");
+    await expect(firstAccessPage.getByRole("heading", { name: "Di cosa parla il tuo sito?" })).toBeVisible();
 
-    expect([...userViolations, ...onboardingViolations]).toEqual([]);
+    expect([...userViolations, ...firstAccessViolations]).toEqual([]);
     await userContext.close();
-    await onboardingContext.close();
+    await firstAccessContext.close();
   });
 });

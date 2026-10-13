@@ -79,11 +79,8 @@ function keywordFor(index: number): string {
   return `candidata ${String(index + 1).padStart(2, "0")}`;
 }
 
-async function createOwnerProject(onboardingStatus?: "IN_PROGRESS") {
+async function createOwnerProject() {
   const owner = await createUserWithSession({ displayName: "export-owner" });
-  if (onboardingStatus) {
-    await prisma.userOnboardingProgress.create({ data: { user_id: owner.user.id, status: onboardingStatus } });
-  }
   const project = await prisma.project.create({ data: { name: "Export", workspace_id: await personalWorkspaceId(owner.user.id) } });
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   return { owner, projectId: project.id, sectionId: section.id };
@@ -217,13 +214,12 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
   });
 });
 
-describe("caratterizzazione: export vuoto e onboarding", () => {
+describe("caratterizzazione: export vuoto", () => {
   // covers: AC-107-4
   // Aggiornato da T-804 (impacted-by): con 0 righe il file ha BOM e la sola intestazione.
-  // Aggiornato da T-1003 (impacted-by): un export vuoto non completa più l'onboarding (serve almeno una riga del
-  // progetto attivo).
-  it("CSV approved senza candidate: BOM e sola intestazione, onboarding non completato", async () => {
-    const { owner, projectId: emptyProjectId } = await createOwnerProject("IN_PROGRESS");
+  // Aggiornato da T-2306 (impacted-by): l'onboarding è rimosso, l'export non ne registra più il completamento.
+  it("CSV approved senza candidate: BOM e sola intestazione", async () => {
+    const { owner, projectId: emptyProjectId } = await createOwnerProject();
 
     const response = await callRoute(exportProject, {
       url: exportUrl(emptyProjectId, "format=csv&scope=approved"),
@@ -236,9 +232,5 @@ describe("caratterizzazione: export vuoto e onboarding", () => {
     // impacted-by: T-804
     expect(Array.from(bytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf]);
     expect(new TextDecoder().decode(bytes)).toBe(`${HEADERS.join(";")}\r\n`);
-    const progress = await prisma.userOnboardingProgress.findUniqueOrThrow({ where: { user_id: owner.user.id } });
-    // impacted-by: T-1003
-    expect(progress.status).toBe("IN_PROGRESS");
-    expect(progress.completed_at).toBeNull();
   });
 });

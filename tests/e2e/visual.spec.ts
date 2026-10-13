@@ -24,10 +24,11 @@ test.describe("baseline visive", () => {
   test("dashboard", async ({ page }) => {
     await login(page);
     await page.goto("/");
+    // impacted-by: T-2305 (home con le schede dei progetti al posto della dashboard: baseline rigenerata, gate umano)
     await expect(page).toHaveScreenshot("dashboard.png", {
       fullPage: true,
-      // Date dei progetti e dei job.
-      mask: [page.locator("td").filter({ hasText: /\d{1,2}\/\d{1,2}\/\d{2,4}/ })],
+      // Ultima attività relativa dei progetti («3 mesi fa»): cambia con la data dell'esecuzione.
+      mask: [page.locator("time")],
     });
   });
 

@@ -1,5 +1,7 @@
 // Gate di T-1504 (AC-1504-1…4): workspace attivo dal selettore della TopNav e dal cookie riverificato, pagina
 // /workspace per ruolo e 404 delle pagine di progetto per chi non è membro.
+// impacted-by: T-2304, T-2305 (AC-1504-1 e AC-1504-3 emendati: il cambio di workspace sta nel menu dell'utente e la
+// home elenca i progetti come schede, non più in una tabella)
 import { randomBytes } from "node:crypto";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
@@ -26,10 +28,6 @@ test.beforeAll(async () => {
   ids.users = [member.id, admin.id, owner.id, outsider.id];
   ids.personal = member.workspaceId;
   ids.outsiderPersonal = outsider.workspaceId;
-  await prisma.userOnboardingProgress.createMany({
-    data: ids.users.map((userId) => ({ user_id: userId, status: "COMPLETED", current_step: "REVIEW_EXPORT", completed_at: new Date() })),
-  });
-
   const team = await prisma.workspace.create({ data: { name: "Squadra E2E", slug: "ws-e2e-squadra" } });
   ids.team = team.id;
   await prisma.membership.createMany({
@@ -61,8 +59,15 @@ async function activate(page: Page, workspaceId: string): Promise<void> {
   expect(response.status()).toBe(204);
 }
 
+/** Elenco dei progetti della home (T-2305): le schede stanno nel main, la barra in alto non ne mostra i nomi. */
 function projectsTable(page: Page) {
-  return page.locator("table").filter({ has: page.locator("td") }).first();
+  return page.getByRole("main");
+}
+
+/** Voce del workspace nel menu dell'utente (T-2304): il menu si apre dal pulsante con il nome dell'utente. */
+async function workspaceItem(page: Page, name: string) {
+  await page.getByRole("button", { name: /^Menu di / }).click();
+  return page.getByRole("menuitemradio", { name });
 }
 
 async function newUserPage(browser: Browser, email: string): Promise<Page> {
@@ -79,9 +84,8 @@ test.describe("workspace attivo", () => {
     await page.goto("/");
     await expect(projectsTable(page)).toContainText(P1);
 
-    const switcher = page.getByRole("combobox", { name: "Workspace attivo" });
     const saved = page.waitForResponse((response) => response.url().endsWith("/api/workspaces/active") && response.status() === 204);
-    await switcher.selectOption(ids.team);
+    await (await workspaceItem(page, "Squadra E2E")).click();
     await saved;
 
     await expect(projectsTable(page)).toContainText(P2);
@@ -89,7 +93,7 @@ test.describe("workspace attivo", () => {
     await page.reload();
     await expect(projectsTable(page)).toContainText(P2);
     await expect(projectsTable(page)).not.toContainText(P1);
-    await expect(page.getByRole("combobox", { name: "Workspace attivo" })).toHaveValue(ids.team);
+    await expect(await workspaceItem(page, "Squadra E2E")).toHaveAttribute("aria-checked", "true");
   });
 
   // covers: AC-1504-2
@@ -132,8 +136,7 @@ test.describe("pagina del workspace", () => {
     await adminPage.getByLabel("Nome", { exact: true }).fill("Team SEO");
     await adminPage.getByRole("button", { name: "Salva nome" }).click();
     await expect(adminPage.getByText("Nome aggiornato.")).toBeVisible();
-    const switcher = adminPage.getByRole("combobox", { name: "Workspace attivo" });
-    await expect(switcher.locator("option:checked")).toHaveText("Team SEO");
+    await expect(await workspaceItem(adminPage, "Team SEO")).toHaveAttribute("aria-checked", "true");
   });
 
   // covers: AC-1504-4

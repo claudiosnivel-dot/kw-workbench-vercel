@@ -3,7 +3,7 @@ import { UserStatus } from "@/lib/generated/prisma/enums";
 import { createTranslator } from "next-intl";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as sessionEnded } from "@/app/api/auth/session-ended/route";
-import { GET as onboardingState } from "@/app/api/onboarding/state/route";
+import { GET as listWorkspaces } from "@/app/api/workspaces/route";
 import { POST as runProject } from "@/app/api/projects/[id]/run/route";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { buildApiErrorMessage, readJsonSafe, type ApiErrorPayload } from "@/lib/client/http";
@@ -76,8 +76,8 @@ describe("API con utente sospeso", () => {
         cookie,
         params: { id: "progetto-qualsiasi" },
       }),
-      // impacted-by: T-1101 (GET /api/projects rimossa)
-      await callRoute(onboardingState, { url: "/api/onboarding/state", cookie }),
+      // impacted-by: T-1101 (GET /api/projects rimossa), T-2306 (rotte dell'onboarding rimosse)
+      await callRoute(listWorkspaces, { url: "/api/workspaces", cookie }),
     ];
 
     for (const response of responses) {

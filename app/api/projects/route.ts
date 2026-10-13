@@ -19,8 +19,9 @@ function splitWorkspaceId(payload: unknown): { workspaceId: unknown; fields: unk
 /**
  * Nuovo progetto (T-1502, T-1504): nel workspace di workspaceId se indicato (membro con project.create, altrimenti 404
  * WORKSPACE_NOT_FOUND), altrimenti nel workspace attivo del cookie kwb_workspace riverificato; l'autore è l'utente.
- * Limiti del piano (T-1605): progetti del workspace (escluso quello dell'onboarding, T-2004), sezione iniziale e sue
- * seed, metriche con licenza; i conteggi stanno nella transazione della scrittura, sotto il lock del workspace.
+ * Limiti del piano (T-1605): progetti del workspace (escluso il primo, creato dall'onboarding o dall'avvio rapido,
+ * T-2004 e T-2301), sezione iniziale e sue seed, metriche con licenza; i conteggi stanno nella transazione della
+ * scrittura, sotto il lock del workspace.
  */
 export const POST = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);

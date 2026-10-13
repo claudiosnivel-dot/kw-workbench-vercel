@@ -203,3 +203,4 @@ server, e la sua lettura economica.
 
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0 (in isolamento i soli riferimenti non risolti sono T-503 e T-305, di altri moduli).
 - Semantico: `self-check-checklist.md` punti 6-10 applicati a T-1001..T-1004.
+- Emendamento (2026-10-13, costruzione del macrotask 23): l'onboarding a 7 passi è rimosso con T-2306 (D-39, rimozione approvata dall'utente): pagine, API, logica, tabelle e i target test di T-1001…T-1004 non esistono più. I criteri di questo modulo restano come storia e non sono più verificati; il percorso guidato è ora la home del primo accesso (T-2305) e la barra del prossimo passo (T-2302).

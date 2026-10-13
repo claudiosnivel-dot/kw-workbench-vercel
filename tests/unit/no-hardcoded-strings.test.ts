@@ -33,27 +33,9 @@ const I18N_MIGRATED_FILES = [
   "components/google-sheets-export-button.tsx",
   "components/planner-export-download.tsx",
   "components/planner-import-upload.tsx",
-  // T-1303: onboarding, impostazioni, admin, integrazioni e pagine d'errore. components/google-ads-integration-card.tsx
-  // non esiste più (rimossa con T-901); onboarding-step-done.tsx e metrics-spend-card.tsx sono nate dopo il blueprint.
-  "app/onboarding/layout.tsx",
-  "app/onboarding/page.tsx",
-  "app/onboarding/project-create/page.tsx",
-  "app/onboarding/project-targeting/page.tsx",
-  "app/onboarding/review-export/page.tsx",
-  "app/onboarding/run/page.tsx",
-  "app/onboarding/section-create/page.tsx",
-  "app/onboarding/seeds/page.tsx",
-  "app/onboarding/welcome/page.tsx",
-  "components/onboarding-progress-header.tsx",
-  "components/onboarding-project-create-form.tsx",
-  "components/onboarding-project-targeting-form.tsx",
-  "components/onboarding-section-create-form.tsx",
-  "components/onboarding-seeds-form.tsx",
-  "components/onboarding-run-step.tsx",
-  "components/onboarding-review-export-step.tsx",
-  "components/onboarding-welcome-actions.tsx",
-  "components/onboarding-step-done.tsx",
-  "components/resume-onboarding-button.tsx",
+  // T-1303: impostazioni, admin, integrazioni e pagine d'errore. components/google-ads-integration-card.tsx non esiste
+  // più (rimossa con T-901), le pagine e i componenti dell'onboarding nemmeno (rimossi con T-2306); metrics-spend-card.tsx
+  // è nata dopo il blueprint.
   "app/personalizza/page.tsx",
   "components/personalization-settings-card.tsx",
   "components/auth-settings-card.tsx",
@@ -71,8 +53,6 @@ const I18N_MIGRATED_FILES = [
   "components/page-intro.tsx",
   "components/narrow-card.tsx",
   "components/danger-zone-card.tsx",
-  "components/onboarding-back-link.tsx",
-  "components/onboarding-step-card.tsx",
   "components/form-feedback.tsx",
   "components/settings-card.tsx",
   "components/locale-code-options.tsx",
@@ -94,7 +74,6 @@ const I18N_MIGRATED_FILES = [
   "app/workspace/page.tsx",
   "app/invites/accept/page.tsx",
   "components/workspace-controls.tsx",
-  "components/workspace-switcher.tsx",
   "components/confirmed-action-button.tsx",
   // T-1602…T-1606: fatturazione, avvisi del piano e interruttore del lancio nascono già con il catalogo.
   "app/billing/page.tsx",
@@ -110,6 +89,15 @@ const I18N_MIGRATED_FILES = [
   "components/strategy/strategy-page-card.tsx",
   "components/strategy/strategy-unassigned.tsx",
   "components/strategy/keyword-mover.tsx",
+  // T-2301…T-2305: struttura del progetto, prossimo passo, menu della barra e home nascono già con il catalogo.
+  "app/projects/[id]/layout.tsx",
+  "components/project-shell.tsx",
+  "components/project-sidebar.tsx",
+  "components/project-switcher.tsx",
+  "components/new-topic-dialog.tsx",
+  "components/next-step-bar.tsx",
+  "components/next-step-action.tsx",
+  "components/user-menu.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

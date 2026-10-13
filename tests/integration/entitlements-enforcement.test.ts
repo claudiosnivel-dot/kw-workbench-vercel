@@ -1,14 +1,15 @@
 // Gate di T-1605 (AC-1605-1…5): diritti del piano applicati lato server, 402 PLAN_LIMIT, nessun limite superato da
 // richieste concorrenti, metriche con licenza solo con il diritto del piano.
-// Gate di T-2003 (AC-2003-1): il root admin usa sempre DATAFORSEO; gate di T-2004 (AC-2004-1): il progetto
-// dell'onboarding non conta nel limite dei progetti.
-import { randomBytes, randomUUID } from "node:crypto";
+// Gate di T-2003 (AC-2003-1): il root admin usa sempre DATAFORSEO; gate di T-2004 (AC-2004-1): il primo progetto
+// del workspace non conta nel limite dei progetti.
+// impacted-by: T-2306 (onboarding rimosso: il primo progetto nasce dall'avvio rapido di T-2301, AC-2004-1 emendato)
+import { randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as exportSheets } from "@/app/api/projects/[id]/export/google-sheets/route";
 import { POST as runSection } from "@/app/api/projects/[id]/subprojects/[subprojectId]/run/route";
 import { PATCH as patchSection } from "@/app/api/projects/[id]/subprojects/[subprojectId]/route";
 import { POST as createProject } from "@/app/api/projects/route";
-import { POST as createOnboardingProject } from "@/app/api/onboarding/project/route";
+import { POST as quickStart } from "@/app/api/projects/quick-start/route";
 import { POST as createInvite } from "@/app/api/workspaces/[workspaceId]/invites/route";
 import { setPlansForTesting } from "@/lib/billing/plans";
 import { resetEnvForTests } from "@/lib/env";
@@ -308,13 +309,13 @@ describe("rifiniture del macrotask 20 (D-36)", () => {
   });
 
   // covers: AC-2004-1
-  it("con maxProjects 1 e il progetto dell'onboarding il primo POST /api/projects è 201 e il secondo 402 PLAN_LIMIT", async () => {
+  it("con maxProjects 1 e il primo progetto dall'avvio rapido il primo POST /api/projects è 201 e il secondo 402 PLAN_LIMIT", async () => {
     configureTestBilling({ maxProjects: 1 });
     const user = await createUserWithSession({ displayName: "t2004-user" });
-    const onboarding = await callRoute(createOnboardingProject, {
+    const onboarding = await callRoute(quickStart, {
       method: "POST",
-      url: "/api/onboarding/project",
-      body: { name: "Guidato", idempotencyKey: randomUUID() },
+      url: "/api/projects/quick-start",
+      body: { topic: "guidato" },
       cookie: user.cookie,
     });
     const create = (name: string) => callRoute(createProject, { method: "POST", url: "/api/projects", body: { name }, cookie: user.cookie });

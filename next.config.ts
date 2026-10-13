@@ -37,6 +37,10 @@ const nextConfig: NextConfig = {
       ...TOKEN_LINK_PAGES.map((source) => ({ source, headers: [{ key: "Referrer-Policy", value: "no-referrer" }] })),
     ];
   },
+  // Onboarding a 7 passi rimosso (T-2306): i vecchi indirizzi portano alla home, con 307 (permanent false).
+  async redirects() {
+    return [{ source: "/onboarding/:path*", destination: "/", permanent: false }];
+  },
 };
 
 // Sentry (T-601): SENTRY_AUTH_TOKEN serve solo in build per caricare le source map (senza token il caricamento

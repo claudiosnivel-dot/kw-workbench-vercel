@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createServer } from "node:http";
 import { prisma } from "@/lib/prisma";
 import { assertLocalTestDatabase } from "../helpers/db-guard";
 import { resetDatabase } from "../helpers/db";
@@ -8,8 +9,30 @@ import { createE2EUser, E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 const FIXED_AT = new Date("2026-01-15T09:30:00.000Z");
 const INTENTS = ["informational", "commercial", "transactional", "navigational", "mixed"] as const;
 
-/** Guardia, migrazioni, reset e dati seed deterministici per gli E2E. */
-export default async function globalSetup(): Promise<void> {
+/** Porta del finto autocomplete di Google: la stessa di GOOGLE_AUTOCOMPLETE_ENDPOINT in playwright.config.ts. */
+const AUTOCOMPLETE_STUB_PORT = 3199;
+// Ogni risposta arriva dopo 3 s, come una rete lenta: una ricerca appena avviata resta in corso mentre la pagina dei
+// risultati si apre (AC-2305-1). Nessuna richiesta esce verso Google.
+const AUTOCOMPLETE_STUB_DELAY_MS = 3_000;
+
+/** Finto autocomplete nel processo di Playwright (formato del client firefox: [query, [suggerimenti]]). */
+function startAutocompleteStub(): Promise<() => Promise<void>> {
+  const server = createServer((request, response) => {
+    const query = new URL(request.url ?? "/", "http://localhost").searchParams.get("q") ?? "";
+    setTimeout(() => {
+      response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify([query, [`${query} uno`, `${query} due`]]));
+    }, AUTOCOMPLETE_STUB_DELAY_MS);
+  });
+  return new Promise((resolve) => {
+    server.listen(AUTOCOMPLETE_STUB_PORT, "127.0.0.1", () =>
+      resolve(() => new Promise<void>((done) => server.close(() => done())))
+    );
+  });
+}
+
+/** Guardia, migrazioni, reset e dati seed deterministici per gli E2E; restituisce il teardown del finto autocomplete. */
+export default async function globalSetup(): Promise<() => Promise<void>> {
   const url = assertLocalTestDatabase(process.env.TEST_DATABASE_URL);
 
   const migrate = spawnSync(process.execPath, [require.resolve("prisma/build/index.js"), "migrate", "deploy"], {
@@ -37,18 +60,6 @@ export default async function globalSetup(): Promise<void> {
   // cifrato con la chiave del server, quindi la credenziale risulta da ricollegare ma resta collegata.
   await prisma.googleSheetsCredential.create({
     data: { user_id: user.id, refresh_token_encrypted: "e2e-token-non-reale", connected_email: "e2e@example.com" },
-  });
-
-  // Con onboarding non completato app/page.tsx redirige a /onboarding.
-  await prisma.userOnboardingProgress.create({
-    data: {
-      user_id: user.id,
-      status: "COMPLETED",
-      current_step: "REVIEW_EXPORT",
-      completed_at: FIXED_AT,
-      created_at: FIXED_AT,
-      updated_at: FIXED_AT,
-    },
   });
 
   const project = await prisma.project.create({
@@ -96,4 +107,5 @@ export default async function globalSetup(): Promise<void> {
   // Le variabili impostate nel global setup arrivano ai worker dei test.
   process.env.E2E_PROJECT_ID = project.id;
   await prisma.$disconnect();
+  return startAutocompleteStub();
 }

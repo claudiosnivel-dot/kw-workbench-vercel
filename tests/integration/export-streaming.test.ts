@@ -1,24 +1,19 @@
 // Gate di T-805 (AC-805-1…4): l'export si scrive in streaming leggendo a blocchi di 1000 righe, così
-// non si ferma al limite delle risposte Vercel e non tiene in memoria l'intero set; un errore
-// dell'onboarding non rompe un export già generato e un utente senza accesso non legge nulla.
+// non si ferma al limite delle risposte Vercel e non tiene in memoria l'intero set; un utente senza accesso non
+// legge nulla.
+// impacted-by: T-2306 (onboarding rimosso: AC-805-4 emendato, l'export non registra più il completamento)
 // Gate di T-2103 (AC-2103-1): intestazioni e valori del CSV nella lingua dell'utente, sì/no come Sì/No.
 import ExcelJS from "exceljs";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { POST as postLocale } from "@/app/api/locale/route";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
 import { EXPORT_COLUMNS } from "@/lib/modules/export";
-import { markOnboardingExportCompleted } from "@/lib/onboarding/progress";
 import { prisma } from "@/lib/prisma";
 import en from "@/messages/en.json";
 import it_ from "@/messages/it.json";
 import { createUserWithSession, personalWorkspaceId } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
-
-vi.mock("@/lib/onboarding/progress", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/onboarding/progress")>()),
-  markOnboardingExportCompleted: vi.fn(async () => undefined),
-}));
 
 const ROWS = 30_000;
 // L'unica riga con metriche reali: per RESULTS_ORDER_BY (D-18) è la prima dell'export.
@@ -169,9 +164,8 @@ describe("export in streaming", () => {
 
   // covers: AC-805-4
   it(
-    "un errore dell'onboarding non cambia l'export del proprietario; un altro utente riceve 404 senza letture",
+    "il proprietario riceve l'export completo senza errori nel log; un altro utente riceve 404 senza letture",
     async () => {
-      vi.mocked(markOnboardingExportCompleted).mockRejectedValueOnce(new Error("onboarding non aggiornato"));
       const intruder = await createUserWithSession({ displayName: "t805-intruder" });
       const written = captureStdout();
 
@@ -189,8 +183,7 @@ describe("export in streaming", () => {
       expect(ownerResponse.status).toBe(200);
       expect(ownerLines).toHaveLength(ROWS + 1);
       // Il log degli errori è il logger JSON di T-602 su stdout (come per AC-706-3), non console.error.
-      expect(ownerErrors).toHaveLength(1);
-      expect(ownerErrors[0]).toContain("onboarding non aggiornato");
+      expect(ownerErrors).toHaveLength(0);
       expect(intruderResponse.status).toBe(404);
       expect(intruderResponse.headers.get("content-type")).toContain("application/json");
       expect(findMany).not.toHaveBeenCalled();

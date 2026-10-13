@@ -1,14 +1,10 @@
 // Gate di T-1502 (AC-1502-1…3): autorizzazione per workspace e ruolo su tutte le rotte di progetti, sezioni,
-// risultati, export, job e onboarding. La matrice per attore calcola l'esito atteso dalla tabella dei permessi.
+// risultati, export e job. La matrice per attore calcola l'esito atteso dalla tabella dei permessi.
+// impacted-by: T-2306 (rotte dell'onboarding rimosse: AC-1502-1 emendato)
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as cancelJob } from "@/app/api/jobs/[id]/cancel/route";
 import { GET as getJob } from "@/app/api/jobs/[id]/route";
-import { POST as chooseOnboarding } from "@/app/api/onboarding/choice/route";
-import { POST as resumeOnboarding } from "@/app/api/onboarding/resume/route";
-import { POST as createOnboardingSection } from "@/app/api/onboarding/section/route";
-import { POST as skipOnboarding } from "@/app/api/onboarding/skip/route";
-import { GET as getOnboardingState, PATCH as patchOnboardingState } from "@/app/api/onboarding/state/route";
 import { POST as createProject } from "@/app/api/projects/route";
 import { DELETE as deleteProject, PATCH as patchProject } from "@/app/api/projects/[id]/route";
 import { PATCH as setDefaultSection } from "@/app/api/projects/[id]/default-subproject/route";
@@ -278,19 +274,6 @@ const ROUTES: RouteCase[] = [
     notFoundCode: "JOB_NOT_FOUND",
     call: (f, cookie) => callRoute(cancelJob, { method: "POST", url: `/api/jobs/${f.jobId}/cancel`, cookie, params: { id: f.jobId } }),
   },
-  {
-    name: "POST /api/onboarding/section (projectId)",
-    action: "section.write",
-    // Rotta del percorso guidato (T-1001): il 404 usa il code generico del modello d'errore di T-503.
-    notFoundCode: "NOT_FOUND",
-    call: (f, cookie) =>
-      callRoute(createOnboardingSection, {
-        method: "POST",
-        url: "/api/onboarding/section",
-        body: { projectId: f.projectId, name: "Onboarding", idempotencyKey: crypto.randomUUID() },
-        cookie,
-      }),
-  },
 ];
 
 const ACTORS = ["NON_MEMBER", "MEMBER", "ADMIN", "OWNER"] as const;
@@ -341,7 +324,7 @@ describe("matrice rotte × attori dalla tabella dei permessi", () => {
 
 describe("chi non è membro", () => {
   // covers: AC-1502-1
-  it("riceve 404 con il code della risorsa su ogni rotta e le righe di W non cambiano; l'onboarding ignora P", async () => {
+  it("riceve 404 con il code della risorsa su ogni rotta e le righe di W non cambiano", async () => {
     const outsider = fixture.actors.NON_MEMBER;
     const before = await snapshotOfWorkspace(fixture.workspaceId);
 
@@ -349,29 +332,6 @@ describe("chi non è membro", () => {
       const response = await route.call(fixture, outsider.cookie);
       expect([route.name, response.status, await codeOf(response)]).toEqual([route.name, 404, route.notFoundCode]);
     }
-
-    // Progress dell'utente che punta a P (per esempio da un membership revocata): P non entra mai nello stato.
-    await prisma.userOnboardingProgress.create({
-      data: { user_id: outsider.user.id, status: "IN_PROGRESS", current_step: "SEEDS", active_project_id: fixture.projectId },
-    });
-    const onboarding = [
-      await callRoute(getOnboardingState, { url: "/api/onboarding/state", cookie: outsider.cookie }),
-      await callRoute(chooseOnboarding, { method: "POST", url: "/api/onboarding/choice", body: { mode: "resume" }, cookie: outsider.cookie }),
-      await callRoute(resumeOnboarding, { method: "POST", url: "/api/onboarding/resume", cookie: outsider.cookie }),
-      await callRoute(skipOnboarding, { method: "POST", url: "/api/onboarding/skip", cookie: outsider.cookie }),
-    ];
-    for (const response of onboarding) {
-      expect(response.status).toBe(200);
-      const { data } = (await response.json()) as { data: { activeProjectId: string | null } };
-      expect(data.activeProjectId).not.toBe(fixture.projectId);
-    }
-    const patched = await callRoute(patchOnboardingState, {
-      method: "PATCH",
-      url: "/api/onboarding/state",
-      body: { activeProjectId: fixture.projectId },
-      cookie: outsider.cookie,
-    });
-    expect(patched.status).toBe(400);
 
     expect(await snapshotOfWorkspace(fixture.workspaceId)).toBe(before);
   });

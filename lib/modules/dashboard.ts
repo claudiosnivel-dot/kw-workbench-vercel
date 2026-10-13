@@ -33,3 +33,13 @@ export async function listDashboardProjects(workspaceId: string, page: string | 
 
   return { items, total, page: currentPage, totalPages };
 }
+
+/** Progetti del menu dei progetti nella barra in alto (T-2304): i 10 del workspace con l'attività più recente. */
+export function listRecentProjects(workspaceId: string) {
+  return prisma.project.findMany({
+    where: { workspace_id: workspaceId },
+    orderBy: DASHBOARD_ORDER,
+    take: 10,
+    select: { id: true, name: true },
+  });
+}

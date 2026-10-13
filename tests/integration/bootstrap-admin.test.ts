@@ -4,7 +4,7 @@
 // non più APP_AUTH_USERNAME e APP_AUTH_PASSWORD)
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as login } from "@/app/api/auth/login/route";
-import { GET as onboardingState } from "@/app/api/onboarding/state/route";
+import { GET as listWorkspaces } from "@/app/api/workspaces/route";
 import { resetEnvForTests } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { resetDatabase } from "../helpers/db";
@@ -40,7 +40,8 @@ describe("bootstrap del primo utente in produzione", () => {
   // covers: AC-201-4
   it("sessione anonima 401; il login con changeme non riesce e il bootstrap crea solo il root admin di APP_ADMIN_EMAIL", async () => {
     // impacted-by: T-1101 (rotta /api/auth/session rimossa): l'auth resta attiva, una rotta autenticata risponde 401.
-    const anonymous = await callRoute(onboardingState, { url: "/api/onboarding/state" });
+    // impacted-by: T-2306 (rotte dell'onboarding rimosse): la rotta autenticata è GET /api/workspaces.
+    const anonymous = await callRoute(listWorkspaces, { url: "/api/workspaces" });
     expect(anonymous.status).toBe(401);
 
     const weak = await callRoute(login, {

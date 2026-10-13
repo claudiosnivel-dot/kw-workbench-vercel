@@ -26,9 +26,6 @@ export default async function StrategyListPage({ params }: { params: Promise<{ i
             <h1 className="text-2xl font-semibold">{t("strategy.ui.title")}</h1>
             <p className="text-sm text-slate-600">{project.name}</p>
           </div>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={`/projects/${project.id}`}>
-            {t("projects.links.backToProject")}
-          </Link>
         </div>
         <p className="text-sm text-slate-600">{t("strategy.ui.intro")}</p>
         <StrategySettings projectId={project.id} sections={project.subprojects} defaults={DEFAULT_RULES} limits={RULE_LIMITS} />

@@ -86,9 +86,9 @@ Oggi ogni query di progetti, sezioni, risultati, export, job e onboarding filtra
 
   acceptance_criteria:
     - id: AC-1502-1
-      given: "workspace W con progetto P, sezione S e job J, e un utente U senza membership in W il cui progress dell'onboarding punta a P"
-      when: "U invoca ciascuna rotta di progetti, sezioni, risultati, export, job e onboarding/section elencata nel DoD con gli id di P, S e J, poi le rotte state (GET e PATCH con activeProjectId P), choice, resume e skip dell'onboarding"
-      then: "le prime rispondono 404 con il code della risorsa (PROJECT_NOT_FOUND, SECTION_NOT_FOUND, JOB_NOT_FOUND, WORKSPACE_NOT_FOUND per POST /api/projects con workspaceId di W, NOT_FOUND per onboarding/section); quelle dell'onboarding rispondono con activeProjectId diverso da P e la PATCH con activeProjectId P riceve 400; numero di righe e updated_at di projects, subprojects, seeds, keyword_candidates e jobs di W restano identici"
+      given: "workspace W con progetto P, sezione S e job J, e un utente U senza membership in W"
+      when: "U invoca ciascuna rotta di progetti, sezioni, risultati, export e job elencata nel DoD con gli id di P, S e J"
+      then: "rispondono 404 con il code della risorsa (PROJECT_NOT_FOUND, SECTION_NOT_FOUND, JOB_NOT_FOUND, WORKSPACE_NOT_FOUND per POST /api/projects con workspaceId di W); numero di righe e updated_at di projects, subprojects, seeds, keyword_candidates e jobs di W restano identici"
     - id: AC-1502-2
       given: "un MEMBER e un ADMIN di W con progetto P"
       when: "il MEMBER invia PATCH /api/projects/{P}, POST /api/projects/{P}/run, GET /api/projects/{P}/export e DELETE /api/projects/{P}, poi l'ADMIN invia DELETE /api/projects/{P}"
@@ -197,8 +197,8 @@ Oggi ogni query di progetti, sezioni, risultati, export, job e onboarding filtra
   acceptance_criteria:
     - id: AC-1504-1
       given: "un utente membro di W1 (progetto P1) e di W2 (progetto P2) con W1 attivo"
-      when: "sceglie W2 nel selettore della TopNav e poi ricarica la pagina"
-      then: "la dashboard elenca P2 e non P1 sia subito dopo la scelta sia dopo il reload, e il selettore ha W2 come valore selezionato"
+      when: "sceglie W2 nel menu dell'utente della barra in alto e poi ricarica la pagina"
+      then: "la home elenca P2 e non P1 sia subito dopo la scelta sia dopo il reload, e nel menu dell'utente la voce di W2 è quella selezionata"
     - id: AC-1504-2
       given: "un cookie kwb_workspace impostato a mano con l'id di un workspace di cui l'utente non è membro"
       when: "l'utente apre la dashboard"
@@ -206,7 +206,7 @@ Oggi ogni query di progetti, sezioni, risultati, export, job e onboarding filtra
     - id: AC-1504-3
       given: "un MEMBER e un ADMIN del workspace W"
       when: "entrambi aprono /workspace e l'ADMIN rinomina W in 'Team SEO'"
-      then: "il MEMBER vede l'elenco membri con i ruoli, il campo nome con attributo disabled e 0 pulsanti di rimozione; dopo il salvataggio dell'ADMIN il selettore della TopNav mostra 'Team SEO'"
+      then: "il MEMBER vede l'elenco membri con i ruoli, il campo nome con attributo disabled e 0 pulsanti di rimozione; dopo il salvataggio dell'ADMIN il menu dell'utente della barra in alto mostra la voce 'Team SEO' selezionata"
     - id: AC-1504-4
       given: "un utente non membro di W2 che conosce l'URL /projects/{P2}"
       when: "apre l'URL nel browser"
@@ -230,3 +230,4 @@ Oggi ogni query di progetti, sezioni, risultati, export, job e onboarding filtra
 - Semantico: `self-check-checklist.md` punti 6-10.
 - Dipendenze implicite da confermare nel 00-INDEX: T-1503 richiede utenti con email verificata (T-1403, non tra le dipendenze); T-1504 rende i controlli di gestione membri solo se T-1503 è costruito; seats (T-1605) agganciati agli inviti da chi arriva per secondo tra T-1503 e T-1605.
 - Emendamento del 2026-10-07 (costruzione): T-1403 e T-1503 erano già costruiti, quindi accettazione e controlli sono attivi; i 404 tengono i code di risorsa introdotti da T-1303 (le caratterizzazioni di T-105 li asseriscono e restano invariate); l'elenco delle rotte segue le rimozioni di T-1101 e le rotte di Keyword Planner di T-904 e T-910; il selettore compare con almeno due workspace. Il design non cambia.
+- Emendamento (2026-10-13, costruzione del macrotask 23): AC-1502-1 perde le rotte dell'onboarding, rimosse con T-2306; AC-1504-1 e AC-1504-3 cercano il workspace nel menu dell'utente (T-2304: il selettore separato non c'è più) e AC-1504-1 legge l'elenco dei progetti dalla nuova home (T-2305).

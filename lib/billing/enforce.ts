@@ -57,7 +57,10 @@ export async function assertWithinLimit(
   }
 }
 
-/** Progetti del workspace che contano nel limite maxProjects: il progetto creato dall'onboarding no (T-2004). */
+/**
+ * Progetti del workspace che contano nel limite maxProjects: il primo progetto del workspace, creato dall'onboarding
+ * (T-2004) o dall'avvio rapido (T-2301), no.
+ */
 export function countLimitedProjects(tx: Prisma.TransactionClient, workspaceId: string): Promise<number> {
   return tx.project.count({ where: { workspace_id: workspaceId, created_via_onboarding: false } });
 }

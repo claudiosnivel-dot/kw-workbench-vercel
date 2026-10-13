@@ -26,7 +26,8 @@ describe("contratto di altitudine D-22", () => {
 
   // covers: AC-109-1
   it("nessun componente raggiunge lib/prisma.ts", () => {
-    expect(Object.keys(graph)).toContain("components/onboarding-seeds-form.tsx");
+    // impacted-by: T-2306 (componenti dell'onboarding rimossi): il grafo contiene la barra laterale del progetto.
+    expect(Object.keys(graph)).toContain("components/project-sidebar.tsx");
     // T-403: neppure il client generato da Prisma 7 (ai componenti arrivano solo i tipi degli enum).
     expect(
       findForbiddenPaths(graph, [
@@ -60,15 +61,17 @@ describe("contratto di altitudine D-22", () => {
   });
 
   // covers: AC-109-4
-  it("i tipi di onboarding vivono in lib/onboarding/types.ts e i componenti li importano da lì", () => {
-    const types = source("lib/onboarding/types.ts");
+  // impacted-by: T-2306 (onboarding rimosso, AC-109-4 emendato): i tipi del percorso vivono in lib/modules/next-step.ts,
+  // modulo puro, e i componenti li importano da lì, mai da lib/modules/project-progress.ts che legge il DB.
+  it("i tipi del prossimo passo vivono in lib/modules/next-step.ts e i componenti li importano da lì", () => {
+    const types = source("lib/modules/next-step.ts");
     expect(types).not.toContain("lib/prisma");
     expect(types.match(/^import\s+(?!type\s)/gm)).toBeNull();
 
-    for (const component of ["components/onboarding-project-targeting-form.tsx", "components/onboarding-seeds-form.tsx"]) {
+    for (const component of ["components/next-step-bar.tsx", "components/project-sidebar.tsx"]) {
       const text = source(component);
-      expect(text).toContain('from "@/lib/onboarding/types"');
-      expect(text).not.toContain('from "@/lib/onboarding/progress"');
+      expect(text).toContain('from "@/lib/modules/next-step"');
+      expect(text).not.toContain('from "@/lib/modules/project-progress"');
     }
   });
 });

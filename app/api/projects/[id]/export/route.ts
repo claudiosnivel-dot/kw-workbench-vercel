@@ -4,7 +4,6 @@ import { type ProjectParams, withUserRoute } from "@/lib/http/user-route";
 import { routeLocale } from "@/lib/i18n/route-locale";
 import {
   CSV_DIALECT_DEFAULT,
-  countExportRows,
   exportFileInfo,
   isCsvDialect,
   streamExport,
@@ -13,7 +12,6 @@ import { EXPORT_FORMATS, EXPORT_SCOPES } from "@/lib/modules/export-types";
 import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 import { requireProjectScope } from "@/lib/authz/workspace";
 import { parseResultsFilters } from "@/lib/modules/results-filters";
-import { recordOnboardingExport } from "@/lib/onboarding/export-completion";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -50,9 +48,6 @@ export const GET = withUserRoute(async (request: NextRequest, user, { id }: Proj
   const params = { projectId: id, subprojectId: subprojectId || null, format, scope, filters, csvDialect, locale };
   const { contentType, filename } = exportFileInfo(params);
   const stream = streamExport(params);
-
-  // Conta solo un export non vuoto del progetto attivo (T-1003); un errore non fa fallire l'export.
-  await recordOnboardingExport(user.id, id, () => countExportRows(params));
 
   return new Response(stream, {
     status: 200,
