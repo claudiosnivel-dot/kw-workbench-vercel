@@ -1,5 +1,6 @@
 // Gate di T-807 (AC-807-3, AC-807-4): gli scope di export rispettano revisione, sezione e filtri della
 // vista, con lo stesso where per l'export file e per Google Sheets (API Google simulate).
+// impacted-by: T-2402 (D-23 emendata: scope kept, all e filtered; AC-807-3 e AC-807-4 emendati), T-2401 (senza selezione)
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as exportToSheets } from "@/app/api/projects/[id]/export/google-sheets/route";
@@ -24,15 +25,15 @@ vi.mock("@/lib/integrations/google-sheets-config", async (importOriginal) => ({
   })),
 }));
 
-// [keyword, review_status, brand_status, selected_for_export]
-const ROWS: [string, ReviewStatus, BrandStatus, boolean][] = [
-  ["scarpe running", "approved", "allowed", true], // r1
-  ["borsa pelle", "approved", "allowed", true], // r2
-  ["scarpe nike", "approved", "excluded", false], // r3
-  ["scarpe trail", "pending", "allowed", true], // r4
-  ["borsa gucci", "pending", "review", true], // r5
-  ["scarpe usate", "rejected", "allowed", true], // r6
-  ["borsa usata", "rejected", "allowed", false], // r7
+// [keyword, review_status, brand_status]
+const ROWS: [string, ReviewStatus, BrandStatus][] = [
+  ["scarpe running", "approved", "allowed"], // r1
+  ["borsa pelle", "approved", "allowed"], // r2
+  ["scarpe nike", "approved", "excluded"], // r3, marchio escluso tenuto a mano
+  ["scarpe trail", "pending", "allowed"], // r4
+  ["borsa gucci", "pending", "review"], // r5
+  ["scarpe usate", "rejected", "allowed"], // r6
+  ["borsa usata", "rejected", "allowed"], // r7
 ];
 
 let cookie: string;
@@ -69,7 +70,7 @@ beforeEach(async () => {
   projectId = project.id;
   sectionId = section.id;
   await prisma.keywordCandidate.createMany({
-    data: ROWS.map(([keyword, review_status, brand_status, selected_for_export]) => ({
+    data: ROWS.map(([keyword, review_status, brand_status]) => ({
       project_id: project.id,
       subproject_id: section.id,
       keyword,
@@ -79,7 +80,6 @@ beforeEach(async () => {
       source_query: keyword,
       review_status,
       brand_status,
-      selected_for_export,
     })),
   });
 });
@@ -90,20 +90,21 @@ afterEach(() => {
 
 describe("scope di export e vista corrente", () => {
   // covers: AC-807-3
-  it("ogni scope interseca revisione, sezione e filtri", async () => {
-    expect(await exportedKeywords("scope=non-excluded")).toEqual(
-      ["scarpe running", "borsa pelle", "scarpe trail", "borsa gucci"].sort()
-    );
-    expect(await exportedKeywords("scope=approved&searchText=scarpe")).toEqual(["scarpe running"]);
-    expect(await exportedKeywords("scope=selected&searchText=scarpe")).toEqual(["scarpe running", "scarpe trail"].sort());
-    expect(await exportedKeywords("scope=review")).toEqual(["scarpe trail", "borsa gucci"].sort());
+  it("kept e all ignorano i filtri della vista, filtered li applica tutti", async () => {
+    const kept = ["scarpe running", "borsa pelle", "scarpe nike", "scarpe trail", "borsa gucci"].sort();
+    expect(await exportedKeywords("scope=kept")).toEqual(kept);
+    expect(await exportedKeywords("scope=kept&searchText=scarpe")).toEqual(kept);
+    expect(await exportedKeywords("scope=all&searchText=scarpe")).toEqual(ROWS.map(([keyword]) => keyword).sort());
     expect(await exportedKeywords("scope=filtered&searchText=scarpe")).toEqual(
       ["scarpe running", "scarpe nike", "scarpe trail", "scarpe usate"].sort()
+    );
+    expect(await exportedKeywords("scope=filtered&searchText=scarpe&status=kept")).toEqual(
+      ["scarpe running", "scarpe nike", "scarpe trail"].sort()
     );
   });
 
   // covers: AC-807-4
-  it("non-excluded esporta le stesse 4 righe in CSV e su Google Sheets", async () => {
+  it("kept esporta le stesse 5 righe in CSV e su Google Sheets", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
@@ -117,7 +118,7 @@ describe("scope di export e vista corrente", () => {
     );
 
     const csv = await callRoute(exportProject, {
-      url: `/api/projects/${projectId}/export?format=csv&scope=non-excluded&subprojectId=${sectionId}`,
+      url: `/api/projects/${projectId}/export?format=csv&scope=kept&subprojectId=${sectionId}`,
       cookie,
       params: { id: projectId },
     });
@@ -126,13 +127,13 @@ describe("scope di export e vista corrente", () => {
       url: `/api/projects/${projectId}/export/google-sheets`,
       cookie,
       params: { id: projectId },
-      body: { fileName: "Scope", scope: "non-excluded", subprojectId: sectionId, filters: {} },
+      body: { fileName: "Scope", scope: "kept", subprojectId: sectionId, filters: {} },
     });
     const sheetsBody = (await sheets.json()) as { data: { exportedRows: number } };
 
     expect(csv.status).toBe(200);
-    expect((await csv.text()).replace(/\r\n$/, "").split("\r\n")).toHaveLength(5);
+    expect((await csv.text()).replace(/\r\n$/, "").split("\r\n")).toHaveLength(6);
     expect(sheets.status).toBe(200);
-    expect(sheetsBody.data.exportedRows).toBe(4);
+    expect(sheetsBody.data.exportedRows).toBe(5);
   });
 });

@@ -158,7 +158,7 @@ const ROUTES: RouteCase[] = [
     action: "export.run",
     notFoundCode: "PROJECT_NOT_FOUND",
     call: (f, cookie) =>
-      callRoute(exportProject, { url: `/api/projects/${f.projectId}/export?format=json&scope=non-excluded`, cookie, params: { id: f.projectId } }),
+      callRoute(exportProject, { url: `/api/projects/${f.projectId}/export?format=json&scope=kept`, cookie, params: { id: f.projectId } }),
   },
   {
     name: "POST /api/projects/[id]/export/google-sheets",
@@ -168,7 +168,7 @@ const ROUTES: RouteCase[] = [
       callRoute(exportToSheets, {
         method: "POST",
         url: `/api/projects/${f.projectId}/export/google-sheets`,
-        body: { fileName: "Export", scope: "non-excluded" },
+        body: { fileName: "Export", scope: "kept" },
         cookie,
         params: { id: f.projectId },
       }),
@@ -193,7 +193,8 @@ const ROUTES: RouteCase[] = [
       callRoute(patchResults, {
         method: "PATCH",
         url: `/api/projects/${f.projectId}/results`,
-        body: { action: "approve", ids: [f.keywordId] },
+        // impacted-by: T-2401 (azione keep al posto di approve)
+        body: { action: "keep", ids: [f.keywordId] },
         cookie,
         params: { id: f.projectId },
       }),
@@ -400,7 +401,8 @@ describe("id di un altro workspace", () => {
     const results = await callRoute(patchResults, {
       method: "PATCH",
       url: `/api/projects/${p1.id}/results`,
-      body: { action: "approve", ids: [k2.id] },
+      // impacted-by: T-2401 (azione keep al posto di approve)
+      body: { action: "keep", ids: [k2.id] },
       cookie: user.cookie,
       params: { id: p1.id },
     });

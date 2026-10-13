@@ -39,6 +39,8 @@ export async function loadResultsPage(params: {
   filters: ResultsFilters;
   page: number;
   pageSize: number;
+  /** Ordinamento della pagina delle keyword (T-2403); di default quello di D-18. */
+  orderBy?: Prisma.KeywordCandidateOrderByWithRelationInput[];
 }): Promise<ResultsPage> {
   const { projectId, subprojectId, filters, pageSize } = params;
   const where = buildResultsWhere(projectId, filters, subprojectId);
@@ -48,7 +50,7 @@ export async function loadResultsPage(params: {
   const readPage = (page: number) =>
     prisma.keywordCandidate.findMany({
       where,
-      orderBy: RESULTS_ORDER_BY,
+      orderBy: params.orderBy ?? RESULTS_ORDER_BY,
       skip: (page - 1) * pageSize,
       take: pageSize,
       select: RESULTS_ROW_SELECT,

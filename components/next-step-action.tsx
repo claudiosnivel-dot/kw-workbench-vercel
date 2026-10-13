@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { messageOf, readApiResponse, sendJson } from "@/lib/client/http";
-import { readStartedJobId } from "@/lib/client/run-extraction";
+import { readApiResponse, sendJson } from "@/lib/client/http";
+import { useTopicSearch } from "@/lib/client/run-extraction";
+import { usePendingAction } from "@/lib/client/use-pending-action";
 import { type NextStep, strategyHref } from "@/lib/modules/next-step";
-import { resultsHref } from "@/lib/modules/results-view";
+import { keywordsHref } from "@/lib/modules/results-view";
 
 type NextStepActionProps = {
   projectId: string;
@@ -27,31 +27,22 @@ type NextStepActionProps = {
 export function NextStepAction({ projectId, next, onAddTopic, primary = true }: NextStepActionProps) {
   const t = useTranslations("nextStep.actions");
   const tErrors = useTranslations("errors");
-  const tJobs = useTranslations("jobs.run");
-  const tCommon = useTranslations("common");
+  const startSearch = useTopicSearch();
   const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { pending, error, run } = usePendingAction();
   const className = `${primary ? "btn-primary" : "btn-secondary"} w-full text-center sm:w-auto`;
 
   // Esegue l'azione e va alla pagina che restituisce; il refresh aggiorna anche il layout del progetto.
-  const perform = async (action: () => Promise<string>) => {
-    setPending(true);
-    setError(null);
-    try {
+  const perform = (action: () => Promise<string>) =>
+    run(async () => {
       router.push(await action());
       router.refresh();
-    } catch (actionError) {
-      setError(messageOf(actionError, tCommon("unexpectedError")));
-      setPending(false);
-    }
-  };
+    });
 
   const runTopic = (topicId: string) =>
     perform(async () => {
-      const response = await fetch(`/api/projects/${projectId}/subprojects/${topicId}/run`, { method: "POST" });
-      await readStartedJobId(response, { errors: tErrors, failedMessage: tJobs("failed") });
-      return resultsHref(projectId, { subprojectId: topicId });
+      await startSearch(projectId, topicId);
+      return keywordsHref(projectId, { subprojectId: topicId });
     });
 
   const buildPlan = () =>
@@ -93,7 +84,7 @@ export function NextStepAction({ projectId, next, onAddTopic, primary = true }: 
       break;
     case "searching":
       control = (
-        <Link className={className} href={resultsHref(projectId, { subprojectId: next.topicId })}>
+        <Link className={className} href={keywordsHref(projectId, { subprojectId: next.topicId })}>
           {t("searching")}
         </Link>
       );

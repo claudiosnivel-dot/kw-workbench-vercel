@@ -170,25 +170,6 @@
       "autoClassification": "Automatic classification",
       "autoClassificationHint": "Assigns intent and keyword type during analysis."
     },
-    "detail": {
-      "intro": "Working space to manage extraction, review and results by section.",
-      "sections": "Sections:",
-      "keywords": "Total keywords:",
-      "seeds": "Total seeds:",
-      "jobs": "Total jobs:",
-      "runActive": "Start extraction (active section)",
-      "openSectionResults": "Open section results",
-      "projectResults": "Whole project results",
-      "manageSections": "Manage sections",
-      "noSections": "No sections available. Create the first section to get started.",
-      "selectActive": "Select the active section",
-      "activeSection": "Active section: {name}",
-      "activeCounts": "Seeds: {seeds} - Keywords: {keywords} - Jobs: {jobs}",
-      "lastUpdate": "Last update: {date}",
-      "openSectionSettings": "Open section settings",
-      "lastJob": "Last job: {status}",
-      "noJob": "No job started"
-    },
     "settings": {
       "title": "Project settings",
       "intro": "Set the container defaults here. Each section can inherit these values or use its own overrides.",
@@ -303,38 +284,10 @@
     }
   },
   "results": {
-    "titleSection": "Results - {project} / {section}",
-    "titleAll": "Results - {project} / All sections",
-    "activeSection": "Active section",
-    "wholeProject": "Whole project",
-    "noClassification": "Automatic classification is not available for language {language}",
-    "shownSection": "Showing {filtered} of {total} keywords in section {section}.",
-    "shownProject": "Showing {filtered} of {total} keywords in the project. Project total: {total}.",
-    "rows": "Rows {start}-{end} of {filtered} (page {page}/{totalPages})",
-    "filters": {
-      "section": "Section",
-      "searchText": "Search text",
-      "minVolume": "Minimum volume",
-      "maxVolume": "Maximum volume",
-      "brandStatus": "Brand status",
-      "reviewStatus": "Review status",
-      "searchIntent": "Search intent",
-      "keywordType": "Keyword type",
-      "selectedOnly": "selected only",
-      "questionOnly": "questions only",
-      "toolIntentOnly": "tool intent only",
-      "commercialOnly": "commercial only",
-      "apply": "Apply filters"
-    },
     "brand": {
       "allowed": "allowed",
       "excluded": "excluded",
       "review": "to review"
-    },
-    "review": {
-      "pending": "pending",
-      "approved": "approved",
-      "rejected": "rejected"
     },
     "intent": {
       "informational": "informational",
@@ -353,76 +306,10 @@
       "service": "service",
       "product": "product",
       "content_topic": "content topic"
-    },
-    "table": {
-      "actions": {
-        "approve": "Approve",
-        "reject": "Reject",
-        "mark-review": "Mark for review",
-        "select": "Select for export",
-        "unselect": "Deselect for export"
-      },
-      "bulkLabel": "Bulk action",
-      "applying": "Applying...",
-      "applyTo": "Apply to {count} selected",
-      "bulkHint": "Bulk actions: approve, reject, review, select, deselect.",
-      "allFilteredSelected": "All {count} filtered keywords are selected.",
-      "onlyThisPage": "Only the {count} on this page",
-      "pageSelected": "The {count} keywords on this page are selected.",
-      "selectAllFiltered": "Select all {count} filtered keywords",
-      "selectAll": "Select all",
-      "selectRow": "Select {keyword}",
-      "columns": {
-        "section": "Section",
-        "keyword": "Keyword",
-        "source": "Source",
-        "intent": "Intent",
-        "type": "Type",
-        "brand": "Brand",
-        "review": "Review",
-        "volume": "Volume",
-        "competition": "Competition",
-        "score": "Score"
-      },
-      "empty": "No candidate keywords for these filters."
     }
   },
   "export": {
-    "title": "Export",
-    "hint": "Exports use the section and filters of the current view",
-    "links": {
-      "csvApproved": "CSV approved only",
-      "xlsxSelected": "XLSX selected only",
-      "jsonReview": "JSON review only",
-      "csvNonExcluded": "CSV all non-excluded",
-      "xlsxFiltered": "XLSX current filtered view"
-    },
-    "scopes": {
-      "approved": "Approved only",
-      "selected": "Selected only",
-      "review": "Review only",
-      "non-excluded": "All non-excluded",
-      "filtered": "Current filtered view"
-    },
-    "sheets": {
-      "open": "Export to Google Sheets",
-      "title": "Google Sheets export",
-      "notConnected": "To export to Google Sheets, first connect your Google account in Personalize.",
-      "goToPersonalize": "Go to Personalize",
-      "fileName": "Google Sheets file name",
-      "fileNamePlaceholder": "Keyword editorial plan",
-      "fileNameRequired": "Enter a file name.",
-      "scope": "Export scope",
-      "hint": "Each project section with exported keywords becomes a separate sheet in the file.",
-      "exporting": "Exporting...",
-      "exportNow": "Export now",
-      "completed": "Export completed: {rows} keywords in {sheets} sheets.",
-      "openFile": "Open Google Sheets file",
-      "strategyCompleted": "Export completed: {rows, plural, one {# page} other {# pages}} in the “Strategy” sheet."
-    },
     "planner": {
-      "title": "Keyword Planner volumes",
-      "steps": "1. Download the files (one keyword per canonical, at most 1000 per file). 2. In Google Ads open Keyword Planner, «Get search volume and forecasts», and upload one file at a time. 3. Download the result and import it here.",
       "preparing": "Preparing...",
       "exportButton": "Export for Keyword Planner",
       "summary": "{canonicals} keywords in {parts} files.",
@@ -445,7 +332,6 @@
       "source_query": "Source query",
       "brand_status": "Brand status",
       "review_status": "Review status",
-      "selected_for_export": "Selected for export",
       "keyword_type": "Keyword type",
       "search_intent": "Search intent",
       "is_question": "Question",
@@ -486,6 +372,10 @@
       "scoreSource": {
         "metrics": "metrics",
         "heuristic": "heuristic"
+      },
+      "review": {
+        "kept": "Kept",
+        "discarded": "Discarded"
       }
     }
   },
@@ -544,7 +434,6 @@
     "JOB_NOT_FOUND": "Extraction not found.",
     "JOB_NOT_CANCELABLE": "The extraction has already finished.",
     "EXPORT_FORMAT_INVALID": "Invalid export format.",
-    "EXPORT_SCOPE_INVALID": "Invalid export scope.",
     "EXPORT_DIALECT_INVALID": "Invalid CSV dialect: use excel-it or rfc4180.",
     "SHEETS_FILE_NAME_REQUIRED": "A file name is required.",
     "SHEETS_NOT_CONNECTED": "Connect Google Sheets in Personalize before exporting.",
@@ -1339,12 +1228,7 @@
       "unassignedCount": "{count, plural, one {# unassigned keyword} other {# unassigned keywords}}",
       "unassignedEmpty": "Every keyword is on a page.",
       "deleteStrategy": "Delete strategy",
-      "h2Title": "H2",
-      "exportTitle": "Export the plan",
-      "exportCsv": "CSV",
-      "exportXlsx": "Excel",
-      "exportPdf": "PDF to present",
-      "exportHint": "One row per page in work order, with H1, H2, keywords and internal links."
+      "h2Title": "H2"
     },
     "pdf": {
       "coverTitle": "Hub and spoke strategy",
@@ -1490,5 +1374,189 @@
       "delete": "Delete",
       "deleteTitle": "Delete the project?"
     }
+  },
+  "keywords": {
+    "projectTitle": "All keywords",
+    "counts": "{found, plural, one {# found} other {# found}} · {kept, plural, one {# kept} other {# kept}}",
+    "noTopics": "Add the first topic",
+    "noTopicsHint": "A topic is a theme of the site: say what it is about and Titan SEO finds the keywords.",
+    "findMore": "+ Find more keywords",
+    "menu": "More actions for {name}",
+    "menuSeeds": "Starting words",
+    "menuRename": "Rename",
+    "menuDelete": "Delete",
+    "rename": {
+      "title": "Rename the topic",
+      "label": "Topic name",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "delete": {
+      "title": "Delete the topic?",
+      "text": "The topic “{name}” and its keywords are deleted. This cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "chips": {
+      "label": "Quick filters",
+      "all": "All",
+      "questions": "Questions",
+      "buy": "Ready to buy",
+      "local": "Local",
+      "brands": "Brands"
+    },
+    "search": {
+      "label": "Search a keyword",
+      "placeholder": "Search a keyword",
+      "submit": "Search"
+    },
+    "filters": {
+      "toggle": "Filters",
+      "minVolume": "Monthly searches, minimum",
+      "maxVolume": "Monthly searches, maximum",
+      "intent": "Intent",
+      "type": "Type",
+      "any": "Any",
+      "apply": "Apply",
+      "reset": "Clear filters"
+    },
+    "sort": {
+      "label": "Sort",
+      "promising": "Most promising",
+      "searches": "Most searched",
+      "az": "A-Z"
+    },
+    "columns": {
+      "toggle": "Columns",
+      "source": "Source",
+      "intent": "Intent",
+      "type": "Type",
+      "competition": "Competition",
+      "score": "Score"
+    },
+    "table": {
+      "label": "Kept keywords",
+      "discardedLabel": "Discarded keywords",
+      "action": "Keep or discard",
+      "topic": "Topic",
+      "keyword": "Keyword",
+      "searches": "Monthly searches",
+      "potential": "Potential",
+      "potentialValue": "Potential {value} out of 100",
+      "potentialMissing": "Potential not calculated"
+    },
+    "row": {
+      "discard": "Discard {keyword}",
+      "keep": "Keep {keyword}"
+    },
+    "tags": {
+      "question": "question",
+      "buy": "ready to buy",
+      "local": "local",
+      "brandReview": "brand? check"
+    },
+    "discarded": {
+      "toggle": "Discarded ({count})",
+      "hint": "Discarded keywords do not go into the content plan."
+    },
+    "bulk": {
+      "keep": "Keep these {count}",
+      "discard": "Discard these {count}"
+    },
+    "empty": {
+      "filtered": "No kept keywords with these filters.",
+      "topic": "No keywords yet: start the search from the bar at the bottom or with “Find more keywords”.",
+      "project": "No keywords in this project yet.",
+      "discarded": "No discarded keywords."
+    },
+    "saveFailed": "Your choice was not saved: {reason}",
+    "rows": "{start}-{end} of {total}",
+    "searchProgress": {
+      "title": "Looking for keywords…",
+      "phase": {
+        "expand": "Collecting Google suggestions",
+        "autocomplete": "Collecting Google suggestions",
+        "metrics": "Getting search volumes",
+        "store": "Saving the keywords",
+        "done": "Saving the keywords"
+      },
+      "found": "{count, plural, one {# keyword found so far} other {# keywords found so far}}",
+      "duration": "It usually takes a few minutes.",
+      "preview": "First keywords found",
+      "previewHint": "You can discard them as soon as the search ends.",
+      "cancel": "Cancel the search",
+      "canceling": "Cancelling…",
+      "canceled": "Search cancelled.",
+      "failed": "The search did not succeed.",
+      "progress": "Search progress"
+    },
+    "seeds": {
+      "title": "Starting words",
+      "intro": "Titan SEO looks on Google for the searches that start from these words.",
+      "current": "Current words",
+      "empty": "No starting words yet.",
+      "remove": "Remove {seed}",
+      "addLabel": "Add starting words, one per line",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saveAndSearch": "Save and search",
+      "saving": "Saving…"
+    },
+    "volumes": {
+      "notice": "We don't know yet how many people search for these keywords.",
+      "open": "Add the volumes",
+      "title": "Add the volumes",
+      "autoTitle": "Automatic",
+      "autoText": "We get the search volumes from DataForSEO and run the search again: kept and discarded keywords stay as they are.",
+      "autoButton": "Get the volumes",
+      "autoRunning": "Starting…",
+      "guidedTitle": "With Google Ads Keyword Planner, free",
+      "step1": "Download the file with the keywords.",
+      "step2": "In Google Ads open Keyword Planner, choose “Get search volume and forecasts” and upload the file.",
+      "step3": "Download the result from Keyword Planner and upload it here.",
+      "close": "Close"
+    }
+  },
+  "exportDialog": {
+    "open": "Export",
+    "title": "Export",
+    "what": "What do you want to export?",
+    "plan": "The content plan ({count, plural, one {# page} other {# pages}})",
+    "planDisabled": "Build the plan first",
+    "keywords": "The keywords ({count, plural, one {# kept} other {# kept}})",
+    "which": "Which keywords?",
+    "keptTopic": "Kept in “{topic}” ({count})",
+    "keptProject": "Kept in the whole project ({count})",
+    "filtered": "Only the ones you see now ({count})",
+    "all": "All, discarded included ({count})",
+    "format": "Which format?",
+    "formats": {
+      "pdf": "PDF for the client",
+      "sheets": "Google Sheets",
+      "xlsx": "Excel",
+      "csv": "CSV",
+      "json": "JSON"
+    },
+    "sheetsNotConnected": "Google is not connected yet: connect it, then come back here to create the sheet.",
+    "connect": "Connect Google",
+    "logo": "With your logo on the cover",
+    "advanced": "Advanced",
+    "csvDialect": "CSV separator",
+    "csvExcel": "Italian Excel (semicolon)",
+    "csvStandard": "Standard (comma)",
+    "sheetName": "Google Sheets file name",
+    "sheetNameRequired": "Write the file name.",
+    "actions": {
+      "pdf": "Download the PDF",
+      "xlsx": "Download the Excel file",
+      "csv": "Download the CSV",
+      "json": "Download the JSON",
+      "sheets": "Create the Google sheet"
+    },
+    "creating": "Creating the sheet…",
+    "created": "Sheet created with {rows, plural, one {# row} other {# rows}}.",
+    "openSheet": "Open the sheet",
+    "close": "Close",
+    "planNone": "The content plan"
   }
 }

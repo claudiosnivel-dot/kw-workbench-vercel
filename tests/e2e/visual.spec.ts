@@ -36,7 +36,10 @@ test.describe("baseline visive", () => {
   // covers: AC-405-1
   test("risultati", async ({ page }) => {
     await login(page);
-    await page.goto(`/projects/${process.env.E2E_PROJECT_ID}/results`);
+    // impacted-by: T-2403 (la pagina dei risultati è la pagina delle keyword dell'argomento: baseline spostata e
+    // rigenerata, gate umano)
+    await page.goto(`/projects/${process.env.E2E_PROJECT_ID}`);
+    await page.waitForURL((url) => url.pathname.includes("/keywords/"));
     await expect(page).toHaveScreenshot("results.png", { fullPage: true });
   });
 });

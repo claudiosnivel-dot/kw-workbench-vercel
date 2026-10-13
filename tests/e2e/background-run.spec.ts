@@ -1,3 +1,8 @@
+// Gate di T-1205 (AC-1205-4): l'avanzamento di una ricerca sopravvive al ricaricamento e una nuova ricerca arriva
+// all'elenco delle keyword.
+// impacted-by: T-2404 (la ricerca si segue nel riquadro della pagina dell'argomento, che a fine ricerca si aggiorna da
+// sola, e si avvia dalla barra del prossimo passo e da «Trova altre keyword» invece che dalla vecchia pagina del
+// progetto: AC-1205-4 emendato)
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
@@ -15,6 +20,7 @@ let secondSectionId = "";
 let runningJobId = "";
 
 test.beforeAll(async () => {
+  await prisma.user.deleteMany({ where: { email: EMAIL } });
   const user = await createE2EUser(EMAIL, PASSWORD);
   userId = user.id;
   const project = await prisma.project.create({
@@ -62,28 +68,32 @@ test.afterAll(async () => {
 
 test.describe("estrazione in background", () => {
   // covers: AC-1205-4
-  test("l'avanzamento sopravvive al ricaricamento e una nuova estrazione arriva ai risultati", async ({ page }) => {
-    test.setTimeout(120_000);
+  test("l'avanzamento sopravvive al ricaricamento e le nuove ricerche arrivano all'elenco delle keyword", async ({ page }) => {
+    test.setTimeout(180_000);
     const login = await page.request.post("/api/auth/login", { data: { email: EMAIL, password: PASSWORD } });
     expect(login.status()).toBe(200);
+    const searchBox = page.getByRole("region", { name: "Sto cercando le keyword…" });
+    const keptRow = page.getByRole("table", { name: "Keyword tenute" }).getByRole("row").filter({ hasText: "caffe moka" });
 
-    await page.goto(`/projects/${projectId}?sectionId=${firstSectionId}`);
+    await page.goto(`/projects/${projectId}`);
+    await page.waitForURL((url) => url.pathname === `/projects/${projectId}/keywords/${firstSectionId}`);
     await page.reload();
-    await expect(page.getByRole("progressbar").first()).toHaveAttribute("aria-valuenow", "3");
+    await expect(searchBox.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "3");
 
     await prisma.job.update({
       where: { id: runningJobId },
       data: { status: "completed", phase: "done", progress_done: 10, completed_at: new Date() },
     });
-    await expect(page.getByRole("link", { name: "Vedi risultati" }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(searchBox).toBeHidden({ timeout: 5_000 });
 
-    await page.goto(`/projects/${projectId}?sectionId=${secondSectionId}`);
-    await page.getByRole("button", { name: "Avvia estrazione (sezione attiva)" }).click();
-    const results = page.getByRole("link", { name: "Vedi risultati" }).first();
-    await expect(results).toBeVisible({ timeout: 60_000 });
+    // Dalla barra del prossimo passo: nessuna keyword tenuta, la ricerca riparte sul primo argomento con le seed.
+    await page.getByRole("region", { name: "Prossimo passo" }).getByRole("button", { name: "Avvia la ricerca" }).click();
+    await expect(keptRow.first()).toBeVisible({ timeout: 60_000 });
 
-    await results.click();
-    await page.waitForURL((url) => url.pathname === `/projects/${projectId}/results`);
-    await expect(page.locator("tbody tr").filter({ hasText: "caffe moka" }).first()).toBeVisible();
+    // Da «Trova altre keyword» sul secondo argomento: salva le parole di partenza e cerca.
+    await page.goto(`/projects/${projectId}/keywords/${secondSectionId}`);
+    await page.getByRole("button", { name: "+ Trova altre keyword" }).click();
+    await page.getByRole("dialog", { name: "Parole di partenza" }).getByRole("button", { name: "Salva e cerca" }).click();
+    await expect(keptRow.first()).toBeVisible({ timeout: 60_000 });
   });
 });

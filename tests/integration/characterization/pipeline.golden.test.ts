@@ -5,6 +5,8 @@
 // Oracolo di non regressione degli upgrade di 04-stack-upgrade (snapshot invariati):
 // covers: AC-401-3
 // covers: AC-403-4
+// impacted-by: T-2401 (colonna selected_for_export eliminata con D-39: tolta dalle righe fotografate, nessun altro valore
+// cambia; lo snapshot perde solo le sue 948 righe)
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
@@ -78,7 +80,6 @@ async function goldenRows(subprojectId: string) {
       keyword_type: row.keyword_type,
       brand_status: row.brand_status,
       review_status: row.review_status,
-      selected_for_export: row.selected_for_export,
       metrics_status: row.metrics_status,
       avg_monthly_searches: row.avg_monthly_searches,
     }))

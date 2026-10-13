@@ -1,5 +1,7 @@
 // Gate di T-1104 (AC-1104-1…4): nessuna violazione axe serious o critical su login, dashboard e risultati,
 // focus della modale di export Sheets, anteprima del tema non salvata ripristinata, titolo dal branding.
+// impacted-by: T-2403, T-2406 (i risultati sono la pagina delle keyword e gli export partono dalla finestra Esporta della
+// barra in alto: AC-1104-1 e AC-1104-2 emendati)
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
@@ -33,20 +35,22 @@ test.describe("accessibilità di base", () => {
     await page.goto("/");
     expect(await seriousViolations(page), "dashboard").toEqual([]);
 
-    await page.goto(`/projects/${process.env.E2E_PROJECT_ID}/results`);
+    await page.goto(`/projects/${process.env.E2E_PROJECT_ID}`);
+    await page.waitForURL((url) => url.pathname.includes("/keywords/"));
     expect(await seriousViolations(page), "risultati").toEqual([]);
   });
 
   // covers: AC-1104-2
-  test("la modale di export Sheets tiene il focus e lo restituisce al pulsante", async ({ page }) => {
+  test("la finestra Esporta tiene il focus e lo restituisce al pulsante", async ({ page }) => {
     await login(page);
-    await page.goto(`/projects/${process.env.E2E_PROJECT_ID}/results`);
+    await page.goto(`/projects/${process.env.E2E_PROJECT_ID}`);
+    await page.waitForURL((url) => url.pathname.includes("/keywords/"));
 
-    const opener = page.getByRole("button", { name: "Esporta su Google Sheets" });
+    const opener = page.getByRole("button", { name: "Esporta", exact: true });
     await opener.click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(page.getByLabel("Nome file Google Sheets")).toBeFocused();
+    expect(await page.evaluate(() => document.querySelector('[role="dialog"]')?.contains(document.activeElement) ?? false)).toBe(true);
 
     for (let press = 0; press < 20; press += 1) {
       await page.keyboard.press("Tab");

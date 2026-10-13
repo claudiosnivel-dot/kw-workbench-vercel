@@ -1,10 +1,12 @@
 // Gate di T-802 (AC-802-1…4): la vista dei risultati (sezione o progetto) si risolve in un solo modulo,
 // con la sezione predefinita reale (D-21); l'export porta la sezione mostrata e i link verso i risultati
 // dichiarano sempre la vista.
+// impacted-by: T-2402 (scope kept al posto di approved in AC-802-3), T-2403 (i link portano alla pagina delle keyword, con
+// la vista nel percorso: AC-802-4 emendato)
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildResultsExportHref, resolveResultsView, resultsHref } from "@/lib/modules/results-view";
+import { buildResultsExportHref, keywordsHref, resolveResultsView } from "@/lib/modules/results-view";
 
 const SECTIONS = [
   { id: "S1", position: 0 },
@@ -53,34 +55,37 @@ describe("buildResultsExportHref", () => {
     const searchParams = new URLSearchParams("searchText=scarpe&page=3&pageSize=50");
 
     const sectionHref = new URL(
-      buildResultsExportHref("P", { kind: "section", subprojectId: "S2" }, searchParams, "csv", "approved"),
+      buildResultsExportHref("P", { kind: "section", subprojectId: "S2" }, searchParams, "csv", "kept"),
       "http://localhost"
     );
-    const allHref = buildResultsExportHref("P", { kind: "all" }, searchParams, "csv", "approved");
+    const allHref = buildResultsExportHref("P", { kind: "all" }, searchParams, "csv", "kept");
 
     expect(sectionHref.pathname).toBe("/api/projects/P/export");
     expect(sectionHref.searchParams.get("subprojectId")).toBe("S2");
     expect(sectionHref.searchParams.get("searchText")).toBe("scarpe");
     expect(sectionHref.searchParams.get("format")).toBe("csv");
-    expect(sectionHref.searchParams.get("scope")).toBe("approved");
+    expect(sectionHref.searchParams.get("scope")).toBe("kept");
     expect(sectionHref.searchParams.has("page")).toBe(false);
     expect(sectionHref.searchParams.has("pageSize")).toBe(false);
     expect(allHref).not.toContain("subprojectId");
   });
 });
 
-describe("link verso i risultati", () => {
+describe("link verso la pagina delle keyword", () => {
   // covers: AC-802-4
-  it("resultsHref dichiara la vista e nessun sorgente di app/ ha href verso /results senza view o subprojectId", () => {
+  it("keywordsHref mette la vista nel percorso e nessun sorgente di app/ ha più href verso /results", () => {
     const appDir = path.join(process.cwd(), "app");
     const offending = tsxFiles(appDir).flatMap((file) => {
       const source = readFileSync(file, "utf8");
-      return Array.from(source.matchAll(/\/projects\/[^"'`\s]*\/results([^"'`\s]*)/g))
-        .filter(([, query]) => !/[?&](view|subprojectId)=/.test(query))
-        .map(([match]) => `${path.relative(appDir, file)}: ${match}`);
+      return Array.from(source.matchAll(/\/projects\/[^"'`\s]*\/results[^"'`\s]*/g)).map(
+        ([match]) => `${path.relative(appDir, file)}: ${match}`
+      );
     });
 
-    expect(resultsHref("P", { view: "all" })).toBe("/projects/P/results?view=all");
+    expect(keywordsHref("P", { view: "all" })).toBe("/projects/P/keywords");
+    expect(keywordsHref("P", { subprojectId: "S1" }, new URLSearchParams("view=all&chip=questions"))).toBe(
+      "/projects/P/keywords/S1?chip=questions"
+    );
     expect(offending).toEqual([]);
   });
 });

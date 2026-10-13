@@ -38,8 +38,25 @@ export async function requireJobAccess(
   return { job, perimeter: { workspace_id: project.workspace_id, ...projectAccessWhere(user.id, action) } };
 }
 
-/** Body dello stato: result solo a completed, error solo il messaggio pubblico salvato (mai stack, CWE-209). */
-export function jobStatusBody(job: Job) {
+/** Suggerimenti mostrati in anteprima durante la ricerca (T-2404): al massimo questi per richiesta di stato. */
+const RECENT_SUGGESTIONS_LIMIT = 20;
+
+/**
+ * Body dello stato: result solo a completed, error solo il messaggio pubblico salvato (mai stack, CWE-209). Solo per un
+ * job pending o running, recentSuggestions con le ultime keyword dello staging, dalla più recente (T-2404): letta dopo
+ * il controllo di accesso al job, con l'indice su job_id e al massimo 20 righe (CWE-400).
+ */
+export async function jobStatusBody(job: Job) {
+  const recentSuggestions = ACTIVE_JOB_STATUSES.includes(job.status)
+    ? (
+        await prisma.jobSuggestion.findMany({
+          where: { job_id: job.id },
+          orderBy: { id: "desc" },
+          take: RECENT_SUGGESTIONS_LIMIT,
+          select: { keyword: true },
+        })
+      ).map((row) => row.keyword)
+    : undefined;
   return {
     data: {
       id: job.id,
@@ -48,6 +65,7 @@ export function jobStatusBody(job: Job) {
       progress: { done: job.progress_done, total: job.progress_total },
       result: job.status === "completed" ? job.result : null,
       error: job.status === "failed" ? job.error_message : null,
+      ...(recentSuggestions ? { recentSuggestions } : {}),
     },
   };
 }

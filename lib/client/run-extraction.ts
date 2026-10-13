@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { ApiErrorPayload, buildApiErrorMessage, type ErrorTranslator, readJsonSafe } from "@/lib/client/http";
 import { isApiErrorCode } from "@/lib/http/error-codes";
 
@@ -26,4 +27,17 @@ export async function readStartedJobId(
       ? buildApiErrorMessage(response, payload, messages.errors)
       : messages.failedMessage
   );
+}
+
+/**
+ * Avvio della ricerca di un argomento con la sua rotta run (prossimo passo T-2302, «Aggiungi i volumi» T-2405): la
+ * funzione restituisce l'id del job o lancia un errore con il messaggio del catalogo.
+ */
+export function useTopicSearch(): (projectId: string, topicId: string) => Promise<string> {
+  const tErrors = useTranslations("errors");
+  const tJobs = useTranslations("jobs.run");
+  return async (projectId, topicId) => {
+    const response = await fetch(`/api/projects/${projectId}/subprojects/${topicId}/run`, { method: "POST" });
+    return readStartedJobId(response, { errors: tErrors, failedMessage: tJobs("failed") });
+  };
 }

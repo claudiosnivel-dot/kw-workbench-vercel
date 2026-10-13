@@ -9,37 +9,41 @@
 // covers: AC-1102-4
 // impacted-by: T-2103 (intestazioni e nome del foglio nella lingua dell'utente, italiano di default; aggiornamento delle
 // sole asserzioni su intestazioni e foglio confermato in anticipo dall'utente con D-37, 2026-10-11)
+// impacted-by: T-2401, T-2402 (selected_for_export eliminata e scope kept, all e filtered al posto di approved, selected,
+// review e non-excluded; aggiornamento delle sole asserzioni su selezione, scope e revisione confermato in anticipo
+// dall'utente con D-39, 2026-10-13)
+// Oracolo di T-2401: dopo la migrazione 0042 l'export non ha più la colonna della selezione.
+// covers: AC-2401-1
 import ExcelJS from "exceljs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
+import { EXPORT_COLUMNS } from "@/lib/modules/export";
 import { prisma } from "@/lib/prisma";
 import it_ from "@/messages/it.json";
 import { createUserWithSession, personalWorkspaceId } from "../../helpers/auth";
 import { resetDatabase } from "../../helpers/db";
 import { callRoute } from "../../helpers/http";
 
-// Le 12 candidate della fixture: [brand_status, review_status, selected_for_export, search_intent].
+// Le 12 candidate della fixture: [brand_status, review_status, search_intent] (impacted-by: T-2401, senza la selezione).
 const FIXTURE = [
-  ["allowed", "approved", true, "commercial"],
-  ["allowed", "approved", true, "informational"],
-  ["allowed", "approved", false, "commercial"],
-  ["allowed", "pending", true, "commercial"],
-  ["allowed", "pending", true, "informational"],
-  ["allowed", "pending", false, "transactional"],
-  ["allowed", "rejected", false, "commercial"],
-  ["excluded", "rejected", false, "commercial"],
-  ["excluded", "rejected", false, "informational"],
-  ["review", "pending", true, "commercial"],
-  ["review", "approved", false, "navigational"],
-  ["allowed", "pending", true, "mixed"],
+  ["allowed", "approved", "commercial"],
+  ["allowed", "approved", "informational"],
+  ["allowed", "approved", "commercial"],
+  ["allowed", "pending", "commercial"],
+  ["allowed", "pending", "informational"],
+  ["allowed", "pending", "transactional"],
+  ["allowed", "rejected", "commercial"],
+  ["excluded", "rejected", "commercial"],
+  ["excluded", "rejected", "informational"],
+  ["review", "pending", "commercial"],
+  ["review", "approved", "navigational"],
+  ["allowed", "pending", "mixed"],
 ] as const;
 
-// Conteggi attesi per scope sulla fixture.
+// Conteggi attesi per scope sulla fixture (impacted-by: T-2402).
 const EXPECTED = {
-  approved: 4, // approved e non excluded
-  selected: 6, // selected_for_export
-  review: 5, // review_status pending
-  "non-excluded": 9, // brand_status diverso da excluded e review_status diverso da rejected (impacted-by: T-807, prima 10)
+  kept: 9, // review_status diverso da rejected
+  all: 12, // tutte, scartate comprese
   filtered: 6, // searchIntent=commercial
 } as const;
 
@@ -55,7 +59,7 @@ const HEADERS = [
   "source_query",
   "brand_status",
   "review_status",
-  "selected_for_export",
+  // impacted-by: T-2401 (selected_for_export eliminata)
   "keyword_type",
   "search_intent",
   "is_question",
@@ -88,7 +92,7 @@ async function createOwnerProject() {
 
 async function insertFixture(projectId: string, sectionId: string): Promise<void> {
   await prisma.keywordCandidate.createMany({
-    data: FIXTURE.map(([brand_status, review_status, selected_for_export, search_intent], index) => {
+    data: FIXTURE.map(([brand_status, review_status, search_intent], index) => {
       const keyword = keywordFor(index);
       return {
         project_id: projectId,
@@ -100,7 +104,6 @@ async function insertFixture(projectId: string, sectionId: string): Promise<void
         source_query: keyword,
         brand_status,
         review_status,
-        selected_for_export,
         search_intent,
         score: 100 - index,
       };
@@ -137,9 +140,10 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
 
   // covers: AC-107-1
   // Aggiornato da T-804 (impacted-by): dialetto excel-it predefinito con BOM, ';', CRLF e formule neutralizzate.
-  it("CSV non-excluded: header HTTP, BOM, punto e virgola, CRLF e virgolette su ogni valore", async () => {
+  // impacted-by: T-2402 (scope kept al posto di non-excluded, stesse 9 righe)
+  it("CSV kept: header HTTP, BOM, punto e virgola, CRLF e virgolette su ogni valore", async () => {
     const response = await callRoute(exportProject, {
-      url: exportUrl(projectId, "format=csv&scope=non-excluded"),
+      url: exportUrl(projectId, "format=csv&scope=kept"),
       cookie,
       params: { id: projectId },
     });
@@ -153,12 +157,12 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
     // covers: AC-2201-2
     // impacted-by: T-2201 (prefisso titan-seo del nome del file, D-38)
     expect(response.headers.get("content-disposition")).toMatch(
-      new RegExp(`filename="titan-seo-${projectId}-project-non-excluded-\\d{4}-\\d{2}-\\d{2}\\.csv"`)
+      new RegExp(`filename="titan-seo-${projectId}-project-kept-\\d{4}-\\d{2}-\\d{2}\\.csv"`)
     );
     expect(Array.from(bytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf]); // impacted-by: T-804
     expect(text.endsWith("\r\n")).toBe(true); // impacted-by: T-804
     expect(lines[0]).toBe(HEADERS.join(";")); // impacted-by: T-804
-    expect(lines).toHaveLength(EXPECTED["non-excluded"] + 1);
+    expect(lines).toHaveLength(EXPECTED.kept + 1);
     for (const line of lines.slice(1)) {
       expect(line).toMatch(/^"(?:[^"]|"")*"(?:;"(?:[^"]|"")*")*$/); // impacted-by: T-804
       expect(line.split('";"')).toHaveLength(HEADERS.length);
@@ -168,10 +172,11 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
   });
 
   // covers: AC-107-2
-  // Aggiornato da T-707 (impacted-by): 23 intestazioni con score_source.
-  it("XLSX selected: un solo foglio keywords con le 23 intestazioni del CSV", async () => {
+  // Aggiornato da T-707 (impacted-by): intestazioni con score_source.
+  // impacted-by: T-2401, T-2402 (22 intestazioni senza la selezione, scope all al posto di selected)
+  it("XLSX all: un solo foglio keywords con le 22 intestazioni del CSV", async () => {
     const response = await callRoute(exportProject, {
-      url: exportUrl(projectId, "format=xlsx&scope=selected"),
+      url: exportUrl(projectId, "format=xlsx&scope=all"),
       cookie,
       params: { id: projectId },
     });
@@ -185,16 +190,17 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
     );
     expect(workbook.worksheets.map((worksheet) => worksheet.name)).toEqual([it_.export.sheet]); // impacted-by: T-2103
     expect((sheet.getRow(1).values as unknown[]).slice(1)).toEqual(HEADERS);
-    expect(sheet.actualRowCount - 1).toBe(EXPECTED.selected);
+    expect(HEADERS).toHaveLength(22);
+    expect(EXPORT_COLUMNS).not.toContain("selected_for_export");
+    expect(sheet.actualRowCount - 1).toBe(EXPECTED.all);
   });
 
   // covers: AC-107-3
   it("JSON: ogni scope restituisce il numero di righe dichiarato", async () => {
+    // impacted-by: T-2402 (scope kept, all e filtered)
     for (const [scope, query] of [
-      ["approved", "scope=approved"],
-      ["selected", "scope=selected"],
-      ["review", "scope=review"],
-      ["non-excluded", "scope=non-excluded"],
+      ["kept", "scope=kept"],
+      ["all", "scope=all"],
       ["filtered", "scope=filtered&searchIntent=commercial"],
     ] as const) {
       const response = await callRoute(exportProject, {
@@ -206,8 +212,8 @@ describe("caratterizzazione: export della fixture di 12 candidate", () => {
 
       expect(response.status).toBe(200);
       expect(rows).toHaveLength(EXPECTED[scope]);
-      if (scope === "non-excluded") {
-        // impacted-by: T-807 (la rifiutata non è più esportata da non-excluded)
+      if (scope === "kept") {
+        // impacted-by: T-807, T-2402 (la scartata non è esportata da kept)
         expect(rows.find((row) => row.keyword === REJECTED_ALLOWED_KEYWORD)).toBeUndefined();
       }
     }
@@ -218,11 +224,12 @@ describe("caratterizzazione: export vuoto", () => {
   // covers: AC-107-4
   // Aggiornato da T-804 (impacted-by): con 0 righe il file ha BOM e la sola intestazione.
   // Aggiornato da T-2306 (impacted-by): l'onboarding è rimosso, l'export non ne registra più il completamento.
-  it("CSV approved senza candidate: BOM e sola intestazione", async () => {
+  // impacted-by: T-2402 (scope kept al posto di approved)
+  it("CSV kept senza candidate: BOM e sola intestazione", async () => {
     const { owner, projectId: emptyProjectId } = await createOwnerProject();
 
     const response = await callRoute(exportProject, {
-      url: exportUrl(emptyProjectId, "format=csv&scope=approved"),
+      url: exportUrl(emptyProjectId, "format=csv&scope=kept"),
       cookie: owner.cookie,
       params: { id: emptyProjectId },
     });

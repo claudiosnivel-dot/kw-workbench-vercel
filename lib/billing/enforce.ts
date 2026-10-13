@@ -109,6 +109,18 @@ export async function assertLicensedMetricsChoice(
 }
 
 /**
+ * true se assertLicensedMetricsChoice ammette DATAFORSEO per chi non lo ha ancora: root admin, oppure diritto
+ * licensedMetrics del piano con il lancio attivo. La finestra «Aggiungi i volumi» (T-2405) mostra l'opzione automatica
+ * solo così; la scelta resta verificata lato server dalla PATCH dell'argomento (D-30).
+ */
+export async function canChooseLicensedMetrics(actor: { isRootAdmin: boolean }, workspaceId: string): Promise<boolean> {
+  if (actor.isRootAdmin) {
+    return true;
+  }
+  return (await isCommercialLive()) && (await getEntitlements(workspaceId)).limits.licensedMetrics;
+}
+
+/**
  * Limiti dell'estrazione letti all'avvio e salvati nel payload del job (T-1605, T-1703): tetto di keyword salvate,
  * accesso alle metriche con licenza e quote mensili di keyword salvate e arricchite (null = nessuna quota, lancio in
  * pausa).

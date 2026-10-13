@@ -10,7 +10,7 @@ import { requirePageUser } from "@/lib/auth/page-guard";
 import { projectAccessWhere } from "@/lib/authz/workspace";
 import { findActiveJobId } from "@/lib/modules/jobs/job-api";
 import { resolveEffectiveProjectSettings } from "@/lib/modules/project-settings";
-import { resultsHref } from "@/lib/modules/results-view";
+import { keywordsHref } from "@/lib/modules/results-view";
 import { prisma } from "@/lib/prisma";
 import { sectionDeleteTarget } from "@/lib/view/delete-targets";
 
@@ -62,16 +62,16 @@ export default async function SubprojectSettingsPage({
             runPath={`/api/projects/${subproject.project_id}/subprojects/${subproject.id}/run`}
             label={t("jobs.run.start")}
             runningLabel={t("jobs.run.running")}
-            resultsHref={resultsHref(subproject.project_id, { subprojectId: subproject.id })}
+            resultsHref={keywordsHref(subproject.project_id, { subprojectId: subproject.id })}
             activeJobId={activeJobId}
           />
         }
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(subproject.project_id, { subprojectId: subproject.id })}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={keywordsHref(subproject.project_id, { subprojectId: subproject.id })}>
             {t("sections.settings.viewSectionResults")}
           </Link>
-          <Link className="btn-secondary w-full text-center sm:w-auto" href={resultsHref(subproject.project_id, { view: "all" })}>
+          <Link className="btn-secondary w-full text-center sm:w-auto" href={keywordsHref(subproject.project_id, { view: "all" })}>
             {t("sections.settings.viewProjectResults")}
           </Link>
         </div>

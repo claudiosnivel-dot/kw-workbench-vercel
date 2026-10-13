@@ -1,17 +1,26 @@
 import { type RefObject, useEffect, useRef } from "react";
 
-// Elementi che ricevono il focus con Tab dentro una modale o un pannello.
+// Elementi che ricevono il focus con Tab dentro una modale o un pannello (summary: le sezioni Avanzate, T-2406).
 const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+const FIELDS = "input:not([disabled]), select:not([disabled]), textarea:not([disabled])";
 
-/** Primo campo del contenitore, altrimenti il primo elemento attivabile. */
+/** Elementi raggiungibili: quelli dentro una sezione chiusa (details) no, tranne il suo summary. */
+function visible(elements: NodeListOf<HTMLElement>): HTMLElement[] {
+  return [...elements].filter((element) => {
+    const closed = element.closest("details:not([open])");
+    return !closed || (element.tagName === "SUMMARY" && element.parentElement === closed);
+  });
+}
+
+/** Primo campo attivo del contenitore, altrimenti il primo elemento attivabile. */
 function initialFocusTarget(container: HTMLElement): HTMLElement | null {
-  return container.querySelector<HTMLElement>("input, select, textarea") ?? container.querySelector<HTMLElement>(FOCUSABLE);
+  return visible(container.querySelectorAll<HTMLElement>(FIELDS))[0] ?? visible(container.querySelectorAll<HTMLElement>(FOCUSABLE))[0] ?? null;
 }
 
 /** Tab e Maiusc+Tab restano dentro il contenitore: dall'ultimo elemento si torna al primo e viceversa. */
 function keepFocusInside(event: KeyboardEvent, container: HTMLElement): void {
-  const focusable = [...container.querySelectorAll<HTMLElement>(FOCUSABLE)];
+  const focusable = visible(container.querySelectorAll<HTMLElement>(FOCUSABLE));
   if (focusable.length === 0) {
     event.preventDefault();
     return;

@@ -115,7 +115,8 @@ test.describe("home", () => {
     await expect(page.getByRole("textbox")).toHaveValue("b&b in puglia");
 
     await page.getByRole("button", { name: "Trova le keyword" }).click();
-    await page.waitForURL((url) => /^\/projects\/[^/]+\/results$/.test(url.pathname) && url.searchParams.has("subprojectId"));
+    // impacted-by: T-2403 (i risultati del nuovo argomento sono la pagina delle sue keyword)
+    await page.waitForURL((url) => /^\/projects\/[^/]+\/keywords\/[^/]+$/.test(url.pathname));
     const bar = page.getByRole("region", { name: "Prossimo passo" });
     await expect(bar).toContainText("Sto cercando le keyword…");
     await expect(bar.getByRole("progressbar")).toBeVisible();

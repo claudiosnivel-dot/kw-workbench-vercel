@@ -69,7 +69,6 @@ export const API_ERROR_CODES = [
   "JOB_NOT_CANCELABLE",
   // Export dei risultati.
   "EXPORT_FORMAT_INVALID",
-  "EXPORT_SCOPE_INVALID",
   "EXPORT_DIALECT_INVALID",
   // Google Sheets.
   "SHEETS_FILE_NAME_REQUIRED",

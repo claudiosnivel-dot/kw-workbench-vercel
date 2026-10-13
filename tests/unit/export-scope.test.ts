@@ -1,5 +1,7 @@
-// Gate di T-807 (AC-807-1, AC-807-2): ogni scope di export è l'intersezione tra la regola di revisione
-// e la vista corrente (progetto, sezione e filtri), in un unico where.
+// Gate di T-807 (AC-807-1, AC-807-2): il where di export è unico e parte sempre dal progetto, con la sezione già
+// verificata dalla route.
+// impacted-by: T-2402 (D-23 emendata: scope kept, all e filtered; kept e all non usano i filtri della vista, filtered li
+// usa tutti; AC-807-1 e AC-807-2 emendati)
 import { describe, expect, it } from "vitest";
 import { buildExportWhere } from "@/lib/modules/export";
 
@@ -8,37 +10,27 @@ function andClauses(where: ReturnType<typeof buildExportWhere>): unknown[] {
   return where.AND as unknown[];
 }
 
+const SEARCH_SCARPE = {
+  OR: [
+    { keyword: { contains: "scarpe", mode: "insensitive" } },
+    { normalized_keyword: { contains: "scarpe", mode: "insensitive" } },
+  ],
+};
+
 describe("buildExportWhere", () => {
   // covers: AC-807-1
-  it("non-excluded esclude brand excluded e righe rifiutate, dentro il progetto", () => {
-    const clauses = andClauses(buildExportWhere("P", "non-excluded", {}, null));
+  it("kept tiene le keyword non scartate del progetto, senza clausole sul marchio", () => {
+    const clauses = andClauses(buildExportWhere("P", "kept", {}, null));
 
-    expect(clauses).toEqual(
-      expect.arrayContaining([
-        { project_id: "P" },
-        { brand_status: { not: "excluded" } },
-        { review_status: { not: "rejected" } },
-      ])
-    );
+    expect(clauses).toEqual([{ project_id: "P" }, { review_status: { not: "rejected" } }]);
   });
 
   // covers: AC-807-2
-  it("approved si combina con sezione e filtri della vista", () => {
-    const clauses = andClauses(buildExportWhere("P", "approved", { searchText: "scarpe" }, "S1"));
+  it("kept con sezione e ricerca ignora i filtri della vista; filtered li applica tutti", () => {
+    const kept = andClauses(buildExportWhere("P", "kept", { searchText: "scarpe" }, "S1"));
+    const filtered = andClauses(buildExportWhere("P", "filtered", { searchText: "scarpe" }, "S1"));
 
-    expect(clauses).toEqual(
-      expect.arrayContaining([
-        { project_id: "P" },
-        { subproject_id: "S1" },
-        { review_status: "approved" },
-        { brand_status: { not: "excluded" } },
-        {
-          OR: [
-            { keyword: { contains: "scarpe", mode: "insensitive" } },
-            { normalized_keyword: { contains: "scarpe", mode: "insensitive" } },
-          ],
-        },
-      ])
-    );
+    expect(kept).toEqual([{ project_id: "P" }, { subproject_id: "S1" }, { review_status: { not: "rejected" } }]);
+    expect(filtered).toEqual([{ project_id: "P" }, { subproject_id: "S1" }, SEARCH_SCARPE]);
   });
 });

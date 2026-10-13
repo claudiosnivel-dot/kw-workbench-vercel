@@ -1,5 +1,5 @@
 {
-  "description": "File consolidati da T-1102: jscpd con min-tokens 50 non deve trovarvi duplicati (AC-1102-1, tests/tooling/duplication.test.ts). I percorsi, relativi alla radice, si passano a jscpd come argomenti: con --config jscpd li rende assoluti e su Windows il glob non trova i file. Non si chiama .jscpd.json per non cambiare il jscpd di Trueline, che legge quel nome dalla radice.",
+  "description": "File consolidati da T-1102: jscpd con min-tokens 50 non deve trovarvi duplicati (AC-1102-1, tests/tooling/duplication.test.ts). I percorsi, relativi alla radice, si passano a jscpd come argomenti: con --config jscpd li rende assoluti e su Windows il glob non trova i file. Non si chiama .jscpd.json per non cambiare il jscpd di Trueline, che legge quel nome dalla radice. Dal macrotask 24 (T-2403, T-2406) la pagina dei risultati e il pulsante Google Sheets sono sostituiti dalla pagina delle keyword di un argomento e dalla finestra Esporta.",
   "minTokens": 50,
   "path": [
     "lib/view/format.ts",
@@ -17,7 +17,7 @@
     "app/page.tsx",
     "app/projects/[id]/page.tsx",
     "app/projects/[id]/sections/page.tsx",
-    "app/projects/[id]/results/page.tsx",
+    "app/projects/[id]/keywords/[topicId]/page.tsx",
     "app/projects/[id]/settings/page.tsx",
     "app/projects/[id]/subprojects/[subprojectId]/page.tsx",
     "app/api/auth/login/route.ts",
@@ -28,6 +28,6 @@
     "components/delete-entity-button.tsx",
     "components/set-default-section-button.tsx",
     "components/page-header-card.tsx",
-    "components/google-sheets-export-button.tsx"
+    "components/export-dialog.tsx"
   ]
 }

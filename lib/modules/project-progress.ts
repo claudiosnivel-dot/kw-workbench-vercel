@@ -1,16 +1,7 @@
-import type { Prisma } from "@/lib/generated/prisma/client";
 import { ACTIVE_JOB_STATUSES } from "@/lib/modules/jobs/job-state";
+import { KEPT_WHERE } from "@/lib/modules/keep-rule";
 import { computeProjectProgress, type ProjectProgressData, type TopicProgress } from "@/lib/modules/next-step";
 import { prisma } from "@/lib/prisma";
-
-/**
- * Keyword tenuta (T-2302): non rifiutata nella revisione e non esclusa dal filtro marchi. Con T-2401 la regola diventa
- * il solo review_status diverso da rejected.
- */
-const KEPT_KEYWORD_WHERE = {
-  review_status: { not: "rejected" },
-  brand_status: { not: "excluded" },
-} satisfies Prisma.KeywordCandidateWhereInput;
 
 function countBySubproject(rows: { subproject_id: string; _count: { _all: number } }[]): Map<string, number> {
   return new Map(rows.map((row) => [row.subproject_id, row._count._all]));
@@ -35,7 +26,7 @@ export async function loadProjectsProgress(projectIds: string[]): Promise<Map<st
       select: { id: true, name: true, project_id: true, _count: { select: { seeds: true } } },
     }),
     prisma.keywordCandidate.groupBy({ by: ["subproject_id"], where: inProjects, _count: { _all: true } }),
-    prisma.keywordCandidate.groupBy({ by: ["subproject_id"], where: { ...inProjects, ...KEPT_KEYWORD_WHERE }, _count: { _all: true } }),
+    prisma.keywordCandidate.groupBy({ by: ["subproject_id"], where: { ...inProjects, ...KEPT_WHERE }, _count: { _all: true } }),
     prisma.job.findMany({
       where: { ...inProjects, status: { in: ACTIVE_JOB_STATUSES } },
       orderBy: { created_at: "asc" },

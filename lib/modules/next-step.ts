@@ -6,7 +6,7 @@
 /** Stato di un argomento (sezione) del progetto, in ordine di position. */
 export type TopicProgressState = {
   id: string;
-  /** Keyword tenute: review_status diverso da rejected e brand_status diverso da excluded. */
+  /** Keyword tenute: review_status diverso da rejected (regola unica tieni/scarta, T-2401). */
   keptCount: number;
   totalCount: number;
   seedCount: number;

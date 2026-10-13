@@ -1,6 +1,6 @@
 import { useRouter } from "next/navigation";
 import { EXTRACTION_BLOCKED_PARAM } from "@/lib/modules/next-step";
-import { resultsHref } from "@/lib/modules/results-view";
+import { keywordsHref } from "@/lib/modules/results-view";
 
 /**
  * Apertura dei risultati di un argomento appena creato (avvio rapido T-2305, nuovo argomento T-2303): con il code che ha
@@ -15,7 +15,7 @@ export function useOpenTopic() {
     if (blockedCode) {
       params.set(EXTRACTION_BLOCKED_PARAM, blockedCode);
     }
-    router.push(resultsHref(projectId, { subprojectId: topicId }, params));
+    router.push(keywordsHref(projectId, { subprojectId: topicId }, params));
     router.refresh();
   };
 }

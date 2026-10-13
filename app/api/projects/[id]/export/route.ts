@@ -21,7 +21,7 @@ const VALID_SCOPES = new Set<ExportScope>(EXPORT_SCOPES);
 
 export const GET = withUserRoute(async (request: NextRequest, user, { id }: ProjectParams) => {
   const format = (request.nextUrl.searchParams.get("format") ?? "csv") as ExportFormat;
-  const scope = (request.nextUrl.searchParams.get("scope") ?? "non-excluded") as ExportScope;
+  const scope = (request.nextUrl.searchParams.get("scope") ?? "kept") as ExportScope;
   const csvDialect = request.nextUrl.searchParams.get("csvDialect") ?? CSV_DIALECT_DEFAULT;
   const rawSubprojectId = request.nextUrl.searchParams.get("subprojectId");
   const subprojectId = rawSubprojectId ? rawSubprojectId.trim() : "";
@@ -30,8 +30,9 @@ export const GET = withUserRoute(async (request: NextRequest, user, { id }: Proj
     return errorResponse(400, "EXPORT_FORMAT_INVALID", "Formato non valido");
   }
 
+  // Solo kept, all e filtered (T-2402): uno scope precedente (approved, selected, review, non-excluded) è un 400.
   if (!VALID_SCOPES.has(scope)) {
-    return errorResponse(400, "EXPORT_SCOPE_INVALID", "Scope non valido");
+    return errorResponse(400, "VALIDATION_ERROR", "Scope non valido: usa kept, all o filtered");
   }
 
   if (!isCsvDialect(csvDialect)) {

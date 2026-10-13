@@ -13,6 +13,7 @@ import {
 import { textStream } from "@/lib/http/text-stream";
 import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
 import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
+import { KEPT_WHERE } from "@/lib/modules/keep-rule";
 import { buildResultsClauses, type ResultsFilters } from "@/lib/modules/results-filters";
 import { RESULTS_ORDER_BY } from "@/lib/modules/results-order";
 import { catalogTranslator } from "@/lib/modules/strategy/translator";
@@ -32,7 +33,6 @@ export const EXPORT_FIELD_SELECT = {
   source_query: true,
   brand_status: true,
   review_status: true,
-  selected_for_export: true,
   keyword_type: true,
   search_intent: true,
   is_question: true,
@@ -67,7 +67,6 @@ export type ExportRow = {
   source_query: string;
   brand_status: string;
   review_status: string;
-  selected_for_export: boolean;
   keyword_type: string;
   search_intent: string;
   is_question: boolean;
@@ -89,13 +88,20 @@ const EXPORT_COLUMN_SET: Record<keyof ExportRow, true> = { subproject_name: true
 export const EXPORT_COLUMNS = Object.keys(EXPORT_COLUMN_SET) as (keyof ExportRow)[];
 
 /**
- * Valori codificati con un'etichetta nei cataloghi (T-2103): gruppo del catalogo e valori noti. Le etichette sono quelle
- * della pagina dei risultati dove esistono; le sorgenti sono quelle scritte dalla pipeline.
+ * Valori codificati con un'etichetta nei cataloghi (T-2103): gruppo del catalogo, valori noti ed eventuale chiave del
+ * catalogo diversa dal valore. Le etichette sono quelle della pagina dei risultati dove esistono; le sorgenti sono
+ * quelle scritte dalla pipeline; la revisione mostra solo Tenuta o Scartata (T-2402, regola di T-2401).
  */
-const VALUE_LABELS: Partial<Record<keyof ExportRow, { group: string; values: readonly string[] }>> = {
+const VALUE_LABELS: Partial<
+  Record<keyof ExportRow, { group: string; values: readonly string[]; key?: (value: string) => string }>
+> = {
   source: { group: "export.values.source", values: ["seed", "google-direct", "mock-autocomplete"] },
   brand_status: { group: "results.brand", values: Object.values(BrandStatus) },
-  review_status: { group: "results.review", values: Object.values(ReviewStatus) },
+  review_status: {
+    group: "export.values.review",
+    values: Object.values(ReviewStatus),
+    key: (value) => (value === ReviewStatus.rejected ? "discarded" : "kept"),
+  },
   keyword_type: { group: "results.type", values: Object.values(KeywordType) },
   search_intent: { group: "results.intent", values: Object.values(SearchIntent) },
   metrics_status: { group: "export.values.metricsStatus", values: Object.values(MetricsStatus) },
@@ -122,9 +128,9 @@ export type ExportLabels = {
 export function exportLabels(locale: string): ExportLabels {
   const t = catalogTranslator(locale);
   const labels = new Map(
-    Object.entries(VALUE_LABELS).map(([column, { group, values }]) => [
+    Object.entries(VALUE_LABELS).map(([column, { group, values, key }]) => [
       column,
-      new Map(values.map((value) => [value, t(`${group}.${value}`)])),
+      new Map(values.map((value) => [value, t(`${group}.${key ? key(value) : value}`)])),
     ])
   );
   return {
@@ -150,7 +156,6 @@ function toExportRow(row: ExportSourceRow): ExportRow {
     source_query: row.source_query,
     brand_status: row.brand_status,
     review_status: row.review_status,
-    selected_for_export: row.selected_for_export,
     keyword_type: row.keyword_type,
     search_intent: row.search_intent,
     is_question: row.is_question,
@@ -239,20 +244,10 @@ export function serializeCsv(rows: ExportRow[], options: { dialect: CsvDialect; 
 }
 
 /**
- * Regola di revisione di ogni scope (T-807, D-23). Rifiutate escluse da tutti gli scope tranne filtered,
- * che applica solo i filtri della vista.
- */
-const SCOPE_CLAUSES: Record<ExportScope, Prisma.KeywordCandidateWhereInput[]> = {
-  approved: [{ review_status: "approved" }, { brand_status: { not: "excluded" } }],
-  selected: [{ selected_for_export: true }, { review_status: { not: "rejected" } }],
-  review: [{ review_status: "pending" }],
-  "non-excluded": [{ brand_status: { not: "excluded" } }, { review_status: { not: "rejected" } }],
-  filtered: [],
-};
-
-/**
- * Unica fonte del where di export (file e Google Sheets): la regola dello scope in AND con la vista
- * corrente, cioè progetto verificato, sezione già verificata dalla route e filtri da parseResultsFilters.
+ * Unica fonte del where di export, file e Google Sheets (T-2402, D-23 emendata). Il perimetro è il progetto verificato,
+ * con la sezione (argomento) già verificata dalla route se c'è: kept = le keyword tenute del perimetro, all = tutte,
+ * scartate comprese, entrambe senza i filtri della vista; filtered = esattamente la vista corrente con tutti i suoi
+ * filtri da parseResultsFilters (stato tenute o scartate compreso).
  */
 export function buildExportWhere(
   projectId: string,
@@ -260,7 +255,11 @@ export function buildExportWhere(
   filters: ResultsFilters,
   subprojectId?: string | null
 ): Prisma.KeywordCandidateWhereInput {
-  return { AND: [...buildResultsClauses(projectId, filters, subprojectId), ...SCOPE_CLAUSES[scope]] };
+  if (scope === "filtered") {
+    return { AND: buildResultsClauses(projectId, filters, subprojectId) };
+  }
+  const perimeter = buildResultsClauses(projectId, {}, subprojectId);
+  return { AND: scope === "kept" ? [...perimeter, KEPT_WHERE] : perimeter };
 }
 
 /** Righe lette da ogni findMany dell'export (T-805): in memoria resta un blocco, non l'intero set. */

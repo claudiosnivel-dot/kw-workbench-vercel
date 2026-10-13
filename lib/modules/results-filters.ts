@@ -1,13 +1,17 @@
-import { BrandStatus, KeywordType, Prisma, ReviewStatus, SearchIntent } from "@/lib/generated/prisma/client";
+import { BrandStatus, KeywordType, Prisma, SearchIntent } from "@/lib/generated/prisma/client";
 import { readFlag, readNumber, readParam, type SearchParamsSource } from "@/lib/http/search-params";
+import { DISCARDED_WHERE, KEPT_WHERE } from "@/lib/modules/keep-rule";
+import { KEEP_STATUSES, type KeepStatus, KEYWORD_CHIPS, type KeywordChip } from "@/lib/modules/keywords-options";
 
 export type ResultsFilters = {
   searchText?: string;
   minVolume?: number;
   maxVolume?: number;
   brandStatus?: BrandStatus;
-  reviewStatus?: ReviewStatus;
-  selectedOnly?: boolean;
+  /** Tenute o scartate (T-2401): sostituisce i vecchi filtri reviewStatus e selectedOnly. */
+  status?: KeepStatus;
+  /** Filtro rapido della pagina delle keyword (T-2403). */
+  chip?: KeywordChip;
   searchIntent?: SearchIntent;
   keywordType?: KeywordType;
   questionOnly?: boolean;
@@ -16,7 +20,6 @@ export type ResultsFilters = {
 };
 
 const BRAND_STATUS = new Set<BrandStatus>(["allowed", "excluded", "review"]);
-const REVIEW_STATUS = new Set<ReviewStatus>(["pending", "approved", "rejected"]);
 const SEARCH_INTENTS = new Set<SearchIntent>([
   "informational",
   "commercial",
@@ -36,9 +39,18 @@ const KEYWORD_TYPES = new Set<KeywordType>([
   "content_topic",
 ]);
 
+/** Clausola di ogni filtro rapido (T-2403): domande, per comprare, locali e marchi (consentiti esclusi). */
+export const CHIP_WHERE: Record<KeywordChip, Prisma.KeywordCandidateWhereInput> = {
+  questions: { is_question: true },
+  buy: { search_intent: { in: ["commercial", "transactional"] } },
+  local: { is_local_intent: true },
+  brands: { brand_status: { not: "allowed" } },
+};
+
 export function parseResultsFilters(source: SearchParamsSource): ResultsFilters {
   const brandStatusValue = readParam(source, "brandStatus");
-  const reviewStatusValue = readParam(source, "reviewStatus");
+  const statusValue = readParam(source, "status");
+  const chipValue = readParam(source, "chip");
   const searchIntentValue = readParam(source, "searchIntent");
   const keywordTypeValue = readParam(source, "keywordType");
 
@@ -47,11 +59,8 @@ export function parseResultsFilters(source: SearchParamsSource): ResultsFilters 
     minVolume: readNumber(source, "minVolume"),
     maxVolume: readNumber(source, "maxVolume"),
     brandStatus: brandStatusValue && BRAND_STATUS.has(brandStatusValue as BrandStatus) ? (brandStatusValue as BrandStatus) : undefined,
-    reviewStatus:
-      reviewStatusValue && REVIEW_STATUS.has(reviewStatusValue as ReviewStatus)
-        ? (reviewStatusValue as ReviewStatus)
-        : undefined,
-    selectedOnly: readFlag(source, "selectedOnly"),
+    status: KEEP_STATUSES.includes(statusValue as KeepStatus) ? (statusValue as KeepStatus) : undefined,
+    chip: KEYWORD_CHIPS.includes(chipValue as KeywordChip) ? (chipValue as KeywordChip) : undefined,
     searchIntent:
       searchIntentValue && SEARCH_INTENTS.has(searchIntentValue as SearchIntent)
         ? (searchIntentValue as SearchIntent)
@@ -107,12 +116,12 @@ export function buildResultsClauses(
     andFilters.push({ brand_status: filters.brandStatus });
   }
 
-  if (filters.reviewStatus) {
-    andFilters.push({ review_status: filters.reviewStatus });
+  if (filters.status) {
+    andFilters.push(filters.status === "kept" ? KEPT_WHERE : DISCARDED_WHERE);
   }
 
-  if (filters.selectedOnly) {
-    andFilters.push({ selected_for_export: true });
+  if (filters.chip) {
+    andFilters.push(CHIP_WHERE[filters.chip]);
   }
 
   if (filters.searchIntent) {

@@ -50,7 +50,8 @@ describe("NewTopicDialog", () => {
     const [runUrl, runInit] = fetchMock.mock.calls[1];
     expect(runUrl).toBe("/api/projects/P/subprojects/T/run");
     expect(runInit?.method).toBe("POST");
-    expect(router.push).toHaveBeenCalledWith("/projects/P/results?subprojectId=T");
+    // impacted-by: T-2403 (i risultati dell'argomento sono la pagina delle sue keyword)
+    expect(router.push).toHaveBeenCalledWith("/projects/P/keywords/T");
   });
 
   it("con un nome già usato mostra il messaggio sotto il campo e non avvia nulla", async () => {

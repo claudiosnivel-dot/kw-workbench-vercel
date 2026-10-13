@@ -142,7 +142,7 @@ describe("Google Sheets con scope drive.file", () => {
       url: `/api/projects/${project.id}/export/google-sheets`,
       cookie,
       params: { id: project.id },
-      body: { fileName: "Export", scope: "non-excluded" },
+      body: { fileName: "Export", scope: "kept" },
     });
 
     expect(response.status).toBe(200);

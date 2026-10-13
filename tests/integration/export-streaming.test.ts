@@ -217,7 +217,8 @@ describe("export CSV nella lingua dell'utente (T-2103)", () => {
       callRoute(postLocale, { method: "POST", url: "/api/locale", cookie: owner.cookie, body: { locale } });
     const download = async () => {
       const response = await callRoute(exportProject, {
-        url: `/api/projects/${project.id}/export?format=csv&scope=approved`,
+        // impacted-by: T-2402 (scope kept al posto di approved)
+        url: `/api/projects/${project.id}/export?format=csv&scope=kept`,
         cookie: owner.cookie,
         params: { id: project.id },
       });
@@ -232,11 +233,12 @@ describe("export CSV nella lingua dell'utente (T-2103)", () => {
     const english = await download();
 
     expect(header(italian[0])).toEqual(EXPORT_COLUMNS.map((column) => it_.export.columns[column]));
-    expect(header(italian[0])).toHaveLength(23);
-    expect(cell(italian[1], "review_status")).toBe(it_.results.review.approved);
+    // impacted-by: T-2401 (22 colonne, senza la selezione), T-2402 (la revisione mostra Tenuta o Scartata)
+    expect(header(italian[0])).toHaveLength(22);
+    expect(cell(italian[1], "review_status")).toBe(it_.export.values.review.kept);
     expect(cell(italian[1], "is_question")).toBe("Sì");
     expect(header(english[0])).toEqual(EXPORT_COLUMNS.map((column) => en.export.columns[column]));
-    expect(cell(english[1], "review_status")).toBe(en.results.review.approved);
+    expect(cell(english[1], "review_status")).toBe(en.export.values.review.kept);
     expect(cell(english[1], "is_question")).toBe("Yes");
   });
 });

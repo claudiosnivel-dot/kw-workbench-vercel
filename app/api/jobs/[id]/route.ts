@@ -16,5 +16,5 @@ export const GET = withApiErrors(async (request: Request, { params }: { params: 
   const { resumed, failed } = await reapStaleJobs({ jobId: job.id });
   const current = resumed + failed > 0 ? await prisma.job.findUniqueOrThrow({ where: { id: job.id } }) : job;
 
-  return NextResponse.json(jobStatusBody(current), { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(await jobStatusBody(current), { headers: { "Cache-Control": "no-store" } });
 });

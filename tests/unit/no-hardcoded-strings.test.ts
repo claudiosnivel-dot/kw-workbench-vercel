@@ -28,9 +28,6 @@ const I18N_MIGRATED_FILES = [
   "components/set-default-section-button.tsx",
   "components/run-extraction-button.tsx",
   "components/job-progress.tsx",
-  "app/projects/[id]/results/page.tsx",
-  "components/results-table.tsx",
-  "components/google-sheets-export-button.tsx",
   "components/planner-export-download.tsx",
   "components/planner-import-upload.tsx",
   // T-1303: impostazioni, admin, integrazioni e pagine d'errore. components/google-ads-integration-card.tsx non esiste
@@ -98,6 +95,25 @@ const I18N_MIGRATED_FILES = [
   "components/next-step-bar.tsx",
   "components/next-step-action.tsx",
   "components/user-menu.tsx",
+  // T-2401…T-2406: pagina delle keyword, ricerca in corso, parole di partenza, volumi ed Esporta nascono già con il
+  // catalogo; sostituiscono app/projects/[id]/results/page.tsx, components/results-table.tsx e
+  // components/google-sheets-export-button.tsx, rimossi.
+  "app/projects/[id]/keywords/page.tsx",
+  "app/projects/[id]/keywords/[topicId]/page.tsx",
+  "components/keywords/keywords-board.tsx",
+  "components/keywords/keyword-table.tsx",
+  "components/keywords/keyword-toolbar.tsx",
+  "components/keywords/topic-actions.tsx",
+  "components/topic-seeds-dialog.tsx",
+  "components/search-progress.tsx",
+  "components/add-volumes-dialog.tsx",
+  "components/export-dialog.tsx",
+  "components/rename-dialog.tsx",
+  "components/confirm-delete-dialog.tsx",
+  "components/progress-bar.tsx",
+  "components/entity-menu.tsx",
+  "components/dialog-actions.tsx",
+  "components/classification-select.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

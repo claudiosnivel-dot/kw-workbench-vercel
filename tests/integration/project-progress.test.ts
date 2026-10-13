@@ -48,7 +48,8 @@ describe("loadProjectProgress", () => {
     ]);
   });
 
-  it("conta come tenute solo le keyword non rifiutate e non escluse dal filtro marchi; l'ultima strategia vince", async () => {
+  // impacted-by: T-2401 (regola unica tieni/scarta: tenuta = non scartata, anche un marchio escluso tenuto a mano)
+  it("conta come tenute le keyword non scartate, anche un marchio escluso tenuto a mano; l'ultima strategia vince", async () => {
     const { workspaceId } = await createUserWithSession();
     const project = await prisma.project.create({ data: { name: "Negozio", workspace_id: workspaceId } });
     const topic = await createTopic(project.id, "Scarpe", 0);
@@ -56,7 +57,8 @@ describe("loadProjectProgress", () => {
       data: [
         ...keywordRows(project.id, topic.id, ["a", "b"]),
         ...keywordRows(project.id, topic.id, ["c"], { review_status: "rejected" }),
-        ...keywordRows(project.id, topic.id, ["d"], { brand_status: "excluded" }),
+        ...keywordRows(project.id, topic.id, ["d"], { brand_status: "excluded", review_status: "approved" }),
+        ...keywordRows(project.id, topic.id, ["e"], { brand_status: "excluded", review_status: "rejected" }),
       ],
     });
     const strategyData = { project_id: project.id, mode: "AUTO" as const, settings: {}, language: "it" };
@@ -66,8 +68,8 @@ describe("loadProjectProgress", () => {
 
     const progress = await loadProjectProgress(project.id);
 
-    expect(progress.topics[0]).toMatchObject({ keptCount: 2, totalCount: 4 });
-    expect(progress.keptCount).toBe(2);
+    expect(progress.topics[0]).toMatchObject({ keptCount: 3, totalCount: 5 });
+    expect(progress.keptCount).toBe(3);
     expect(progress.latestStrategy).toEqual({ id: latest.id, pageCount: 0 });
     expect(progress.next).toEqual({ kind: "open_plan", strategyId: latest.id });
   });

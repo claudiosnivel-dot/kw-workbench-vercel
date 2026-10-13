@@ -22,9 +22,11 @@ type DownloadParams = {
   csvDialect: CsvDialect;
   /** Lingua del file: spiegazioni del PDF (T-1907), intestazioni ed etichette di CSV e XLSX (T-2102). */
   locale: string;
+  /** Logo del branding sulla copertina del PDF; false con logo=0 dalla finestra Esporta (T-2406): solo il nome. */
+  withLogo: boolean;
 };
 
-async function pdfOf({ project, strategy, locale }: DownloadParams): Promise<Buffer> {
+async function pdfOf({ project, strategy, locale, withLogo }: DownloadParams): Promise<Buffer> {
   const settings = (strategy.settings ?? {}) as { sectionId?: string | null };
   const [workspace, section, branding] = await Promise.all([
     prisma.workspace.findUniqueOrThrow({ where: { id: project.workspace_id }, select: { name: true } }),
@@ -39,7 +41,7 @@ async function pdfOf({ project, strategy, locale }: DownloadParams): Promise<Buf
     workspaceName: workspace.name,
     sectionName: section?.name ?? null,
     appName: branding.appName,
-    logo: await loadPdfLogo(branding.logoUrl),
+    logo: withLogo ? await loadPdfLogo(branding.logoUrl) : null,
     locale,
     generatedAt: new Date(),
   });

@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ExportDialog, type ExportOrigin } from "@/components/export-dialog";
+import { ExportViewProvider, useExportView } from "@/components/export-view-context";
 import { NewTopicDialog } from "@/components/new-topic-dialog";
 import { NextStepBar } from "@/components/next-step-bar";
 import { ProjectSidebar } from "@/components/project-sidebar";
@@ -13,10 +15,12 @@ import { useModalFocus } from "@/lib/client/use-modal-focus";
 import type { ProjectProgressData } from "@/lib/modules/next-step";
 
 type ProjectShellProps = {
-  project: { id: string; name: string; defaultTopicId: string | null };
+  project: { id: string; name: string };
   progress: ProjectProgressData;
   /** Progetti del workspace con l'attività più recente, per il menu dei progetti nella barra in alto. */
   recentProjects: { id: string; name: string }[];
+  /** Per la finestra Esporta (T-2406): Google Sheets collegato e logo del branding per la copertina del PDF. */
+  exportOptions: { sheetsConnected: boolean; hasLogo: boolean };
   children: ReactNode;
 };
 
@@ -29,13 +33,49 @@ function useNavSlot(): HTMLElement | null {
   return slot;
 }
 
+/** Pagina aperta per la finestra Esporta: argomento, vista del progetto o piano (T-2406). */
+function exportOrigin(pathname: string, projectId: string): ExportOrigin {
+  const base = `/projects/${projectId}`;
+  if (pathname.startsWith(`${base}/keywords/`)) {
+    return { kind: "topic", topicId: decodeURIComponent(pathname.slice(`${base}/keywords/`.length).split("/")[0]) };
+  }
+  return pathname.startsWith(`${base}/strategy`) ? { kind: "plan" } : { kind: "project" };
+}
+
+/**
+ * Finestra Esporta (T-2406) con la vista registrata dalla pagina. Sta fuori dalla barra in alto: il suo backdrop-filter
+ * farebbe da contenitore alla posizione fissa del dialogo.
+ */
+function ExportDialogHost({ project, progress, exportOptions, onClose }: Pick<ProjectShellProps, "project" | "progress" | "exportOptions"> & {
+  onClose: () => void;
+}) {
+  const pathname = usePathname();
+  const view = useExportView();
+  const latest = progress.latestStrategy;
+
+  return (
+    <ExportDialog
+      projectId={project.id}
+      projectName={project.name}
+      origin={exportOrigin(pathname, project.id)}
+      topics={progress.topics}
+      keptCount={progress.keptCount}
+      plan={view?.plan ?? (latest ? { strategyId: latest.id, pageCount: latest.pageCount } : null)}
+      view={view?.keywords ?? null}
+      sheetsConnected={exportOptions.sheetsConnected}
+      hasLogo={exportOptions.hasLogo}
+      onClose={onClose}
+    />
+  );
+}
+
 /**
  * Struttura comune delle pagine del progetto (T-2303, D-39): barra laterale a tappe a sinistra da 1024 px, pannello a
  * scomparsa dal pulsante ☰ della barra in alto sotto i 1024 px (focus trattenuto, Esc o clic fuori per chiudere, focus
  * restituito al pulsante), barra del prossimo passo in fondo all'area del contenuto e dialogo Nuovo argomento, aperto
- * dalla barra laterale o dalla barra del prossimo passo.
+ * dalla barra laterale o dalla barra del prossimo passo. Nella barra in alto anche il pulsante Esporta (T-2406).
  */
-export function ProjectShell({ project, progress, recentProjects, children }: ProjectShellProps) {
+export function ProjectShell({ project, progress, recentProjects, exportOptions, children }: ProjectShellProps) {
   const t = useTranslations("nav");
   const tShell = useTranslations("project.shell");
   const pathname = usePathname();
@@ -44,6 +84,8 @@ export function ProjectShell({ project, progress, recentProjects, children }: Pr
   const drawerRef = useRef<HTMLDivElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [newTopicOpen, setNewTopicOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const tExport = useTranslations("exportDialog");
 
   const closeDrawer = () => setDrawerOpen(false);
   useModalFocus(drawerOpen, drawerRef, closeDrawer);
@@ -59,11 +101,11 @@ export function ProjectShell({ project, progress, recentProjects, children }: Pr
   };
 
   const sidebar = (
-    <ProjectSidebar projectId={project.id} defaultTopicId={project.defaultTopicId} progress={progress} onAddTopic={addTopic} />
+    <ProjectSidebar projectId={project.id} progress={progress} onAddTopic={addTopic} />
   );
 
   return (
-    <>
+    <ExportViewProvider>
       {slot &&
         createPortal(
           <>
@@ -80,6 +122,18 @@ export function ProjectShell({ project, progress, recentProjects, children }: Pr
               </svg>
             </button>
             <ProjectSwitcher current={project} projects={recentProjects} />
+            {/* Sotto i 640 px solo l'icona: la barra in alto ha posto per marchio, ☰, progetto e menu dell'utente. */}
+            <button
+              type="button"
+              className="btn-secondary project-export-button shrink-0"
+              aria-label={tExport("open")}
+              onClick={() => setExportOpen(true)}
+            >
+              <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4 sm:hidden" aria-hidden="true">
+                <path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 14v2h12v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="hidden sm:inline">{tExport("open")}</span>
+            </button>
           </>,
           slot
         )}
@@ -114,6 +168,9 @@ export function ProjectShell({ project, progress, recentProjects, children }: Pr
       )}
 
       {newTopicOpen && <NewTopicDialog projectId={project.id} onClose={() => setNewTopicOpen(false)} />}
-    </>
+      {exportOpen && (
+        <ExportDialogHost project={project} progress={progress} exportOptions={exportOptions} onClose={() => setExportOpen(false)} />
+      )}
+    </ExportViewProvider>
   );
 }

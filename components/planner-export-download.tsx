@@ -9,7 +9,7 @@ type PlannerExportSummary = {
   skipped: { keyword: string; reason: string }[];
 };
 
-/** Download dei file per Keyword Planner (T-904), primo passo del round-trip dei volumi (D-09). */
+/** Download dei file per Keyword Planner (T-904), primo passo del round-trip dei volumi (D-09) in «Aggiungi i volumi» (T-2405). */
 export function PlannerExportDownload({ projectId, subprojectId }: { projectId: string; subprojectId: string | null }) {
   const t = useTranslations("export.planner");
   const { data: summary, error, loading, load } = useApiData<PlannerExportSummary>();
@@ -22,7 +22,6 @@ export function PlannerExportDownload({ projectId, subprojectId }: { projectId: 
 
   return (
     <div className="space-y-2 text-sm">
-      <p className="text-slate-600">{t("steps")}</p>
       <button className="btn-secondary w-full sm:w-auto" type="button" onClick={prepare} disabled={loading}>
         {loading ? t("preparing") : t("exportButton")}
       </button>
