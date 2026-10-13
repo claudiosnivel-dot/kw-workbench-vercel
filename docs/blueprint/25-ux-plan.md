@@ -270,6 +270,7 @@ Oggi la pagina della strategia è alta circa 12.500 px, con gli strumenti di mod
 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
+- Moduli 23-26 approvati dall'utente il 2026-10-13 («approvo»), con le differenze dai mockup e le scelte dell'agente elencate nei Self-check.
 - Design approvato dall'utente il 2026-10-13: piano come bacheca T1 divisa per pagine principali (la mappa concettuale è stata scartata perché troppo grande), monitoraggio della scrittura di T2 come stato delle schede e raggruppamento per stato, pannello di dettaglio con modifica diretta, un solo piano per progetto con «Rigenera» che non tocca le pagine in scrittura o pubblicate e le strategie precedenti nello storico.
 - Emendamenti dichiarati: D-33 (rigenerare crea ancora una strategia nuova, ma il piano del progetto è la più recente e le pagine iniziate passano nella nuova), D-35 (la rigenerazione elimina la versione più vecchia oltre 20 invece di rispondere 409). Export della strategia con la colonna Stato: aggiornamento del test confermato in anticipo con D-39.
 - Gate umani: nessuna baseline visiva tocca la pagina del piano; resta il gate dei moduli 23 e 24 se l'E2E riscrive le loro baseline.

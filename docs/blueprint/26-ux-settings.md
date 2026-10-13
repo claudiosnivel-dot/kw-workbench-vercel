@@ -211,6 +211,7 @@ Dopo i moduli 23-25 restano le pagine di oggi per le sezioni e le impostazioni, 
 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
+- Moduli 23-26 approvati dall'utente il 2026-10-13 («approvo»), con le differenze dai mockup e le scelte dell'agente elencate nei Self-check.
 - Design approvato dall'utente il 2026-10-13: pagina Impostazioni a tre blocchi con Avanzate chiuse, lista dei marchi dei concorrenti (piccola funzione nuova sopra la tabella esistente brand_blacklist), impostazioni diverse per argomento solo dal suo menu, riordino degli argomenti nella barra laterale, fine della pagina Sezioni e della sezione predefinita, stile «A» (identità di oggi più regole d'ordine).
 - Emendamenti dichiarati: D-21 (la sezione predefinita non si sceglie più dall'interfaccia; default_subproject_id resta come ripiego).
 - Gate umani: nessuno previsto; se l'E2E riscrive le baseline visive di dashboard o risultati, la rigenerazione va approvata prima del merge.

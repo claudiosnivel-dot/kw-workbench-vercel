@@ -280,6 +280,7 @@ Le pagine interne del progetto (risultati, strategia, impostazioni) restano quel
 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
+- Moduli 23-26 approvati dall'utente il 2026-10-13 («approvo»), con le differenze dai mockup e le scelte dell'agente elencate nei Self-check.
 - Design approvato dall'utente per sezioni il 2026-10-13 con mockup nel browser: profilo d'uso a strati (D1, guidato di default ed esperto a portata), traguardo = piano dei contenuti (D2), progetto = sito con argomenti e ingresso in un campo (D3), struttura «M1» (barra laterale numerata più barra del prossimo passo, scelta dall'utente come mix tra percorso a tappe e area di lavoro), home in due stati, rimozione dell'onboarding.
 - Gate umani: baseline visiva della dashboard da rigenerare e approvare prima del merge (T-2305).
 - Scelte dell'agente da confermare (rilievi): lingua e paese predefiniti dal progetto più recente del workspace e poi dalla lingua dell'interfaccia (it/IT, en/US); nome del progetto = topic con l'iniziale maiuscola; il progetto dell'avvio rapido in un workspace vuoto resta fuori dal limite dei progetti come quello dell'onboarding (T-2004, D-37); /onboarding reindirizza alla home invece di rispondere 404.
