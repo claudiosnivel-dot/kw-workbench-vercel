@@ -1,5 +1,6 @@
-// Gate di T-705 (AC-705-1…AC-705-4): il re-run conserva revisione, selezione e id delle keyword
-// ancora prodotte, rimuove le altre della sola sezione e aggiorna metriche e punteggio (D-19).
+// Gate di T-705 (AC-705-1…AC-705-4): il re-run conserva revisione e id delle keyword ancora prodotte, rimuove le
+// altre della sola sezione e aggiorna metriche e punteggio (D-19).
+// impacted-by: T-2401 (la selezione per l'export non esiste più, D-19 emendata: AC-705-1 e AC-705-3 senza selezione)
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
 import { prisma } from "@/lib/prisma";
@@ -44,10 +45,11 @@ vi.mock("@/lib/modules/providers/metrics/factory", () => ({
 const SEED = "scarpe";
 const APPROVED = ["scarpe running", "scarpe trail", "scarpe tennis"];
 const REJECTED = ["scarpe usate", "scarpe gratis"];
-const DESELECTED = "scarpe eleganti";
-const FIRST_RUN = [...APPROVED, ...REJECTED, DESELECTED];
+// impacted-by: T-2401 (era la keyword deselezionata: ora resta solo da rivedere)
+const UNTOUCHED = "scarpe eleganti";
+const FIRST_RUN = [...APPROVED, ...REJECTED, UNTOUCHED];
 // Il secondo run produce ancora 4 delle 6 keyword revisionate.
-const STILL_PRODUCED = ["scarpe running", "scarpe trail", "scarpe usate", DESELECTED];
+const STILL_PRODUCED = ["scarpe running", "scarpe trail", "scarpe usate", UNTOUCHED];
 const NO_LONGER_PRODUCED = ["scarpe tennis", "scarpe gratis"];
 
 async function createProject() {
@@ -88,16 +90,12 @@ async function reviewFirstRun(sectionId: string) {
     where: { subproject_id: sectionId, keyword: { in: REJECTED } },
     data: { review_status: "rejected" },
   });
-  await prisma.keywordCandidate.updateMany({
-    where: { subproject_id: sectionId, keyword: DESELECTED },
-    data: { selected_for_export: false },
-  });
 }
 
 async function snapshotOf(sectionId: string, keywords: string[]) {
   const rows = await prisma.keywordCandidate.findMany({
     where: { subproject_id: sectionId, keyword: { in: keywords } },
-    select: { keyword: true, id: true, review_status: true, selected_for_export: true },
+    select: { keyword: true, id: true, review_status: true },
     orderBy: { keyword: "asc" },
   });
   return rows;
@@ -111,7 +109,7 @@ beforeEach(async () => {
 
 describe("re-run di una sezione già revisionata", () => {
   // covers: AC-705-1
-  it("le keyword ancora prodotte conservano id, revisione e selezione", async () => {
+  it("le keyword ancora prodotte conservano id e revisione", async () => {
     const { sectionId } = await createProject();
     await runWith(sectionId, FIRST_RUN);
     await reviewFirstRun(sectionId);
@@ -122,11 +120,11 @@ describe("re-run di una sezione già revisionata", () => {
 
     const after = await snapshotOf(sectionId, STILL_PRODUCED);
     expect(after).toEqual(before);
-    expect(after.map((row) => [row.keyword, row.review_status, row.selected_for_export])).toEqual([
-      ["scarpe eleganti", "pending", false],
-      ["scarpe running", "approved", true],
-      ["scarpe trail", "approved", true],
-      ["scarpe usate", "rejected", true],
+    expect(after.map((row) => [row.keyword, row.review_status])).toEqual([
+      ["scarpe eleganti", "pending"],
+      ["scarpe running", "approved"],
+      ["scarpe trail", "approved"],
+      ["scarpe usate", "rejected"],
     ]);
   });
 
@@ -164,7 +162,7 @@ describe("re-run di una sezione già revisionata", () => {
   });
 
   // covers: AC-705-3
-  it("le keyword nuove ricevono i default: pending e selezionata, rejected se il brand è escluso", async () => {
+  it("le keyword nuove ricevono i default: pending, rejected se il brand è escluso", async () => {
     const { sectionId } = await createProject();
     await runWith(sectionId, FIRST_RUN);
     await reviewFirstRun(sectionId);
@@ -177,8 +175,8 @@ describe("re-run di una sezione già revisionata", () => {
     const branded = await prisma.keywordCandidate.findFirstOrThrow({
       where: { subproject_id: sectionId, keyword: "scarpe nike nuove" },
     });
-    expect([fresh.review_status, fresh.selected_for_export]).toEqual(["pending", true]);
-    expect([branded.review_status, branded.selected_for_export]).toEqual(["rejected", false]);
+    expect(fresh.review_status).toBe("pending");
+    expect(branded.review_status).toBe("rejected");
   });
 
   // covers: AC-705-4

@@ -9,7 +9,7 @@ import { SubprojectForm } from "@/components/subproject-form";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { activeJobIdOf } from "@/lib/modules/jobs/job-api";
 import { requireProjectPage, SECTIONS_WITH_STATS } from "@/lib/modules/project-pages";
-import { resultsHref } from "@/lib/modules/results-view";
+import { keywordsHref } from "@/lib/modules/results-view";
 import { sectionDeleteTarget } from "@/lib/view/delete-targets";
 import { jobStatusTone } from "@/lib/view/format";
 
@@ -82,7 +82,7 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                         <Link className="btn-secondary" href={`/projects/${project.id}/subprojects/${section.id}`}>
                           {t("sections.manage.renameSettings")}
                         </Link>
-                        <Link className="btn-secondary" href={resultsHref(project.id, { subprojectId: section.id })}>
+                        <Link className="btn-secondary" href={keywordsHref(project.id, { subprojectId: section.id })}>
                           {t("sections.manage.results")}
                         </Link>
                         <SetDefaultSectionButton
@@ -94,7 +94,7 @@ export default async function ProjectSectionsPage({ params }: { params: Promise<
                           runPath={`/api/projects/${project.id}/subprojects/${section.id}/run`}
                           label={t("sections.manage.run")}
                           runningLabel={t("sections.manage.running")}
-                          resultsHref={resultsHref(project.id, { subprojectId: section.id })}
+                          resultsHref={keywordsHref(project.id, { subprojectId: section.id })}
                           activeJobId={activeJobIdOf(latestJob)}
                         />
                         <DeleteEntityButton {...sectionDeleteTarget(project.id, section)} showInlineError={false} />

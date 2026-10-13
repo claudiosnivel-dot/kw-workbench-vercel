@@ -335,19 +335,19 @@ se rompe un comportamento esistente.
   acceptance_criteria:
     - id: AC-107-1
       given: "la fixture di 12 candidate del proprietario"
-      when: "si chiama GET /api/projects/{id}/export?format=csv&scope=non-excluded"
-      then: "status 200, Content-Type text/csv; charset=utf-8, Cache-Control no-store, Content-Disposition con filename titan-seo-{id}-project-non-excluded-AAAA-MM-GG.csv; i primi byte non sono EF BB BF; la prima riga elenca le 22 colonne da subproject_name a score separate da virgola; le righe sono il conteggio atteso più 1 (emendato da T-2201 il 2026-10-11: prefisso del nome del file titan-seo, D-38)"
+      when: "si chiama GET /api/projects/{id}/export?format=csv&scope=kept"
+      then: "status 200, Content-Type text/csv; charset=utf-8, Cache-Control no-store, Content-Disposition con filename titan-seo-{id}-project-kept-AAAA-MM-GG.csv; i primi byte non sono EF BB BF; la prima riga elenca le 22 colonne da subproject_name a score separate da virgola; le righe sono il conteggio atteso più 1 (emendato da T-2201 il 2026-10-11: prefisso del nome del file titan-seo, D-38; emendato da T-2402 il 2026-10-13: scope kept al posto di non-excluded, D-23 emendata)"
     - id: AC-107-2
       given: "la stessa fixture"
-      when: "si chiama l'export con format=xlsx e scope=selected"
-      then: "Content-Type application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; letto con exceljs il file ha un solo foglio keywords, la riga 1 contiene le 22 intestazioni nello stesso ordine del CSV e le righe dati sono pari al conteggio atteso per selected (emendato da T-2103 il 2026-10-11: il foglio è la traduzione di export.sheet e le intestazioni sono le etichette tradotte, in italiano per la fixture)"
+      when: "si chiama l'export con format=xlsx e scope=all"
+      then: "Content-Type application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; letto con exceljs il file ha un solo foglio keywords, la riga 1 contiene le 22 intestazioni nello stesso ordine del CSV e le righe dati sono pari al conteggio atteso per all (emendato da T-2103 il 2026-10-11: il foglio è la traduzione di export.sheet e le intestazioni sono le etichette tradotte, in italiano per la fixture; emendato da T-2401 e T-2402 il 2026-10-13: senza la colonna della selezione e con scope all al posto di selected)"
     - id: AC-107-3
       given: "la stessa fixture, con la candidata allowed e rejected"
-      when: "si chiama l'export con format=json per ciascuno scope approved, selected, review, non-excluded e filtered con searchIntent=commercial"
-      then: "ogni risposta è un array JSON di lunghezza pari al conteggio dichiarato per quello scope e l'array di non-excluded contiene la candidata rifiutata (impacted-by T-807)"
+      when: "si chiama l'export con format=json per ciascuno scope kept, all e filtered con searchIntent=commercial"
+      then: "ogni risposta è un array JSON di lunghezza pari al conteggio dichiarato per quello scope e l'array di kept non contiene la candidata rifiutata (impacted-by T-807; emendato da T-2402 il 2026-10-13: scope kept, all e filtered)"
     - id: AC-107-4
-      given: "un progetto senza candidate approvate"
-      when: "si chiama l'export con format=csv e scope=approved"
+      given: "un progetto senza candidate"
+      when: "si chiama l'export con format=csv e scope=kept"
       then: "status 200 con il BOM UTF-8 e la sola riga di intestazione (impacted-by T-804)"
 
   target_tests:
@@ -520,4 +520,5 @@ se rompe un comportamento esistente.
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Osservabilità: `ac_observability_check.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
+- AC-107-1…AC-107-4 emendati il 2026-10-13 nella costruzione del macrotask 24 (D-39, aggiornamento della caratterizzazione dell'export confermato in anticipo): la colonna selected_for_export non esiste più (T-2401) e gli scope sono kept, all e filtered (T-2402, D-23 emendata); nella caratterizzazione cambiano solo selezione, scope e valori della revisione. Il golden master della pipeline (T-106) perde solo la chiave selected_for_export delle righe fotografate.
 - AC-103-1, AC-107-4 e AC-109-4 emendati il 2026-10-13 nella costruzione del macrotask 23: AC-103-1 cerca Esci nel menu dell'utente (T-2304: la barra in alto non ha più il pulsante); AC-107-4 perde la parte dell'onboarding, rimosso con T-2306, e dichiara il file di oggi (BOM e intestazione, come già dal T-804); AC-109-4 passa dai tipi dell'onboarding, rimossi, ai tipi del prossimo passo di T-2302, con la stessa regola (modulo puro senza Prisma, componenti che non importano il modulo che legge il DB).

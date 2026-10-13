@@ -170,25 +170,6 @@
       "autoClassification": "Classificazione automatica",
       "autoClassificationHint": "Assegna intento e tipo keyword durante l'analisi."
     },
-    "detail": {
-      "intro": "Workspace operativo per gestire estrazione, revisione e risultati per sezione.",
-      "sections": "Sezioni:",
-      "keywords": "Keyword totali:",
-      "seeds": "Seed totali:",
-      "jobs": "Job totali:",
-      "runActive": "Avvia estrazione (sezione attiva)",
-      "openSectionResults": "Apri risultati sezione",
-      "projectResults": "Risultati tutto il progetto",
-      "manageSections": "Gestisci sezioni",
-      "noSections": "Nessuna sezione disponibile. Crea la prima sezione per iniziare.",
-      "selectActive": "Seleziona sezione attiva",
-      "activeSection": "Sezione attiva: {name}",
-      "activeCounts": "Seed: {seeds} - Keyword: {keywords} - Job: {jobs}",
-      "lastUpdate": "Ultimo aggiornamento: {date}",
-      "openSectionSettings": "Apri impostazioni sezione",
-      "lastJob": "Ultimo job: {status}",
-      "noJob": "Nessun job avviato"
-    },
     "settings": {
       "title": "Impostazioni progetto",
       "intro": "Qui imposti i default del contenitore. Ogni sezione può ereditare questi valori o usare override dedicati.",
@@ -303,38 +284,10 @@
     }
   },
   "results": {
-    "titleSection": "Risultati - {project} / {section}",
-    "titleAll": "Risultati - {project} / Tutte le sezioni",
-    "activeSection": "Sezione attiva",
-    "wholeProject": "Tutto il progetto",
-    "noClassification": "Classificazione automatica non disponibile per la lingua {language}",
-    "shownSection": "Mostrate {filtered} keyword su {total} nella sezione {section}.",
-    "shownProject": "Mostrate {filtered} keyword su {total} nel progetto. Totale progetto: {total}.",
-    "rows": "Riga {start}-{end} di {filtered} (pagina {page}/{totalPages})",
-    "filters": {
-      "section": "Sezione",
-      "searchText": "Testo ricerca",
-      "minVolume": "Volume minimo",
-      "maxVolume": "Volume massimo",
-      "brandStatus": "Stato brand",
-      "reviewStatus": "Stato revisione",
-      "searchIntent": "Intento di ricerca",
-      "keywordType": "Tipo keyword",
-      "selectedOnly": "solo selezionate",
-      "questionOnly": "solo domande",
-      "toolIntentOnly": "solo intent tool",
-      "commercialOnly": "solo commerciali",
-      "apply": "Applica filtri"
-    },
     "brand": {
       "allowed": "consentito",
       "excluded": "escluso",
       "review": "da rivedere"
-    },
-    "review": {
-      "pending": "in attesa",
-      "approved": "approvato",
-      "rejected": "rifiutato"
     },
     "intent": {
       "informational": "informativo",
@@ -353,76 +306,10 @@
       "service": "servizio",
       "product": "prodotto",
       "content_topic": "tema contenuto"
-    },
-    "table": {
-      "actions": {
-        "approve": "Approva",
-        "reject": "Rifiuta",
-        "mark-review": "Segna review",
-        "select": "Seleziona per export",
-        "unselect": "Deseleziona per export"
-      },
-      "bulkLabel": "Azione massiva",
-      "applying": "Applicazione...",
-      "applyTo": "Applica a {count} selezionate",
-      "bulkHint": "Azioni massive: approva, rifiuta, review, seleziona, deseleziona.",
-      "allFilteredSelected": "Selezionate tutte le {count} keyword filtrate.",
-      "onlyThisPage": "Solo le {count} di questa pagina",
-      "pageSelected": "Selezionate le {count} keyword di questa pagina.",
-      "selectAllFiltered": "Seleziona tutte le {count} keyword filtrate",
-      "selectAll": "Seleziona tutto",
-      "selectRow": "Seleziona {keyword}",
-      "columns": {
-        "section": "Sezione",
-        "keyword": "Keyword",
-        "source": "Sorgente",
-        "intent": "Intento",
-        "type": "Tipo",
-        "brand": "Brand",
-        "review": "Review",
-        "volume": "Volume",
-        "competition": "Competizione",
-        "score": "Score"
-      },
-      "empty": "Nessuna keyword candidata per questi filtri."
     }
   },
   "export": {
-    "title": "Export",
-    "hint": "Gli export usano la sezione e i filtri della vista corrente",
-    "links": {
-      "csvApproved": "CSV solo approvate",
-      "xlsxSelected": "XLSX solo selezionate",
-      "jsonReview": "JSON solo review",
-      "csvNonExcluded": "CSV tutte non escluse",
-      "xlsxFiltered": "XLSX vista filtrata corrente"
-    },
-    "scopes": {
-      "approved": "Solo approvate",
-      "selected": "Solo selezionate",
-      "review": "Solo review",
-      "non-excluded": "Tutte non escluse",
-      "filtered": "Vista filtrata corrente"
-    },
-    "sheets": {
-      "open": "Esporta su Google Sheets",
-      "title": "Export Google Sheets",
-      "notConnected": "Per esportare su Google Sheets devi prima collegare il tuo account Google da Personalizza.",
-      "goToPersonalize": "Vai a Personalizza",
-      "fileName": "Nome file Google Sheets",
-      "fileNamePlaceholder": "Piano editoriale keyword",
-      "fileNameRequired": "Inserisci un nome file.",
-      "scope": "Scope export",
-      "hint": "Ogni sezione del progetto con keyword esportate verrà creata come foglio separato nel file.",
-      "exporting": "Esportazione in corso...",
-      "exportNow": "Esporta ora",
-      "completed": "Export completato: {rows} keyword su {sheets} fogli.",
-      "openFile": "Apri file Google Sheets",
-      "strategyCompleted": "Export completato: {rows, plural, one {# pagina} other {# pagine}} nel foglio «Strategia»."
-    },
     "planner": {
-      "title": "Volumi da Keyword Planner",
-      "steps": "1. Scarica i file (una keyword per canonical, al massimo 1000 per file). 2. In Google Ads apri Keyword Planner, «Ottieni volume di ricerca e previsioni», e carica un file alla volta. 3. Scarica il risultato e importalo qui.",
       "preparing": "Preparazione...",
       "exportButton": "Esporta per Keyword Planner",
       "summary": "{canonicals} keyword in {parts} file.",
@@ -445,7 +332,6 @@
       "source_query": "Query di origine",
       "brand_status": "Stato brand",
       "review_status": "Stato revisione",
-      "selected_for_export": "Selezionata per export",
       "keyword_type": "Tipo di keyword",
       "search_intent": "Intento di ricerca",
       "is_question": "Domanda",
@@ -486,6 +372,10 @@
       "scoreSource": {
         "metrics": "metriche",
         "heuristic": "euristica"
+      },
+      "review": {
+        "kept": "Tenuta",
+        "discarded": "Scartata"
       }
     }
   },
@@ -544,7 +434,6 @@
     "JOB_NOT_FOUND": "Estrazione non trovata.",
     "JOB_NOT_CANCELABLE": "L'estrazione è già terminata.",
     "EXPORT_FORMAT_INVALID": "Formato di export non valido.",
-    "EXPORT_SCOPE_INVALID": "Scope di export non valido.",
     "EXPORT_DIALECT_INVALID": "Dialetto CSV non valido: usa excel-it o rfc4180.",
     "SHEETS_FILE_NAME_REQUIRED": "Nome file obbligatorio.",
     "SHEETS_NOT_CONNECTED": "Collega Google Sheets in Personalizza prima di esportare.",
@@ -1339,12 +1228,7 @@
       "unassignedCount": "{count, plural, one {# keyword non assegnata} other {# keyword non assegnate}}",
       "unassignedEmpty": "Tutte le keyword sono in una pagina.",
       "deleteStrategy": "Elimina strategia",
-      "h2Title": "H2",
-      "exportTitle": "Esporta il piano",
-      "exportCsv": "CSV",
-      "exportXlsx": "Excel",
-      "exportPdf": "PDF da presentare",
-      "exportHint": "Una riga per pagina nell'ordine di lavoro, con H1, H2, keyword e link interni."
+      "h2Title": "H2"
     },
     "pdf": {
       "coverTitle": "Strategia hub and spoke",
@@ -1490,5 +1374,189 @@
       "delete": "Elimina",
       "deleteTitle": "Eliminare il progetto?"
     }
+  },
+  "keywords": {
+    "projectTitle": "Tutte le keyword",
+    "counts": "{found, plural, one {# trovata} other {# trovate}} · {kept, plural, one {# tenuta} other {# tenute}}",
+    "noTopics": "Aggiungi il primo argomento",
+    "noTopicsHint": "Un argomento è un tema del sito: scrivi di cosa parla e Titan SEO cerca le keyword.",
+    "findMore": "+ Trova altre keyword",
+    "menu": "Altre azioni per {name}",
+    "menuSeeds": "Parole di partenza",
+    "menuRename": "Rinomina",
+    "menuDelete": "Elimina",
+    "rename": {
+      "title": "Rinomina l'argomento",
+      "label": "Nome dell'argomento",
+      "cancel": "Annulla",
+      "save": "Salva"
+    },
+    "delete": {
+      "title": "Eliminare l'argomento?",
+      "text": "L'argomento «{name}» e le sue keyword vengono eliminati. Non si può annullare.",
+      "cancel": "Annulla",
+      "confirm": "Elimina"
+    },
+    "chips": {
+      "label": "Filtri rapidi",
+      "all": "Tutte",
+      "questions": "Domande",
+      "buy": "Per comprare",
+      "local": "Locali",
+      "brands": "Marchi"
+    },
+    "search": {
+      "label": "Cerca una keyword",
+      "placeholder": "Cerca una keyword",
+      "submit": "Cerca"
+    },
+    "filters": {
+      "toggle": "Filtri",
+      "minVolume": "Ricerche al mese, minimo",
+      "maxVolume": "Ricerche al mese, massimo",
+      "intent": "Intento",
+      "type": "Tipo",
+      "any": "Qualsiasi",
+      "apply": "Applica",
+      "reset": "Togli i filtri"
+    },
+    "sort": {
+      "label": "Ordina",
+      "promising": "Più promettenti",
+      "searches": "Più cercate",
+      "az": "A-Z"
+    },
+    "columns": {
+      "toggle": "Colonne",
+      "source": "Fonte",
+      "intent": "Intento",
+      "type": "Tipo",
+      "competition": "Concorrenza",
+      "score": "Punteggio"
+    },
+    "table": {
+      "label": "Keyword tenute",
+      "discardedLabel": "Keyword scartate",
+      "action": "Tieni o scarta",
+      "topic": "Argomento",
+      "keyword": "Keyword",
+      "searches": "Ricerche al mese",
+      "potential": "Potenziale",
+      "potentialValue": "Potenziale {value} su 100",
+      "potentialMissing": "Potenziale non calcolato"
+    },
+    "row": {
+      "discard": "Scarta {keyword}",
+      "keep": "Tieni {keyword}"
+    },
+    "tags": {
+      "question": "domanda",
+      "buy": "per comprare",
+      "local": "locale",
+      "brandReview": "marchio? controlla"
+    },
+    "discarded": {
+      "toggle": "Scartate ({count})",
+      "hint": "Le keyword scartate non entrano nel piano dei contenuti."
+    },
+    "bulk": {
+      "keep": "Tieni queste {count}",
+      "discard": "Scarta queste {count}"
+    },
+    "empty": {
+      "filtered": "Nessuna keyword tenuta con questi filtri.",
+      "topic": "Ancora nessuna keyword: avvia la ricerca dalla barra in fondo o con «Trova altre keyword».",
+      "project": "Ancora nessuna keyword in questo progetto.",
+      "discarded": "Nessuna keyword scartata."
+    },
+    "saveFailed": "La scelta non è stata salvata: {reason}",
+    "rows": "{start}-{end} di {total}",
+    "searchProgress": {
+      "title": "Sto cercando le keyword…",
+      "phase": {
+        "expand": "Cerco i suggerimenti di Google",
+        "autocomplete": "Cerco i suggerimenti di Google",
+        "metrics": "Recupero i volumi di ricerca",
+        "store": "Salvo le keyword",
+        "done": "Salvo le keyword"
+      },
+      "found": "{count, plural, one {# keyword trovata finora} other {# keyword trovate finora}}",
+      "duration": "Di solito ci vuole qualche minuto.",
+      "preview": "Prime keyword trovate",
+      "previewHint": "Potrai scartarle appena la ricerca finisce.",
+      "cancel": "Annulla la ricerca",
+      "canceling": "Annullamento…",
+      "canceled": "Ricerca annullata.",
+      "failed": "La ricerca non è riuscita.",
+      "progress": "Avanzamento della ricerca"
+    },
+    "seeds": {
+      "title": "Parole di partenza",
+      "intro": "Titan SEO cerca su Google le ricerche che partono da queste parole.",
+      "current": "Parole attuali",
+      "empty": "Ancora nessuna parola di partenza.",
+      "remove": "Togli {seed}",
+      "addLabel": "Aggiungi parole di partenza, una per riga",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "saveAndSearch": "Salva e cerca",
+      "saving": "Salvataggio…"
+    },
+    "volumes": {
+      "notice": "Non sappiamo ancora quante persone cercano queste keyword.",
+      "open": "Aggiungi i volumi",
+      "title": "Aggiungi i volumi",
+      "autoTitle": "Recupero automatico",
+      "autoText": "Recuperiamo i volumi di ricerca con DataForSEO e rifacciamo la ricerca: le keyword tenute e scartate restano come sono.",
+      "autoButton": "Recupera i volumi",
+      "autoRunning": "Avvio…",
+      "guidedTitle": "Con Keyword Planner di Google Ads, gratis",
+      "step1": "Scarica il file con le keyword.",
+      "step2": "In Google Ads apri Keyword Planner, scegli «Ottieni volume di ricerca e previsioni» e carica il file.",
+      "step3": "Scarica il risultato da Keyword Planner e caricalo qui.",
+      "close": "Chiudi"
+    }
+  },
+  "exportDialog": {
+    "open": "Esporta",
+    "title": "Esporta",
+    "what": "Cosa vuoi esportare?",
+    "plan": "Il piano dei contenuti ({count, plural, one {# pagina} other {# pagine}})",
+    "planDisabled": "Costruisci prima il piano",
+    "keywords": "Le keyword ({count, plural, one {# tenuta} other {# tenute}})",
+    "which": "Quali keyword?",
+    "keptTopic": "Le tenute di «{topic}» ({count})",
+    "keptProject": "Le tenute di tutto il progetto ({count})",
+    "filtered": "Solo quelle che vedi ora ({count})",
+    "all": "Tutte, comprese le scartate ({count})",
+    "format": "In che formato?",
+    "formats": {
+      "pdf": "PDF per il cliente",
+      "sheets": "Google Sheets",
+      "xlsx": "Excel",
+      "csv": "CSV",
+      "json": "JSON"
+    },
+    "sheetsNotConnected": "Google non è ancora collegato: collegalo e poi torna qui per creare il foglio.",
+    "connect": "Collega Google",
+    "logo": "Con il tuo logo in copertina",
+    "advanced": "Avanzate",
+    "csvDialect": "Separatore del CSV",
+    "csvExcel": "Excel italiano (punto e virgola)",
+    "csvStandard": "Standard (virgola)",
+    "sheetName": "Nome del file Google Sheets",
+    "sheetNameRequired": "Scrivi il nome del file.",
+    "actions": {
+      "pdf": "Scarica il PDF",
+      "xlsx": "Scarica l'Excel",
+      "csv": "Scarica il CSV",
+      "json": "Scarica il JSON",
+      "sheets": "Crea il foglio Google"
+    },
+    "creating": "Creo il foglio…",
+    "created": "Foglio creato con {rows, plural, one {# riga} other {# righe}}.",
+    "openSheet": "Apri il foglio",
+    "close": "Chiudi",
+    "planNone": "Il piano dei contenuti"
   }
 }

@@ -68,7 +68,6 @@ async function snapshotRows(subprojectId: string) {
       keyword_type: row.keyword_type,
       brand_status: row.brand_status,
       review_status: row.review_status,
-      selected_for_export: row.selected_for_export,
       metrics_status: row.metrics_status,
       avg_monthly_searches: row.avg_monthly_searches,
     }))

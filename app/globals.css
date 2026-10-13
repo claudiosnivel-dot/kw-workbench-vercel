@@ -379,8 +379,17 @@ a {
 }
 
 .project-switcher-button {
-  max-width: min(22rem, 46vw);
+  max-width: min(22rem, 46vw, 100%);
   padding: 0.5rem 0.75rem;
+}
+
+/* Pulsante Esporta della barra in alto (T-2406): quadrato con l'icona sotto i 640 px. */
+@media (max-width: 639px) {
+  .btn-secondary.project-export-button {
+    height: 2.5rem;
+    width: 2.5rem;
+    padding: 0;
+  }
 }
 
 .user-menu-button:hover,
@@ -654,6 +663,220 @@ a {
     flex-direction: row;
     align-items: center;
   }
+}
+
+/* Pagina delle keyword (T-2403): chip, strumenti, elenco con tieni/scarta e barra del potenziale. */
+.keyword-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+@media (max-width: 639px) {
+  .keyword-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+}
+
+.keyword-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border-strong);
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-700);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.keyword-chip:hover {
+  background: var(--nav-link-hover-bg);
+  color: var(--nav-link-hover-text);
+}
+
+.keyword-chip.is-active {
+  border-color: var(--brand-500);
+  background: var(--nav-link-active-bg);
+  color: var(--nav-link-active-text);
+  font-weight: 600;
+}
+
+.keyword-chip-count {
+  font-size: 0.75rem;
+  color: var(--text-500);
+}
+
+.btn-secondary.is-active {
+  border-color: var(--brand-500);
+}
+
+/* Select accanto ai pulsanti (Ordina): larga quanto il testo, non quanto la riga. */
+.select.is-inline {
+  width: auto;
+}
+
+.keyword-columns {
+  position: relative;
+}
+
+.keyword-columns > summary {
+  list-style: none;
+}
+
+.keyword-columns > summary::-webkit-details-marker {
+  display: none;
+}
+
+.keyword-columns-panel {
+  position: absolute;
+  right: 0;
+  z-index: 20;
+  margin-top: 0.4rem;
+  display: grid;
+  gap: 0.4rem;
+  min-width: 11rem;
+  border-radius: 14px;
+  border: 1px solid var(--surface-border-strong);
+  background: var(--input-bg-focus);
+  padding: 0.75rem;
+  box-shadow: var(--card-shadow);
+}
+
+.keyword-filters-panel {
+  display: grid;
+  gap: 0.75rem;
+  border-radius: 16px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-muted);
+  padding: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .keyword-filters-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.keyword-toggle {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border-strong);
+  color: var(--text-600);
+  font-size: 0.8rem;
+}
+
+.keyword-toggle:hover:not(:disabled) {
+  border-color: var(--brand-500);
+  color: var(--text-900);
+}
+
+.keyword-toggle.is-discarded {
+  border-color: var(--status-success-border);
+  color: var(--status-success-text);
+}
+
+.keyword-toggle:disabled {
+  opacity: 0.5;
+}
+
+.keyword-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border);
+  padding: 0.05rem 0.45rem;
+  font-size: 0.7rem;
+  color: var(--text-600);
+}
+
+.keyword-tag.is-warning {
+  border-color: var(--status-warn-border);
+  background: var(--status-warn-bg);
+  color: var(--status-warn-text);
+}
+
+.potential-track {
+  display: inline-block;
+  height: 0.45rem;
+  width: 5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+
+.potential-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--brand-500);
+}
+
+/* Riquadro della ricerca in corso e parole di partenza (T-2404). */
+.search-progress {
+  display: grid;
+  gap: 0.5rem;
+  border-radius: 16px;
+  border: 1px solid var(--surface-border-strong);
+  border-left: 3px solid var(--brand-500);
+  background: var(--surface-muted);
+  padding: 0.85rem 1rem;
+}
+
+.keyword-seed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border-strong);
+  padding: 0.15rem 0.25rem 0.15rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.keyword-seed-remove {
+  display: inline-flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: var(--text-600);
+}
+
+.keyword-seed-remove:hover {
+  background: var(--nav-link-hover-bg);
+}
+
+/* Scelte della finestra Esporta (T-2406). */
+.export-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border-radius: 12px;
+  border: 1px solid var(--surface-border);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.export-choice input {
+  margin-top: 0.2rem;
+}
+
+.export-choice:has(input:checked) {
+  border-color: var(--brand-500);
+}
+
+.export-choice.is-disabled {
+  opacity: 0.6;
 }
 
 .input,

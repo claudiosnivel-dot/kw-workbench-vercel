@@ -177,7 +177,7 @@ describe("funzioni del piano", () => {
     const response = await callRoute(exportSheets, {
       method: "POST",
       url: `/api/projects/${project.id}/export/google-sheets`,
-      body: { fileName: "Keyword", scope: "non-excluded" },
+      body: { fileName: "Keyword", scope: "kept" },
       cookie: member.cookie,
       params: { id: project.id },
     });

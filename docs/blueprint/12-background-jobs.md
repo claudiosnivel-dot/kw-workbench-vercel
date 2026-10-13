@@ -271,8 +271,8 @@ Il macrotask trasforma l'estrazione in un job ripartibile a passi brevi con budg
       then: "il testo 'Nessuna seed nella sezione' è visibile e il link 'Vedi risultati' è assente"
     - id: AC-1205-4
       given: "l'app avviata sul DB di test con provider MOCK, un utente seed e un job running inserito per la sua sezione con progress 3/10"
-      when: "l'utente apre la pagina del progetto, ricarica, poi il test porta il job a completed nel DB; infine l'utente avvia un'estrazione su una seconda sezione"
-      then: "dopo il ricaricamento la progressbar ha aria-valuenow=3; entro 5 s dal completamento è visibile 'Vedi risultati'; per la seconda sezione 'Vedi risultati' compare entro 60 s e la pagina risultati mostra almeno 1 riga di keyword"
+      when: "l'utente apre la pagina del progetto (che apre la sezione), ricarica, poi il test porta il job a completed nel DB; poi l'utente avvia la ricerca dalla barra del prossimo passo e infine da «Trova altre keyword» sulla seconda sezione"
+      then: "dopo il ricaricamento la progressbar del riquadro della ricerca ha aria-valuenow=3; entro 5 s dal completamento il riquadro sparisce perché la pagina si aggiorna da sola; dopo ciascun avvio l'elenco delle tenute mostra almeno 1 riga di keyword entro 60 s (emendato da T-2404 il 2026-10-13: la ricerca si segue e si avvia dalla pagina dell'argomento)"
 
   target_tests:
     - file: "tests/component/job-progress.test.tsx"
@@ -293,3 +293,4 @@ Il macrotask trasforma l'estrazione in un job ripartibile a passi brevi con budg
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
 - Emendamento (2026-10-13, costruzione del macrotask 23): con l'onboarding rimosso (T-2306) AC-1205-3 si prova sul pulsante di avvio dell'estrazione, che usa lo stesso JobProgress.
+- Emendamento (2026-10-13, macrotask 24 ux-keywords): AC-1205-4 segue la ricerca nel riquadro della pagina dell'argomento e la avvia dalla barra del prossimo passo e da «Trova altre keyword» (T-2404); la vecchia pagina del progetto non esiste più.

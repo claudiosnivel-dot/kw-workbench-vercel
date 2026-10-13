@@ -16,7 +16,6 @@ function exportRow(overrides: Partial<ExportRow> = {}): ExportRow {
     source_query: "scarpe",
     brand_status: "allowed",
     review_status: "approved",
-    selected_for_export: true,
     keyword_type: "generic",
     search_intent: "commercial",
     is_question: false,
@@ -90,7 +89,8 @@ describe("serializeCsv", () => {
     expect(text.endsWith("\r\n")).toBe(true);
     expect(lines).toHaveLength(3);
     expect(lines[0].split(";")).toHaveLength(COLUMN_COUNT);
-    expect(COLUMN_COUNT).toBe(23);
+    // impacted-by: T-2401 (colonna selected_for_export eliminata: 22 chiavi)
+    expect(COLUMN_COUNT).toBe(22);
   });
 
   // covers: AC-804-2

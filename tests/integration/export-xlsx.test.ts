@@ -20,7 +20,7 @@ const EXPORT_ROW_KEYS = [
   "source_query",
   "brand_status",
   "review_status",
-  "selected_for_export",
+  // impacted-by: T-2401 (selected_for_export eliminata)
   "keyword_type",
   "search_intent",
   "is_question",
@@ -190,9 +190,11 @@ describe("export XLSX e JSON nella lingua dell'utente (T-2103)", () => {
       },
     });
 
-    const csv = await (await exportAs("csv", "approved")).text();
-    const workbook = await workbookOf(await exportAs("xlsx", "approved"));
-    const json = (await (await exportAs("json", "approved")).json()) as Record<string, unknown>[];
+    // impacted-by: T-2402 (al posto di approved, la vista filtrata sulla sola keyword approvata)
+    const onlyApproved = "filtered&searchText=migliore%20moka";
+    const csv = await (await exportAs("csv", onlyApproved)).text();
+    const workbook = await workbookOf(await exportAs("xlsx", onlyApproved));
+    const json = (await (await exportAs("json", onlyApproved)).json()) as Record<string, unknown>[];
 
     const sheet = workbook.worksheets[0];
     expect(workbook.worksheets.map((worksheet) => worksheet.name)).toEqual([en.export.sheet]);
@@ -210,7 +212,6 @@ describe("export XLSX e JSON nella lingua dell'utente (T-2103)", () => {
       source_query: "moka",
       brand_status: "allowed",
       review_status: "approved",
-      selected_for_export: false,
       keyword_type: "generic",
       search_intent: "commercial",
       is_question: true,

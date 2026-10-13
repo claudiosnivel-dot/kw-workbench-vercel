@@ -2,33 +2,29 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { type ProjectProgressData, type StepStatus, strategyHref } from "@/lib/modules/next-step";
-import { resultsHref } from "@/lib/modules/results-view";
+import { keywordsHref } from "@/lib/modules/results-view";
 
 type ProjectSidebarProps = {
   projectId: string;
-  /** Argomento mostrato dai risultati senza parametri: quello predefinito del progetto (D-21). */
-  defaultTopicId: string | null;
   progress: Pick<ProjectProgressData, "steps" | "topics" | "keptCount" | "latestStrategy">;
   onAddTopic: () => void;
 };
 
 type CurrentItem = { kind: "keywords" } | { kind: "topic"; id: string } | { kind: "plan" } | { kind: "settings" } | null;
 
-/** Voce della barra laterale corrispondente alla pagina aperta. */
-function useCurrentItem(projectId: string, defaultTopicId: string | null): CurrentItem {
+/** Voce della barra laterale corrispondente alla pagina aperta: la vista sta nel percorso (T-2403). */
+function useCurrentItem(projectId: string): CurrentItem {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const base = `/projects/${projectId}`;
 
-  if (pathname === `${base}/results`) {
-    if (searchParams.get("view") === "all") {
-      return { kind: "keywords" };
-    }
-    const topicId = searchParams.get("subprojectId") || defaultTopicId;
-    return topicId ? { kind: "topic", id: topicId } : { kind: "keywords" };
+  if (pathname === `${base}/keywords`) {
+    return { kind: "keywords" };
+  }
+  if (pathname.startsWith(`${base}/keywords/`)) {
+    return { kind: "topic", id: pathname.slice(`${base}/keywords/`.length).split("/")[0] };
   }
   if (pathname.startsWith(`${base}/subprojects/`)) {
     return { kind: "topic", id: pathname.slice(`${base}/subprojects/`.length).split("/")[0] };
@@ -66,14 +62,14 @@ function SidebarLink({ href, current, className, children }: { href: string; cur
  * argomenti in ordine di position e «Nuovo argomento», tappa 2 Piano dei contenuti, poi le Impostazioni; ogni tappa
  * mostra il suo stato e la voce della pagina aperta ha aria-current=page. I nomi degli argomenti sono resi come testo.
  */
-export function ProjectSidebar({ projectId, defaultTopicId, progress, onAddTopic }: ProjectSidebarProps) {
+export function ProjectSidebar({ projectId, progress, onAddTopic }: ProjectSidebarProps) {
   const t = useTranslations("project.shell");
-  const current = useCurrentItem(projectId, defaultTopicId);
+  const current = useCurrentItem(projectId);
   const { steps, topics, keptCount, latestStrategy } = progress;
 
   return (
     <nav aria-label={t("label")} className="project-sidebar">
-      <SidebarLink href={resultsHref(projectId, { view: "all" })} current={current?.kind === "keywords"} className="project-step">
+      <SidebarLink href={keywordsHref(projectId, { view: "all" })} current={current?.kind === "keywords"} className="project-step">
         <StepMarker number={1} status={steps.keywords} />
         <span className="min-w-0 flex-1 font-semibold">{t("keywords")}</span>
         <span className="text-xs text-slate-500">{t("keptCount", { count: keptCount })}</span>
@@ -83,7 +79,7 @@ export function ProjectSidebar({ projectId, defaultTopicId, progress, onAddTopic
         {topics.map((topic) => (
           <li key={topic.id}>
             <SidebarLink
-              href={resultsHref(projectId, { subprojectId: topic.id })}
+              href={keywordsHref(projectId, { subprojectId: topic.id })}
               current={current?.kind === "topic" && current.id === topic.id}
               className="project-topic"
             >

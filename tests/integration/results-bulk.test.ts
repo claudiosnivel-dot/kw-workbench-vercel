@@ -1,6 +1,8 @@
 // Gate di T-803 (AC-803-1, AC-803-2): l'azione massiva può coprire l'intero set filtrato della vista,
 // sempre dentro il progetto posseduto, e il payload è validato (azione in whitelist, ids tipizzati e
 // limitati, esattamente uno tra ids e filters).
+// impacted-by: T-2401 (azioni keep e discard al posto di approve, reject, mark-review, select e unselect; filtro status
+// tenute/scartate al posto di reviewStatus: AC-803-1 e AC-803-2 emendati)
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH as patchResults } from "@/app/api/projects/[id]/results/route";
 import type { ReviewStatus } from "@/lib/generated/prisma/client";
@@ -62,7 +64,7 @@ beforeEach(async () => {
 
 describe("azione massiva sul set filtrato", () => {
   // covers: AC-803-1
-  it("approva le 300 righe filtrate della sezione e lascia invariate le altre e il progetto Q", async () => {
+  it("scarta le 300 tenute filtrate della sezione e lascia invariate le altre e il progetto Q", async () => {
     const owner = await createUserWithSession({ displayName: "t803-owner" });
     const p = await createSection(owner.user.id, "P");
     const q = await createSection(owner.user.id, "Q");
@@ -77,7 +79,7 @@ describe("azione massiva sul set filtrato", () => {
       url: `/api/projects/${p.projectId}/results`,
       cookie: owner.cookie,
       params: { id: p.projectId },
-      body: { action: "approve", filters: { reviewStatus: "pending", searchText: "scarpe" }, subprojectId: p.sectionId },
+      body: { action: "discard", filters: { status: "kept", searchText: "scarpe" }, subprojectId: p.sectionId },
     });
 
     const after = await reviewStatusById(p.projectId);
@@ -87,7 +89,7 @@ describe("azione massiva sul set filtrato", () => {
     expect(await response.json()).toEqual({ success: true, updated: 300 });
     expect(before.size).toBe(1234);
     expect(changed).toHaveLength(300);
-    expect(changed.every(([id, status]) => status === "approved" && before.get(id) === "pending")).toBe(true);
+    expect(changed.every(([id, status]) => status === "rejected" && before.get(id) === "pending")).toBe(true);
     expect(unchanged).toHaveLength(934);
     expect(await prisma.keywordCandidate.count({ where: { project_id: q.projectId, review_status: "pending" } })).toBe(50);
   });
@@ -104,10 +106,10 @@ describe("validazione del payload", () => {
       (row) => row.id
     );
     const bodies = [
-      { action: "approve", ids: Array.from({ length: 1001 }, (_, index) => ids[index % ids.length]) },
-      { action: "approve", ids: [123, null] },
+      { action: "keep", ids: Array.from({ length: 1001 }, (_, index) => ids[index % ids.length]) },
+      { action: "keep", ids: [123, null] },
       { action: "delete", ids },
-      { action: "approve" },
+      { action: "keep" },
     ];
 
     const statuses: number[] = [];

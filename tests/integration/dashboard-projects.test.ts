@@ -131,7 +131,8 @@ describe("attività reale", () => {
       url: `/api/projects/${p03}/results`,
       cookie: owner.cookie,
       params: { id: p03 },
-      body: { action: "approve", filters: {} },
+      // impacted-by: T-2401 (azione keep al posto di approve)
+      body: { action: "keep", filters: {} },
     });
     const first = await dashboardPage(owner.user.id, 1);
 

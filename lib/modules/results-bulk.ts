@@ -7,13 +7,13 @@ import { prisma } from "@/lib/prisma";
 
 export const MAX_BULK_IDS = 1000;
 
-/** Azioni massive in whitelist: ciascuna scrive un solo campo noto (CWE-915). */
+/**
+ * Azioni in whitelist, un solo gesto tieni/scarta (T-2401): ciascuna scrive un solo campo noto (CWE-915). Tenere scrive
+ * approved, così una keyword tenuta a mano si distingue da una mai toccata (pending), che resta comunque tenuta.
+ */
 const BULK_ACTION_DATA = {
-  approve: { review_status: "approved" },
-  reject: { review_status: "rejected" },
-  "mark-review": { review_status: "pending" },
-  select: { selected_for_export: true },
-  unselect: { selected_for_export: false },
+  keep: { review_status: "approved" },
+  discard: { review_status: "rejected" },
 } as const satisfies Record<string, Prisma.KeywordCandidateUpdateManyMutationInput>;
 
 const bulkActionSchema = z
@@ -29,7 +29,7 @@ const bulkActionSchema = z
 
 export type BulkActionPayload = z.infer<typeof bulkActionSchema>;
 
-/** Valida il body della PATCH dei risultati (T-803): ogni violazione è un 400. */
+/** Valida il body della PATCH dei risultati (T-803, T-2401): ogni violazione, azione ignota compresa, è un 400. */
 export function parseBulkActionPayload(body: unknown): BulkActionPayload {
   const parsed = bulkActionSchema.safeParse(body);
   if (!parsed.success) {

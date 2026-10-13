@@ -94,12 +94,12 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
       then: "i risultati sono nell'ordine { kind: 'all' }, { kind: 'section', subprojectId: S1 }, { kind: 'not-found' }, { kind: 'all' }"
     - id: AC-802-3
       given: "vista { kind: 'section', subprojectId: S2 } e searchParams searchText=scarpe, page=3, pageSize=50"
-      when: "si chiama buildResultsExportHref con format csv e scope approved, poi con vista { kind: 'all' }"
-      then: "il primo href ha path /api/projects/P/export e query con subprojectId=S2, searchText=scarpe, format=csv, scope=approved e senza page né pageSize; il secondo href non contiene subprojectId"
+      when: "si chiama buildResultsExportHref con format csv e scope kept, poi con vista { kind: 'all' }"
+      then: "il primo href ha path /api/projects/P/export e query con subprojectId=S2, searchText=scarpe, format=csv, scope=kept e senza page né pageSize; il secondo href non contiene subprojectId (emendato da T-2402 il 2026-10-13: scope kept al posto di approved)"
     - id: AC-802-4
-      given: "i file app/**/*.tsx del repository e resultsHref"
-      when: "il test esegue resultsHref('P', { view: 'all' }) e cerca nei sorgenti href verso /projects/<id>/results privi di query"
-      then: "resultsHref restituisce '/projects/P/results?view=all' e la scansione trova 0 occorrenze di href verso /results senza view o subprojectId"
+      given: "i file app/**/*.tsx del repository e keywordsHref"
+      when: "il test esegue keywordsHref('P', { view: 'all' }) e keywordsHref('P', { subprojectId: 'S1' }) con view=all e chip=questions nella query, e cerca nei sorgenti href verso /projects/<id>/results"
+      then: "keywordsHref restituisce '/projects/P/keywords' e '/projects/P/keywords/S1?chip=questions' e la scansione trova 0 occorrenze di href verso /results (emendato da T-2403 il 2026-10-13: i link portano alla pagina delle keyword, con la vista nel percorso)"
 
   target_tests:
     - file: "tests/unit/results-view.test.ts"
@@ -132,21 +132,21 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
 
   acceptance_criteria:
     - id: AC-803-1
-      given: "progetto P dell'utente con 1.234 candidate nella sezione S1, di cui 300 con review_status 'pending' e keyword contenente 'scarpe', e progetto Q dello stesso utente con 50 righe 'pending' contenenti 'scarpe'"
-      when: "l'utente invia PATCH /api/projects/P/results con { action: 'approve', filters: { reviewStatus: 'pending', searchText: 'scarpe' }, subprojectId: S1 }"
-      then: "risposta 200 con updated = 300; P ha 300 righe passate a 'approved' e le altre 934 righe invariate; le 50 righe di Q restano 'pending'"
+      given: "progetto P dell'utente con 1.234 candidate nella sezione S1, di cui 300 con review_status 'pending' e keyword contenente 'scarpe', 500 'rejected' con 'scarpe' e 434 'pending' senza, e progetto Q dello stesso utente con 50 righe 'pending' contenenti 'scarpe'"
+      when: "l'utente invia PATCH /api/projects/P/results con { action: 'discard', filters: { status: 'kept', searchText: 'scarpe' }, subprojectId: S1 }"
+      then: "risposta 200 con updated = 300; P ha 300 righe passate a 'rejected' e le altre 934 righe invariate; le 50 righe di Q restano 'pending' (emendato da T-2401 il 2026-10-13: azioni keep e discard, filtro status al posto di reviewStatus)"
     - id: AC-803-2
       given: "un utente autenticato proprietario del progetto P"
-      when: "invia PATCH con ids di 1.001 elementi, con ids [123, null], con action 'delete', e con un body privo sia di ids sia di filters"
+      when: "invia PATCH con action 'keep' e ids di 1.001 elementi, con ids [123, null], con action 'delete', e con action 'keep' senza ids né filters (emendato da T-2401 il 2026-10-13: azione keep al posto di approve)"
       then: "ognuna delle 4 richieste riceve 400 e il numero di righe con review_status 'approved' nel progetto resta invariato"
     - id: AC-803-3
-      given: "ResultsTable con 3 righe in pagina, filteredCount 1234 e fetch mockata"
-      when: "l'utente clicca «Seleziona tutto», poi «Seleziona tutte le 1234 keyword filtrate», poi il pulsante di applicazione"
-      then: "dopo il primo click il pulsante mostra «Applica a 3 selezionate»; dopo il secondo mostra il conteggio 1234; il body della PATCH inviata contiene filters e non contiene ids"
+      given: "la pagina delle keyword (KeywordsBoard) con 3 righe tenute in pagina, la ricerca 'scarpe' attiva con 1234 tenute nel set filtrato e fetch mockata"
+      when: "l'utente clicca «Scarta queste 1234»"
+      then: "il body della PATCH inviata contiene action discard e filters con searchText 'scarpe' e status 'kept', e non contiene ids (emendato da T-2403 il 2026-10-13: la tendina delle azioni massive è sostituita da «Tieni queste N» e «Scarta queste N»)"
     - id: AC-803-4
-      given: "ResultsTable con 3 righe tutte selezionate"
+      given: "la pagina delle keyword con 3 righe tenute, la prima appena scartata con un clic (PATCH riuscita)"
       when: "il componente viene ri-renderizzato con 3 righe diverse (cambio pagina)"
-      then: "il pulsante mostra «Applica a 0 selezionate» ed è disabilitato e nessuna checkbox di riga è spuntata"
+      then: "l'elenco delle tenute mostra le 3 righe nuove e l'intestazione il conteggio ricevuto, senza la scelta locale della pagina precedente (emendato da T-2403 il 2026-10-13: niente più selezione di righe)"
 
   target_tests:
     - file: "tests/integration/results-bulk.test.ts"
@@ -328,21 +328,21 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
 
   acceptance_criteria:
     - id: AC-807-1
-      given: "scope 'non-excluded', filtri vuoti e subprojectId null"
+      given: "scope 'kept', filtri vuoti e subprojectId null"
       when: "si chiama buildExportWhere('P', ...)"
-      then: "l'oggetto where contiene in AND { project_id: 'P' }, { brand_status: { not: 'excluded' } } e { review_status: { not: 'rejected' } }"
+      then: "l'oggetto where contiene in AND solo { project_id: 'P' } e { review_status: { not: 'rejected' } } (emendato da T-2402 il 2026-10-13: scope kept, regola unica tieni/scarta)"
     - id: AC-807-2
-      given: "scope 'approved', filtri { searchText: 'scarpe' } e subprojectId 'S1'"
-      when: "si chiama buildExportWhere('P', ...)"
-      then: "il where contiene in AND project_id 'P', subproject_id 'S1', review_status 'approved', brand_status non 'excluded' e la clausola OR su keyword e normalized_keyword con contains 'scarpe' in modalità insensitive"
+      given: "filtri { searchText: 'scarpe' } e subprojectId 'S1'"
+      when: "si chiama buildExportWhere('P', ...) con scope 'kept' e con scope 'filtered'"
+      then: "kept contiene in AND project_id 'P', subproject_id 'S1' e review_status non 'rejected', senza la ricerca; filtered contiene project_id 'P', subproject_id 'S1' e la clausola OR su keyword e normalized_keyword con contains 'scarpe' in modalità insensitive (emendato da T-2402 il 2026-10-13: kept e all non usano i filtri della vista, D-23 emendata)"
     - id: AC-807-3
-      given: "una sezione con 7 righe: r1 approved/allowed/selezionata 'scarpe running', r2 approved/allowed/selezionata 'borsa pelle', r3 approved/excluded/non selezionata 'scarpe nike', r4 pending/allowed/selezionata 'scarpe trail', r5 pending/review/selezionata 'borsa gucci', r6 rejected/allowed/selezionata 'scarpe usate', r7 rejected/allowed/non selezionata 'borsa usata'"
+      given: "una sezione con 7 righe: r1 approved/allowed 'scarpe running', r2 approved/allowed 'borsa pelle', r3 approved/excluded 'scarpe nike', r4 pending/allowed 'scarpe trail', r5 pending/review 'borsa gucci', r6 rejected/allowed 'scarpe usate', r7 rejected/allowed 'borsa usata'"
       when: "il proprietario chiama GET /api/projects/[id]/export?format=json con gli scope e i filtri indicati e la sezione come subprojectId"
-      then: "l'array JSON di non-excluded senza filtri ha 4 righe (r1, r2, r4, r5); approved con searchText scarpe 1 riga (r1); selected con searchText scarpe 2 righe (r1, r4); review senza filtri 2 righe (r4, r5); filtered con searchText scarpe 4 righe (r1, r3, r4, r6)"
+      then: "kept senza filtri e kept con searchText scarpe hanno le stesse 5 righe (r1-r5); all con searchText scarpe 7 righe; filtered con searchText scarpe 4 righe (r1, r3, r4, r6); filtered con searchText scarpe e status kept 3 righe (r1, r3, r4) (emendato da T-2402 il 2026-10-13: scope kept, all e filtered, D-23 emendata)"
     - id: AC-807-4
       given: "la stessa sezione e le API Google mockate"
-      when: "si esporta con scope 'non-excluded' in CSV tramite la route di export e su Google Sheets"
-      then: "il CSV ha 5 righe (intestazione + 4) e la risposta Google Sheets ha data.exportedRows = 4"
+      when: "si esporta con scope 'kept' in CSV tramite la route di export e su Google Sheets"
+      then: "il CSV ha 6 righe (intestazione + 5) e la risposta Google Sheets ha data.exportedRows = 5 (emendato da T-2402 il 2026-10-13: scope kept al posto di non-excluded)"
 
   target_tests:
     - file: "tests/unit/export-scope.test.ts"
@@ -516,3 +516,4 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
 - Emendamento (2026-10-13, costruzione del macrotask 23): l'export non registra più il completamento dell'onboarding, rimosso con T-2306, quindi AC-805-4 non simula più il suo errore e chiede un log senza errori.
+- Emendamento (2026-10-13, costruzione del macrotask 24, D-39): stato unico tieni/scarta (T-2401), scope kept, all e filtered (T-2402, D-23 emendata) e pagina delle keyword al posto della pagina dei risultati (T-2403). Emendati AC-802-3 (scope kept), AC-802-4 (keywordsHref, nessun link verso /results), AC-803-1 e AC-803-2 (azioni keep e discard, filtro status), AC-803-3 e AC-803-4 (azioni sul set filtrato e scelte locali della pagina delle keyword, nello stesso file di test), AC-807-1…AC-807-4 (scope nuovi); la PATCH con un'azione precedente e l'export con uno scope precedente rispondono 400 VALIDATION_ERROR. AC-804-1 resta: le colonne sono tante quante le chiavi di ExportRow, oggi 22.

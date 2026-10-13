@@ -60,7 +60,7 @@ export const POST = withUserRoute(async (request: NextRequest, user, { id }: Pro
   }
 
   const fileName = String(payload.fileName ?? "").trim();
-  const scope = String(payload.scope ?? "non-excluded") as ExportScope;
+  const scope = String(payload.scope ?? "kept") as ExportScope;
   const rawSubprojectId = String(payload.subprojectId ?? "").trim();
   const subprojectId = rawSubprojectId || null;
 
@@ -68,8 +68,9 @@ export const POST = withUserRoute(async (request: NextRequest, user, { id }: Pro
     return errorResponse(400, "SHEETS_FILE_NAME_REQUIRED", "Nome file obbligatorio");
   }
 
+  // Stessi ambiti dell'export su file (T-2402).
   if (!VALID_SCOPES.has(scope)) {
-    return errorResponse(400, "EXPORT_SCOPE_INVALID", "Scope non valido");
+    return errorResponse(400, "VALIDATION_ERROR", "Scope non valido: usa kept, all o filtered");
   }
 
   const project = await requireProjectScope(user, id, subprojectId, "export.run");

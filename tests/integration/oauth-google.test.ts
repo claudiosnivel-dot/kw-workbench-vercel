@@ -142,7 +142,7 @@ describe("OAuth Google Sheets", () => {
       url: `/api/projects/${project.id}/export/google-sheets`,
       cookie,
       params: { id: project.id },
-      body: { fileName: "Export", scope: "non-excluded" },
+      body: { fileName: "Export", scope: "kept" },
     });
     const snapshot = await callRoute(sheetsSnapshot, { url: "/api/integrations/google-sheets", cookie });
 

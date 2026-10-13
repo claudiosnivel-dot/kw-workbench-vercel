@@ -53,7 +53,8 @@ test.afterAll(async () => {
 async function openFirstTopic(page: Page): Promise<void> {
   const login = await page.request.post("/api/auth/login", { data: { email: EMAIL, password: PASSWORD } });
   expect(login.status()).toBe(200);
-  await page.goto(`/projects/${ids.project}/results?subprojectId=${ids.first}`);
+  // impacted-by: T-2403 (i risultati dell'argomento sono la pagina delle sue keyword)
+  await page.goto(`/projects/${ids.project}/keywords/${ids.first}`);
 }
 
 async function seriousViolations(page: Page): Promise<string[]> {

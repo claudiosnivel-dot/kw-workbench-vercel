@@ -92,7 +92,8 @@ describe("API delle strategie", () => {
       { keyword: "scarpe running", review_status: "approved", avg_monthly_searches: 9900 },
       { keyword: "scarpe running donna", review_status: "pending", avg_monthly_searches: 2100 },
       { keyword: "scarpe running uomo", review_status: "rejected", avg_monthly_searches: 1600 },
-      { keyword: "scarpe running nike", brand_status: "excluded", avg_monthly_searches: 1300 },
+      // impacted-by: T-2401 (il marchio escluso entra scartato, come lo crea la pipeline: il perimetro segue solo tieni/scarta)
+      { keyword: "scarpe running nike", brand_status: "excluded", review_status: "rejected", avg_monthly_searches: 1300 },
       { keyword: "calzini tecnici", review_status: "approved", avg_monthly_searches: 300 },
     ]);
     await prisma.seed.create({ data: { project_id: projectId, subproject_id: sectionId, keyword: "scarpe running" } });

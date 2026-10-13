@@ -3,6 +3,7 @@ import { z } from "zod";
 import { expectOneRow, requireProjectAccess, type AuthorizedProject } from "@/lib/authz/workspace";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { AppError, ConflictError, ValidationError } from "@/lib/http/errors";
+import { KEPT_WHERE } from "@/lib/modules/keep-rule";
 import { SectionNotFoundError } from "@/lib/modules/project-access";
 import { buildResultsClauses } from "@/lib/modules/results-filters";
 import { buildStrategyPlan, compareKeywordPriority } from "@/lib/modules/strategy/cluster";
@@ -125,7 +126,8 @@ const PERIMETER_SELECT = {
 } satisfies Prisma.KeywordCandidateSelect;
 
 /**
- * Keyword del perimetro (T-1903): mai le rifiutate né i brand esclusi; sezione, volume minimo, intento e tipo con le
+ * Keyword del perimetro (T-1903): le tenute (regola unica di T-2401, quindi anche una keyword di marchio tenuta a mano),
+ * oppure le sole approvate nella modalità esperta, mai le scartate; sezione, volume minimo, intento e tipo con le
  * clausole dei filtri dei risultati. Ordinate per priorità, una per forma canonica, al massimo 5000 (D-35).
  */
 async function loadPerimeter(projectId: string, settings: StrategySettings) {
@@ -141,10 +143,7 @@ async function loadPerimeter(projectId: string, settings: StrategySettings) {
           },
           settings.sectionId
         ),
-        settings.reviewStatus === "approved"
-          ? { review_status: "approved" }
-          : { review_status: { in: ["approved", "pending"] } },
-        { brand_status: { not: "excluded" } },
+        settings.reviewStatus === "approved" ? { review_status: "approved" } : KEPT_WHERE,
       ],
     },
     select: PERIMETER_SELECT,

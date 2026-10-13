@@ -2,11 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { DeleteEntityButton } from "@/components/delete-entity-button";
-import { GoogleSheetsExportButton } from "@/components/google-sheets-export-button";
+import { ExportViewRegistration } from "@/components/export-view-context";
 import { StrategyPageCard } from "@/components/strategy/strategy-page-card";
 import { StrategyUnassigned } from "@/components/strategy/strategy-unassigned";
 import { requirePageUser } from "@/lib/auth/page-guard";
-import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { requireProjectPage } from "@/lib/modules/project-pages";
 import { readStrategy, StrategyNotFoundError } from "@/lib/modules/strategy/service";
 import type { StrategyPageView } from "@/lib/modules/strategy/types";
@@ -14,15 +13,10 @@ import { formatDate } from "@/lib/view/format";
 
 export const dynamic = "force-dynamic";
 
-const EXPORTS = [
-  { format: "csv", label: "exportCsv" },
-  { format: "xlsx", label: "exportXlsx" },
-  { format: "pdf", label: "exportPdf" },
-] as const;
-
 /**
  * Piano di una strategia (T-1905): sintesi, hub nell'ordine di lavoro con la pagina pilastro e la tabella degli spoke,
- * scheda di ogni pagina con i controlli di modifica, riquadro Non assegnate ed export (T-1906, T-1907).
+ * scheda di ogni pagina con i controlli di modifica e riquadro Non assegnate. Gli export (T-1906, T-1907) partono dal
+ * pulsante Esporta della barra in alto (T-2406), che riceve da qui la strategia aperta e il numero di pagine.
  */
 export default async function StrategyDetailPage({ params }: { params: Promise<{ id: string; strategyId: string }> }) {
   const user = await requirePageUser();
@@ -32,11 +26,7 @@ export default async function StrategyDetailPage({ params }: { params: Promise<{
     if (error instanceof StrategyNotFoundError) notFound();
     throw error;
   });
-  const [t, format, googleSheets] = await Promise.all([
-    getTranslations(),
-    getFormatter(),
-    getGoogleSheetsCredentialSnapshot(user.id),
-  ]);
+  const [t, format] = await Promise.all([getTranslations(), getFormatter()]);
 
   const pages = strategy.hubs.flatMap((hub) => [hub.pillar, ...hub.spokes]);
   const volume = pages.reduce(
@@ -58,6 +48,7 @@ export default async function StrategyDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6">
+      <ExportViewRegistration view={{ plan: { strategyId: strategy.id, pageCount: pages.length } }} />
       <section className="card space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
@@ -87,30 +78,15 @@ export default async function StrategyDetailPage({ params }: { params: Promise<{
         </dl>
         {strategy.truncated && <p className="text-sm text-slate-600">{t("strategy.ui.truncated")}</p>}
 
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold">{t("strategy.ui.exportTitle")}</h2>
-          <p className="text-sm text-slate-600">{t("strategy.ui.exportHint")}</p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <GoogleSheetsExportButton
-              projectId={project.id}
-              connected={googleSheets.connected}
-              defaultFileName={`${project.name} - ${strategy.name}`}
-              endpoint={`${apiBase}/export/google-sheets`}
-            />
-            {EXPORTS.map((item) => (
-              <a key={item.format} className="btn-secondary w-full text-center sm:w-auto" href={`${apiBase}/export?format=${item.format}`}>
-                {t(`strategy.ui.${item.label}`)}
-              </a>
-            ))}
-            <DeleteEntityButton
-              endpoint={apiBase}
-              kind="strategy"
-              name={strategy.name}
-              buttonLabel={t("strategy.ui.deleteStrategy")}
-              buttonClassName="btn-danger w-full sm:w-auto"
-              redirectTo={listHref}
-            />
-          </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <DeleteEntityButton
+            endpoint={apiBase}
+            kind="strategy"
+            name={strategy.name}
+            buttonLabel={t("strategy.ui.deleteStrategy")}
+            buttonClassName="btn-danger w-full sm:w-auto"
+            redirectTo={listHref}
+          />
         </div>
       </section>
 

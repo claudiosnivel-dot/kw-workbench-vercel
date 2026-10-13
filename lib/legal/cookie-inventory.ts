@@ -29,6 +29,12 @@ export const COOKIE_INVENTORY: readonly CookieInventoryEntry[] = [
     duration: "1 anno",
   },
   {
+    name: "titan_last_topic_<id del progetto>",
+    category: "technical",
+    purpose: "Ultimo argomento aperto del progetto, riaperto entrando nel progetto (T-2403); scritto dal browser",
+    duration: "1 anno",
+  },
+  {
     name: "kwb_google_sheets_oauth_state",
     category: "technical",
     purpose: "Stato anti-CSRF del collegamento OAuth a Google Sheets (T-906)",

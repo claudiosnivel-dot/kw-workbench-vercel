@@ -26,15 +26,14 @@ const UPSERT_CHUNK_SIZE = 500;
 const UPSERT_INSERT = Prisma.sql`
   INSERT INTO "keyword_candidates" (
     "id", "project_id", "subproject_id", "keyword", "normalized_keyword", "canonical_keyword", "source",
-    "source_query", "brand_status", "brand_reason", "review_status", "selected_for_export", "keyword_type",
-    "search_intent", "is_question", "is_local_intent", "is_tool_intent", "is_commercial_intent",
-    "metrics_status", "metrics_provider", "avg_monthly_searches", "competition", "low_top_of_page_bid_micros",
-    "high_top_of_page_bid_micros", "metrics_precision", "score", "score_source", "metrics_updated_at", "created_at",
-    "updated_at"
+    "source_query", "brand_status", "brand_reason", "review_status", "keyword_type", "search_intent", "is_question",
+    "is_local_intent", "is_tool_intent", "is_commercial_intent", "metrics_status", "metrics_provider",
+    "avg_monthly_searches", "competition", "low_top_of_page_bid_micros", "high_top_of_page_bid_micros",
+    "metrics_precision", "score", "score_source", "metrics_updated_at", "created_at", "updated_at"
   )
   VALUES`;
 
-// Colonne aggiornate per una keyword già presente: mai id, review_status, selected_for_export e created_at.
+// Colonne aggiornate per una keyword già presente: mai id, review_status e created_at (D-19 emendata, T-2401).
 const UPSERT_ON_CONFLICT = Prisma.sql`
   ON CONFLICT ("subproject_id", "canonical_keyword") DO UPDATE SET
     "keyword" = EXCLUDED."keyword",
@@ -67,10 +66,9 @@ function candidateValues(projectId: string, subprojectId: string, row: Candidate
   return Prisma.sql`(
     gen_random_uuid()::text, ${projectId}, ${subprojectId}, ${row.keyword}, ${row.normalized_keyword},
     ${row.canonical_keyword}, ${row.source}, ${row.source_query}, ${row.brand_status}::"BrandStatus",
-    ${row.brand_reason}, ${row.review_status}::"ReviewStatus", ${row.selected_for_export},
-    ${row.keyword_type}::"KeywordType", ${row.search_intent}::"SearchIntent", ${row.is_question},
-    ${row.is_local_intent}, ${row.is_tool_intent}, ${row.is_commercial_intent},
-    ${row.metrics_status}::"MetricsStatus", ${row.metrics_provider}::"MetricsProvider",
+    ${row.brand_reason}, ${row.review_status}::"ReviewStatus", ${row.keyword_type}::"KeywordType",
+    ${row.search_intent}::"SearchIntent", ${row.is_question}, ${row.is_local_intent}, ${row.is_tool_intent},
+    ${row.is_commercial_intent}, ${row.metrics_status}::"MetricsStatus", ${row.metrics_provider}::"MetricsProvider",
     ${row.avg_monthly_searches}::integer, ${row.competition}::double precision,
     ${row.low_top_of_page_bid_micros}::bigint, ${row.high_top_of_page_bid_micros}::bigint,
     ${row.metrics_precision}::"MetricsPrecision", ${row.score}::double precision, ${row.score_source}::"ScoreSource", ${row.metrics_updated_at}::timestamp(3),
@@ -87,9 +85,10 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 /**
- * Scrittura dei risultati secondo D-19 (T-705): le keyword ancora prodotte restano con lo stesso id,
- * review_status e selected_for_export e ricevono metriche, punteggio e classificazione nuovi; le nuove
- * entrano con i default; quelle non più prodotte vengono rimosse dalla sola sezione del job.
+ * Scrittura dei risultati secondo D-19 (T-705, emendata con T-2401): le keyword ancora prodotte restano con lo stesso
+ * id e review_status (tenuta o scartata) e ricevono metriche, punteggio e classificazione nuovi; le nuove entrano tenute
+ * (pending), o scartate (rejected) se il marchio è escluso; quelle non più prodotte vengono rimosse dalla sola sezione
+ * del job.
  * L'upsert usa la chiave unica (subproject_id, canonical_keyword) a blocchi di UPSERT_CHUNK_SIZE righe
  * e solo parametri di Prisma.sql. Caso limite: una keyword il cui canonical cambia per una nuova regola
  * di normalizzazione (T-702) è trattata come nuova al primo re-run successivo.
@@ -253,8 +252,8 @@ export function buildCandidateRows(input: {
       source_query: candidate.sourceQuery,
       brand_status: brand.brand_status,
       brand_reason: brand.brand_reason ?? null,
+      // Tutto tenuto all'inizio, tranne i marchi esclusi (T-2401, D-39).
       review_status: brand.brand_status === "excluded" ? "rejected" : "pending",
-      selected_for_export: brand.brand_status !== "excluded",
       keyword_type: classification.keyword_type,
       search_intent: classification.search_intent,
       is_question: classification.is_question,

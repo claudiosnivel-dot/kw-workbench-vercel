@@ -3,12 +3,11 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useState } from "react";
+import { ClassificationSelect } from "@/components/classification-select";
 import { FormFeedback } from "@/components/form-feedback";
 import { messageOf, readApiResponse, sendJson } from "@/lib/client/http";
 import type { StrategyRuleLimits, StrategyRules } from "@/lib/modules/strategy/types";
 
-const INTENTS = ["informational", "commercial", "transactional", "navigational", "mixed"] as const;
-const KEYWORD_TYPES = ["generic", "question", "comparison", "branded", "local", "tool", "service", "product", "content_topic"] as const;
 const NUMERIC_RULES = ["minKeywordsPerSpoke", "minSpokeVolume", "maxSpokesPerHub", "questionSpokeVolume"] as const;
 
 type StrategySettingsProps = {
@@ -56,7 +55,6 @@ function requestBody(name: string, advanced: Advanced | null) {
  */
 export function StrategySettings({ projectId, sections, defaults, limits }: StrategySettingsProps) {
   const t = useTranslations("strategy.ui");
-  const tResults = useTranslations("results");
   const tErrors = useTranslations("errors");
   const tCommon = useTranslations("common");
   const router = useRouter();
@@ -151,28 +149,20 @@ export function StrategySettings({ projectId, sections, defaults, limits }: Stra
               onChange={(event) => update({ minVolume: event.target.value })}
             />
           </label>
-          <label className="block">
-            <span className="label">{t("intent")}</span>
-            <select className="select" value={advanced.searchIntent} onChange={(event) => update({ searchIntent: event.target.value })}>
-              <option value="">{t("intentAny")}</option>
-              {INTENTS.map((intent) => (
-                <option key={intent} value={intent}>
-                  {tResults(`intent.${intent}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="label">{t("keywordType")}</span>
-            <select className="select" value={advanced.keywordType} onChange={(event) => update({ keywordType: event.target.value })}>
-              <option value="">{t("keywordTypeAny")}</option>
-              {KEYWORD_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {tResults(`type.${type}`)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ClassificationSelect
+            kind="intent"
+            label={t("intent")}
+            anyLabel={t("intentAny")}
+            value={advanced.searchIntent}
+            onChange={(event) => update({ searchIntent: event.target.value })}
+          />
+          <ClassificationSelect
+            kind="type"
+            label={t("keywordType")}
+            anyLabel={t("keywordTypeAny")}
+            value={advanced.keywordType}
+            onChange={(event) => update({ keywordType: event.target.value })}
+          />
 
           <fieldset className="grid gap-3 md:col-span-2 md:grid-cols-2">
             <legend className="label">{t("rules")}</legend>

@@ -148,7 +148,8 @@ describe("caratterizzazione: isolamento di sezioni, export ed estrazione", () =>
     }
 
     const exported = await callRoute(exportProject, {
-      url: `/api/projects/${projectA}/export?format=json&scope=non-excluded`,
+      // impacted-by: T-2402 (scope kept al posto di non-excluded)
+      url: `/api/projects/${projectA}/export?format=json&scope=kept`,
       cookie: cookieB,
       params: { id: projectA },
     });
@@ -191,7 +192,8 @@ describe("caratterizzazione: azioni sui risultati", () => {
     const response = await callRoute(patchResults, {
       method: "PATCH",
       url: `/api/projects/${projectA}/results`,
-      body: { action: "approve", ids: candidatesB },
+      // impacted-by: T-2401 (azione keep al posto di approve)
+      body: { action: "keep", ids: candidatesB },
       cookie: cookieA,
       params: { id: projectA },
     });

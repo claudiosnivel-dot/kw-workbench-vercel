@@ -347,8 +347,8 @@ model KeywordCandidate {
   source_query                String
   brand_status                BrandStatus       @default(allowed)
   brand_reason                String?
+  /// Tenuta se diverso da rejected, scartata se rejected (T-2401, regola in lib/modules/keep-rule.ts).
   review_status               ReviewStatus      @default(pending)
-  selected_for_export         Boolean           @default(false)
   keyword_type                KeywordType       @default(generic)
   search_intent               SearchIntent      @default(mixed)
   is_question                 Boolean           @default(false)

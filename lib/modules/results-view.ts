@@ -2,8 +2,8 @@ import type { SearchParamsSource } from "@/lib/http/search-params";
 import type { ExportFormat, ExportScope } from "@/lib/modules/export-types";
 
 /**
- * Vista dei risultati (T-802, D-21): risolta in un solo punto e riusata da tabella, conteggi, link di
- * export e pulsante Google Sheets, così la sezione mostrata è quella esportata.
+ * Vista dei risultati (T-802, D-21): risolta in un solo punto. Dal macrotask 24 la vista sta nel percorso della pagina
+ * delle keyword e questa risoluzione serve al reindirizzamento dei vecchi indirizzi /results (T-2403).
  * Precedenza: view=all, poi subprojectId richiesto (una sezione di altro progetto è not-found), poi
  * default_subproject_id se appartiene al progetto, poi la prima sezione per posizione.
  */
@@ -11,7 +11,7 @@ export type ResultsView = { kind: "section"; subprojectId: string } | { kind: "a
 
 type ShownResultsView = Exclude<ResultsView, { kind: "not-found" }>;
 
-/** Destinazione di un link verso la pagina dei risultati: sempre con la vista dichiarata. */
+/** Destinazione di un link verso la pagina delle keyword: tutto il progetto oppure un argomento (sezione). */
 export type ResultsTarget = { view: "all" } | { subprojectId: string };
 
 /** Copia dei parametri di query (primo valore di quelli ripetuti, vuoti esclusi). */
@@ -66,26 +66,26 @@ export function resolveDefaultSectionId(
   return first?.id ?? null;
 }
 
-/** Parametri della vista: view=all oppure subprojectId, mai entrambi. */
-function withView(params: URLSearchParams, target: ResultsTarget): URLSearchParams {
-  const next = new URLSearchParams(params);
-  next.delete("view");
-  next.delete("subprojectId");
-  if ("view" in target) {
-    next.set("view", "all");
-  } else {
-    next.set("subprojectId", target.subprojectId);
-  }
-  return next;
-}
-
 export function viewTarget(view: ShownResultsView): ResultsTarget {
   return view.kind === "all" ? { view: "all" } : { subprojectId: view.subprojectId };
 }
 
-/** Href della pagina dei risultati con la vista dichiarata e gli altri parametri (filtri, paginazione). */
-export function resultsHref(projectId: string, target: ResultsTarget, params = new URLSearchParams()): string {
-  return `/projects/${projectId}/results?${withView(params, target).toString()}`;
+/**
+ * Href della pagina delle keyword (T-2403): /projects/<id>/keywords per tutto il progetto, /projects/<id>/keywords/<id
+ * argomento> per un argomento, con gli altri parametri (filtri, paginazione); la vista sta nel percorso, quindi view e
+ * subprojectId non restano nella query.
+ */
+export function keywordsHref(projectId: string, target: ResultsTarget, params = new URLSearchParams()): string {
+  const query = new URLSearchParams(params);
+  query.delete("view");
+  query.delete("subprojectId");
+  // L'id dell'argomento può arrivare dalla query dei vecchi indirizzi: codificato, resta un solo segmento del percorso.
+  const path =
+    "view" in target
+      ? `/projects/${projectId}/keywords`
+      : `/projects/${projectId}/keywords/${encodeURIComponent(target.subprojectId)}`;
+  const search = query.toString();
+  return search ? `${path}?${search}` : path;
 }
 
 /** Href di export della vista risolta: sezione (se c'è) e filtri, senza page né pageSize. */
