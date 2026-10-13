@@ -242,9 +242,9 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
       when: "il test legge solo il primo chunk del body CSV"
       then: "al momento della ricezione del primo chunk findMany è stato chiamato al massimo 2 volte (nessuna lettura completa prima dell'invio)"
     - id: AC-805-4
-      given: "markOnboardingExportCompleted mockato per lanciare un errore, e un secondo utente B senza accesso al progetto"
+      given: "un secondo utente B senza accesso al progetto"
       when: "il proprietario esporta in CSV e poi B chiama la stessa URL"
-      then: "il proprietario riceve 200 con 30.001 righe e console.error viene chiamato 1 volta; B riceve 404 JSON e findMany non viene chiamato per la sua richiesta"
+      then: "il proprietario riceve 200 con 30.001 righe e nessun errore nel log; B riceve 404 JSON e findMany non viene chiamato per la sua richiesta"
 
   target_tests:
     - file: "tests/integration/export-streaming.test.ts"
@@ -515,3 +515,4 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
+- Emendamento (2026-10-13, costruzione del macrotask 23): l'export non registra più il completamento dell'onboarding, rimosso con T-2306, quindi AC-805-4 non simula più il suo errore e chiede un log senza errori.

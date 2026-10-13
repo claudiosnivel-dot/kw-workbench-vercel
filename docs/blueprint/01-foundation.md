@@ -145,7 +145,7 @@ se rompe un comportamento esistente.
     - id: AC-103-1
       given: "il server di test avviato e l'utente e2e-user presente"
       when: "smoke.spec.ts compila il form di /login con credenziali valide e lo invia"
-      then: "l'URL finale ha pathname /, il context del browser contiene il cookie kwb_session e almeno un pulsante Esci è visibile"
+      then: "l'URL finale ha pathname /, il context del browser contiene il cookie kwb_session e, aperto il menu dell'utente della barra in alto, la voce Esci è visibile"
     - id: AC-103-2
       given: "lo stesso server"
       when: "si invia il form di /login con password errata"
@@ -346,9 +346,9 @@ se rompe un comportamento esistente.
       when: "si chiama l'export con format=json per ciascuno scope approved, selected, review, non-excluded e filtered con searchIntent=commercial"
       then: "ogni risposta è un array JSON di lunghezza pari al conteggio dichiarato per quello scope e l'array di non-excluded contiene la candidata rifiutata (impacted-by T-807)"
     - id: AC-107-4
-      given: "un progetto senza candidate approvate e il proprietario con onboarding IN_PROGRESS"
+      given: "un progetto senza candidate approvate"
       when: "si chiama l'export con format=csv e scope=approved"
-      then: "status 200 con body di 0 byte, senza riga di intestazione (impacted-by T-804), e dopo la chiamata user_onboarding_progress.status del proprietario vale COMPLETED (impacted-by T-1003)"
+      then: "status 200 con il BOM UTF-8 e la sola riga di intestazione (impacted-by T-804)"
 
   target_tests:
     - file: "tests/integration/characterization/export.char.test.ts"
@@ -448,9 +448,9 @@ se rompe un comportamento esistente.
       when: "si chiama findForbiddenPaths con la regola components/** -> lib/prisma.ts"
       then: "restituisce 1 cammino uguale a components/x.tsx, lib/y.ts, lib/prisma.ts"
     - id: AC-109-4
-      given: "i sorgenti di lib/onboarding/types.ts e dei due componenti di onboarding"
+      given: "i sorgenti di lib/modules/next-step.ts, di components/next-step-bar.tsx e di components/project-sidebar.tsx"
       when: "architecture.test.ts li legge"
-      then: "lib/onboarding/types.ts non contiene lib/prisma né import non di tipo; entrambi i componenti importano da @/lib/onboarding/types e non da @/lib/onboarding/progress"
+      then: "lib/modules/next-step.ts non contiene lib/prisma né import non di tipo; entrambi i componenti importano da @/lib/modules/next-step e non da @/lib/modules/project-progress"
 
   target_tests:
     - file: "tests/tooling/architecture.test.ts"
@@ -520,3 +520,4 @@ se rompe un comportamento esistente.
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Osservabilità: `ac_observability_check.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
+- AC-103-1, AC-107-4 e AC-109-4 emendati il 2026-10-13 nella costruzione del macrotask 23: AC-103-1 cerca Esci nel menu dell'utente (T-2304: la barra in alto non ha più il pulsante); AC-107-4 perde la parte dell'onboarding, rimosso con T-2306, e dichiara il file di oggi (BOM e intestazione, come già dal T-804); AC-109-4 passa dai tipi dell'onboarding, rimossi, ai tipi del prossimo passo di T-2302, con la stessa regola (modulo puro senza Prisma, componenti che non importano il modulo che legge il DB).

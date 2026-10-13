@@ -247,9 +247,9 @@ caratterizzazioni di 01-foundation.
       when: "si chiama runJobById"
       then: "la promessa si risolve con un job con status failed e la riga in jobs ha status failed, non running"
     - id: AC-305-3
-      given: "OnboardingRunStep renderizzato con fetch mockato che risponde 500 con {error: 'Estrazione non riuscita', code: 'JOB_FAILED'}"
-      when: "si clicca Avvia prima estrazione"
-      then: "il testo Estrazione non riuscita è visibile, il testo Estrazione completata è assente e fetch non è chiamato su /api/onboarding/state"
+      given: "RunExtractionButton renderizzato con fetch mockato che risponde 500 con {error: 'Estrazione non riuscita', code: 'JOB_FAILED'}"
+      when: "si clicca Avvia estrazione"
+      then: "il testo Estrazione non riuscita è visibile, nessuna barra di avanzamento è resa e router.refresh non è chiamato"
     - id: AC-305-4
       given: "RunExtractionButton renderizzato con fetch mockato che risponde 200 con data.status failed"
       when: "si clicca Avvia estrazione"
@@ -332,3 +332,4 @@ caratterizzazioni di 01-foundation.
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Osservabilità: `ac_observability_check.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
+- AC-305-3 emendato il 2026-10-13 (macrotask 23): l'onboarding è rimosso con T-2306, quindi il criterio si prova sul pulsante di avvio dell'estrazione che resta nell'app, con la stessa richiesta (un avvio non riuscito mostra l'errore e non fa avanzare nulla).

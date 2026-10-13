@@ -257,7 +257,7 @@ L'isolamento resta applicativo (ecosistema `postgres-jsts`, D-02): ogni controll
       then: "entrambi gli header contengono frame-ancestors 'none' e un nonce, i due nonce sono diversi e ogni tag script dell'HTML grezzo porta un attributo nonce uguale a quello del proprio header"
     - id: AC-505-3
       given: "browser E2E con listener sugli eventi securitypolicyviolation e sulla console"
-      when: "si navigano /login, dashboard, una pagina risultati e una pagina dell'onboarding da utente loggato"
+      when: "si navigano /login, dashboard, una pagina risultati e la home del primo accesso di un utente senza progetti, da utente loggato"
       then: "il numero di violazioni CSP registrate è 0"
     - id: AC-505-4
       given: "buildCsp('abc', false) e buildCsp('abc', true)"
@@ -392,3 +392,4 @@ L'isolamento resta applicativo (ecosistema `postgres-jsts`, D-02): ogni controll
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
+- Emendamento (2026-10-13, costruzione del macrotask 23): con l'onboarding rimosso (T-2306) AC-505-3 visita la home del primo accesso di T-2305 al posto di una pagina dell'onboarding.

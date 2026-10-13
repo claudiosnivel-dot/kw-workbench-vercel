@@ -266,9 +266,9 @@ Il macrotask trasforma l'estrazione in un job ripartibile a passi brevi con budg
       when: "i timer avanzano fino a 32000 ms"
       then: "le chiamate fetch avvengono a 2000, 6000, 14000, 30000 e 32000 ms dal montaggio"
     - id: AC-1205-3
-      given: "OnboardingRunStep con fetch mock in cui la POST di avvio risponde 202 e lo stato risponde failed con error 'Nessuna seed nella sezione'"
-      when: "l'utente clicca 'Avvia prima estrazione' e i timer avanzano di 2000 ms"
-      then: "il testo 'Nessuna seed nella sezione' è visibile, il link 'Vedi risultati' è assente e nessuna richiesta PATCH a /api/onboarding/state è stata inviata"
+      given: "RunExtractionButton con fetch mock in cui la POST di avvio risponde 202 e lo stato risponde failed con error 'Nessuna seed nella sezione'"
+      when: "l'utente clicca 'Avvia estrazione' e i timer avanzano di 2000 ms"
+      then: "il testo 'Nessuna seed nella sezione' è visibile e il link 'Vedi risultati' è assente"
     - id: AC-1205-4
       given: "l'app avviata sul DB di test con provider MOCK, un utente seed e un job running inserito per la sua sezione con progress 3/10"
       when: "l'utente apre la pagina del progetto, ricarica, poi il test porta il job a completed nel DB; infine l'utente avvia un'estrazione su una seconda sezione"
@@ -292,3 +292,4 @@ Il macrotask trasforma l'estrazione in un job ripartibile a passi brevi con budg
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
+- Emendamento (2026-10-13, costruzione del macrotask 23): con l'onboarding rimosso (T-2306) AC-1205-3 si prova sul pulsante di avvio dell'estrazione, che usa lo stesso JobProgress.

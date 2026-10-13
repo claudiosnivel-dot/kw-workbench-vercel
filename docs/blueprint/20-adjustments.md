@@ -102,7 +102,7 @@ Applicare otto cambiamenti di comportamento chiesti dall'utente su funzioni già
 
   acceptance_criteria:
     - id: AC-2004-1
-      given: "lancio attivo, un piano con maxProjects 1 e un workspace con il progetto creato dall'onboarding"
+      given: "lancio attivo, un piano con maxProjects 1 e un workspace con il primo progetto creato dall'avvio rapido (T-2301)"
       when: "l'utente crea un progetto da POST /api/projects"
       then: "la risposta è 201; un secondo POST /api/projects risponde 402 PLAN_LIMIT"
 
@@ -125,8 +125,8 @@ Applicare otto cambiamenti di comportamento chiesti dall'utente su funzioni già
   acceptance_criteria:
     - id: AC-2005-1
       given: "un OWNER e un MEMBER dello stesso workspace attivo"
-      when: "si rende la barra per ciascuno"
-      then: "la barra dell'OWNER contiene un link con href '/billing'; quella del MEMBER no"
+      when: "si rende la barra per ciascuno e si apre il menu dell'utente"
+      then: "il menu dell'OWNER contiene una voce con href '/billing'; quello del MEMBER no"
 
   target_tests:
     - file: "tests/component/top-nav-support-link.test.tsx"
@@ -219,3 +219,4 @@ Applicare otto cambiamenti di comportamento chiesti dall'utente su funzioni già
 - T-2005 cambia la baseline visiva della dashboard: gate umano prima del merge.
 - Emendamento (2026-10-10, costruzione): in AC-2003-1 e AC-2004-1 lo status di PLAN_LIMIT è 402, quello di oggi (`PlanLimitError` di T-1605, AC-1605-1 e AC-1605-5); il modulo scriveva 403, in contrasto con il «come oggi» del criterio. AC-1804-4 del modulo 18 emendato come chiede il DoD di T-2001.
 - Note di costruzione (2026-10-10), scelte dell'agente da confermare dall'utente. T-2001: ogni tentativo consuma la soglia, anche quello con la password giusta; il limite vale sempre, non solo con il lancio attivo; i tentativi registrati per la chiave `account-delete:user:<id>` (che contiene l'id) si eliminano nella transazione della cancellazione. T-2002: l'istante della prima richiesta di annullamento si salva in `jobs.cancel_requested_at` (migrazione `0040_adjustments`); la quota torna quando il job diventa davvero canceled (subito per un pending, al batch successivo per un running, anche se quel batch arriva dopo i 60 secondi), mai se nel frattempo il job si completa o fallisce; i 60 secondi sono compresi; una seconda richiesta non sposta l'istante; il job annullato gratis è segnato `quota_refunded`. T-2003: il root admin sceglie DATAFORSEO su progetto e sezione anche con il lancio attivo e senza il diritto del piano; nelle sue estrazioni restano gli altri limiti del piano del workspace (avvii al giorno, keyword del mese, tetto di keyword per estrazione). T-2004: ogni workspace ha al massimo un progetto fuori dal limite: un secondo progetto creato dall'onboarding (ripartendo con l'onboarding) conta come gli altri, sotto il lock del workspace. T-2005: la voce Fatturazione sta dopo «Nuovo progetto» e prima di «Admin». T-2006: se il workspace personale ha già un altro OWNER la proprietà resta a lui; la riga `user.delete` porta `workspaceTransfer` con `workspaceId` e `newOwnerUserId`. T-2007: il creatore che esce dal proprio workspace personale è di solito ADMIN dopo il trasferimento; il nuovo workspace personale prende il nome mostrato dell'utente; la pagina Workspace spiega che il workspace resta agli altri membri. T-2008: l'autore si salva in `workspaces.created_by_user_id` (SET NULL all'eliminazione dell'utente) e il limite di 10 conta i workspace creati dall'utente e ancora esistenti (un workspace eliminato libera un posto); i workspace personali non contano; il modulo Crea workspace sta in fondo alla pagina Workspace.
+- Emendamento (2026-10-13, costruzione del macrotask 23): l'onboarding è rimosso (T-2306) e il primo progetto di un workspace nasce dall'avvio rapido (T-2301), con lo stesso flag fuori dal limite: AC-2004-1 lo crea così. La voce Fatturazione sta nel menu dell'utente (T-2304): AC-2005-1 la cerca lì.
