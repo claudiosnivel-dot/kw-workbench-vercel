@@ -227,11 +227,11 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
   acceptance_criteria:
     - id: AC-1104-1
       given: "l'app avviata su DB di test con utente seed autenticato"
-      when: "axe-core analizza /login, la dashboard e la pagina risultati di un progetto"
+      when: "axe-core analizza /login, la dashboard e la pagina delle keyword dell'argomento aperto dal progetto (emendato da T-2403 il 2026-10-13: la pagina dei risultati non esiste più)"
       then: "il numero di violazioni con impact serious o critical è 0 su ciascuna pagina"
     - id: AC-1104-2
-      given: "la pagina risultati con Google Sheets collegato"
-      when: "l'utente apre la modale di export Sheets, preme Tab 20 volte e poi Esc"
+      given: "la pagina delle keyword con Google Sheets collegato"
+      when: "l'utente apre la finestra Esporta dal pulsante della barra in alto, preme Tab 20 volte e poi Esc (emendato da T-2406 il 2026-10-13: un solo pulsante Esporta al posto del pulsante Google Sheets)"
       then: "dopo ogni Tab document.activeElement è dentro l'elemento role=dialog e dopo Esc è il pulsante che ha aperto la modale"
     - id: AC-1104-3
       given: "un utente con tema salvato DARK nella pagina /personalizza"
@@ -306,3 +306,4 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
 
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0 (in isolamento i soli riferimenti non risolti sono T-108, T-802, T-501, T-403, T-801, T-405, T-506, di altri moduli).
 - Semantico: `self-check-checklist.md` punti 6-10 applicati a T-1101..T-1105.
+- Emendamento (2026-10-13, macrotask 24 ux-keywords): AC-1104-1 analizza la pagina delle keyword dell'argomento (T-2403) e AC-1104-2 la finestra Esporta aperta dalla barra in alto (T-2406), che tiene il focus e lo restituisce al pulsante Esporta.

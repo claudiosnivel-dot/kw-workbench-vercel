@@ -227,9 +227,9 @@ Strato: tutto il codice di dominio resta in `lib/modules/**` e non importa da `c
 
   acceptance_criteria:
     - id: AC-705-1
-      given: "una sezione già estratta in cui l'utente ha impostato 'approved' su 3 keyword, 'rejected' su 2 e selected_for_export false su 1, e un secondo run che produce ancora 4 di queste 6 keyword"
+      given: "una sezione già estratta in cui l'utente ha impostato 'approved' su 3 keyword e 'rejected' su 2, con una sesta keyword lasciata 'pending', e un secondo run che produce ancora 4 di queste 6 keyword"
       when: "si esegue il secondo run con runExtractionPipeline"
-      then: "le 4 keyword ancora prodotte hanno lo stesso id, lo stesso review_status e lo stesso selected_for_export di prima del run"
+      then: "le 4 keyword ancora prodotte hanno lo stesso id e lo stesso review_status di prima del run (emendato da T-2401 il 2026-10-13: selected_for_export non esiste più, D-19 emendata)"
     - id: AC-705-2
       given: "lo stesso scenario, con le altre 2 keyword revisionate non più prodotte e una seconda sezione dello stesso progetto con 15 candidate"
       when: "si esegue il secondo run sulla prima sezione"
@@ -237,7 +237,7 @@ Strato: tutto il codice di dominio resta in `lib/modules/**` e non importa da `c
     - id: AC-705-3
       given: "un secondo run che produce una keyword mai vista prima e un'altra keyword nuova che contiene un brand escluso (exclude_brands true)"
       when: "si esegue il run"
-      then: "la prima ha review_status 'pending' e selected_for_export true; la seconda ha review_status 'rejected' e selected_for_export false"
+      then: "la prima ha review_status 'pending'; la seconda ha review_status 'rejected' (emendato da T-2401 il 2026-10-13: selected_for_export non esiste più, D-19 emendata)"
     - id: AC-705-4
       given: "una keyword approvata con avg_monthly_searches 100 al primo run e un mock di metriche che al secondo run restituisce 900 per lo stesso canonical"
       when: "si esegue il secondo run"
@@ -362,3 +362,4 @@ Strato: tutto il codice di dominio resta in `lib/modules/**` e non importa da `c
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
+- Emendamento (2026-10-13, macrotask 24 ux-keywords): AC-705-1 e AC-705-3 senza selected_for_export, eliminata dalla migrazione 0042 (T-2401, D-19 emendata); il re-run conserva solo review_status, che dice se la keyword è tenuta o scartata.
