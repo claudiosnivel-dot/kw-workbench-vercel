@@ -9,7 +9,7 @@
 | **Progetto** | Titan SEO (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-10-13 |
-| **Sessione corrente** | 2026-10-13 (venticinquesima) — BUILD di `ux-keywords` (24): checkpoint VERDE, CI verde, PR #60 aperta; merge sospeso fino all'approvazione dell'utente della baseline visiva dei risultati rigenerata (gate umano di T-2403) |
+| **Sessione corrente** | 2026-10-13 (ventiseiesima) — nessun macrotask costruibile: `ux-keywords` (24) aspetta l'approvazione dell'utente della baseline visiva dei risultati per il merge di PR #60 (gate umano di T-2403); 25 e 26 dipendono da 24. Precedente: venticinquesima, BUILD di `ux-keywords` (24) con checkpoint VERDE e CI verde |
 
 ---
 
@@ -113,6 +113,12 @@
 - **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5, jsdom 30 e, da T-407, del progetto `24.x`: funziona con avviso; riferimento la CI su Node 24 da `.nvmrc`). E2E e Vitest su Linux con Node 24: container `mcr.microsoft.com/playwright:v1.63.0-noble` nella rete `kw-workbench-vercel_default`, copia del repo senza `node_modules`, `npm ci`, un proxy TCP in Node da `localhost:54329` a `postgres-test:5432` (la guardia ammette solo host locali), `CI=true`. Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
+
+### Sessione 2026-10-13 (ventiseiesima) — inizio sessione bloccato dal gate umano del macrotask 24
+
+- **Selezione del macrotask**: il primo non chiuso è `ux-keywords` (24), costruito e verde ma con il merge sospeso finché l'utente non approva la baseline visiva dei risultati rigenerata (gate umano di T-2403), il golden master della pipeline senza selected_for_export e le scelte del Self-check del modulo 24; `ux-plan` (25) e `ux-settings` (26) dipendono da 24. Nessun nuovo lavoro di costruzione.
+- **Verifiche**: `master` fermo a `4c1b8a4`; PR #60 aperta, `MERGEABLE` e `CLEAN`, con CI verde anche sull'ultimo commit (run 38467113484 su `40889b8`: checks 2m14s, integration 3m11s, e2e 2m54s, build 1m28s; deploy Preview di sola documentazione annullato dall'Ignored Build Step). Checkpoint non ripetuto: il codice non è cambiato dal checkpoint VERDE di `834e2e9`.
+- **Decisione richiesta all'utente**: approvazione del merge di PR #60 (§6).
 
 ### Sessione 2026-10-13 (venticinquesima) — BUILD di `ux-keywords` (24), prima chiusura (merge sospeso per la baseline visiva)
 
