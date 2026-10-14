@@ -45,7 +45,13 @@ export default async function TopicKeywordsPage({ params, searchParams }: TopicK
   const project = await requireProjectPage(user.id, id, {
     subprojects: {
       where: { id: topicId },
-      select: { id: true, name: true, seeds: { orderBy: { created_at: "asc" }, select: { keyword: true } }, ...TOPIC_OVERRIDE_FIELDS },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        seeds: { orderBy: { created_at: "asc" }, select: { keyword: true } },
+        ...TOPIC_OVERRIDE_FIELDS,
+      },
     },
   });
   const topic = project.subprojects[0];
@@ -53,7 +59,7 @@ export default async function TopicKeywordsPage({ params, searchParams }: TopicK
     notFound();
   }
   // Il resto della select: id, nome e le impostazioni diverse dal progetto.
-  const { seeds, ...overrides } = topic;
+  const { seeds, description, ...overrides } = topic;
 
   const [view, activeJobId, canAuto] = await Promise.all([
     loadKeywordsView(project.id, topic.id, resolvedSearchParams),
@@ -73,7 +79,7 @@ export default async function TopicKeywordsPage({ params, searchParams }: TopicK
         actions={
           <TopicActions
             projectId={project.id}
-            topic={{ id: topic.id, name: topic.name, seeds: seeds.map((seed) => seed.keyword), overrides }}
+            topic={{ id: topic.id, name: topic.name, description, seeds: seeds.map((seed) => seed.keyword), overrides }}
             canEdit={canPerform(project.role, "section.write")}
             canEditAutocompleteProvider={user.isRootAdmin}
           />

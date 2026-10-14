@@ -1,10 +1,10 @@
 // Gate di T-1205 (AC-1205-1…AC-1205-3): avanzamento con polling e backoff, esito finale esplicito e nessun link ai
 // risultati per un job fallito.
 // impacted-by: T-2306 (onboarding rimosso: AC-1205-3 emendato sul pulsante di avvio dell'estrazione)
-import { act, fireEvent, screen } from "@testing-library/react";
+// impacted-by: T-2702 (pulsante di avvio rimosso: AC-1205-3 emendato su JobProgress montato con il jobId)
+import { act, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { JobProgress } from "@/components/job-progress";
-import { RunExtractionButton } from "@/components/run-extraction-button";
 import { renderWithIntl } from "./intl";
 
 const RESULTS_HREF = "/projects/p1/results?subprojectId=s1";
@@ -77,22 +77,15 @@ describe("JobProgress", () => {
   });
 });
 
-describe("RunExtractionButton con JobProgress", () => {
+describe("JobProgress di una ricerca fallita", () => {
   // covers: AC-1205-3
   it("a job failed mostra l'errore e nessun link ai risultati", async () => {
-    fetchMock.mockImplementation(async (input, init) => {
-      if (String(input) === "/api/projects/p1/run" && init?.method === "POST") {
-        return jsonResponse(202, { data: { jobId: "job-1", status: "pending", phase: "expand" }, meta: { subprojectId: "s1" } });
-      }
-      return jsonResponse(200, jobState("failed", "expand", 0, 0, "Nessuna seed nella sezione"));
-    });
-    renderWithIntl(<RunExtractionButton projectId="p1" subprojectId="s1" resultsHref={RESULTS_HREF} />);
+    fetchMock.mockResolvedValue(jsonResponse(200, jobState("failed", "expand", 0, 0, "Nessuna seed nella sezione")));
+    renderWithIntl(<JobProgress jobId="job-1" resultsHref={RESULTS_HREF} />);
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Avvia estrazione" }));
-    });
     await advance(2000);
 
+    expect(fetchMock).toHaveBeenCalledWith("/api/jobs/job-1", expect.anything());
     expect(screen.getByText("Nessuna seed nella sezione")).toBeVisible();
     expect(screen.queryByRole("link", { name: "Vedi risultati" })).toBeNull();
   });

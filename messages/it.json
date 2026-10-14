@@ -180,9 +180,6 @@
       "canceled": "annullato"
     },
     "run": {
-      "start": "Avvia estrazione",
-      "running": "Estrazione in corso...",
-      "endpointMissing": "Endpoint estrazione non configurato",
       "failed": "Estrazione non riuscita"
     },
     "progress": {
@@ -1269,11 +1266,12 @@
     "findMore": "+ Trova altre keyword",
     "menu": "Altre azioni per {name}",
     "menuSeeds": "Parole di partenza",
-    "menuRename": "Rinomina",
+    "menuDetails": "Nome e descrizione",
     "menuDelete": "Elimina",
-    "rename": {
-      "title": "Rinomina l'argomento",
-      "label": "Nome dell'argomento",
+    "details": {
+      "title": "Nome e descrizione",
+      "name": "Nome dell'argomento",
+      "description": "Descrizione",
       "cancel": "Annulla",
       "save": "Salva"
     },

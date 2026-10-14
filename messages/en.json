@@ -180,9 +180,6 @@
       "canceled": "canceled"
     },
     "run": {
-      "start": "Start extraction",
-      "running": "Extraction in progress...",
-      "endpointMissing": "Extraction endpoint not configured",
       "failed": "Extraction failed"
     },
     "progress": {
@@ -1269,11 +1266,12 @@
     "findMore": "+ Find more keywords",
     "menu": "More actions for {name}",
     "menuSeeds": "Starting words",
-    "menuRename": "Rename",
+    "menuDetails": "Name and description",
     "menuDelete": "Delete",
-    "rename": {
-      "title": "Rename the topic",
-      "label": "Topic name",
+    "details": {
+      "title": "Name and description",
+      "name": "Topic name",
+      "description": "Description",
       "cancel": "Cancel",
       "save": "Save"
     },
