@@ -233,7 +233,7 @@ caratterizzazioni di 01-foundation.
     - "OnboardingRunStep non chiama PATCH /api/onboarding/state se l'estrazione non è completed"
     - "Il controllo di proprietà (owner_user_id) nelle due rotte resta invariato; le suite di caratterizzazione già presenti (T-105, T-106) restano verdi"
     - "Senza payload.error il messaggio mostrato dai due componenti è il fallback Estrazione non riuscita"
-    - "tests/component/run-extraction-button.test.tsx copre sia RunExtractionButton sia OnboardingRunStep"
+    - "tests/component/run-extraction-button.test.tsx copre sia RunExtractionButton sia OnboardingRunStep (emendato da T-2702 il 2026-10-14: con RunExtractionButton rimosso, AC-305-3 e AC-305-4 si provano in tests/component/next-step-run.test.tsx sul pulsante del prossimo passo run_topic)"
 
   acceptance_criteria:
     # Emendamento T-1204 (2026-10-06): le rotte run avviano il job in background e rispondono 202; l'esito failed si
@@ -247,18 +247,18 @@ caratterizzazioni di 01-foundation.
       when: "si chiama runJobById"
       then: "la promessa si risolve con un job con status failed e la riga in jobs ha status failed, non running"
     - id: AC-305-3
-      given: "RunExtractionButton renderizzato con fetch mockato che risponde 500 con {error: 'Estrazione non riuscita', code: 'JOB_FAILED'}"
-      when: "si clicca Avvia estrazione"
-      then: "il testo Estrazione non riuscita è visibile, nessuna barra di avanzamento è resa e router.refresh non è chiamato"
+      given: "NextStepAction con il passo run_topic (T-2302) renderizzato con fetch mockato in cui la rotta run risponde 500 con {error: 'Estrazione non riuscita', code: 'JOB_FAILED'} (emendato da T-2702 il 2026-10-14: RunExtractionButton è rimosso)"
+      when: "si clicca il pulsante del prossimo passo Avvia la ricerca"
+      then: "il testo Estrazione non riuscita è visibile, nessuna barra di avanzamento è resa e router.push e router.refresh non sono chiamati"
     - id: AC-305-4
-      given: "RunExtractionButton renderizzato con fetch mockato che risponde 200 con data.status failed"
-      when: "si clicca Avvia estrazione"
-      then: "il testo Estrazione non riuscita è visibile e router.refresh non è chiamato"
+      given: "NextStepAction con il passo run_topic (T-2302) renderizzato con fetch mockato in cui la rotta run risponde 200 con data.status failed (emendato da T-2702 il 2026-10-14)"
+      when: "si clicca il pulsante del prossimo passo Avvia la ricerca"
+      then: "il testo Estrazione non riuscita è visibile e router.push e router.refresh non sono chiamati"
 
   target_tests:
     - file: "tests/integration/run-route.test.ts"
       covers: [AC-305-1, AC-305-2]
-    - file: "tests/component/run-extraction-button.test.tsx"
+    - file: "tests/component/next-step-run.test.tsx"
       covers: [AC-305-3, AC-305-4]
 
   security_notes:
@@ -333,3 +333,4 @@ caratterizzazioni di 01-foundation.
 - Osservabilità: `ac_observability_check.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
 - AC-305-3 emendato il 2026-10-13 (macrotask 23): l'onboarding è rimosso con T-2306, quindi il criterio si prova sul pulsante di avvio dell'estrazione che resta nell'app, con la stessa richiesta (un avvio non riuscito mostra l'errore e non fa avanzare nulla).
+- AC-305-3 e AC-305-4 emendati il 2026-10-14 (costruzione del macrotask 27, T-2702, D-40): RunExtractionButton, rimasto senza pagine, è rimosso; i due criteri si provano sul pulsante del prossimo passo run_topic (NextStepAction, T-2302), che avvia la ricerca con la stessa lettura della risposta (readStartedJobId), e il target test passa a `tests/component/next-step-run.test.tsx`. Il pulsante del prossimo passo cambia pagina con router.push dopo un avvio riuscito, quindi il criterio vieta anche quello.

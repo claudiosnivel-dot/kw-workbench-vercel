@@ -266,8 +266,8 @@ Il macrotask trasforma l'estrazione in un job ripartibile a passi brevi con budg
       when: "i timer avanzano fino a 32000 ms"
       then: "le chiamate fetch avvengono a 2000, 6000, 14000, 30000 e 32000 ms dal montaggio"
     - id: AC-1205-3
-      given: "RunExtractionButton con fetch mock in cui la POST di avvio risponde 202 e lo stato risponde failed con error 'Nessuna seed nella sezione'"
-      when: "l'utente clicca 'Avvia estrazione' e i timer avanzano di 2000 ms"
+      given: "JobProgress montato con timer finti, il jobId di una ricerca avviata e resultsHref, con fetch mock in cui lo stato del job risponde failed con error 'Nessuna seed nella sezione' (emendato da T-2702 il 2026-10-14: RunExtractionButton è rimosso, la barra del prossimo passo monta JobProgress con il jobId)"
+      when: "i timer avanzano di 2000 ms"
       then: "il testo 'Nessuna seed nella sezione' è visibile e il link 'Vedi risultati' è assente"
     - id: AC-1205-4
       given: "l'app avviata sul DB di test con provider MOCK, un utente seed e un job running inserito per la sua sezione con progress 3/10"
@@ -295,3 +295,4 @@ Il macrotask trasforma l'estrazione in un job ripartibile a passi brevi con budg
 - Emendamento (2026-10-13, costruzione del macrotask 23): con l'onboarding rimosso (T-2306) AC-1205-3 si prova sul pulsante di avvio dell'estrazione, che usa lo stesso JobProgress.
 - Emendamento (2026-10-13, macrotask 24 ux-keywords): AC-1205-4 segue la ricerca nel riquadro della pagina dell'argomento e la avvia dalla barra del prossimo passo e da «Trova altre keyword» (T-2404); la vecchia pagina del progetto non esiste più.
 - Emendamento (2026-10-14, costruzione del macrotask 26): le pagine Sezioni e delle impostazioni della sezione non esistono più (T-2602, T-2603), quindi activeJobIdOf è rimossa e RunExtractionButton non è montato da nessuna pagina; JobProgress resta, perché lo usa la barra del prossimo passo durante una ricerca (correzione del 2026-10-14: la prima versione di questa nota diceva che nemmeno JobProgress era montato). La rimozione di RunExtractionButton è decisa dall'utente (D-40, T-2702), che sposta AC-1205-3 su JobProgress.
+- Emendamento (2026-10-14, costruzione del macrotask 27): RunExtractionButton è rimosso (T-2702), quindi le voci del DoD che lo nominano restano come storia; AC-1205-3 si prova su JobProgress montato con il jobId e resultsHref, nello stesso `tests/component/job-progress.test.tsx`.
