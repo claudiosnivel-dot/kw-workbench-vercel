@@ -44,9 +44,10 @@ export function KeywordTable({ label, rows, showTopic, columns, pendingIds, onTo
   const tSource = useTranslations("export.values.source");
   const format = useFormatter();
   const show = (column: OptionalKeywordColumn) => columns.has(column);
+  // Una fonte senza etichetta nel catalogo non si mostra così com'è (T-2604).
   const sourceLabel = (source: string) => {
     const key = source as Parameters<typeof tSource>[0];
-    return tSource.has(key) ? tSource(key) : source;
+    return tSource.has(key) ? tSource(key) : t("table.otherSource");
   };
 
   return (

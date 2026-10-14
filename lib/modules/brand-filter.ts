@@ -31,6 +31,11 @@ export function prepareBlacklist(brands: string[], languageCode: string): Prepar
     .filter((entry) => entry.brand && entry.tokens.length > 0);
 }
 
+/** brand_reason di una keyword trovata da un marchio: lo stesso testo per la pipeline e per i marchi del progetto (T-2601). */
+export function brandReasonOf(brand: string): string {
+  return `Matched blacklist brand: ${brand}`;
+}
+
 export function evaluateBrandStatus(params: {
   keyword: string;
   blacklist: PreparedBrand[];
@@ -43,7 +48,7 @@ export function evaluateBrandStatus(params: {
     if (containsTokenSequence(tokens, entry.tokens)) {
       return {
         brand_status: params.excludeBrands ? "excluded" : "review",
-        brand_reason: `Matched blacklist brand: ${entry.brand}`,
+        brand_reason: brandReasonOf(entry.brand),
         matchedBrand: entry.brand,
       };
     }

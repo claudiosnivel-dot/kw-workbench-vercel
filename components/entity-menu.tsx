@@ -51,7 +51,7 @@ export function EntityMenu({ label, items }: { label: string; items: EntityMenuI
                     type="button"
                     role="menuitem"
                     tabIndex={-1}
-                    className={`user-menu-item ${item.kind === "delete" ? "text-red-700" : ""}`}
+                    className={`user-menu-item ${item.kind === "delete" ? "is-danger" : ""}`}
                     onClick={() => select(item)}
                   >
                     {item.label}

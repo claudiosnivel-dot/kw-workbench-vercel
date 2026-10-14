@@ -8,6 +8,8 @@ export type SectionParams = { id: string; subprojectId: string };
 /** Parametri delle rotte /api/projects/[id]/strategies/[strategyId] e delle sue pagine (T-1903, T-1904). */
 export type StrategyParams = { id: string; strategyId: string };
 export type StrategyPageParams = StrategyParams & { pageId: string };
+/** Parametri della rotta /api/projects/[id]/brands/[brandId] (T-2601). */
+export type BrandParams = { id: string; brandId: string };
 
 /**
  * Rotta API con utente autenticato e parametri di percorso (T-1303): sessione verificata (401 AUTH_REQUIRED) e

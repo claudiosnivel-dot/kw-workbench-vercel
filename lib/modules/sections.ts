@@ -2,23 +2,10 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { type AuthorizedProject, expectOneRow } from "@/lib/authz/workspace";
 import { AppError } from "@/lib/http/errors";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
-import { ProjectNotFoundError, SectionNotFoundError } from "@/lib/modules/project-access";
+import { SectionNotFoundError } from "@/lib/modules/project-access";
 import { prisma } from "@/lib/prisma";
 
 type ScopedProject = Pick<AuthorizedProject, "id" | "perimeter">;
-
-/**
- * Imposta la sezione predefinita del progetto: accesso a progetto e sezione già verificato dalla rotta; la scrittura
- * porta il perimetro del workspace (T-1502), quindi una membership revocata nel frattempo dà 404 e nessuna scrittura.
- */
-export async function setDefaultSection(project: ScopedProject, sectionId: string) {
-  const { count } = await prisma.project.updateMany({
-    where: { id: project.id, ...project.perimeter },
-    data: { default_subproject_id: sectionId },
-  });
-  expectOneRow(count, () => new ProjectNotFoundError());
-  return { id: project.id, default_subproject_id: sectionId };
-}
 
 /** Nome di sezione già usato nel progetto (vincolo project_id + name): 409 con codice stabile (T-808). */
 class SectionNameTakenError extends AppError {

@@ -392,16 +392,14 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
       when: "il proprietario invia in parallelo DELETE di S1 e DELETE di S2"
       then: "una richiesta riceve 200 e l'altra 400 con il messaggio sull'ultima sezione; nel DB resta esattamente 1 sezione del progetto"
     - id: AC-808-4
-      given: "SectionOrderButtons per la sezione 'Blog' e SubprojectForm in modalità create con fetch mockata che risponde 201"
-      when: "si renderizzano i componenti e si invia il form con nome 'Nuova sezione'"
-      then: "esistono pulsanti con nome accessibile «Sposta in alto la sezione Blog» e «Sposta in basso la sezione Blog» e testo '↑' e '↓' (nessun '?'); dopo l'invio il campo nome del form vale stringa vuota"
+      given: "SectionOrderButtons per la sezione 'Blog' e SubprojectForm in modalità create con fetch mockata che risponde 201 (emendato da T-2603 il 2026-10-14: un progetto con gli argomenti A, B e C nella barra laterale)"
+      when: "si renderizzano i componenti e si invia il form con nome 'Nuova sezione' (emendato da T-2603 il 2026-10-14: si apre con la tastiera il menu ⋯ di C)"
+      then: "esistono pulsanti con nome accessibile «Sposta in alto la sezione Blog» e «Sposta in basso la sezione Blog» e testo '↑' e '↓' (nessun '?'); dopo l'invio il campo nome del form vale stringa vuota (emendato da T-2603 il 2026-10-14: la prima voce del menu, con il focus, ha nome accessibile «Sposta su»)"
 
   target_tests:
     - file: "tests/integration/sections.test.ts"
       covers: [AC-808-1, AC-808-2, AC-808-3]
-    - file: "tests/component/section-order-buttons.test.tsx"
-      covers: [AC-808-4]
-    - file: "tests/component/subproject-form.test.tsx"
+    - file: "tests/e2e/project-shell.spec.ts"
       covers: [AC-808-4]
 
   security_notes:
@@ -517,3 +515,4 @@ Ogni query resta filtrata per il progetto posseduto dall'utente (oggi owner_user
 - Semantico: `self-check-checklist.md` punti 6-10.
 - Emendamento (2026-10-13, costruzione del macrotask 23): l'export non registra più il completamento dell'onboarding, rimosso con T-2306, quindi AC-805-4 non simula più il suo errore e chiede un log senza errori.
 - Emendamento (2026-10-13, costruzione del macrotask 24, D-39): stato unico tieni/scarta (T-2401), scope kept, all e filtered (T-2402, D-23 emendata) e pagina delle keyword al posto della pagina dei risultati (T-2403). Emendati AC-802-3 (scope kept), AC-802-4 (keywordsHref, nessun link verso /results), AC-803-1 e AC-803-2 (azioni keep e discard, filtro status), AC-803-3 e AC-803-4 (azioni sul set filtrato e scelte locali della pagina delle keyword, nello stesso file di test), AC-807-1…AC-807-4 (scope nuovi); la PATCH con un'azione precedente e l'export con uno scope precedente rispondono 400 VALIDATION_ERROR. AC-804-1 resta: le colonne sono tante quante le chiavi di ExportRow, oggi 22.
+- Emendamento (2026-10-14, costruzione del macrotask 26, D-39): SectionOrderButtons e il form di creazione delle sezioni sono rimossi con T-2602 e T-2603. AC-808-4 si prova sulle voci «Sposta su» e «Sposta giù» del menu ⋯ degli argomenti nella barra laterale (tests/e2e/project-shell.spec.ts, con AC-2603-1); la creazione degli argomenti passa dal dialogo Nuovo argomento (T-2303), che si chiude dopo il 201. Il DoD di T-808 sui due componenti resta come storia.

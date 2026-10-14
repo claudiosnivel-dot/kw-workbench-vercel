@@ -25,7 +25,7 @@ export function ProgressBar({ label, done, total }: { label: string; done: numbe
       aria-valuemax={total}
       className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-muted)]"
     >
-      <div ref={barRef} className="h-full w-0 bg-[var(--brand-500)] transition-[width]" />
+      <div ref={barRef} className="h-full w-0 bg-[var(--status-done)] transition-[width]" />
     </div>
   );
 }

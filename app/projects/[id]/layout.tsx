@@ -1,5 +1,6 @@
 import { ProjectShell } from "@/components/project-shell";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { canPerform } from "@/lib/authz/permissions";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import { getGoogleSheetsCredentialSnapshot } from "@/lib/integrations/google-sheets";
 import { listRecentProjects } from "@/lib/modules/dashboard";
@@ -30,6 +31,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
       progress={progress}
       recentProjects={recentProjects}
       exportOptions={{ sheetsConnected: googleSheets.connected, hasLogo: branding.logoUrl.length > 0 }}
+      canReorderTopics={canPerform(project.role, "section.write")}
     >
       {children}
     </ProjectShell>

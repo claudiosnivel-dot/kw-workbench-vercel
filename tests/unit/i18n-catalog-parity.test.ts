@@ -71,6 +71,7 @@ describe("cataloghi it ed en", () => {
     );
 
     expect(occurrences).toEqual([]);
-    expect(italian.get("sections.deleteWarning")).toMatch(/(?<!\p{L})resterà(?!\p{L})/u);
+    // impacted-by: T-2604 (l'avviso di eliminazione della sezione non esiste più: l'accento si prova sull'avviso dei marchi)
+    expect(italian.get("projects.brands.intro")).toMatch(/(?<!\p{L})già(?!\p{L})/u);
   });
 });

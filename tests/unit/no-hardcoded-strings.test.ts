@@ -18,14 +18,10 @@ const I18N_MIGRATED_FILES = [
   "app/projects/new/page.tsx",
   "components/project-form.tsx",
   "app/projects/[id]/page.tsx",
-  "app/projects/[id]/sections/page.tsx",
+  // Le pagine Sezioni e delle impostazioni della sezione, delete-entity-button.tsx, section-order-buttons.tsx e
+  // set-default-section-button.tsx non esistono più (rimossi con T-2602 e T-2603).
   "app/projects/[id]/settings/page.tsx",
-  "app/projects/[id]/subprojects/[subprojectId]/page.tsx",
   "components/subproject-form.tsx",
-  // delete-entity-button.tsx sostituisce delete-project-button.tsx e delete-subproject-button.tsx (T-1102).
-  "components/delete-entity-button.tsx",
-  "components/section-order-buttons.tsx",
-  "components/set-default-section-button.tsx",
   "components/run-extraction-button.tsx",
   "components/job-progress.tsx",
   "components/planner-export-download.tsx",

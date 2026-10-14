@@ -14,6 +14,21 @@ import { requireProjectPage } from "@/lib/modules/project-pages";
 
 export const dynamic = "force-dynamic";
 
+// Impostazioni diverse dal progetto dell'argomento, per il dialogo del menu ⋯ (T-2602).
+const TOPIC_OVERRIDE_FIELDS = {
+  language_code_override: true,
+  country_code_override: true,
+  autocomplete_provider_override: true,
+  metrics_provider_override: true,
+  min_volume_override: true,
+  exclude_brands_override: true,
+  expand_alpha_override: true,
+  expand_numeric_override: true,
+  expand_patterns_override: true,
+  auto_classification_override: true,
+  scoring_profile_override: true,
+} as const;
+
 type TopicKeywordsPageProps = {
   params: Promise<{ id: string; topicId: string }>;
   searchParams: Promise<SearchParams>;
@@ -30,13 +45,15 @@ export default async function TopicKeywordsPage({ params, searchParams }: TopicK
   const project = await requireProjectPage(user.id, id, {
     subprojects: {
       where: { id: topicId },
-      select: { id: true, name: true, seeds: { orderBy: { created_at: "asc" }, select: { keyword: true } } },
+      select: { id: true, name: true, seeds: { orderBy: { created_at: "asc" }, select: { keyword: true } }, ...TOPIC_OVERRIDE_FIELDS },
     },
   });
   const topic = project.subprojects[0];
   if (!topic) {
     notFound();
   }
+  // Il resto della select: id, nome e le impostazioni diverse dal progetto.
+  const { seeds, ...overrides } = topic;
 
   const [view, activeJobId, canAuto] = await Promise.all([
     loadKeywordsView(project.id, topic.id, resolvedSearchParams),
@@ -56,8 +73,9 @@ export default async function TopicKeywordsPage({ params, searchParams }: TopicK
         actions={
           <TopicActions
             projectId={project.id}
-            topic={{ id: topic.id, name: topic.name, seeds: topic.seeds.map((seed) => seed.keyword) }}
+            topic={{ id: topic.id, name: topic.name, seeds: seeds.map((seed) => seed.keyword), overrides }}
             canEdit={canPerform(project.role, "section.write")}
+            canEditAutocompleteProvider={user.isRootAdmin}
           />
         }
         notices={

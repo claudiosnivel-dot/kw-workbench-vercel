@@ -1,5 +1,6 @@
 // Gate di T-2303 (AC-2303-1, AC-2303-2, AC-2303-4): struttura del progetto con la barra laterale a tappe, il menu ☰ da
-// telefono e la barra del prossimo passo, senza violazioni axe serious o critical.
+// telefono e la barra del prossimo passo, senza violazioni axe serious o critical. Gate di T-2603 (AC-2603-1) e di
+// AC-808-4 emendato: gli argomenti si riordinano da tastiera con «Sposta su» del loro menu ⋯ nella barra laterale.
 import { randomBytes } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
@@ -10,7 +11,7 @@ import { createE2EUser } from "./credentials";
 // Password generata a ogni esecuzione, mai una credenziale reale.
 const EMAIL = "e2e-project-shell@example.test";
 const PASSWORD = randomBytes(18).toString("hex");
-const ids = { user: "", project: "", first: "" };
+const ids = { user: "", project: "", first: "", reorder: "" };
 
 function keywordRows(projectId: string, subprojectId: string, keywords: string[]) {
   return keywords.map((keyword) => ({
@@ -42,6 +43,15 @@ test.beforeAll(async () => {
       ...keywordRows(project.id, second.id, ["trail running", "scarpe trail"]),
     ],
   });
+
+  // Progetto con tre argomenti A, B e C per il riordino (T-2603).
+  const reorder = await prisma.project.create({
+    data: { name: "Riordino argomenti", workspace_id: user.workspaceId, created_by_user_id: user.id, language_code: "it", country_code: "IT" },
+  });
+  ids.reorder = reorder.id;
+  await prisma.subproject.createMany({
+    data: ["A", "B", "C"].map((name, position) => ({ project_id: reorder.id, name, position })),
+  });
 });
 
 test.afterAll(async () => {
@@ -50,9 +60,13 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
-async function openFirstTopic(page: Page): Promise<void> {
+async function logIn(page: Page): Promise<void> {
   const login = await page.request.post("/api/auth/login", { data: { email: EMAIL, password: PASSWORD } });
   expect(login.status()).toBe(200);
+}
+
+async function openFirstTopic(page: Page): Promise<void> {
+  await logIn(page);
   // impacted-by: T-2403 (i risultati dell'argomento sono la pagina delle sue keyword)
   await page.goto(`/projects/${ids.project}/keywords/${ids.first}`);
 }
@@ -91,6 +105,33 @@ test.describe("struttura del progetto da computer", () => {
     await expect(page.getByRole("navigation", { name: "Percorso del progetto" })).toBeVisible();
 
     expect(await seriousViolations(page)).toEqual([]);
+  });
+
+  // covers: AC-2603-1
+  // covers: AC-808-4
+  test("con la tastiera, Sposta su due volte nel menu ⋯ di C porta l'ordine a C, A, B anche dopo il ricaricamento", async ({ page }) => {
+    await logIn(page);
+    await page.goto(`/projects/${ids.reorder}/keywords`);
+    const sidebar = page.getByRole("navigation", { name: "Percorso del progetto" });
+    const topics = sidebar.locator(".project-topics a");
+    await expect(topics).toHaveText([/^A/, /^B/, /^C/]);
+
+    for (const expected of [
+      [/^A/, /^C/, /^B/],
+      [/^C/, /^A/, /^B/],
+    ]) {
+      const menu = sidebar.getByRole("button", { name: "Azioni dell'argomento C" });
+      await menu.focus();
+      await page.keyboard.press("ArrowDown");
+      await expect(page.getByRole("menuitem", { name: "Sposta su" })).toBeFocused();
+      const saved = page.waitForResponse((response) => response.url().endsWith("/subprojects/reorder") && response.status() === 200);
+      await page.keyboard.press("Enter");
+      await saved;
+      await expect(topics).toHaveText(expected);
+    }
+
+    await page.reload();
+    await expect(topics).toHaveText([/^C/, /^A/, /^B/]);
   });
 });
 

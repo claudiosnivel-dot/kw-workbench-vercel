@@ -95,8 +95,8 @@ Oggi ogni query di progetti, sezioni, risultati, export, job e onboarding filtra
       then: "le prime tre richieste del MEMBER ricevono 200 o 202; il DELETE del MEMBER riceve 403 con code FORBIDDEN e P esiste ancora; il DELETE dell'ADMIN riceve 200 e projects non contiene più P"
     - id: AC-1502-3
       given: "un utente membro di W1 con progetto P1 e non membro di W2, che contiene il progetto P2 con sezione S2 e keyword K2"
-      when: "l'utente invia PATCH /api/projects/{P1}/subprojects/{S2}, PATCH /api/projects/{P1}/default-subproject con subprojectId S2 e PATCH /api/projects/{P1}/results con ids [K2]"
-      then: "le prime due richieste ricevono 404, la terza aggiorna 0 righe; S2, P1.default_subproject_id e review_status di K2 restano invariati"
+      when: "l'utente invia PATCH /api/projects/{P1}/subprojects/{S2}, PATCH /api/projects/{P1}/default-subproject con subprojectId S2 e PATCH /api/projects/{P1}/results con ids [K2] (emendato da T-2603 il 2026-10-14: la rotta default-subproject non esiste più e non si invia)"
+      then: "le prime due richieste ricevono 404, la terza aggiorna 0 righe; S2, P1.default_subproject_id e review_status di K2 restano invariati (emendato da T-2603 il 2026-10-14: la PATCH della sezione riceve 404 e quella dei risultati aggiorna 0 righe)"
     - id: AC-1502-4
       given: "il codice di app/api/** e lib/**"
       when: "tests/tooling/workspace-scoped-writes.test.ts analizza le chiamate prisma update, delete, updateMany e deleteMany sui modelli project, subproject, seed, keywordCandidate e job"
@@ -231,3 +231,4 @@ Oggi ogni query di progetti, sezioni, risultati, export, job e onboarding filtra
 - Dipendenze implicite da confermare nel 00-INDEX: T-1503 richiede utenti con email verificata (T-1403, non tra le dipendenze); T-1504 rende i controlli di gestione membri solo se T-1503 è costruito; seats (T-1605) agganciati agli inviti da chi arriva per secondo tra T-1503 e T-1605.
 - Emendamento del 2026-10-07 (costruzione): T-1403 e T-1503 erano già costruiti, quindi accettazione e controlli sono attivi; i 404 tengono i code di risorsa introdotti da T-1303 (le caratterizzazioni di T-105 li asseriscono e restano invariate); l'elenco delle rotte segue le rimozioni di T-1101 e le rotte di Keyword Planner di T-904 e T-910; il selettore compare con almeno due workspace. Il design non cambia.
 - Emendamento (2026-10-13, costruzione del macrotask 23): AC-1502-1 perde le rotte dell'onboarding, rimosse con T-2306; AC-1504-1 e AC-1504-3 cercano il workspace nel menu dell'utente (T-2304: il selettore separato non c'è più) e AC-1504-1 legge l'elenco dei progetti dalla nuova home (T-2305).
+- Emendamento (2026-10-14, costruzione del macrotask 26): la rotta /api/projects/[id]/default-subproject è rimossa con T-2603 (D-21 emendata), quindi esce dalla matrice di AC-1502-1 e da AC-1502-3; restano le altre rotte.

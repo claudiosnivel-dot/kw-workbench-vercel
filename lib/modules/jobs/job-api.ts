@@ -1,7 +1,7 @@
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { canPerform, type WorkspaceAction } from "@/lib/authz/permissions";
 import { projectAccessWhere } from "@/lib/authz/workspace";
-import type { Job, JobStatus } from "@/lib/generated/prisma/client";
+import type { Job } from "@/lib/generated/prisma/client";
 import { AppError, ForbiddenError, JOB_ERROR_CODES } from "@/lib/http/errors";
 import { ACTIVE_JOB_STATUSES, releaseQuotaOnCancel } from "@/lib/modules/jobs/job-state";
 import { prisma } from "@/lib/prisma";
@@ -109,14 +109,6 @@ export async function cancelAuthorizedJob({ job, perimeter }: AuthorizedJob): Pr
   }
 
   throw new AppError(409, JOB_ERROR_CODES.notCancelable, "Il job è già terminato");
-}
-
-/**
- * Job pending o running della sezione da mostrare al ricaricamento (T-1205): è sempre l'ultimo creato, perché
- * l'indice jobs_one_active_per_subproject impedisce un nuovo job finché uno è attivo.
- */
-export function activeJobIdOf(latest: { id: string; status: JobStatus } | null | undefined): string | null {
-  return latest && ACTIVE_JOB_STATUSES.includes(latest.status) ? latest.id : null;
 }
 
 /** Id del job pending o running della sezione, letto lato server da una pagina già autorizzata; null se non c'è. */

@@ -95,6 +95,10 @@ html[data-theme="DARK"] {
   --status-warn-border: rgba(251, 191, 36, 0.45);
   --status-warn-bg: rgba(245, 158, 11, 0.2);
   --status-warn-text: #fde68a;
+  /* Colori di stato del percorso (T-2605, stile «A»): fatto, in corso, pericolo; seguono la visione dei colori. */
+  --status-done: var(--status-success-text);
+  --status-progress: var(--status-warn-text);
+  --status-danger: var(--status-danger-text);
   --utility-bg-white: rgba(15, 23, 42, 0.92);
   --utility-bg-slate-50: rgba(15, 23, 42, 0.8);
   --utility-bg-slate-100: rgba(30, 41, 59, 0.82);
@@ -161,6 +165,10 @@ html[data-theme="LIGHT"] {
   --status-warn-border: rgba(202, 138, 4, 0.42);
   --status-warn-bg: rgba(245, 158, 11, 0.14);
   --status-warn-text: #854d0e;
+  /* Colori di stato del percorso (T-2605, stile «A»): fatto, in corso, pericolo; seguono la visione dei colori. */
+  --status-done: var(--status-success-text);
+  --status-progress: var(--status-warn-text);
+  --status-danger: var(--status-danger-text);
   --utility-bg-white: rgba(255, 255, 255, 0.95);
   --utility-bg-slate-50: rgba(248, 250, 252, 0.95);
   --utility-bg-slate-100: rgba(241, 245, 249, 0.95);
@@ -458,6 +466,13 @@ a {
   outline: none;
 }
 
+/* Voce Elimina dei menu ⋯: il rosso di pericolo resta anche al passaggio e al focus (T-2605). */
+.user-menu-item.is-danger,
+.user-menu-item.is-danger:hover,
+.user-menu-item.is-danger:focus {
+  color: var(--status-danger);
+}
+
 .user-menu-item[aria-checked="true"]::after,
 .user-menu-item[aria-current="page"]::after {
   content: "✓";
@@ -536,6 +551,45 @@ a {
   color: var(--text-500);
 }
 
+/* Riordino degli argomenti (T-2603): il menu ⋯ sta sopra il conteggio, visibile al passaggio o al focus dove c'è il
+   puntatore e sempre visibile sui dispositivi touch, che gli lasciano spazio. */
+.project-topic-row {
+  position: relative;
+}
+
+.project-topic-row.is-dragging {
+  opacity: 0.5;
+}
+
+.project-topic-menu {
+  position: absolute;
+  top: 50%;
+  right: 0.15rem;
+  transform: translateY(-50%);
+}
+
+.project-topic-menu .project-switcher-button {
+  padding: 0.1rem 0.45rem;
+}
+
+@media (hover: hover) {
+  .project-topic-menu {
+    opacity: 0;
+  }
+
+  .project-topic-row:hover .project-topic-menu,
+  .project-topic-menu:focus-within,
+  .project-topic-menu:has([aria-expanded="true"]) {
+    opacity: 1;
+  }
+}
+
+@media (hover: none) {
+  .project-topic-row .project-topic {
+    padding-right: 2.4rem;
+  }
+}
+
 .project-step:hover,
 .project-topic:hover {
   background: var(--nav-link-hover-bg);
@@ -567,7 +621,7 @@ a {
 .project-step-marker.is-done {
   border-color: var(--status-success-border);
   background: var(--status-success-bg);
-  color: var(--status-success-text);
+  color: var(--status-done);
 }
 
 .project-step-marker.is-current {
@@ -801,7 +855,7 @@ a {
 .keyword-tag.is-warning {
   border-color: var(--status-warn-border);
   background: var(--status-warn-bg);
-  color: var(--status-warn-text);
+  color: var(--status-progress);
 }
 
 .potential-track {
@@ -994,7 +1048,7 @@ a {
 
 .btn-danger {
   border: 1px solid var(--status-danger-border);
-  color: var(--status-danger-text);
+  color: var(--status-danger);
   background: var(--status-danger-bg);
   box-shadow: 0 1px 1px rgba(127, 29, 29, 0.2);
 }
@@ -1230,13 +1284,13 @@ input[type="checkbox"] {
 .plan-status.is-writing {
   border-color: var(--status-warn-border);
   background: var(--status-warn-bg);
-  color: var(--status-warn-text);
+  color: var(--status-progress);
 }
 
 .plan-status.is-published {
   border-color: var(--status-success-border);
   background: var(--status-success-bg);
-  color: var(--status-success-text);
+  color: var(--status-done);
 }
 
 .plan-status.is-button:hover {
@@ -1291,11 +1345,11 @@ input[type="checkbox"] {
 }
 
 .plan-progress-segment.is-published {
-  background: var(--status-success-text);
+  background: var(--status-done);
 }
 
 .plan-progress-segment.is-writing {
-  background: var(--status-warn-text);
+  background: var(--status-progress);
 }
 
 .plan-panel-backdrop {

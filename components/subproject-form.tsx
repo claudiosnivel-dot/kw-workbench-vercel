@@ -1,354 +1,142 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
-import { FormFeedback } from "@/components/form-feedback";
 import { LocaleCodeOptions } from "@/components/locale-code-options";
-import { ApiErrorPayload, readApiResponse, sendJson } from "@/lib/client/http";
-import { useFormValues } from "@/lib/client/use-form-values";
-import { useSaveAction } from "@/lib/client/use-save-action";
-import type { MetricsProvider } from "@/lib/generated/prisma/enums";
+import { BOOLEAN_SETTINGS, ChoiceOptions, SettingField } from "@/components/project-advanced-fields";
+import type { AutocompleteProvider, MetricsProvider } from "@/lib/generated/prisma/enums";
 
-type BooleanOverride = "inherit" | "true" | "false";
+/** Impostazioni diverse dal progetto di un argomento, come salvate: null vale «Come il progetto» (D-21, T-809). */
+export type TopicOverrides = {
+  language_code_override: string | null;
+  country_code_override: string | null;
+  autocomplete_provider_override: AutocompleteProvider | null;
+  metrics_provider_override: MetricsProvider | null;
+  min_volume_override: number | null;
+  exclude_brands_override: boolean | null;
+  expand_alpha_override: boolean | null;
+  expand_numeric_override: boolean | null;
+  expand_patterns_override: boolean | null;
+  auto_classification_override: boolean | null;
+  scoring_profile_override: string | null;
+};
 
-type SubprojectFormValues = {
-  name: string;
-  description: string;
-  seeds: string;
+type BooleanChoice = "" | "true" | "false";
+type BooleanOverrideKey = `${(typeof BOOLEAN_SETTINGS)[number]["field"]}_override`;
+
+/** Valori dei campi del dialogo: stringa vuota per «Come il progetto». */
+export type TopicOverrideValues = {
   language_code_override: string;
   country_code_override: string;
-  autocomplete_provider_override: "" | "MOCK" | "GOOGLE_DIRECT";
-  metrics_provider_override: "" | MetricsProvider;
+  autocomplete_provider_override: string;
+  metrics_provider_override: string;
   min_volume_override: string;
-  exclude_brands_override: BooleanOverride;
-  expand_alpha_override: BooleanOverride;
-  expand_numeric_override: BooleanOverride;
-  expand_patterns_override: BooleanOverride;
-  auto_classification_override: BooleanOverride;
   scoring_profile_override: string;
-};
+} & Record<BooleanOverrideKey, BooleanChoice>;
 
-type BooleanOverrideKey =
-  | "exclude_brands_override"
-  | "expand_alpha_override"
-  | "expand_numeric_override"
-  | "expand_patterns_override"
-  | "auto_classification_override";
+const overrideKey = (field: (typeof BOOLEAN_SETTINGS)[number]["field"]): BooleanOverrideKey => `${field}_override`;
 
-type SubprojectFormResponse = ApiErrorPayload & {
-  data?: {
-    id?: string;
+/** Campi del dialogo dai valori salvati. */
+export function overrideValuesOf(overrides: TopicOverrides): TopicOverrideValues {
+  const values = {
+    language_code_override: overrides.language_code_override ?? "",
+    country_code_override: overrides.country_code_override ?? "",
+    autocomplete_provider_override: overrides.autocomplete_provider_override ?? "",
+    metrics_provider_override: overrides.metrics_provider_override ?? "",
+    min_volume_override: overrides.min_volume_override == null ? "" : String(overrides.min_volume_override),
+    scoring_profile_override: overrides.scoring_profile_override ?? "",
+  } as TopicOverrideValues;
+  for (const { field } of BOOLEAN_SETTINGS) {
+    const saved = overrides[overrideKey(field)];
+    values[overrideKey(field)] = saved == null ? "" : saved ? "true" : "false";
+  }
+  return values;
+}
+
+/** Volume minimo inviato: un intero non negativo, null se vuoto o non numerico. */
+function parseMinVolume(value: string): number | null {
+  const parsed = Number(value.trim());
+  return value.trim() && Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : null;
+}
+
+/**
+ * Corpo della PATCH dell'argomento (T-809): ogni campo «Come il progetto» vale null. La fonte dei suggerimenti si invia
+ * solo per il root admin, così il salvataggio di un altro utente non tocca quella scelta (la rotta la riserva comunque).
+ */
+export function overridesPayload(values: TopicOverrideValues, canEditAutocompleteProvider: boolean): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    language_code_override: values.language_code_override || null,
+    country_code_override: values.country_code_override || null,
+    metrics_provider_override: values.metrics_provider_override || null,
+    min_volume_override: parseMinVolume(values.min_volume_override),
+    scoring_profile_override: values.scoring_profile_override || null,
   };
-};
-
-type SubprojectFormProps = {
-  mode: "create" | "edit";
-  projectId: string;
-  subprojectId?: string;
-  initialValues?: Partial<SubprojectFormValues>;
-  canEditAutocompleteProvider?: boolean;
-  showAdvanced?: boolean;
-  redirectTo?: string | null;
-  submitLabel?: string;
-};
-
-const defaultValues: SubprojectFormValues = {
-  name: "",
-  description: "",
-  seeds: "",
-  language_code_override: "",
-  country_code_override: "",
-  autocomplete_provider_override: "",
-  metrics_provider_override: "",
-  min_volume_override: "",
-  exclude_brands_override: "inherit",
-  expand_alpha_override: "inherit",
-  expand_numeric_override: "inherit",
-  expand_patterns_override: "inherit",
-  auto_classification_override: "inherit",
-  scoring_profile_override: "",
-};
-
-// Override booleani: campo del form, id del select e chiave dell'etichetta nel catalogo.
-const BOOLEAN_OVERRIDES = [
-  { field: "exclude_brands_override", id: "subproject-exclude-brands-override", label: "excludeBrandsOverride" },
-  { field: "expand_alpha_override", id: "subproject-expand-alpha-override", label: "expandAlphaOverride" },
-  { field: "expand_numeric_override", id: "subproject-expand-numeric-override", label: "expandNumericOverride" },
-  { field: "expand_patterns_override", id: "subproject-expand-patterns-override", label: "expandPatternsOverride" },
-  { field: "auto_classification_override", id: "subproject-auto-classification-override", label: "autoClassificationOverride" },
-] as const satisfies ReadonlyArray<{ field: BooleanOverrideKey; id: string; label: string }>;
-
-function parseBooleanOverride(value: BooleanOverride): boolean | null {
-  if (value === "true") {
-    return true;
+  if (canEditAutocompleteProvider) {
+    payload.autocomplete_provider_override = values.autocomplete_provider_override || null;
   }
-
-  if (value === "false") {
-    return false;
+  for (const { field } of BOOLEAN_SETTINGS) {
+    const choice = values[overrideKey(field)];
+    payload[overrideKey(field)] = choice === "" ? null : choice === "true";
   }
-
-  return null;
+  return payload;
 }
 
-function parseNonNegativeNumber(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
+type TopicOverrideFieldsProps = {
+  values: TopicOverrideValues;
+  update: <K extends keyof TopicOverrideValues>(key: K, value: TopicOverrideValues[K]) => void;
+  canEditAutocompleteProvider: boolean;
+  showLicensedProvider: boolean;
+};
 
-  const parsed = Number(trimmed);
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-
-  return Math.max(0, Math.trunc(parsed));
-}
-
-export function SubprojectForm({
-  mode,
-  projectId,
-  subprojectId,
-  initialValues,
-  canEditAutocompleteProvider = false,
-  showAdvanced = true,
-  redirectTo = null,
-  submitLabel,
-}: SubprojectFormProps) {
-  const t = useTranslations("sections.form");
+/**
+ * Campi delle impostazioni diverse dal progetto (T-2602): lingua e paese delle ricerche e gli stessi parametri tecnici
+ * delle Avanzate, ognuno con la scelta predefinita «Come il progetto».
+ */
+export function TopicOverrideFields({ values, update, canEditAutocompleteProvider, showLicensedProvider }: TopicOverrideFieldsProps) {
+  const t = useTranslations("keywords.overrides");
   const tFields = useTranslations("projects.fields");
-  const tProject = useTranslations("projects.form");
-  const tCommon = useTranslations("common");
-  const router = useRouter();
-  const initialFormValues: SubprojectFormValues = { ...defaultValues, ...initialValues };
-  const { values, setValues, update } = useFormValues<SubprojectFormValues>(initialFormValues);
-  const { saving, error, success: message, save } = useSaveAction();
-
-  const endpoint = mode === "create" ? `/api/projects/${projectId}/subprojects` : `/api/projects/${projectId}/subprojects/${subprojectId}`;
-  const method = mode === "create" ? "POST" : "PATCH";
-
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const payload = {
-      name: values.name,
-      description: values.description.trim() || null,
-      seeds: values.seeds,
-      language_code_override: values.language_code_override.trim() || null,
-      country_code_override: values.country_code_override.trim() || null,
-      autocomplete_provider_override: canEditAutocompleteProvider ? values.autocomplete_provider_override || null : null,
-      metrics_provider_override: values.metrics_provider_override || null,
-      min_volume_override: parseNonNegativeNumber(values.min_volume_override),
-      exclude_brands_override: parseBooleanOverride(values.exclude_brands_override),
-      expand_alpha_override: parseBooleanOverride(values.expand_alpha_override),
-      expand_numeric_override: parseBooleanOverride(values.expand_numeric_override),
-      expand_patterns_override: parseBooleanOverride(values.expand_patterns_override),
-      auto_classification_override: parseBooleanOverride(values.auto_classification_override),
-      scoring_profile_override: values.scoring_profile_override.trim() || null,
-    };
-
-    void save(async (tErrors) => {
-      const json = await readApiResponse<SubprojectFormResponse>(await sendJson(method, endpoint, payload), tErrors);
-      if (mode === "create" && redirectTo && json?.data?.id) {
-        router.push(redirectTo.replace(":subprojectId", json.data.id));
-        router.refresh();
-        return "";
-      }
-
-      if (mode === "create") {
-        setValues(initialFormValues);
-      }
-      router.refresh();
-      return t("saved");
-    });
-  };
+  const asProject = <option value="">{t("asProject")}</option>;
+  const select = (key: keyof TopicOverrideValues, label: string, options: React.ReactNode) => (
+    <SettingField key={key} id={`topic-${key}`} label={label}>
+      <select id={`topic-${key}`} className="select" value={values[key]} onChange={(event) => update(key, event.target.value)}>
+        {asProject}
+        {options}
+      </select>
+    </SettingField>
+  );
 
   return (
-    <form className="space-y-6" onSubmit={submit}>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="label" htmlFor="subproject-name">
-            {t("name")}
-          </label>
-          <input
-            id="subproject-name"
-            className="input"
-            value={values.name}
-            onChange={(event) => update("name", event.target.value)}
-            required
-          />
-          <p className="mt-1 text-xs text-slate-500">{t("nameHint")}</p>
-        </div>
-
-        <div>
-          <label className="label" htmlFor="subproject-description">
-            {t("description")}
-          </label>
-          <input
-            id="subproject-description"
-            className="input"
-            value={values.description}
-            onChange={(event) => update("description", event.target.value)}
-            placeholder={t("descriptionPlaceholder")}
-          />
-          <p className="mt-1 text-xs text-slate-500">{t("descriptionHint")}</p>
-        </div>
-      </div>
-
-      <div>
-        <label className="label" htmlFor="subproject-seeds">
-          {t("seeds")}
-        </label>
-        <textarea
-          id="subproject-seeds"
-          className="input min-h-40"
-          value={values.seeds}
-          onChange={(event) => update("seeds", event.target.value)}
-          placeholder={tProject("seedsPlaceholder")}
-        />
-        <p className="mt-1 text-xs text-slate-500">{t("seedsHint")}</p>
-      </div>
-
-      {showAdvanced && (
-        <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t("overridesTitle")}</h2>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="label" htmlFor="subproject-language-override">
-                {t("languageOverride")}
-              </label>
-              <select
-                id="subproject-language-override"
-                className="select"
-                value={values.language_code_override}
-                onChange={(event) => update("language_code_override", event.target.value)}
-              >
-                <option value="">{t("useProjectDefault")}</option>
-                <LocaleCodeOptions kind="language" current={values.language_code_override} />
-              </select>
-            </div>
-
-            <div>
-              <label className="label" htmlFor="subproject-country-override">
-                {t("countryOverride")}
-              </label>
-              <select
-                id="subproject-country-override"
-                className="select"
-                value={values.country_code_override}
-                onChange={(event) => update("country_code_override", event.target.value)}
-              >
-                <option value="">{t("useProjectDefault")}</option>
-                <LocaleCodeOptions kind="country" current={values.country_code_override} />
-              </select>
-            </div>
-
-            {canEditAutocompleteProvider && (
-              <div>
-                <label className="label" htmlFor="subproject-autocomplete-override">
-                  {t("autocompleteOverride")}
-                </label>
-                <select
-                  id="subproject-autocomplete-override"
-                  className="select"
-                  value={values.autocomplete_provider_override}
-                  onChange={(event) =>
-                    update("autocomplete_provider_override", event.target.value as SubprojectFormValues["autocomplete_provider_override"])
-                  }
-                >
-                  <option value="">{t("useProjectDefault")}</option>
-                  <option value="GOOGLE_DIRECT">{t("providers.googleDirect")}</option>
-                  <option value="MOCK">{t("providers.mockAutocomplete")}</option>
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="label" htmlFor="subproject-metrics-override">
-                {t("metricsOverride")}
-              </label>
-              <select
-                id="subproject-metrics-override"
-                className="select"
-                value={values.metrics_provider_override}
-                onChange={(event) =>
-                  update("metrics_provider_override", event.target.value as SubprojectFormValues["metrics_provider_override"])
-                }
-              >
-                <option value="">{t("useProjectDefault")}</option>
-                <option value="NONE">{t("providers.noMetrics")}</option>
-                <option value="MOCK">{t("providers.mockMetrics")}</option>
-                {/* A pagamento (T-902): solo il root admin, o la sezione che lo ha già. */}
-                {(canEditAutocompleteProvider || initialValues?.metrics_provider_override === "DATAFORSEO") && (
-                  <option value="DATAFORSEO">{tFields("dataForSeo")}</option>
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className="label" htmlFor="subproject-min-volume-override">
-                {t("minVolumeOverride")}
-              </label>
-              <input
-                id="subproject-min-volume-override"
-                className="input"
-                type="number"
-                min={0}
-                value={values.min_volume_override}
-                onChange={(event) => update("min_volume_override", event.target.value)}
-                placeholder={t("useProjectDefault")}
-              />
-            </div>
-
-            <div>
-              <label className="label" htmlFor="subproject-scoring-override">
-                {t("scoringOverride")}
-              </label>
-              <select
-                id="subproject-scoring-override"
-                className="select"
-                value={values.scoring_profile_override}
-                onChange={(event) => update("scoring_profile_override", event.target.value)}
-              >
-                <option value="">{t("useProjectDefault")}</option>
-                <option value="balanced">{tFields("scoring.balanced")}</option>
-                <option value="aggressive">{tFields("scoring.aggressive")}</option>
-                <option value="conservative">{tFields("scoring.conservative")}</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            {BOOLEAN_OVERRIDES.map((override) => (
-              <div
-                key={override.field}
-                className={override.field === "auto_classification_override" ? "md:col-span-2" : undefined}
-              >
-                <label className="label" htmlFor={override.id}>
-                  {t(override.label)}
-                </label>
-                <select
-                  id={override.id}
-                  className="select"
-                  value={values[override.field]}
-                  onChange={(event) => update(override.field, event.target.value as BooleanOverride)}
-                >
-                  <option value="inherit">{t("useProjectDefault")}</option>
-                  <option value="true">{t("on")}</option>
-                  <option value="false">{t("off")}</option>
-                </select>
-              </div>
-            ))}
-          </div>
-        </section>
+    <div className="grid gap-4 md:grid-cols-2">
+      {select("language_code_override", tFields("language"), <LocaleCodeOptions kind="language" current={values.language_code_override} />)}
+      {select("country_code_override", tFields("country"), <LocaleCodeOptions kind="country" current={values.country_code_override} />)}
+      {canEditAutocompleteProvider &&
+        select("autocomplete_provider_override", tFields("autocompleteProvider"), <ChoiceOptions kind="autocomplete" />)}
+      {select(
+        "metrics_provider_override",
+        tFields("metricsProvider"),
+        <ChoiceOptions kind="metrics" showLicensedProvider={showLicensedProvider} />
       )}
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
-        <button className="btn-primary w-full sm:w-auto" disabled={saving} type="submit">
-          {saving ? tCommon("saving") : (submitLabel ?? (mode === "create" ? t("create") : t("save")))}
-        </button>
-        <FormFeedback error={error} success={message} />
-      </div>
-    </form>
+      <SettingField id="topic-min_volume_override" label={tFields("minVolume")}>
+        <input
+          id="topic-min_volume_override"
+          className="input"
+          type="number"
+          min={0}
+          value={values.min_volume_override}
+          placeholder={t("asProject")}
+          onChange={(event) => update("min_volume_override", event.target.value)}
+        />
+      </SettingField>
+      {select("scoring_profile_override", tFields("scoringProfile"), <ChoiceOptions kind="scoring" />)}
+      {BOOLEAN_SETTINGS.map(({ field, label }) =>
+        select(
+          overrideKey(field),
+          tFields(label),
+          <>
+            <option value="true">{t("yes")}</option>
+            <option value="false">{t("no")}</option>
+          </>
+        )
+      )}
+    </div>
   );
 }
