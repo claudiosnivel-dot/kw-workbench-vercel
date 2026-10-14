@@ -1,5 +1,7 @@
 // Gate di T-1905 (AC-1905-3): il pannello delle impostazioni avanzate è chiuso alla prima resa, aperto mostra
 // perimetro e regole e la generazione da pannello aperto invia la modalità esperta con le impostazioni scelte.
+// impacted-by: T-2502 («Opzioni avanzate» e «Costruisci il piano» al posto di «Impostazioni avanzate» e «Genera
+// strategia»; dopo la generazione il browser va al piano del progetto; con regenerate il corpo porta regenerate true).
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StrategySettings } from "@/components/strategy/strategy-settings";
@@ -53,7 +55,7 @@ describe("StrategySettings", () => {
   it("il pannello avanzato è chiuso, aperto mostra perimetro e regole e invia la modalità esperta", async () => {
     renderSettings();
 
-    const toggle = screen.getByRole("button", { name: "Impostazioni avanzate" });
+    const toggle = screen.getByRole("button", { name: "Opzioni avanzate" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByLabelText("Perimetro")).toBeNull();
     expect(screen.queryByLabelText("Spoke massimi per hub")).toBeNull();
@@ -66,9 +68,9 @@ describe("StrategySettings", () => {
 
     fireEvent.change(screen.getByLabelText("Perimetro"), { target: { value: "s2" } });
     fireEvent.change(screen.getByLabelText("Keyword da includere"), { target: { value: "approved" } });
-    fireEvent.click(screen.getByRole("button", { name: "Genera strategia" }));
+    fireEvent.click(screen.getByRole("button", { name: "Costruisci il piano" }));
 
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/projects/p1/strategy/st1"));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/projects/p1/plan"));
     expect(sentBody()).toEqual({
       mode: "EXPERT",
       settings: {
@@ -85,9 +87,21 @@ describe("StrategySettings", () => {
   it("senza aprire il pannello invia la modalità automatica", async () => {
     renderSettings();
 
-    fireEvent.click(screen.getByRole("button", { name: "Genera strategia" }));
+    fireEvent.click(screen.getByRole("button", { name: "Costruisci il piano" }));
 
     await waitFor(() => expect(router.push).toHaveBeenCalled());
     expect(sentBody()).toEqual({ mode: "AUTO" });
+  });
+
+  it("nel dialogo Rigenera il piano invia regenerate true e torna al piano", async () => {
+    renderWithIntl(
+      <StrategySettings projectId="p1" sections={[]} defaults={DEFAULT_RULES} limits={RULE_LIMITS} regenerate onCancel={() => undefined} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Rigenera il piano" }));
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/projects/p1/plan"));
+    expect(sentBody()).toEqual({ mode: "AUTO", regenerate: true });
+    expect(screen.getByRole("button", { name: "Annulla" })).toBeVisible();
   });
 });

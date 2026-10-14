@@ -1,5 +1,7 @@
 // Gate di T-1901 (AC-1901-1…4): il motore hub and spoke restituisce il piano scritto a mano per le fixture italiana e
 // inglese, lo stesso piano per ogni ordine delle keyword, e rispetta le soglie degli spoke e le lingue senza dizionario.
+// Gate di T-2502 (AC-2502-1, parte del motore): con le ancore della rigenerazione le keyword nuove con il nucleo di un hub
+// ancorato diventano spoke dell'ancora e nessuna pagina nuova prende il posto della sua pilastro.
 import { describe, expect, it } from "vitest";
 import { buildStrategyPlan } from "@/lib/modules/strategy/cluster";
 import { DEFAULT_RULES } from "@/lib/modules/strategy/rules";
@@ -139,5 +141,60 @@ describe("buildStrategyPlan", () => {
       { main: "scarpe running", secondary: [], priority: 80 },
       { main: "scarpe running donna", secondary: ["scarpe running da donna"], priority: 110 },
     ]);
+  });
+});
+
+describe("buildStrategyPlan con le ancore della rigenerazione (T-2502)", () => {
+  // covers: AC-2502-1
+  it("due keyword nuove con il nucleo dell'hub ancorato e lo stesso modificatore formano uno spoke dell'ancora", () => {
+    const locked = new Set([
+      // Pilastro P (da scrivere, ancorata) e spoke S (in scrittura) del piano corrente: restano fuori dal perimetro.
+      ...ITALIAN_FIXTURE.expected.pages[0].secondary,
+      "scarpe running",
+      "scarpe running offerte",
+      "scarpe running prezzo",
+      "scarpe running economiche",
+      "scarpe running prezzi",
+    ]);
+    const keywords = [
+      ...fixtureInputs(ITALIAN_FIXTURE).filter((input) => !locked.has(input.canonical)),
+      keyword("scarpe running saldi", 300),
+      keyword("scarpe running outlet", 150),
+      keyword("fascia cardio", 100),
+    ];
+
+    const plan = buildStrategyPlan({
+      keywords,
+      seeds: ITALIAN_FIXTURE.seeds,
+      language: "it",
+      rules: DEFAULT_RULES,
+      anchors: [{ ref: "P", main: "scarpe running", open: true }],
+    });
+
+    const newSpoke = plan.pages.find((page) => page.main === "scarpe running saldi");
+    expect(newSpoke).toMatchObject({ kind: "SPOKE", hubRef: "P", secondary: ["scarpe running outlet"] });
+    expect(plan.pages.filter((page) => page.kind === "HUB").map((page) => page.main)).toEqual(["scarpe running trail"]);
+    expect(plan.pages.some((page) => page.main === "scarpe running offerte")).toBe(false);
+    const placed = [
+      ...plan.pages.flatMap((page) => [page.main, ...page.secondary]),
+      ...plan.unassigned,
+      ...plan.anchored.flatMap((item) => item.secondary),
+    ];
+    expect(new Set(placed).size).toBe(placed.length);
+    expect(placed.sort()).toEqual(keywords.map((input) => input.canonical).sort());
+  });
+
+  it("con la pilastro ancorata già iniziata le keyword della pilastro restano tra le non assegnate", () => {
+    const plan = buildStrategyPlan({
+      keywords: [keyword("running scarpe", 90), keyword("scarpe running uomo", 1600), keyword("scarpe running uomo asics", 140)],
+      seeds: [],
+      language: "it",
+      rules: DEFAULT_RULES,
+      anchors: [{ ref: "P", main: "scarpe running", open: false }],
+    });
+
+    expect(plan.anchored).toEqual([]);
+    expect(plan.unassigned).toEqual(["running scarpe"]);
+    expect(plan.pages.map((page) => [page.kind, page.hubRef, page.main])).toEqual([["SPOKE", "P", "scarpe running uomo"]]);
   });
 });

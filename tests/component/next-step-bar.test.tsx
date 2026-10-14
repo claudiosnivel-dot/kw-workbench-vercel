@@ -50,7 +50,8 @@ describe("NextStepBar", () => {
     expect(url).toBe("/api/projects/P/strategies");
     expect(init?.method).toBe("POST");
     expect(JSON.parse(String(init?.body))).toEqual({ mode: "AUTO" });
-    expect(router.push).toHaveBeenCalledWith("/projects/P/strategy/S");
+    // impacted-by: T-2502 (la strategia generata è il piano del progetto, che sta in /plan)
+    expect(router.push).toHaveBeenCalledWith("/projects/P/plan");
   });
 
   it("con add_topic il pulsante apre il dialogo; con un code nel parametro extraction mostra perché la ricerca non è partita", () => {

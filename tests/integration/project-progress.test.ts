@@ -5,6 +5,7 @@ import { loadProjectProgress, loadProjectsProgress } from "@/lib/modules/project
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
+import { insertStrategy } from "../helpers/strategy";
 
 async function createTopic(projectId: string, name: string, position: number) {
   return prisma.subproject.create({ data: { project_id: projectId, name, position } });
@@ -70,7 +71,8 @@ describe("loadProjectProgress", () => {
 
     expect(progress.topics[0]).toMatchObject({ keptCount: 3, totalCount: 5 });
     expect(progress.keptCount).toBe(3);
-    expect(progress.latestStrategy).toEqual({ id: latest.id, pageCount: 0 });
+    // impacted-by: T-2506 (pagine pubblicate e in scrittura del piano per la tappa Scrittura)
+    expect(progress.latestStrategy).toEqual({ id: latest.id, pageCount: 0, publishedCount: 0, writingCount: 0 });
     expect(progress.next).toEqual({ kind: "open_plan", strategyId: latest.id });
   });
 
@@ -86,5 +88,34 @@ describe("loadProjectProgress", () => {
     expect(progress.get(empty.id)?.next).toEqual({ kind: "add_topic" });
     expect(progress.get(withSeed.id)?.next).toEqual({ kind: "run_topic", topicId: topic.id });
     expect(await loadProjectsProgress([])).toEqual(new Map());
+  });
+
+  // T-2506: la prima pagina da scrivere nell'ordine di lavoro e i conteggi per stato del piano più recente.
+  it("con un piano iniziato il prossimo passo è la prima pagina da scrivere nell'ordine di lavoro", async () => {
+    const { workspaceId } = await createUserWithSession();
+    const project = await prisma.project.create({ data: { name: "Negozio", workspace_id: workspaceId } });
+    const topic = await createTopic(project.id, "Scarpe", 0);
+    await prisma.keywordCandidate.createMany({ data: keywordRows(project.id, topic.id, ["scarpe running"]) });
+    const { strategyId, pageIds } = await insertStrategy({
+      projectId: project.id,
+      version: 5,
+      pages: [
+        { key: "H", kind: "HUB", status: "PUBLISHED", keywords: [{ text: "scarpe running", volume: 900 }] },
+        { key: "A", kind: "SPOKE", hub: "H", status: "WRITING", keywords: [{ text: "scarpe running donna", volume: 300 }] },
+        { key: "B", kind: "SPOKE", hub: "H", h1: "Scarpe running uomo", keywords: [{ text: "scarpe running uomo", volume: 200 }] },
+        { key: "C", kind: "SPOKE", hub: "H", keywords: [{ text: "scarpe running bambino", volume: 100 }] },
+      ],
+    });
+
+    const progress = await loadProjectProgress(project.id);
+
+    expect(progress.latestStrategy).toEqual({ id: strategyId, pageCount: 4, publishedCount: 1, writingCount: 1 });
+    expect(progress.steps.writing).toBe("current");
+    expect(progress.next).toEqual({
+      kind: "write_next",
+      strategyId,
+      version: 5,
+      page: { id: pageIds.B, h1: "Scarpe running uomo", number: 3 },
+    });
   });
 });

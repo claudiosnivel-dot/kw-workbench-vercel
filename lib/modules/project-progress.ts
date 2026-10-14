@@ -1,6 +1,11 @@
 import { ACTIVE_JOB_STATUSES } from "@/lib/modules/jobs/job-state";
 import { KEPT_WHERE } from "@/lib/modules/keep-rule";
-import { computeProjectProgress, type ProjectProgressData, type TopicProgress } from "@/lib/modules/next-step";
+import {
+  computeProjectProgress,
+  type PlanProgressState,
+  type ProjectProgressData,
+  type TopicProgress,
+} from "@/lib/modules/next-step";
 import { prisma } from "@/lib/prisma";
 
 function countBySubproject(rows: { subproject_id: string; _count: { _all: number } }[]): Map<string, number> {
@@ -8,7 +13,45 @@ function countBySubproject(rows: { subproject_id: string; _count: { _all: number
 }
 
 /**
- * Stato del percorso di più progetti con cinque query aggregate in tutto, qualunque sia il numero di progetti e di
+ * Scrittura dei piani (T-2506) con due query aggregate dopo quella delle strategie: pagine per stato e prima pagina da
+ * scrivere di ogni piano. position è l'indice nell'ordine di lavoro (T-2501), quindi la prima da scrivere è quella con
+ * position più bassa e il suo numero è position + 1.
+ */
+async function loadPlansWriting(plans: { id: string; version: number }[]): Promise<Map<string, PlanProgressState>> {
+  if (plans.length === 0) {
+    return new Map();
+  }
+  const inPlans = { strategy_id: { in: plans.map((plan) => plan.id) } };
+  const [byStatus, firstTodo] = await Promise.all([
+    prisma.strategyPage.groupBy({ by: ["strategy_id", "status"], where: inPlans, _count: { _all: true } }),
+    prisma.strategyPage.findMany({
+      where: { ...inPlans, status: "TODO" },
+      orderBy: [{ strategy_id: "asc" }, { position: "asc" }],
+      distinct: ["strategy_id"],
+      select: { id: true, strategy_id: true, h1: true, position: true },
+    }),
+  ]);
+  return new Map(
+    plans.map((plan) => {
+      const count = (status: "TODO" | "WRITING" | "PUBLISHED") =>
+        byStatus.find((row) => row.strategy_id === plan.id && row.status === status)?._count._all ?? 0;
+      const first = firstTodo.find((row) => row.strategy_id === plan.id);
+      return [
+        plan.id,
+        {
+          version: plan.version,
+          todo: count("TODO"),
+          writing: count("WRITING"),
+          published: count("PUBLISHED"),
+          firstTodo: first ? { id: first.id, h1: first.h1, number: first.position + 1 } : null,
+        },
+      ];
+    })
+  );
+}
+
+/**
+ * Stato del percorso di più progetti con sette query aggregate in tutto, qualunque sia il numero di progetti e di
  * keyword (conteggi con groupBy, nessuna query per progetto né per keyword): la home lo usa per una pagina
  * dell'elenco, il layout del progetto per un solo progetto. I progetti vanno già risolti nel workspace dell'utente
  * (requireProjectPage, listDashboardProjects): qui non c'è controllo di accesso.
@@ -36,9 +79,10 @@ export async function loadProjectsProgress(projectIds: string[]): Promise<Map<st
       where: inProjects,
       orderBy: [{ project_id: "asc" }, { created_at: "desc" }],
       distinct: ["project_id"],
-      select: { id: true, project_id: true, _count: { select: { pages: true } } },
+      select: { id: true, project_id: true, version: true, _count: { select: { pages: true } } },
     }),
   ]);
+  const writing = await loadPlansWriting(strategies);
 
   const totalBySubproject = countBySubproject(totals);
   const keptBySubproject = countBySubproject(kept);
@@ -63,14 +107,22 @@ export async function loadProjectsProgress(projectIds: string[]): Promise<Map<st
           activeJobId: activeJobBySubproject.get(subproject.id) ?? null,
         }));
       const strategy = strategyByProject.get(projectId);
-      const progress = computeProjectProgress({ topics, latestStrategyId: strategy?.id ?? null });
+      const plan = strategy ? writing.get(strategy.id) : undefined;
+      const progress = computeProjectProgress({ topics, latestStrategyId: strategy?.id ?? null, plan });
       return [
         projectId,
         {
           ...progress,
           topics,
           keptCount: topics.reduce((sum, item) => sum + item.keptCount, 0),
-          latestStrategy: strategy ? { id: strategy.id, pageCount: strategy._count.pages } : null,
+          latestStrategy: strategy
+            ? {
+                id: strategy.id,
+                pageCount: strategy._count.pages,
+                publishedCount: plan?.published ?? 0,
+                writingCount: plan?.writing ?? 0,
+              }
+            : null,
         },
       ];
     })

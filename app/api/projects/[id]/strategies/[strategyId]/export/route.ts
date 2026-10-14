@@ -15,7 +15,8 @@ const VALID_FORMATS = new Set<string>(STRATEGY_DOWNLOAD_FORMATS);
 /**
  * Export della strategia (T-1906, T-1907): format csv (dialetto excel-it o rfc4180), xlsx o pdf; lang it o en, di
  * default la lingua dell'interfaccia, per il PDF e per intestazioni ed etichette di CSV e XLSX (T-2102); logo=0 toglie il
- * logo dalla copertina del PDF (T-2406). Progetto fuori dal workspace: 404 prima di leggere la strategia.
+ * logo dalla copertina del PDF (T-2406); status=1 aggiunge al PDF lo stato di scrittura delle pagine (T-2501). Progetto
+ * fuori dal workspace: 404 prima di leggere la strategia.
  */
 export const GET = withUserRoute(async (request: NextRequest, user, { id, strategyId }: StrategyParams) => {
   const format = request.nextUrl.searchParams.get("format") ?? "csv";
@@ -38,5 +39,6 @@ export const GET = withUserRoute(async (request: NextRequest, user, { id, strate
     csvDialect,
     locale: routeLocale(request, user, lang),
     withLogo: request.nextUrl.searchParams.get("logo") !== "0",
+    withStatus: request.nextUrl.searchParams.get("status") === "1",
   });
 });

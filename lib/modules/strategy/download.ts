@@ -24,9 +24,11 @@ type DownloadParams = {
   locale: string;
   /** Logo del branding sulla copertina del PDF; false con logo=0 dalla finestra Esporta (T-2406): solo il nome. */
   withLogo: boolean;
+  /** Stato di scrittura delle pagine nel PDF; true con status=1 dalla finestra Esporta (T-2501). */
+  withStatus: boolean;
 };
 
-async function pdfOf({ project, strategy, locale, withLogo }: DownloadParams): Promise<Buffer> {
+async function pdfOf({ project, strategy, locale, withLogo, withStatus }: DownloadParams): Promise<Buffer> {
   const settings = (strategy.settings ?? {}) as { sectionId?: string | null };
   const [workspace, section, branding] = await Promise.all([
     prisma.workspace.findUniqueOrThrow({ where: { id: project.workspace_id }, select: { name: true } }),
@@ -44,6 +46,7 @@ async function pdfOf({ project, strategy, locale, withLogo }: DownloadParams): P
     logo: withLogo ? await loadPdfLogo(branding.logoUrl) : null,
     locale,
     generatedAt: new Date(),
+    withStatus,
   });
 }
 

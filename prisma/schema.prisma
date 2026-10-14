@@ -709,6 +709,13 @@ enum StrategyKeywordRole {
   SECONDARY
 }
 
+/// Stato di scrittura di una pagina del piano (T-2501): da scrivere, in scrittura, pubblicata.
+enum StrategyPageStatus {
+  TODO
+  WRITING
+  PUBLISHED
+}
+
 /// Tipo di contenuto suggerito per la pagina (T-1901): guida, lista, confronto, categoria di prodotto, FAQ, locale, tool.
 enum StrategyContentType {
   guide
@@ -750,25 +757,28 @@ model Strategy {
 
 /// Pagina del piano (T-1901, T-1902): titoli suggeriti dai modelli finché l'utente non li riscrive (h1_edited, h2_edited).
 model StrategyPage {
-  id            String              @id @default(cuid())
-  strategy_id   String
-  kind          StrategyPageKind
+  id                String              @id @default(cuid())
+  strategy_id       String
+  kind              StrategyPageKind
   /// Hub dello spoke; null per gli hub.
-  hub_page_id   String?
-  h1            String              @db.VarChar(200)
-  h2            String[]
-  h1_edited     Boolean             @default(false)
-  h2_edited     Boolean             @default(false)
-  content_type  StrategyContentType
-  priority      Int
-  /// Ordine di lavoro: gli hub in ordine di position, ciascuno seguito dai propri spoke in ordine di position.
-  position      Int
-  reason_code   String
-  reason_params Json
-  strategy      Strategy            @relation(fields: [strategy_id], references: [id], onDelete: Cascade)
-  hub           StrategyPage?       @relation("HubSpokes", fields: [hub_page_id], references: [id], onDelete: SetNull)
-  spokes        StrategyPage[]      @relation("HubSpokes")
-  keywords      StrategyKeyword[]
+  hub_page_id       String?
+  h1                String              @db.VarChar(200)
+  h2                String[]
+  h1_edited         Boolean             @default(false)
+  h2_edited         Boolean             @default(false)
+  content_type      StrategyContentType
+  priority          Int
+  /// Indice nell'ordine di lavoro (T-2501): ogni hub seguito dai propri spoke, ricalcolato dopo ogni modifica del piano.
+  position          Int
+  reason_code       String
+  reason_params     Json
+  /// Stato di scrittura (T-2501); status_changed_at è l'istante dell'ultimo cambio di stato.
+  status            StrategyPageStatus  @default(TODO)
+  status_changed_at DateTime?
+  strategy          Strategy            @relation(fields: [strategy_id], references: [id], onDelete: Cascade)
+  hub               StrategyPage?       @relation("HubSpokes", fields: [hub_page_id], references: [id], onDelete: SetNull)
+  spokes            StrategyPage[]      @relation("HubSpokes")
+  keywords          StrategyKeyword[]
 
   @@index([strategy_id, position])
   @@index([hub_page_id])

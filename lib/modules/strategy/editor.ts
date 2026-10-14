@@ -1,14 +1,19 @@
 import { ValidationError } from "@/lib/http/errors";
 import { compareKeywordPriority } from "@/lib/modules/strategy/cluster";
 import { buildPageTitles, type TitleContext, type TitleKeyword } from "@/lib/modules/strategy/titles";
-import type { StrategyContentType, StrategyKeywordView, StrategyPageView } from "@/lib/modules/strategy/types";
+import type {
+  StrategyContentType,
+  StrategyKeywordView,
+  StrategyPageStatus,
+  StrategyPageView,
+} from "@/lib/modules/strategy/types";
 
 /*
  * Modifiche al piano in memoria (T-1904): funzioni pure su uno stato caricato dalla strategia. Dopo ogni operazione
  * valgono sempre le regole del piano: una sola keyword principale per pagina (se esce, diventa principale la secondaria
- * più prioritaria), nessuna pagina senza keyword, gli spoke di un hub eliminato diventano hub. I titoli non modificati
- * dall'utente delle pagine toccate si ricalcolano: l'H1 se cambia la principale o il tipo, gli H2 se cambiano le
- * keyword o gli spoke.
+ * più prioritaria), nessuna pagina senza keyword, gli spoke di un hub eliminato diventano hub, position è l'indice
+ * nell'ordine di lavoro (T-2501). I titoli non modificati dall'utente delle pagine toccate si ricalcolano: l'H1 se
+ * cambia la principale o il tipo, gli H2 se cambiano le keyword o gli spoke.
  */
 
 /** Keyword nello stato del piano: quella della vista con la sua pagina (null per le non assegnate). */
@@ -23,9 +28,10 @@ export type StrategyOperation =
   | { type: "move_keywords"; keywordIds: string[]; targetPageId: string | null }
   | { type: "promote_to_hub"; pageId: string }
   | { type: "merge_pages"; sourcePageId: string; targetPageId: string }
-  | { type: "delete_page"; pageId: string };
+  | { type: "delete_page"; pageId: string }
+  | { type: "move_page"; pageId: string; targetHubId: string };
 
-export type PagePatch = { h1?: string; h2?: string[]; contentType?: StrategyContentType };
+export type PagePatch = { h1?: string; h2?: string[]; contentType?: StrategyContentType; status?: StrategyPageStatus };
 
 /** Id di pagina o keyword che non appartiene alla strategia del percorso (CWE-639): diventa 404 STRATEGY_NOT_FOUND. */
 export class UnknownStrategyItemError extends Error {
@@ -139,6 +145,39 @@ function deletePage(editor: Editor, pageId: string): void {
   removePage(editor, pageOf(editor, pageId));
 }
 
+/** Uno spoke sotto un altro hub della strategia (T-2503): va in fondo ai suoi spoke, gli H2 dei due hub si ricalcolano. */
+function movePage(editor: Editor, pageId: string, targetHubId: string): void {
+  const page = pageOf(editor, pageId);
+  const target = pageOf(editor, targetHubId);
+  if (page.kind !== "SPOKE") throw new ValidationError("Si sposta solo un approfondimento");
+  if (target.kind !== "HUB" || target.id === page.hubPageId) {
+    throw new ValidationError("La destinazione deve essere un'altra pagina principale");
+  }
+  markDirty(editor, page.hubPageId);
+  editor.dirty.add(target.id);
+  const last = Math.max(target.position, ...spokesOf(editor.state, target.id).map((spoke) => spoke.position));
+  page.hubPageId = target.id;
+  // Dopo l'ultimo spoke della destinazione: la numerazione dell'ordine di lavoro lo riporta a un intero.
+  page.position = last + 0.5;
+}
+
+/**
+ * Ordine di lavoro come lo mostra il piano: gli hub (e gli spoke senza un hub) in ordine di position, ciascuno seguito
+ * dai propri spoke in ordine di position; position diventa l'indice in quest'ordine (T-2501).
+ */
+function renumber(state: EditorState): void {
+  const sorted = [...state.pages].sort((a, b) => a.position - b.position);
+  const hubIds = new Set(sorted.filter((page) => page.kind === "HUB").map((page) => page.id));
+  const isColumn = (page: EditorPage) => page.kind === "HUB" || !page.hubPageId || !hubIds.has(page.hubPageId);
+  let index = 0;
+  for (const hub of sorted.filter(isColumn)) {
+    hub.position = index++;
+    for (const spoke of sorted.filter((page) => !isColumn(page) && page.hubPageId === hub.id)) {
+      spoke.position = index++;
+    }
+  }
+}
+
 /** Regole del piano dopo una modifica: pagine vuote eliminate, una principale per pagina, priorità aggiornate. */
 function normalize(editor: Editor): void {
   for (const page of [...editor.state.pages]) {
@@ -230,19 +269,34 @@ export function applyOperation(state: EditorState, operation: StrategyOperation,
     case "delete_page":
       deletePage(editor, operation.pageId);
       break;
+    case "move_page":
+      movePage(editor, operation.pageId, operation.targetHubId);
+      break;
   }
   normalize(editor);
+  renumber(editor.state);
   refreshTitles(editor, context);
   return editor.state;
 }
 
 /**
- * Modifica dei titoli o del tipo di una pagina (T-1904): un H1 o gli H2 inviati diventano «modificati» e non si
- * ricalcolano più; un tipo nuovo ricalcola i titoli non modificati.
+ * Modifica dei titoli, del tipo o dello stato di una pagina (T-1904, T-2501): un H1 o gli H2 inviati diventano
+ * «modificati» e non si ricalcolano più; un tipo nuovo ricalcola i titoli non modificati; uno stato nuovo registra
+ * l'istante del cambio e non tocca i titoli.
  */
-export function applyPagePatch(state: EditorState, pageId: string, patch: PagePatch, context: TitleContext): EditorState {
+export function applyPagePatch(
+  state: EditorState,
+  pageId: string,
+  patch: PagePatch,
+  context: TitleContext,
+  now: Date = new Date()
+): EditorState {
   const editor = startEditor(state);
   const page = pageOf(editor, pageId);
+  if (patch.status && patch.status !== page.status) {
+    page.status = patch.status;
+    page.statusChangedAt = now.toISOString();
+  }
   if (patch.contentType && patch.contentType !== page.contentType) {
     page.contentType = patch.contentType;
     editor.retyped.add(page.id);

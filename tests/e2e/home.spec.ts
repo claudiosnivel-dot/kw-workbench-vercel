@@ -1,9 +1,11 @@
 // Gate di T-2305 (AC-2305-1, AC-2305-2, AC-2305-4) e di T-2306 (AC-2306-2): home con l'avvio da un campo al primo
-// accesso e le schede dei progetti con il loro prossimo passo; l'onboarding a passi non esiste più.
+// accesso e le schede dei progetti con il loro prossimo passo; l'onboarding a passi non esiste più. Gate di T-2506
+// (AC-2506-3): la scheda di un progetto con il piano mostra l'avanzamento della scrittura.
 import { randomBytes } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
+import { insertStrategy } from "../helpers/strategy";
 import { createE2EUser } from "./credentials";
 
 // Utenti dedicati, ciascuno con il suo workspace personale: nulla compare nelle pagine fotografate dall'utente seed.
@@ -48,6 +50,31 @@ test.beforeAll(async () => {
   });
   const seedTopic = await prisma.subproject.create({ data: { project_id: withSeed.id, name: "Pizzeria", position: 0 } });
   await prisma.seed.create({ data: { project_id: withSeed.id, subproject_id: seedTopic.id, keyword: "pizzeria milano" } });
+
+  // Un quarto progetto, il meno recente, con un piano di 9 pagine di cui 3 pubblicate (T-2506).
+  const withPlan = await project("Blog di corsa", 4);
+  const planTopic = await prisma.subproject.create({ data: { project_id: withPlan.id, name: "Corsa", position: 0 } });
+  await prisma.keywordCandidate.create({
+    data: {
+      project_id: withPlan.id,
+      subproject_id: planTopic.id,
+      keyword: "corsa",
+      normalized_keyword: "corsa",
+      canonical_keyword: "corsa",
+      source: "MOCK",
+      source_query: "corsa",
+    },
+  });
+  await insertStrategy({
+    projectId: withPlan.id,
+    pages: Array.from({ length: 9 }, (_, index) => ({
+      key: `p${index}`,
+      kind: index === 0 ? ("HUB" as const) : ("SPOKE" as const),
+      hub: index === 0 ? undefined : "p0",
+      status: index < 3 ? ("PUBLISHED" as const) : ("TODO" as const),
+      keywords: [{ text: `corsa ${index}`, volume: 100 - index }],
+    })),
+  });
 });
 
 test.afterAll(async () => {
@@ -120,6 +147,18 @@ test.describe("home", () => {
     const bar = page.getByRole("region", { name: "Prossimo passo" });
     await expect(bar).toContainText("Sto cercando le keyword…");
     await expect(bar.getByRole("progressbar")).toBeVisible();
+  });
+});
+
+test.describe("scrittura nella home", () => {
+  // covers: AC-2506-3
+  test("la scheda di un progetto con il piano mostra Scrittura: 3 di 9 pubblicate e una barra di avanzamento", async ({ page }) => {
+    await login(page, PROJECTS_EMAIL);
+    await page.goto("/");
+
+    const card = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: "Blog di corsa" }) });
+    await expect(card).toContainText("Scrittura: 3 di 9 pubblicate");
+    await expect(card.getByRole("progressbar", { name: "Avanzamento della scrittura" })).toBeVisible();
   });
 });
 

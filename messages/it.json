@@ -467,7 +467,8 @@
     "STRATEGY_NO_KEYWORDS": "Nessuna keyword nel perimetro scelto: allarga il perimetro o avvia un'estrazione.",
     "STRATEGY_LIMIT": "Il progetto ha già 20 strategie: eliminane una prima di generarne un'altra.",
     "STRATEGY_NOT_FOUND": "Strategia non trovata.",
-    "STRATEGY_CONFLICT": "La strategia è stata modificata nel frattempo: ricarica il piano e riprova."
+    "STRATEGY_CONFLICT": "La strategia è stata modificata nel frattempo: ricarica il piano e riprova.",
+    "STRATEGY_READ_ONLY": "Questa è una versione precedente del piano: si può solo consultare."
   },
   "errorPages": {
     "error": {
@@ -1127,13 +1128,11 @@
     },
     "ui": {
       "defaultName": "Strategia {mode, select, AUTO {automatica} other {esperta}} del {date, date, short}",
-      "title": "Strategia hub and spoke",
-      "intro": "Organizza le keyword del progetto in pagine pilastro (hub) e articoli satellite (spoke), con H1 e H2 suggeriti. Il piano si calcola dalle keyword già estratte, senza servizi a pagamento: è un punto di partenza da rivedere.",
-      "generate": "Genera strategia",
-      "generating": "Generazione...",
-      "nameLabel": "Nome della strategia (facoltativo)",
-      "advanced": "Impostazioni avanzate",
-      "advancedHint": "Con le impostazioni avanzate scegli perimetro e regole (modalità esperta). Senza, la strategia usa tutto il progetto, le keyword approvate e da rivedere e le regole predefinite.",
+      "generate": "Costruisci il piano",
+      "generating": "Costruzione del piano…",
+      "nameLabel": "Nome del piano (facoltativo)",
+      "advanced": "Opzioni avanzate",
+      "advancedHint": "Con le opzioni avanzate scegli perimetro e regole (modalità esperta). Senza, il piano usa le keyword tenute di tutto il progetto e le regole predefinite.",
       "scope": "Perimetro",
       "scopeProject": "Tutto il progetto",
       "reviewStatus": "Keyword da includere",
@@ -1152,37 +1151,11 @@
       "questionsAs": "Domande sotto la soglia",
       "questionsAsFaq": "Nella FAQ della pagina più vicina",
       "questionsAsSpokes": "Sempre come spoke",
-      "listTitle": "Strategie generate",
-      "empty": "Nessuna strategia: generane una con il pulsante qui sopra.",
-      "columns": {
-        "name": "Nome",
-        "mode": "Modalità",
-        "created": "Creata",
-        "keywords": "Keyword",
-        "unassigned": "Non assegnate"
-      },
       "mode": {
         "AUTO": "Automatica",
         "EXPERT": "Esperta"
       },
-      "backToList": "Tutte le strategie",
-      "meta": "Modalità {mode} · creata il {date} · lingua dei titoli {language}",
-      "stats": {
-        "hubs": "Hub",
-        "pages": "Pagine",
-        "covered": "Keyword coperte",
-        "volume": "Volume complessivo",
-        "unassigned": "Non assegnate"
-      },
       "truncated": "Il perimetro superava 5000 keyword: la strategia usa le 5000 a priorità più alta.",
-      "hubHeading": "Hub {number}: {title}",
-      "spokesEmpty": "Questo hub non ha spoke.",
-      "spokeColumns": {
-        "h1": "H1",
-        "mainKeyword": "Keyword principale",
-        "contentType": "Tipo di contenuto",
-        "priority": "Priorità"
-      },
       "kind": {
         "HUB": "Pagina pilastro",
         "SPOKE": "Spoke"
@@ -1196,39 +1169,15 @@
         "local": "Pagina locale",
         "tool": "Strumento"
       },
-      "priority": "Priorità {value, number}",
-      "suggested": "suggerito",
       "noH2": "Nessun H2",
-      "keywordsTitle": "Keyword",
-      "mainBadge": "principale",
-      "volume": "{volume, number} ricerche",
-      "noVolume": "volume non disponibile",
       "reasonTitle": "Perché questa pagina",
       "faqCount": "{count, plural, one {# domanda è nella FAQ della pagina.} other {# domande sono nella FAQ della pagina.}}",
       "linksTitle": "Link interni previsti",
       "noLinks": "Nessun link interno previsto.",
-      "selectKeyword": "Seleziona {keyword}",
-      "moveTo": "Sposta le keyword selezionate in",
-      "moveToUnassigned": "Non assegnate",
-      "move": "Sposta",
-      "editTitles": "Modifica titoli",
-      "save": "Salva",
-      "cancel": "Annulla",
-      "h1Field": "H1",
-      "h2Field": "H2 (uno per riga, al massimo 30)",
-      "contentTypeField": "Tipo di contenuto",
-      "promote": "Promuovi a hub",
-      "mergeInto": "Unisci questa pagina in",
-      "merge": "Unisci",
-      "deletePage": "Elimina pagina",
-      "confirmDeletePage": "Conferma eliminazione",
-      "deletePageHint": "Le keyword della pagina finiranno tra le non assegnate.",
-      "working": "Aggiornamento...",
       "unassignedTitle": "Non assegnate",
-      "unassignedCount": "{count, plural, one {# keyword non assegnata} other {# keyword non assegnate}}",
-      "unassignedEmpty": "Tutte le keyword sono in una pagina.",
-      "deleteStrategy": "Elimina strategia",
-      "h2Title": "H2"
+      "h2Title": "H2",
+      "regenerate": "Rigenera il piano",
+      "regenerating": "Rigenerazione…"
     },
     "pdf": {
       "coverTitle": "Strategia hub and spoke",
@@ -1266,10 +1215,8 @@
       "criteriaNone": "nessun filtro",
       "criteriaRules": "Regole: uno spoke nasce con almeno {minKeywords} keyword o {minVolume} ricerche al mese; al massimo {maxSpokes} spoke per hub; una domanda diventa uno spoke da {questionVolume} ricerche al mese ({questionsAs, select, spokes {tutte le domande sono spoke} other {le altre vanno nella FAQ della pagina più vicina}}).",
       "criteriaLanguage": "Lingua dei titoli: {language}",
-      "footer": "{app} · pagina {page} di {pages}"
-    },
-    "delete": {
-      "confirm": "Eliminare la strategia «{name}»? L'operazione non si può annullare."
+      "footer": "{app} · pagina {page} di {pages}",
+      "status": "Stato: {status}"
     },
     "export": {
       "columns": {
@@ -1282,9 +1229,15 @@
         "content_type": "Tipo di contenuto",
         "volume": "Volume",
         "priority": "Priorità",
-        "internal_links": "Link interni"
+        "internal_links": "Link interni",
+        "status": "Stato"
       },
       "sheet": "Strategia"
+    },
+    "status": {
+      "TODO": "Da scrivere",
+      "WRITING": "In scrittura",
+      "PUBLISHED": "Pubblicata"
     }
   },
   "project": {
@@ -1314,7 +1267,10 @@
         "done": "fatto",
         "todo": "da fare"
       },
-      "addTopic": "Nuovo argomento"
+      "addTopic": "Nuovo argomento",
+      "writing": "Scrittura",
+      "writingProgress": "{published, number} di {total, plural, one {# pubblicata} other {# pubblicate}}",
+      "writingToStart": "dopo il piano"
     }
   },
   "nextStep": {
@@ -1324,7 +1280,10 @@
       "searching": "Sto cercando le keyword…",
       "run_topic": "l'argomento «{topic}» non ha ancora keyword.",
       "build_plan": "{count, plural, one {# keyword tenuta è pronta} other {# keyword tenute sono pronte}} per diventare pagine.",
-      "open_plan": "il piano dei contenuti è pronto, organizza e scrivi le pagine."
+      "open_plan": "il piano dei contenuti è pronto, organizza e scrivi le pagine.",
+      "write_next": "prossima da scrivere: «{title}» (n. {number}).",
+      "writing": "hai {count, plural, one {# pagina} other {# pagine}} in scrittura.",
+      "plan_done": "piano completato, tutte le pagine sono pubblicate."
     },
     "actions": {
       "add_topic": "Aggiungi un argomento",
@@ -1332,7 +1291,10 @@
       "build_plan": "Costruisci il piano",
       "building": "Costruzione del piano…",
       "open_plan": "Apri il piano",
-      "searching": "Segui la ricerca"
+      "searching": "Segui la ricerca",
+      "write_next": "Inizia a scriverla",
+      "writing": "Apri il piano",
+      "plan_done": "Aggiungi un argomento"
     },
     "notStarted": "La ricerca non è partita: {reason}"
   },
@@ -1372,7 +1334,9 @@
       "cancel": "Annulla",
       "settings": "Impostazioni",
       "delete": "Elimina",
-      "deleteTitle": "Eliminare il progetto?"
+      "deleteTitle": "Eliminare il progetto?",
+      "writing": "Scrittura: {published, number} di {total, plural, one {# pubblicata} other {# pubblicate}}",
+      "writingLabel": "Avanzamento della scrittura"
     }
   },
   "keywords": {
@@ -1557,6 +1521,142 @@
     "created": "Foglio creato con {rows, plural, one {# riga} other {# righe}}.",
     "openSheet": "Apri il foglio",
     "close": "Chiudi",
-    "planNone": "Il piano dei contenuti"
+    "planNone": "Il piano dei contenuti",
+    "status": "Includi lo stato di scrittura"
+  },
+  "plan": {
+    "title": "Piano dei contenuti",
+    "intro": "Le pagine da scrivere, una colonna per pagina principale con sotto i suoi approfondimenti nell'ordine in cui scriverli.",
+    "meta": "Costruito il {date} · {pages, plural, one {# pagina} other {# pagine}}",
+    "empty": {
+      "title": "Il piano non c'è ancora",
+      "text": "Titan SEO organizza le keyword tenute in pagine principali e approfondimenti, con titoli e scalette suggeriti. Poi le scrivi una alla volta."
+    },
+    "regenerate": "Rigenera",
+    "versions": "Versioni precedenti ({count, number})",
+    "menu": "Altre azioni del piano",
+    "deletePlan": "Elimina il piano",
+    "deleteTitle": "Eliminare il piano?",
+    "deleteText": "Il piano «{name}» va via con le sue pagine e il loro stato; se c'è una versione precedente, diventa lei il piano.",
+    "progress": {
+      "label": "Avanzamento della scrittura",
+      "text": "{published, plural, one {# pubblicata} other {# pubblicate}} · {writing, number} in scrittura · {todo, number} da scrivere"
+    },
+    "groupBy": "Raggruppa per",
+    "group": {
+      "hub": "Gruppo",
+      "status": "Stato"
+    },
+    "viewLabel": "Vista",
+    "views": {
+      "board": "Bacheca",
+      "list": "Elenco"
+    },
+    "boardLabel": "Bacheca del piano",
+    "statusColumns": {
+      "TODO": "Da scrivere",
+      "WRITING": "In scrittura",
+      "PUBLISHED": "Pubblicate"
+    },
+    "column": {
+      "pages": "{count, plural, one {# pagina} other {# pagine}}",
+      "unassigned": "Senza pagina",
+      "unassignedHint": "Trascina una keyword su una scheda oppure usa il suo menu.",
+      "empty": "Nessuna pagina"
+    },
+    "card": {
+      "number": "n. {number}",
+      "pillar": "Pagina principale",
+      "keywords": "{count, plural, one {# keyword} other {# keyword}} · {volume, number} ricerche/mese",
+      "keywordsNoVolume": "{count, plural, one {# keyword} other {# keyword}}",
+      "publishedOn": "Pubblicata il {date}",
+      "menu": "Azioni della pagina «{title}»",
+      "moveUnder": "Sposta sotto…",
+      "status": "Stato di «{title}»: {status}"
+    },
+    "chip": {
+      "menu": "Azioni della keyword «{keyword}»",
+      "assignTo": "Assegna a…"
+    },
+    "pick": {
+      "moveTitle": "Sposta sotto un'altra pagina principale",
+      "moveLabel": "Pagina principale",
+      "assignTitle": "Assegna «{keyword}» a una pagina",
+      "keywordTitle": "Sposta «{keyword}» in un'altra pagina",
+      "pageLabel": "Pagina",
+      "mergeTitle": "Unisci a un'altra pagina",
+      "mergeLabel": "Pagina che riceve le keyword",
+      "confirm": "Sposta",
+      "assign": "Assegna",
+      "merge": "Unisci",
+      "cancel": "Annulla"
+    },
+    "conflict": "Il piano è stato modificato da un altro membro: ho caricato l'ultima versione.",
+    "list": {
+      "label": "Elenco delle pagine del piano",
+      "columns": {
+        "number": "N.",
+        "h1": "Titolo (H1)",
+        "type": "Tipo",
+        "keywords": "Keyword",
+        "volume": "Ricerche",
+        "status": "Stato"
+      }
+    },
+    "panel": {
+      "close": "Chiudi",
+      "relationPillar": "Pagina principale",
+      "relationSpoke": "Approfondimento di «{hub}»",
+      "status": "Stato",
+      "h1": "Titolo (H1)",
+      "h2": "Scaletta (H2, una voce per riga)",
+      "suggested": "suggerito",
+      "contentType": "Tipo di contenuto",
+      "keywords": "Keyword",
+      "main": "principale",
+      "searches": "{volume, number} ricerche/mese",
+      "noVolume": "volume non disponibile",
+      "moveKeyword": "Sposta in…",
+      "moveKeywordLabel": "Sposta «{keyword}» in un'altra pagina",
+      "removeKeyword": "Togli",
+      "removeKeywordLabel": "Togli «{keyword}» dalla pagina",
+      "reason": "Perché questa pagina",
+      "links": "Collegamenti interni",
+      "noLinks": "Nessun collegamento interno previsto.",
+      "noH2": "Nessun H2",
+      "saved": "Salvato",
+      "saving": "Salvataggio…",
+      "menu": "Altre azioni della pagina",
+      "merge": "Unisci a…",
+      "promote": "Rendila principale",
+      "delete": "Elimina pagina",
+      "deleteTitle": "Eliminare la pagina?",
+      "deleteText": "La pagina «{title}» va via e le sue keyword finiscono tra quelle senza pagina.",
+      "readOnly": "Versione precedente: si può solo consultare."
+    },
+    "regenerateDialog": {
+      "title": "Rigenera il piano",
+      "text": "Riorganizzo le pagine non ancora iniziate con le keyword tenute di oggi. Le pagine in scrittura o pubblicate restano come sono.",
+      "cancel": "Annulla"
+    },
+    "versionsPage": {
+      "title": "Versioni precedenti del piano",
+      "intro": "Ogni volta che rigeneri il piano, quello di prima resta qui in sola lettura. Se ne tengono fino a 20, poi la più vecchia va via.",
+      "empty": "Nessuna versione precedente: il piano non è ancora stato rigenerato.",
+      "columns": {
+        "name": "Nome",
+        "created": "Creata",
+        "mode": "Modalità",
+        "pages": "Pagine"
+      },
+      "back": "Torna al piano",
+      "readOnly": "Versione del {date} in sola lettura.",
+      "delete": "Elimina",
+      "deleteTitle": "Eliminare la versione?",
+      "deleteText": "La versione «{name}» va via; il piano corrente non cambia.",
+      "cancel": "Annulla",
+      "menu": "Azioni della versione «{name}»",
+      "menuColumn": "Azioni"
+    }
   }
 }

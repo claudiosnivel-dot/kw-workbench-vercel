@@ -7,7 +7,7 @@ import type { StrategyPageView, StrategyView } from "@/lib/modules/strategy/type
  * Export del piano (T-1906): una riga per pagina nell'ordine di lavoro, nei formati dell'export dei risultati e con
  * la stessa protezione dalle formule (CSV con l'apice, XLSX con celle di testo). Intestazioni, tipo di pagina, tipo di
  * contenuto e nome del foglio sono nella lingua dell'utente (T-2102); le colonne tecniche restano l'identificatore
- * interno e l'ordine.
+ * interno e l'ordine. L'ultima colonna è lo stato di scrittura della pagina (T-2501).
  */
 
 export const STRATEGY_EXPORT_COLUMNS = [
@@ -21,6 +21,7 @@ export const STRATEGY_EXPORT_COLUMNS = [
   "volume",
   "priority",
   "internal_links",
+  "status",
 ] as const;
 
 const JOIN = " | ";
@@ -44,6 +45,7 @@ function pageRow(page: StrategyPageView, hub: StrategyPageView, links: string[],
     volumes.length > 0 ? volumes.reduce((sum, volume) => sum + volume, 0) : null,
     page.priority,
     links.join(JOIN),
+    t(`status.${page.status}`),
   ];
 }
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { type ProjectProgressData, type StepStatus, strategyHref } from "@/lib/modules/next-step";
+import { planHref, type ProjectProgressData, type StepStatus } from "@/lib/modules/next-step";
 import { keywordsHref } from "@/lib/modules/results-view";
 
 type ProjectSidebarProps = {
@@ -29,7 +29,7 @@ function useCurrentItem(projectId: string): CurrentItem {
   if (pathname.startsWith(`${base}/subprojects/`)) {
     return { kind: "topic", id: pathname.slice(`${base}/subprojects/`.length).split("/")[0] };
   }
-  if (pathname.startsWith(`${base}/strategy`)) {
+  if (pathname.startsWith(`${base}/plan`) || pathname.startsWith(`${base}/strategy`)) {
     return { kind: "plan" };
   }
   if (pathname === `${base}/settings`) {
@@ -57,10 +57,36 @@ function SidebarLink({ href, current, className, children }: { href: string; cur
   );
 }
 
+type StepLinkProps = {
+  href: string;
+  current: boolean;
+  number: number;
+  status: StepStatus;
+  title: string;
+  detail: string;
+  detailTestId?: string;
+};
+
+/** Tappa del percorso con il titolo e una riga di dettaglio (Piano dei contenuti, Scrittura). */
+function StepLink({ href, current, number, status, title, detail, detailTestId }: StepLinkProps) {
+  return (
+    <SidebarLink href={href} current={current} className="project-step">
+      <StepMarker number={number} status={status} />
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">{title}</span>
+        <span className="block text-xs text-slate-500" data-testid={detailTestId}>
+          {detail}
+        </span>
+      </span>
+    </SidebarLink>
+  );
+}
+
 /**
  * Barra laterale del progetto (T-2303, struttura «M1» di D-39): fa da navigazione e da guida. Tappa 1 Keyword con gli
- * argomenti in ordine di position e «Nuovo argomento», tappa 2 Piano dei contenuti, poi le Impostazioni; ogni tappa
- * mostra il suo stato e la voce della pagina aperta ha aria-current=page. I nomi degli argomenti sono resi come testo.
+ * argomenti in ordine di position e «Nuovo argomento», tappa 2 Piano dei contenuti, tappa 3 Scrittura con le pagine
+ * pubblicate (T-2506, porta al piano raggruppato per stato), poi le Impostazioni; ogni tappa mostra il suo stato e la
+ * voce della pagina aperta ha aria-current=page. I nomi degli argomenti sono resi come testo.
  */
 export function ProjectSidebar({ projectId, progress, onAddTopic }: ProjectSidebarProps) {
   const t = useTranslations("project.shell");
@@ -95,15 +121,27 @@ export function ProjectSidebar({ projectId, progress, onAddTopic }: ProjectSideb
         </li>
       </ul>
 
-      <SidebarLink href={strategyHref(projectId, latestStrategy?.id)} current={current?.kind === "plan"} className="project-step">
-        <StepMarker number={2} status={steps.plan} />
-        <span className="min-w-0 flex-1">
-          <span className="block font-semibold">{t("plan")}</span>
-          <span className="block text-xs text-slate-500">
-            {latestStrategy ? t("planPages", { count: latestStrategy.pageCount }) : t("planToCreate")}
-          </span>
-        </span>
-      </SidebarLink>
+      <StepLink
+        href={planHref(projectId)}
+        current={current?.kind === "plan"}
+        number={2}
+        status={steps.plan}
+        title={t("plan")}
+        detail={latestStrategy ? t("planPages", { count: latestStrategy.pageCount }) : t("planToCreate")}
+      />
+      <StepLink
+        href={planHref(projectId, { group: "status" })}
+        current={false}
+        number={3}
+        status={steps.writing}
+        title={t("writing")}
+        detail={
+          latestStrategy && latestStrategy.pageCount > 0
+            ? t("writingProgress", { published: latestStrategy.publishedCount, total: latestStrategy.pageCount })
+            : t("writingToStart")
+        }
+        detailTestId="sidebar-writing"
+      />
 
       <div className="project-sidebar-separator" role="presentation" />
       <SidebarLink href={`/projects/${projectId}/settings`} current={current?.kind === "settings"} className="project-topic">

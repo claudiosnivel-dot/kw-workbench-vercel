@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { readApiResponse, sendJson } from "@/lib/client/http";
 import { useTopicSearch } from "@/lib/client/run-extraction";
 import { usePendingAction } from "@/lib/client/use-pending-action";
-import { type NextStep, strategyHref } from "@/lib/modules/next-step";
+import { type NextStep, planHref } from "@/lib/modules/next-step";
 import { keywordsHref } from "@/lib/modules/results-view";
 
 type NextStepActionProps = {
@@ -21,8 +21,9 @@ type NextStepActionProps = {
 /**
  * Il solo pulsante del prossimo passo di un progetto (T-2302, T-2305), uguale nella barra del progetto e nelle schede
  * della home: add_topic apre il dialogo Nuovo argomento, run_topic avvia la ricerca dell'argomento e porta ai suoi
- * risultati, build_plan genera la strategia in modalità automatica e porta alla sua pagina, open_plan apre la strategia
- * più recente, searching porta ai risultati dell'argomento che si sta cercando.
+ * risultati, build_plan genera il piano in modalità automatica e lo apre, open_plan e writing aprono il piano,
+ * write_next mette in scrittura la prossima pagina e ne apre il pannello (T-2506), plan_done apre il dialogo Nuovo
+ * argomento, searching porta ai risultati dell'argomento che si sta cercando.
  */
 export function NextStepAction({ projectId, next, onAddTopic, primary = true }: NextStepActionProps) {
   const t = useTranslations("nextStep.actions");
@@ -48,16 +49,27 @@ export function NextStepAction({ projectId, next, onAddTopic, primary = true }: 
   const buildPlan = () =>
     perform(async () => {
       const response = await sendJson("POST", `/api/projects/${projectId}/strategies`, { mode: "AUTO" });
-      const payload = await readApiResponse<{ data: { id: string } }>(response, tErrors);
-      return strategyHref(projectId, payload?.data.id);
+      await readApiResponse<{ data: { id: string } }>(response, tErrors);
+      return planHref(projectId);
+    });
+
+  const startWriting = (strategyId: string, version: number, pageId: string) =>
+    perform(async () => {
+      const response = await sendJson("PATCH", `/api/projects/${projectId}/strategies/${strategyId}/pages/${pageId}`, {
+        version,
+        status: "WRITING",
+      });
+      await readApiResponse<{ data: { version: number } }>(response, tErrors);
+      return planHref(projectId, { page: pageId });
     });
 
   let control;
   switch (next.kind) {
     case "add_topic":
+    case "plan_done":
       control = (
         <button type="button" className={className} onClick={onAddTopic}>
-          {t("add_topic")}
+          {t(next.kind)}
         </button>
       );
       break;
@@ -76,10 +88,23 @@ export function NextStepAction({ projectId, next, onAddTopic, primary = true }: 
       );
       break;
     case "open_plan":
+    case "writing":
       control = (
-        <Link className={className} href={strategyHref(projectId, next.strategyId)}>
-          {t("open_plan")}
+        <Link className={className} href={planHref(projectId, next.kind === "writing" ? { group: "status" } : {})}>
+          {t(next.kind)}
         </Link>
+      );
+      break;
+    case "write_next":
+      control = (
+        <button
+          type="button"
+          className={className}
+          disabled={pending}
+          onClick={() => startWriting(next.strategyId, next.version, next.page.id)}
+        >
+          {t("write_next")}
+        </button>
       );
       break;
     case "searching":
