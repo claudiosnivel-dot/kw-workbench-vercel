@@ -38,10 +38,15 @@ function keepFocusInside(event: KeyboardEvent, container: HTMLElement): void {
   }
 }
 
+// Modali aperte, dalla prima all'ultima: solo l'ultima risponde a Esc e Tab.
+const openModals: object[] = [];
+
 /**
  * Comportamento comune di modali e pannelli a scomparsa (T-1104, T-2303): all'apertura il focus va al primo campo (o al
  * primo elemento attivabile), Tab resta dentro, Esc chiama onClose e la pagina sotto non scorre; alla chiusura il focus
- * torna all'elemento che aveva il focus all'apertura, di norma il pulsante che l'ha aperta.
+ * torna all'elemento che aveva il focus all'apertura, di norma il pulsante che l'ha aperta. Con più modali aperte una
+ * sopra l'altra (un dialogo aperto dal pannello di una pagina del piano, T-2505) Esc e Tab valgono solo per l'ultima
+ * aperta, ed Esc già gestito da un menu dentro la modale (preventDefault) non la chiude.
  */
 export function useModalFocus(open: boolean, containerRef: RefObject<HTMLElement | null>, onClose: () => void): void {
   const onCloseRef = useRef(onClose);
@@ -62,9 +67,15 @@ export function useModalFocus(open: boolean, containerRef: RefObject<HTMLElement
     }
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const token = {};
+    openModals.push(token);
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (openModals[openModals.length - 1] !== token) {
+        return;
+      }
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        event.preventDefault();
         onCloseRef.current();
       } else if (event.key === "Tab" && containerRef.current) {
         keepFocusInside(event, containerRef.current);
@@ -73,6 +84,7 @@ export function useModalFocus(open: boolean, containerRef: RefObject<HTMLElement
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
+      openModals.splice(openModals.indexOf(token), 1);
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
       opener?.focus();

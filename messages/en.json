@@ -467,7 +467,8 @@
     "STRATEGY_NO_KEYWORDS": "No keywords in the chosen scope: widen the scope or run an extraction.",
     "STRATEGY_LIMIT": "The project already has 20 strategies: delete one before generating another.",
     "STRATEGY_NOT_FOUND": "Strategy not found.",
-    "STRATEGY_CONFLICT": "The strategy was changed in the meantime: reload the plan and try again."
+    "STRATEGY_CONFLICT": "The strategy was changed in the meantime: reload the plan and try again.",
+    "STRATEGY_READ_ONLY": "This is a previous version of the plan: it is read only."
   },
   "errorPages": {
     "error": {
@@ -1127,13 +1128,11 @@
     },
     "ui": {
       "defaultName": "{mode, select, AUTO {Automatic} other {Expert}} strategy of {date, date, short}",
-      "title": "Hub and spoke strategy",
-      "intro": "Organise the project keywords into pillar pages (hubs) and cluster articles (spokes), with suggested H1 and H2 headings. The plan is computed from the keywords already extracted, with no paid services: it is a starting point to review.",
-      "generate": "Generate strategy",
-      "generating": "Generating...",
-      "nameLabel": "Strategy name (optional)",
-      "advanced": "Advanced settings",
-      "advancedHint": "With the advanced settings you choose scope and rules (expert mode). Without them, the strategy uses the whole project, the approved and pending keywords and the default rules.",
+      "generate": "Build the plan",
+      "generating": "Building the plan…",
+      "nameLabel": "Plan name (optional)",
+      "advanced": "Advanced options",
+      "advancedHint": "With the advanced options you choose scope and rules (expert mode). Without them, the plan uses the kept keywords of the whole project and the default rules.",
       "scope": "Scope",
       "scopeProject": "Whole project",
       "reviewStatus": "Keywords to include",
@@ -1152,37 +1151,11 @@
       "questionsAs": "Questions below the threshold",
       "questionsAsFaq": "In the FAQ of the closest page",
       "questionsAsSpokes": "Always as spokes",
-      "listTitle": "Generated strategies",
-      "empty": "No strategies yet: generate one with the button above.",
-      "columns": {
-        "name": "Name",
-        "mode": "Mode",
-        "created": "Created",
-        "keywords": "Keywords",
-        "unassigned": "Unassigned"
-      },
       "mode": {
         "AUTO": "Automatic",
         "EXPERT": "Expert"
       },
-      "backToList": "All strategies",
-      "meta": "{mode} mode · created on {date} · heading language {language}",
-      "stats": {
-        "hubs": "Hubs",
-        "pages": "Pages",
-        "covered": "Keywords covered",
-        "volume": "Total volume",
-        "unassigned": "Unassigned"
-      },
       "truncated": "The scope had more than 5000 keywords: the strategy uses the 5000 with the highest priority.",
-      "hubHeading": "Hub {number}: {title}",
-      "spokesEmpty": "This hub has no spokes.",
-      "spokeColumns": {
-        "h1": "H1",
-        "mainKeyword": "Main keyword",
-        "contentType": "Content type",
-        "priority": "Priority"
-      },
       "kind": {
         "HUB": "Pillar page",
         "SPOKE": "Spoke"
@@ -1196,39 +1169,15 @@
         "local": "Local page",
         "tool": "Tool"
       },
-      "priority": "Priority {value, number}",
-      "suggested": "suggested",
       "noH2": "No H2",
-      "keywordsTitle": "Keywords",
-      "mainBadge": "main",
-      "volume": "{volume, number} searches",
-      "noVolume": "volume not available",
       "reasonTitle": "Why this page",
       "faqCount": "{count, plural, one {# question is in the page FAQ.} other {# questions are in the page FAQ.}}",
       "linksTitle": "Planned internal links",
       "noLinks": "No internal links planned.",
-      "selectKeyword": "Select {keyword}",
-      "moveTo": "Move the selected keywords to",
-      "moveToUnassigned": "Unassigned",
-      "move": "Move",
-      "editTitles": "Edit headings",
-      "save": "Save",
-      "cancel": "Cancel",
-      "h1Field": "H1",
-      "h2Field": "H2 (one per line, up to 30)",
-      "contentTypeField": "Content type",
-      "promote": "Promote to hub",
-      "mergeInto": "Merge this page into",
-      "merge": "Merge",
-      "deletePage": "Delete page",
-      "confirmDeletePage": "Confirm deletion",
-      "deletePageHint": "The page keywords will move to the unassigned ones.",
-      "working": "Updating...",
       "unassignedTitle": "Unassigned",
-      "unassignedCount": "{count, plural, one {# unassigned keyword} other {# unassigned keywords}}",
-      "unassignedEmpty": "Every keyword is on a page.",
-      "deleteStrategy": "Delete strategy",
-      "h2Title": "H2"
+      "h2Title": "H2",
+      "regenerate": "Regenerate the plan",
+      "regenerating": "Regenerating…"
     },
     "pdf": {
       "coverTitle": "Hub and spoke strategy",
@@ -1266,10 +1215,8 @@
       "criteriaNone": "no filter",
       "criteriaRules": "Rules: a spoke needs at least {minKeywords} keywords or {minVolume} monthly searches; at most {maxSpokes} spokes per hub; a question becomes a spoke from {questionVolume} monthly searches ({questionsAs, select, spokes {every question is a spoke} other {the others go to the FAQ of the closest page}}).",
       "criteriaLanguage": "Heading language: {language}",
-      "footer": "{app} · page {page} of {pages}"
-    },
-    "delete": {
-      "confirm": "Delete the strategy “{name}”? This cannot be undone."
+      "footer": "{app} · page {page} of {pages}",
+      "status": "Status: {status}"
     },
     "export": {
       "columns": {
@@ -1282,9 +1229,15 @@
         "content_type": "Content type",
         "volume": "Volume",
         "priority": "Priority",
-        "internal_links": "Internal links"
+        "internal_links": "Internal links",
+        "status": "Status"
       },
       "sheet": "Strategy"
+    },
+    "status": {
+      "TODO": "To write",
+      "WRITING": "Writing",
+      "PUBLISHED": "Published"
     }
   },
   "project": {
@@ -1314,7 +1267,10 @@
         "done": "done",
         "todo": "to do"
       },
-      "addTopic": "New topic"
+      "addTopic": "New topic",
+      "writing": "Writing",
+      "writingProgress": "{published, number} of {total, number} published",
+      "writingToStart": "after the plan"
     }
   },
   "nextStep": {
@@ -1324,7 +1280,10 @@
       "searching": "Looking for keywords…",
       "run_topic": "the topic “{topic}” has no keywords yet.",
       "build_plan": "{count, plural, one {# kept keyword is ready} other {# kept keywords are ready}} to become pages.",
-      "open_plan": "the content plan is ready, organize and write the pages."
+      "open_plan": "the content plan is ready, organize and write the pages.",
+      "write_next": "next to write: “{title}” (no. {number}).",
+      "writing": "you have {count, plural, one {# page} other {# pages}} being written.",
+      "plan_done": "plan completed, all the pages are published."
     },
     "actions": {
       "add_topic": "Add a topic",
@@ -1332,7 +1291,10 @@
       "build_plan": "Build the plan",
       "building": "Building the plan…",
       "open_plan": "Open the plan",
-      "searching": "Follow the search"
+      "searching": "Follow the search",
+      "write_next": "Start writing it",
+      "writing": "Open the plan",
+      "plan_done": "Add a topic"
     },
     "notStarted": "The search did not start: {reason}"
   },
@@ -1372,7 +1334,9 @@
       "cancel": "Cancel",
       "settings": "Settings",
       "delete": "Delete",
-      "deleteTitle": "Delete the project?"
+      "deleteTitle": "Delete the project?",
+      "writing": "Writing: {published, number} of {total, number} published",
+      "writingLabel": "Writing progress"
     }
   },
   "keywords": {
@@ -1557,6 +1521,142 @@
     "created": "Sheet created with {rows, plural, one {# row} other {# rows}}.",
     "openSheet": "Open the sheet",
     "close": "Close",
-    "planNone": "The content plan"
+    "planNone": "The content plan",
+    "status": "Include the writing status"
+  },
+  "plan": {
+    "title": "Content plan",
+    "intro": "The pages to write, one column per main page with its in-depth articles below in the order to write them.",
+    "meta": "Built on {date} · {pages, plural, one {# page} other {# pages}}",
+    "empty": {
+      "title": "There is no plan yet",
+      "text": "Titan SEO organizes the kept keywords into main pages and in-depth articles, with suggested titles and outlines. Then you write them one at a time."
+    },
+    "regenerate": "Regenerate",
+    "versions": "Previous versions ({count, number})",
+    "menu": "More plan actions",
+    "deletePlan": "Delete the plan",
+    "deleteTitle": "Delete the plan?",
+    "deleteText": "The plan “{name}” goes away with its pages and their status; if there is a previous version, it becomes the plan.",
+    "progress": {
+      "label": "Writing progress",
+      "text": "{published, number} published · {writing, number} in progress · {todo, number} to write"
+    },
+    "groupBy": "Group by",
+    "group": {
+      "hub": "Group",
+      "status": "Status"
+    },
+    "viewLabel": "View",
+    "views": {
+      "board": "Board",
+      "list": "List"
+    },
+    "boardLabel": "Plan board",
+    "statusColumns": {
+      "TODO": "To write",
+      "WRITING": "Writing",
+      "PUBLISHED": "Published"
+    },
+    "column": {
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "unassigned": "No page",
+      "unassignedHint": "Drag a keyword onto a card or use its menu.",
+      "empty": "No pages"
+    },
+    "card": {
+      "number": "no. {number}",
+      "pillar": "Main page",
+      "keywords": "{count, plural, one {# keyword} other {# keywords}} · {volume, number} searches/month",
+      "keywordsNoVolume": "{count, plural, one {# keyword} other {# keywords}}",
+      "publishedOn": "Published on {date}",
+      "menu": "Actions for the page “{title}”",
+      "moveUnder": "Move under…",
+      "status": "Status of “{title}”: {status}"
+    },
+    "chip": {
+      "menu": "Actions for the keyword “{keyword}”",
+      "assignTo": "Assign to…"
+    },
+    "pick": {
+      "moveTitle": "Move under another main page",
+      "moveLabel": "Main page",
+      "assignTitle": "Assign “{keyword}” to a page",
+      "keywordTitle": "Move “{keyword}” to another page",
+      "pageLabel": "Page",
+      "mergeTitle": "Merge into another page",
+      "mergeLabel": "Page that receives the keywords",
+      "confirm": "Move",
+      "assign": "Assign",
+      "merge": "Merge",
+      "cancel": "Cancel"
+    },
+    "conflict": "Another member changed the plan: I loaded the latest version.",
+    "list": {
+      "label": "List of the plan pages",
+      "columns": {
+        "number": "No.",
+        "h1": "Title (H1)",
+        "type": "Type",
+        "keywords": "Keywords",
+        "volume": "Searches",
+        "status": "Status"
+      }
+    },
+    "panel": {
+      "close": "Close",
+      "relationPillar": "Main page",
+      "relationSpoke": "In-depth article of “{hub}”",
+      "status": "Status",
+      "h1": "Title (H1)",
+      "h2": "Outline (H2, one item per line)",
+      "suggested": "suggested",
+      "contentType": "Content type",
+      "keywords": "Keywords",
+      "main": "main",
+      "searches": "{volume, number} searches/month",
+      "noVolume": "volume not available",
+      "moveKeyword": "Move to…",
+      "moveKeywordLabel": "Move “{keyword}” to another page",
+      "removeKeyword": "Remove",
+      "removeKeywordLabel": "Remove “{keyword}” from the page",
+      "reason": "Why this page",
+      "links": "Internal links",
+      "noLinks": "No internal links planned.",
+      "noH2": "No H2",
+      "saved": "Saved",
+      "saving": "Saving…",
+      "menu": "More page actions",
+      "merge": "Merge into…",
+      "promote": "Make it a main page",
+      "delete": "Delete page",
+      "deleteTitle": "Delete the page?",
+      "deleteText": "The page “{title}” goes away and its keywords move to the ones without a page.",
+      "readOnly": "Previous version: read only."
+    },
+    "regenerateDialog": {
+      "title": "Regenerate the plan",
+      "text": "I reorganize the pages not started yet with today's kept keywords. The pages being written or published stay as they are.",
+      "cancel": "Cancel"
+    },
+    "versionsPage": {
+      "title": "Previous versions of the plan",
+      "intro": "Every time you regenerate the plan, the previous one stays here, read only. Up to 20 are kept, then the oldest goes away.",
+      "empty": "No previous versions: the plan has not been regenerated yet.",
+      "columns": {
+        "name": "Name",
+        "created": "Created",
+        "mode": "Mode",
+        "pages": "Pages"
+      },
+      "back": "Back to the plan",
+      "readOnly": "Version of {date}, read only.",
+      "delete": "Delete",
+      "deleteTitle": "Delete the version?",
+      "deleteText": "The version “{name}” goes away; the current plan does not change.",
+      "cancel": "Cancel",
+      "menu": "Actions for the version “{name}”",
+      "menuColumn": "Actions"
+    }
   }
 }

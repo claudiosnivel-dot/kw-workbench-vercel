@@ -23,6 +23,8 @@ export type StrategyPdfInput = {
   /** Lingua delle spiegazioni (it o en). */
   locale: string;
   generatedAt: Date;
+  /** Stato di scrittura di ogni pagina nell'ordine di lavoro e nelle sezioni per hub (status=1, T-2501). */
+  withStatus?: boolean;
 };
 
 const styles = StyleSheet.create({
@@ -50,7 +52,9 @@ function sumVolumes(pages: StrategyPageView[]): number {
   );
 }
 
-function PageSection({ page, links, t }: { page: StrategyPageView; links: string[]; t: CatalogTranslator }) {
+type PageSectionProps = { page: StrategyPageView; links: string[]; withStatus: boolean; t: CatalogTranslator };
+
+function PageSection({ page, links, withStatus, t }: PageSectionProps) {
   const main = page.keywords.find((keyword) => keyword.role === "MAIN");
   const secondary = page.keywords.filter((keyword) => keyword !== main).map((keyword) => keyword.keyword);
   const merged = Number(page.reason.params.merged ?? 0);
@@ -59,6 +63,7 @@ function PageSection({ page, links, t }: { page: StrategyPageView; links: string
     <View style={styles.block} wrap>
       <Text style={styles.muted}>{t(`strategy.ui.kind.${page.kind}`)}</Text>
       <Text style={styles.pageTitle}>{page.h1}</Text>
+      {withStatus && <Text>{t("strategy.pdf.status", { status: t(`strategy.status.${page.status}`) })}</Text>}
       <Text>{t("strategy.pdf.contentType", { type: t(`strategy.ui.contentTypes.${page.contentType}`) })}</Text>
       {main && <Text>{t("strategy.pdf.mainKeyword", { keyword: main.keyword })}</Text>}
       {secondary.length > 0 && <Text>{t("strategy.pdf.secondaryKeywords", { keywords: secondary.join(", ") })}</Text>}
@@ -120,6 +125,7 @@ function criteriaLines(input: StrategyPdfInput, t: CatalogTranslator): string[] 
 
 function StrategyDocument({ input, t }: { input: StrategyPdfInput; t: CatalogTranslator }) {
   const { strategy } = input;
+  const withStatus = input.withStatus ?? false;
   const pages = strategy.hubs.flatMap((hub) => [hub.pillar, ...hub.spokes]);
   const date = new Intl.DateTimeFormat(input.locale, { dateStyle: "long", timeZone: APP_TIME_ZONE }).format(input.generatedAt);
   const footer = (
@@ -163,6 +169,7 @@ function StrategyDocument({ input, t }: { input: StrategyPdfInput; t: CatalogTra
         {pages.map((page, index) => (
           <Text key={page.id} style={styles.item}>
             {t("strategy.pdf.workOrderItem", { number: index + 1, kind: t(`strategy.ui.kind.${page.kind}`), title: page.h1 })}
+            {withStatus ? ` · ${t(`strategy.status.${page.status}`)}` : ""}
           </Text>
         ))}
         {footer}
@@ -171,9 +178,9 @@ function StrategyDocument({ input, t }: { input: StrategyPdfInput; t: CatalogTra
       {strategy.hubs.map((hub, index) => (
         <Page key={hub.pillar.id} size="A4" style={styles.page}>
           <Text style={styles.title}>{t("strategy.pdf.hubTitle", { number: index + 1, title: hub.pillar.h1 })}</Text>
-          <PageSection page={hub.pillar} links={hub.spokes.map((spoke) => spoke.h1)} t={t} />
+          <PageSection page={hub.pillar} links={hub.spokes.map((spoke) => spoke.h1)} withStatus={withStatus} t={t} />
           {hub.spokes.map((spoke) => (
-            <PageSection key={spoke.id} page={spoke} links={[hub.pillar.h1]} t={t} />
+            <PageSection key={spoke.id} page={spoke} links={[hub.pillar.h1]} withStatus={withStatus} t={t} />
           ))}
           {footer}
         </Page>

@@ -2,8 +2,10 @@
 // formule, 404 fuori dal workspace e foglio di Google Sheets uguale al CSV. Le API Google sono simulate.
 // Gate di T-2102 (AC-2102-1, AC-2102-2): intestazioni, valori e foglio nella lingua dell'utente. impacted-by: T-2102
 // (intestazioni, tipi di pagina e di contenuto e nome del foglio sono le traduzioni dei cataloghi, non più i nomi tecnici).
+// Gate di T-2501 (AC-2501-2): ultima colonna Stato negli export e stato delle pagine nel PDF con status=1.
 import { randomUUID } from "node:crypto";
 import ExcelJS from "exceljs";
+import { extractText, getDocumentProxy } from "unpdf";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as exportToSheets } from "@/app/api/projects/[id]/strategies/[strategyId]/export/google-sheets/route";
 import { GET as exportStrategy } from "@/app/api/projects/[id]/strategies/[strategyId]/export/route";
@@ -232,7 +234,8 @@ describe("export della strategia", () => {
     const sheet = it_.strategy.export.sheet;
     expect(response.status).toBe(200);
     expect(((await response.json()) as { data: { exportedRows: number } }).data.exportedRows).toBe(3);
-    expect(google.sheets).toEqual([{ properties: { title: sheet, gridProperties: { rowCount: 4, columnCount: 10 } } }]);
+    // impacted-by: T-2501 (ultima colonna Stato, aggiornamento confermato in anticipo con D-39)
+    expect(google.sheets).toEqual([{ properties: { title: sheet, gridProperties: { rowCount: 4, columnCount: 11 } } }]);
     expect(google.written.map((write) => write.range)).toEqual([`'${sheet}'!A1`]);
     expect(google.written[0].values.map((row) => row.map((cell) => String(cell)))).toEqual(csvRows);
   });
@@ -278,4 +281,28 @@ describe("export della strategia nella lingua dell'utente (T-2102)", () => {
     ]);
     expect(google.written[0].values.map((row) => row.map((cell) => String(cell)))).toEqual(italianCsv);
   });
+});
+
+describe("stato di scrittura negli export della strategia (T-2501)", () => {
+  // covers: AC-2501-2
+  it("l'ultima colonna del CSV è Stato con Pubblicata sulla pagina pubblicata; il PDF lo mostra solo con status=1", async () => {
+    const pages: PlanPageSpec[] = PAGES.map((page) => (page.key === "best" ? { ...page, status: "PUBLISHED" } : page));
+    const { owner, projectId, strategyId } = await ownerStrategy(pages);
+
+    const [header, ...rows] = parseCsv(await (await download(owner, projectId, strategyId, "format=csv")).text(), ";");
+    const pdfText = async (query: string) => {
+      const bytes = new Uint8Array(await (await download(owner, projectId, strategyId, query)).arrayBuffer());
+      const { text } = await extractText(await getDocumentProxy(bytes), { mergePages: true });
+      return text.replace(/\s+/g, " ");
+    };
+    const withStatus = await pdfText("format=pdf&status=1");
+    const withoutStatus = await pdfText("format=pdf");
+
+    expect(header[header.length - 1]).toBe("Stato");
+    const published = rows.find((row) => row[2] === "Migliori scarpe running: classifica 2026")!;
+    expect(published[published.length - 1]).toBe("Pubblicata");
+    expect(rows.filter((row) => row[row.length - 1] === "Da scrivere")).toHaveLength(2);
+    expect(withStatus).toContain("Pubblicata");
+    expect(withoutStatus).not.toContain("Pubblicata");
+  }, 60_000);
 });

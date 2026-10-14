@@ -8,6 +8,10 @@ export const STRATEGY_CONTENT_TYPES = ["guide", "list", "comparison", "product_c
 export type StrategyContentType = (typeof STRATEGY_CONTENT_TYPES)[number];
 
 export type StrategyPageKind = "HUB" | "SPOKE";
+
+/** Stato di scrittura di una pagina del piano (T-2501), nell'ordine del percorso. */
+export const STRATEGY_PAGE_STATUSES = ["TODO", "WRITING", "PUBLISHED"] as const;
+export type StrategyPageStatus = (typeof STRATEGY_PAGE_STATUSES)[number];
 export type StrategyMode = "AUTO" | "EXPERT";
 
 /** Categorie dei modificatori (lib/modules/strategy/modifiers.ts), nell'ordine in cui si riconoscono. */
@@ -71,8 +75,18 @@ export type PlanPage = {
   secondary: string[];
 };
 
-/** Piano restituito da buildStrategyPlan: pagine nell'ordine di lavoro e keyword non assegnate per priorità. */
-export type StrategyPlan = { pages: PlanPage[]; unassigned: string[] };
+/**
+ * Hub ancorato della rigenerazione (T-2502): un hub del piano che resta com'è perché lui o un suo spoke è già in
+ * scrittura o pubblicato. La sua keyword principale (forma canonica) vale come seed; open dice se la pagina pilastro
+ * può ricevere keyword nuove (stato Da scrivere).
+ */
+export type PlanAnchor = { ref: string; main: string; open: boolean };
+
+/**
+ * Piano restituito da buildStrategyPlan: pagine nell'ordine di lavoro e keyword non assegnate per priorità; con le
+ * ancore, le keyword nuove che vanno nella pagina pilastro di un hub ancorato (anchored, per ref dell'ancora).
+ */
+export type StrategyPlan = { pages: PlanPage[]; unassigned: string[]; anchored: { ref: string; secondary: string[] }[] };
 
 /** Keyword di una strategia salvata, come la leggono pagina, export e PDF. */
 export type StrategyKeywordView = {
@@ -98,6 +112,9 @@ export type StrategyPageView = {
   priority: number;
   position: number;
   reason: PlanReason;
+  status: StrategyPageStatus;
+  /** Istante dell'ultimo cambio di stato in ISO 8601, null se la pagina non l'ha mai cambiato. */
+  statusChangedAt: string | null;
   keywords: StrategyKeywordView[];
 };
 
@@ -115,6 +132,8 @@ export type StrategySummaryView = {
   unassignedCount: number;
   truncated: boolean;
   version: number;
+  /** Pagine del piano (T-2502: elenco delle versioni). */
+  pageCount: number;
 };
 
 /** Strategia completa: sintesi, impostazioni, hub nell'ordine di lavoro e keyword non assegnate. */

@@ -78,6 +78,7 @@ export function ExportDialog(props: ExportDialogProps) {
   const [which, setWhich] = useState<Which>(topic ? "keptTopic" : "keptProject");
   const [format, setFormat] = useState<Format>(what === "plan" ? "pdf" : "xlsx");
   const [withLogo, setWithLogo] = useState(true);
+  const [withStatus, setWithStatus] = useState(false);
   const [csvDialect, setCsvDialect] = useState("excel-it");
   const [sheetName, setSheetName] = useState(`${projectName} ${new Date().toISOString().slice(0, 10)}`);
   const [pending, setPending] = useState(false);
@@ -98,6 +99,7 @@ export function ExportDialog(props: ExportDialogProps) {
       const query = new URLSearchParams({ format });
       if (format === "csv") query.set("csvDialect", csvDialect);
       if (format === "pdf" && hasLogo && !withLogo) query.set("logo", "0");
+      if (format === "pdf" && withStatus) query.set("status", "1");
       return `/api/projects/${projectId}/strategies/${plan.strategyId}/export?${query.toString()}`;
     }
     const { scope, subprojectId, filters } = keywordScope(which, origin, view);
@@ -201,6 +203,13 @@ export function ExportDialog(props: ExportDialogProps) {
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={withLogo} onChange={(event) => setWithLogo(event.target.checked)} />
             {t("logo")}
+          </label>
+        )}
+        {/* Stato di scrittura delle pagine nel PDF (T-2501): spento di default, imposta status=1. */}
+        {what === "plan" && format === "pdf" && (
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={withStatus} onChange={(event) => setWithStatus(event.target.checked)} />
+            {t("status")}
           </label>
         )}
       </fieldset>

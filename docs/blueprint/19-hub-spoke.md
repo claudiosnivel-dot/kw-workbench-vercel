@@ -121,7 +121,7 @@ Oggi Titan SEO si ferma alla lista di keyword revisionate ed esportate: l'utente
 
   definition_of_done:
     - "POST /api/projects/[id]/strategies con { mode, name?, settings? }: perimetro automatico = keyword del progetto con review_status diverso da rejected e brand_status diverso da excluded, regole predefinite; perimetro esperto = progetto o sezione, approved oppure approved e pending, volume minimo, intento e tipo (stesse clausole dei filtri dei risultati), regole entro i limiti dello schema; generazione con buildStrategyPlan e buildPageTitles; salvataggio in una transazione; risposta 201 con l'id."
-    - "Oltre 5000 keyword nel perimetro si prendono le 5000 a priorità più alta e truncated vale true (D-35); con 0 keyword 409 STRATEGY_NO_KEYWORDS; con 20 strategie già nel progetto 409 STRATEGY_LIMIT (D-35); impostazioni non valide 400 VALIDATION_ERROR."
+    - "Oltre 5000 keyword nel perimetro si prendono le 5000 a priorità più alta e truncated vale true (D-35); con 0 keyword 409 STRATEGY_NO_KEYWORDS; con 20 strategie già nel progetto 409 STRATEGY_LIMIT (D-35); impostazioni non valide 400 VALIDATION_ERROR (emendato da T-2502 il 2026-10-14: il 409 STRATEGY_LIMIT vale per la generazione senza regenerate; con regenerate true oltre 20 strategie si elimina la versione più vecchia, mai il piano, D-35 emendata)."
     - "GET /api/projects/[id]/strategies (elenco con nome, modalità, data e conteggi), GET /api/projects/[id]/strategies/[strategyId] (piano completo con pagine, H1, H2, keyword, motivi e non assegnate), PATCH dello stesso percorso con { name, version }, DELETE dello stesso percorso; strategia di un altro progetto 404 STRATEGY_NOT_FOUND."
     - "Permesso strategy.write di livello MEMBER in WORKSPACE_PERMISSIONS per generare, rinominare ed eliminare; lettura con project.read; progetto fuori dal workspace dell'utente 404 come le altre rotte del progetto (T-1502); scritture con il perimetro del workspace nel where, regola estesa a strategy, strategyPage e strategyKeyword in tests/tooling/workspace-scoped-writes.test.ts."
     - "Codici STRATEGY_NO_KEYWORDS, STRATEGY_LIMIT, STRATEGY_NOT_FOUND e STRATEGY_CONFLICT in API_ERROR_CODES e nei cataloghi errors.* it ed en."
@@ -219,38 +219,38 @@ Oggi Titan SEO si ferma alla lista di keyword revisionate ed esportate: l'utente
     piano per hub, aprire ogni pagina con H1, H2, keyword, motivo e link interni, e modificarlo.
 
   definition_of_done:
-    - "Pagine app/projects/[id]/strategy/page.tsx (elenco delle strategie, pulsante Genera strategia, pannello Impostazioni avanzate chiuso di default con perimetro e regole) e app/projects/[id]/strategy/[strategyId]/page.tsx (sintesi, hub con pagina pilastro e tabella degli spoke, dettaglio della pagina con H1, H2, keyword, motivo tradotto e link interni previsti, riquadro Non assegnate, controlli di modifica, etichetta 'suggerito' sui titoli non modificati, ricarica del piano dopo un 409 STRATEGY_CONFLICT)."
-    - "Link alla pagina Strategia dalla pagina del progetto e dalla pagina dei risultati; testi nei cataloghi it ed en (namespace strategy.ui); componenti in components/strategy/ che importano solo tipi da lib/modules/strategy/types.ts (D-22)."
+    - "Pagine app/projects/[id]/strategy/page.tsx (elenco delle strategie, pulsante Genera strategia, pannello Impostazioni avanzate chiuso di default con perimetro e regole) e app/projects/[id]/strategy/[strategyId]/page.tsx (sintesi, hub con pagina pilastro e tabella degli spoke, dettaglio della pagina con H1, H2, keyword, motivo tradotto e link interni previsti, riquadro Non assegnate, controlli di modifica, etichetta 'suggerito' sui titoli non modificati, ricarica del piano dopo un 409 STRATEGY_CONFLICT) (emendato da T-2502, T-2504 e T-2505 il 2026-10-14: le due pagine sono sostituite dal piano del progetto in app/projects/[id]/plan, con la bacheca, il pannello di dettaglio e le versioni precedenti; /projects/[id]/strategy e /projects/[id]/strategy/[strategyId] reindirizzano con 308; strategy-page-card.tsx, strategy-unassigned.tsx e keyword-mover.tsx sono rimossi)."
+    - "Link alla pagina Strategia dalla pagina del progetto e dalla pagina dei risultati; testi nei cataloghi it ed en (namespace strategy.ui); componenti in components/strategy/ che importano solo tipi da lib/modules/strategy/types.ts (D-22) (emendato da T-2504 il 2026-10-14: al piano si arriva dalla barra laterale e dal prossimo passo; i testi del piano stanno nel namespace plan e i suoi componenti in components/plan/)."
     - "Pulsanti e campi con etichette accessibili e uso completo da tastiera."
 
   acceptance_criteria:
     - id: AC-1905-1
       given: "un progetto E2E con le keyword della fixture italiana di T-1901"
-      when: "l'utente apre la pagina Strategia e preme Genera strategia senza aprire le impostazioni avanzate"
-      then: "il browser arriva alla pagina della strategia, che mostra almeno 1 hub con il suo H1 e il riquadro Non assegnate con il numero delle keyword non assegnate"
+      when: "l'utente apre il piano del progetto e preme «Costruisci il piano» senza aprire le opzioni avanzate"
+      then: "la pagina mostra la bacheca con almeno 1 colonna di pagina principale con in cima la scheda Pagina principale e la colonna Senza pagina con le keyword non assegnate (emendato da T-2504 il 2026-10-14: prima la pagina Strategia con Genera strategia e il riquadro Non assegnate)"
     - id: AC-1905-2
       given: "la strategia generata in AC-1905-1"
-      when: "l'utente sposta dall'interfaccia una keyword secondaria in un'altra pagina e ricarica"
-      then: "dopo il ricaricamento la keyword compare nella pagina di destinazione e non in quella di partenza"
+      when: "l'utente sposta dal pannello di dettaglio una keyword secondaria in un'altra pagina («Sposta in…») e ricarica"
+      then: "dopo il ricaricamento la keyword compare nella pagina di destinazione e non in quella di partenza (emendato da T-2505 il 2026-10-14: lo spostamento parte dal pannello della pagina)"
     - id: AC-1905-3
       given: "il componente delle impostazioni della pagina Strategia"
       when: "si rende il componente, si apre il pannello avanzato e si invia con scope sezione e solo approvate"
       then: "il pannello è chiuso alla prima resa; dopo l'apertura mostra i campi di perimetro e regole; la richiesta inviata ha mode EXPERT e le impostazioni scelte"
     - id: AC-1905-4
-      given: "la scheda di una pagina con h1_edited false e una con h1_edited true"
-      when: "si rendono le due schede"
-      then: "la prima mostra l'etichetta 'suggerito' accanto all'H1, la seconda no"
+      given: "il pannello di dettaglio di una pagina con h1_edited false e quello di una pagina con h1_edited true"
+      when: "si rendono i due pannelli"
+      then: "il primo mostra l'etichetta 'suggerito' accanto all'H1, il secondo no (emendato da T-2505 il 2026-10-14: la scheda della pagina è sostituita dal pannello di dettaglio)"
     - id: AC-1905-5
-      given: "la pagina della strategia generata in AC-1905-1"
-      when: "si esegue axe sulla pagina"
-      then: "axe riporta 0 violazioni serious o critical"
+      given: "il piano generato in AC-1905-1"
+      when: "si esegue axe sulla pagina del piano"
+      then: "axe riporta 0 violazioni serious o critical (emendato da T-2504 il 2026-10-14: la pagina della strategia è il piano del progetto)"
 
   target_tests:
     - file: "tests/e2e/strategy.spec.ts"
       covers: [AC-1905-1, AC-1905-2, AC-1905-5]
     - file: "tests/component/strategy-settings.test.tsx"
       covers: [AC-1905-3]
-    - file: "tests/component/strategy-page-card.test.tsx"
+    - file: "tests/component/page-panel.test.tsx"
       covers: [AC-1905-4]
 
   security_notes:
@@ -359,3 +359,4 @@ Oggi Titan SEO si ferma alla lista di keyword revisionate ed esportate: l'utente
 - Modulo approvato dall'utente il 2026-10-09 («ok procedi»), con D-35 e le soglie predefinite. Rilievi: soglie predefinite (minKeywordsPerSpoke 2, minSpokeVolume 100, maxSpokesPerHub 12, questionSpokeVolume 200) e limiti tecnici di D-35; AC-1907-4 riusa come oracolo il test di audit delle dipendenze del macrotask 04 (tests/tooling/dependency-audit.test.ts), che riceverà il tag covers di AC-1907-4; il link alla pagina Strategia nella pagina dei risultati cambia la baseline visiva dei risultati di T-103: la rigenerazione è un gate umano (modulo 04), da approvare prima del merge come nel macrotask 18.
 - Note di costruzione (2026-10-10), scelte dell'agente da confermare dall'utente. Raggruppamento: uno spoke raccoglie la stessa **categoria** di modificatore (migliori, recensioni e opinioni insieme; prezzo, offerte ed economiche insieme), non la stessa parola; senza modificatori decide la parola del resto più pesata per volume nell'hub; categorie riconosciute nell'ordine locale, tool, confronto, transazionale, informativo. Hub dai termini: termine non modificatore e non numerico presente in almeno 2 keyword; nucleo dell'hub = parole non modificatore della keyword più corta e più cercata che contiene il termine (per esempio «running shoes» e non il solo «running», che metterebbe insieme scarpe e calzini), il solo termine se quel nucleo raccoglie meno di 2 keyword. Pagina pilastro: principale = la variante del nucleo più cercata, anche se una keyword confluita ha più volume; senza varianti del nucleo diventa pilastro lo spoke più prioritario. Domande: lo spoke di una domanda ha tipo faq e H1 uguale alla domanda con il punto interrogativo; nella pilastro le domande stanno sotto l'H2 di chiusura «Domande frequenti», negli spoke hanno anche un H2 proprio. Tipo di contenuto: pilastro e spoke per parola product_category con intento commerciale o transazionale, altrimenti guide; categoria confronto → comparison se una keyword dello spoke è di tipo comparison (vs, confronto), altrimenti list; transazionale → product_category; informativo → guide; locale → local; tool → tool. Titoli: 2 o 3 varianti per tipo nei cataloghi, al massimo 12 H2 anche per la pilastro con le chiusure sempre in fondo; dopo una modifica si ricalcolano l'H1 non modificato solo se cambia la principale o il tipo, gli H2 non modificati delle pagine toccate e dei loro hub. Priorità salvata come intero (tetto della colonna INT4). Il perimetro esperto esclude sempre rifiutate e brand esclusi, come quello automatico; limiti delle regole esperte: keyword minime 1-20, ricerche minime 0-1.000.000, spoke per hub 1-30, soglia delle domande 0-1.000.000. Unire un hub: i suoi spoke passano all'hub che lo assorbe (se la destinazione era un suo spoke, diventa hub). Nome predefinito «Strategia automatica (o esperta) del <data>». Eliminazione della strategia dall'interfaccia, fuori dal DoD, per liberare il limite di 20 (conferma del browser come per progetti e sezioni). PDF con i font standard (Helvetica): lettere latine con accenti sì, alfabeti non latini (cirillico, greco, CJK) no; logo solo png o jpeg (data URL, o https letto con timeout di 5 s, senza redirect, fino a 100 KB), altrimenti il solo nome. Export: colonne con nomi tecnici in inglese come l'export dei risultati (hub, page_type, h1, h2, main_keyword, secondary_keywords, content_type, volume, priority, internal_links), volume = somma dei volumi della pagina, foglio Excel e Google Sheets «strategia».
 - Emendamento (2026-10-13, macrotask 24 ux-keywords): il perimetro delle strategie usa la regola unica di T-2401 (tenute = review_status diverso da rejected) senza il filtro sul marchio, anche nella modalità esperta (approved resta solo approvate); AC-1903-1 ha il marchio escluso già scartato, come lo crea la pipeline.
+- Emendamento dichiarato (2026-10-14, macrotask 25 ux-plan): le pagine della strategia di T-1905 diventano il piano del progetto con bacheca, pannello di dettaglio e versioni precedenti (T-2502, T-2504, T-2505); emendati il DoD e AC-1905-1, AC-1905-2, AC-1905-4 (il target test di AC-1905-4 passa da tests/component/strategy-page-card.test.tsx, rimosso con il suo componente, a tests/component/page-panel.test.tsx) e AC-1905-5, più la nota sul 409 STRATEGY_LIMIT del DoD di T-1903 (D-35 emendata). In tests/component/strategy-settings.test.tsx cambiano i nomi dei pulsanti («Opzioni avanzate», «Costruisci il piano») e la destinazione dopo la generazione (il piano), l'asserzione di AC-1905-3 resta la stessa. T-2503 aggiunge a T-1904 l'operazione move_page e da T-2501 position è l'indice nell'ordine di lavoro, ricalcolato dopo ogni operazione.

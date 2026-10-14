@@ -107,6 +107,7 @@ export const API_ERROR_CODES = [
   "STRATEGY_LIMIT",
   "STRATEGY_NOT_FOUND",
   "STRATEGY_CONFLICT",
+  "STRATEGY_READ_ONLY",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

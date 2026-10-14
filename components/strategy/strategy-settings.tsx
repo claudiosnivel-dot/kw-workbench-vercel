@@ -6,6 +6,7 @@ import { type FormEvent, useId, useState } from "react";
 import { ClassificationSelect } from "@/components/classification-select";
 import { FormFeedback } from "@/components/form-feedback";
 import { messageOf, readApiResponse, sendJson } from "@/lib/client/http";
+import { planHref } from "@/lib/modules/next-step";
 import type { StrategyRuleLimits, StrategyRules } from "@/lib/modules/strategy/types";
 
 const NUMERIC_RULES = ["minKeywordsPerSpoke", "minSpokeVolume", "maxSpokesPerHub", "questionSpokeVolume"] as const;
@@ -15,6 +16,10 @@ type StrategySettingsProps = {
   sections: { id: string; name: string }[];
   defaults: StrategyRules;
   limits: StrategyRuleLimits;
+  /** Rigenera il piano senza toccare le pagine iniziate (T-2502); senza, costruisce il primo piano. */
+  regenerate?: boolean;
+  /** Pulsante Annulla accanto all'invio, quando le impostazioni stanno in un dialogo. */
+  onCancel?: () => void;
 };
 
 type Advanced = {
@@ -27,13 +32,15 @@ type Advanced = {
 };
 
 /** Corpo della generazione: automatica con il pannello chiuso, esperta con perimetro e regole del pannello aperto. */
-function requestBody(name: string, advanced: Advanced | null) {
+function requestBody(name: string, advanced: Advanced | null, regenerate: boolean) {
+  const flags = regenerate ? { regenerate: true } : {};
   if (!advanced) {
-    return { mode: "AUTO", name: name || undefined };
+    return { mode: "AUTO", name: name || undefined, ...flags };
   }
   return {
     mode: "EXPERT",
     name: name || undefined,
+    ...flags,
     settings: {
       sectionId: advanced.sectionId || null,
       reviewStatus: advanced.reviewStatus,
@@ -49,12 +56,13 @@ function requestBody(name: string, advanced: Advanced | null) {
 }
 
 /**
- * Generazione di una strategia (T-1905): un clic con le impostazioni predefinite (modalità automatica) o, aprendo il
- * pannello delle impostazioni avanzate, con perimetro e regole scelti (modalità esperta). Dopo la generazione il
- * browser va alla pagina della strategia.
+ * Costruzione del piano (T-1905, T-2502): un clic con le impostazioni predefinite (modalità automatica) o, aprendo le
+ * opzioni avanzate, con nome, perimetro e regole scelti (modalità esperta). Con regenerate rigenera il piano (dialogo
+ * «Rigenera il piano»). Dopo la generazione il browser va al piano del progetto.
  */
-export function StrategySettings({ projectId, sections, defaults, limits }: StrategySettingsProps) {
+export function StrategySettings({ projectId, sections, defaults, limits, regenerate = false, onCancel }: StrategySettingsProps) {
   const t = useTranslations("strategy.ui");
+  const tPlan = useTranslations("plan");
   const tErrors = useTranslations("errors");
   const tCommon = useTranslations("common");
   const router = useRouter();
@@ -83,9 +91,14 @@ export function StrategySettings({ projectId, sections, defaults, limits }: Stra
     setPending(true);
     setError(null);
     try {
-      const response = await sendJson("POST", `/api/projects/${projectId}/strategies`, requestBody(name.trim(), open ? advanced : null));
-      const payload = await readApiResponse<{ data: { id: string } }>(response, tErrors);
-      router.push(`/projects/${projectId}/strategy/${payload!.data.id}`);
+      const response = await sendJson(
+        "POST",
+        `/api/projects/${projectId}/strategies`,
+        requestBody(name.trim(), open ? advanced : null, regenerate)
+      );
+      await readApiResponse<{ data: { id: string } }>(response, tErrors);
+      router.push(planHref(projectId));
+      router.refresh();
     } catch (submitError) {
       setError(messageOf(submitError, tCommon("unexpectedError")));
       setPending(false);
@@ -94,16 +107,6 @@ export function StrategySettings({ projectId, sections, defaults, limits }: Stra
 
   return (
     <form className="space-y-4" onSubmit={submit}>
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-        <label className="block">
-          <span className="label">{t("nameLabel")}</span>
-          <input className="input" value={name} maxLength={120} onChange={(event) => setName(event.target.value)} />
-        </label>
-        <button className="btn-primary" type="submit" disabled={pending}>
-          {pending ? t("generating") : t("generate")}
-        </button>
-      </div>
-
       <button
         type="button"
         className="btn-secondary"
@@ -117,6 +120,10 @@ export function StrategySettings({ projectId, sections, defaults, limits }: Stra
 
       {open && (
         <div id={panelId} className="grid gap-3 rounded-2xl border border-[var(--surface-border)] p-4 md:grid-cols-2">
+          <label className="block md:col-span-2">
+            <span className="label">{t("nameLabel")}</span>
+            <input className="input" value={name} maxLength={120} onChange={(event) => setName(event.target.value)} />
+          </label>
           <label className="block">
             <span className="label">{t("scope")}</span>
             <select className="select" value={advanced.sectionId} onChange={(event) => update({ sectionId: event.target.value })}>
@@ -196,6 +203,16 @@ export function StrategySettings({ projectId, sections, defaults, limits }: Stra
       )}
 
       <FormFeedback error={error} />
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {onCancel && (
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            {tPlan("regenerateDialog.cancel")}
+          </button>
+        )}
+        <button className="btn-primary" type="submit" disabled={pending}>
+          {regenerate ? (pending ? t("regenerating") : t("regenerate")) : pending ? t("generating") : t("generate")}
+        </button>
+      </div>
     </form>
   );
 }

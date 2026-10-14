@@ -20,6 +20,8 @@ import { buildPageTitles, MAX_TITLE_LENGTH, type TitleContext, type TitleKeyword
 import { strategyTranslator } from "@/lib/modules/strategy/translator";
 import {
   STRATEGY_CONTENT_TYPES,
+  STRATEGY_PAGE_STATUSES,
+  type PlanAnchor,
   type PlanReason,
   type StrategyKeywordInput,
   type StrategyKeywordView,
@@ -54,6 +56,7 @@ const generateSchema = z.object({
   mode: z.enum(["AUTO", "EXPERT"]),
   name: z.string().trim().max(STRATEGY_NAME_MAX_LENGTH).optional(),
   settings: z.unknown().optional(),
+  regenerate: z.boolean().optional(),
 });
 
 const renameSchema = z.object({ name: z.string().trim().min(1).max(STRATEGY_NAME_MAX_LENGTH), version: versionField });
@@ -69,6 +72,7 @@ const operationSchema = z.object({
     z.object({ type: z.literal("promote_to_hub"), pageId: idField }),
     z.object({ type: z.literal("merge_pages"), sourcePageId: idField, targetPageId: idField }),
     z.object({ type: z.literal("delete_page"), pageId: idField }),
+    z.object({ type: z.literal("move_page"), pageId: idField, targetHubId: idField }),
   ]),
 });
 
@@ -79,10 +83,12 @@ const pagePatchSchema = z
     h1: titleField.optional(),
     h2: z.array(titleField).max(MAX_H2_ITEMS).optional(),
     contentType: z.enum(STRATEGY_CONTENT_TYPES).optional(),
+    status: z.enum(STRATEGY_PAGE_STATUSES).optional(),
   })
-  .refine((value) => value.h1 !== undefined || value.h2 !== undefined || value.contentType !== undefined, {
-    message: "nessun campo da modificare",
-  });
+  .refine(
+    (value) => value.h1 !== undefined || value.h2 !== undefined || value.contentType !== undefined || value.status !== undefined,
+    { message: "nessun campo da modificare" }
+  );
 
 function parseBody<T extends z.ZodType>(schema: T, body: unknown, what: string): z.output<T> {
   const parsed = schema.safeParse(body);
@@ -94,16 +100,19 @@ function parseBody<T extends z.ZodType>(schema: T, body: unknown, what: string):
   return parsed.data;
 }
 
-export type GenerateRequest = { mode: StrategyMode; name: string | null; settings: StrategySettings };
+export type GenerateRequest = { mode: StrategyMode; name: string | null; settings: StrategySettings; regenerate: boolean };
 
-/** Corpo della generazione (T-1903): modalità, nome facoltativo e, per la modalità esperta, perimetro e regole. */
+/**
+ * Corpo della generazione (T-1903): modalità, nome facoltativo e, per la modalità esperta, perimetro e regole;
+ * regenerate true rigenera il piano senza toccare le pagine iniziate (T-2502).
+ */
 export function parseGenerateRequest(body: unknown): GenerateRequest {
   const parsed = parseBody(generateSchema, body, "Richiesta di generazione");
   const settings =
     parsed.mode === "EXPERT"
       ? resolveExpertSettings(parseBody(expertSettingsSchema, parsed.settings ?? {}, "Impostazioni della strategia"))
       : AUTO_SETTINGS;
-  return { mode: parsed.mode, name: parsed.name || null, settings };
+  return { mode: parsed.mode, name: parsed.name || null, settings, regenerate: parsed.regenerate ?? false };
 }
 
 export const parseRenameRequest = (body: unknown) => parseBody(renameSchema, body, "Rinomina");
@@ -128,9 +137,10 @@ const PERIMETER_SELECT = {
 /**
  * Keyword del perimetro (T-1903): le tenute (regola unica di T-2401, quindi anche una keyword di marchio tenuta a mano),
  * oppure le sole approvate nella modalità esperta, mai le scartate; sezione, volume minimo, intento e tipo con le
- * clausole dei filtri dei risultati. Ordinate per priorità, una per forma canonica, al massimo 5000 (D-35).
+ * clausole dei filtri dei risultati. Ordinate per priorità, una per forma canonica, al massimo limit (5000, D-35, meno
+ * le keyword copiate dalle pagine iniziate); le forme canoniche di exclude (già nelle pagine iniziate, T-2502) restano fuori.
  */
-async function loadPerimeter(projectId: string, settings: StrategySettings) {
+async function loadPerimeter(projectId: string, settings: StrategySettings, exclude: Set<string>, limit: number) {
   const rows = await prisma.keywordCandidate.findMany({
     where: {
       AND: [
@@ -163,9 +173,134 @@ async function loadPerimeter(projectId: string, settings: StrategySettings) {
       isLocal: row.is_local_intent,
     }))
     .sort(compareKeywordPriority);
-  const seen = new Set<string>();
+  const seen = new Set<string>(exclude);
   const unique = inputs.filter((input) => !seen.has(input.canonical) && seen.add(input.canonical));
-  return { keywords: unique.slice(0, STRATEGY_MAX_KEYWORDS), truncated: unique.length > STRATEGY_MAX_KEYWORDS };
+  return { keywords: unique.slice(0, limit), truncated: unique.length > limit };
+}
+
+/** Il piano del progetto è la sua strategia più recente (T-2502); a parità di istante decide l'id. */
+const PLAN_ORDER = [{ created_at: "desc" }, { id: "asc" }] satisfies Prisma.StrategyOrderByWithRelationInput[];
+
+const COPY_PAGE_SELECT = {
+  id: true,
+  kind: true,
+  hub_page_id: true,
+  h1: true,
+  h2: true,
+  h1_edited: true,
+  h2_edited: true,
+  content_type: true,
+  priority: true,
+  reason_code: true,
+  reason_params: true,
+  status: true,
+  status_changed_at: true,
+} satisfies Prisma.StrategyPageSelect;
+
+const COPY_KEYWORD_SELECT = {
+  page_id: true,
+  role: true,
+  keyword: true,
+  canonical_keyword: true,
+  volume: true,
+  score: true,
+  score_source: true,
+  search_intent: true,
+  keyword_type: true,
+  is_question: true,
+  is_local: true,
+  source_keyword_id: true,
+} satisfies Prisma.StrategyKeywordSelect;
+
+type LockedPage = Prisma.StrategyPageGetPayload<{ select: typeof COPY_PAGE_SELECT }>;
+type LockedKeyword = Prisma.StrategyKeywordGetPayload<{ select: typeof COPY_KEYWORD_SELECT }>;
+type LockedPlan = { planId: string | null; pages: LockedPage[]; keywords: LockedKeyword[] };
+
+/**
+ * Pagine bloccate del piano corrente (T-2502): le pagine in scrittura o pubblicate più gli hub con almeno uno spoke
+ * bloccato (hub ancorati), con le loro keyword. Senza piano, nessuna pagina.
+ */
+async function loadLockedPages(projectId: string): Promise<LockedPlan> {
+  const plan = await prisma.strategy.findFirst({
+    where: { project_id: projectId },
+    orderBy: PLAN_ORDER,
+    select: { id: true, pages: { select: COPY_PAGE_SELECT }, keywords: { where: { page_id: { not: null } }, select: COPY_KEYWORD_SELECT } },
+  });
+  if (!plan) return { planId: null, pages: [], keywords: [] };
+  const lockedIds = new Set<string>();
+  for (const page of plan.pages.filter((item) => item.status !== "TODO")) {
+    lockedIds.add(page.id);
+    if (page.kind === "SPOKE" && page.hub_page_id) lockedIds.add(page.hub_page_id);
+  }
+  return {
+    planId: plan.id,
+    pages: plan.pages.filter((page) => lockedIds.has(page.id)),
+    keywords: plan.keywords.filter((keyword) => keyword.page_id !== null && lockedIds.has(keyword.page_id)),
+  };
+}
+
+type PageRow = Prisma.StrategyPageCreateManyInput & { id: string; hub_page_id: string | null };
+type KeywordRow = Prisma.StrategyKeywordCreateManyInput & { id: string; page_id: string | null };
+
+// Massimo della colonna Int di Postgres (CWE-190).
+const INT4_MAX = 2_147_483_647;
+
+/**
+ * Ordine di lavoro del piano rigenerato (T-2502), con la regola del motore (T-1901): hub per volume complessivo
+ * (pilastro più spoke), ciascuno seguito dai propri spoke per priorità; a parità decide la keyword principale.
+ */
+function assignWorkOrder(pages: PageRow[], keywords: KeywordRow[]): void {
+  const mainOf = new Map(keywords.filter((row) => row.role === "MAIN").map((row) => [row.page_id, row.canonical_keyword]));
+  const byPriority = (a: PageRow, b: PageRow, total: (page: PageRow) => number) =>
+    total(b) - total(a) || ((mainOf.get(a.id) ?? "") < (mainOf.get(b.id) ?? "") ? -1 : 1);
+  const spokesOf = (hubId: string) =>
+    pages.filter((page) => page.hub_page_id === hubId).sort((a, b) => byPriority(a, b, (page) => page.priority));
+  const hubTotal = (hub: PageRow) => spokesOf(hub.id).reduce((sum, spoke) => sum + spoke.priority, hub.priority);
+  let position = 0;
+  for (const hub of pages.filter((page) => page.hub_page_id === null).sort((a, b) => byPriority(a, b, hubTotal))) {
+    hub.position = position++;
+    for (const spoke of spokesOf(hub.id)) spoke.position = position++;
+  }
+}
+
+/**
+ * H2 suggeriti e priorità di un hub ancorato ancora da scrivere (T-2502): riceve le keyword nuove della pilastro e gli
+ * spoke nuovi, quindi gli H2 non modificati si ricalcolano come nell'editor (T-1904); un hub già iniziato resta com'è.
+ */
+function refreshAnchoredHubs(locked: LockedPage[], pages: PageRow[], keywords: KeywordRow[], idOf: Map<string, string>, context: TitleContext) {
+  const usesVolume = keywords.some((row) => row.volume !== null);
+  const sortedKeywordsOf = (pageId: string) =>
+    keywords
+      .filter((row) => row.page_id === pageId)
+      .map((row) => ({ row, volume: row.volume ?? null, score: row.score ?? null, canonical: row.canonical_keyword }))
+      .sort(compareKeywordPriority)
+      .map((item) => item.row);
+  const asTitle = (row: KeywordRow): TitleKeyword => ({ keyword: row.keyword, canonical: row.canonical_keyword, isQuestion: row.is_question });
+  const mainOf = (pageId: string) => keywords.find((row) => row.page_id === pageId && row.role === "MAIN");
+
+  for (const original of locked.filter((page) => page.kind === "HUB" && page.status === "TODO")) {
+    const hub = pages.find((page) => page.id === idOf.get(original.id))!;
+    const own = sortedKeywordsOf(hub.id);
+    const total = own.reduce((sum, row) => sum + (usesVolume ? (row.volume ?? 0) : (row.score ?? 0)), 0);
+    hub.priority = Math.min(INT4_MAX, Math.round(total));
+    if (original.h2_edited) continue;
+    const main = own.find((row) => row.role === "MAIN") ?? own[0];
+    const spokeMains = pages
+      .filter((page) => page.hub_page_id === hub.id)
+      .map((page) => ({ page, main: mainOf(page.id)! }))
+      .sort((a, b) => b.page.priority - a.page.priority || (a.main.canonical_keyword < b.main.canonical_keyword ? -1 : 1))
+      .map((spoke) => asTitle(spoke.main));
+    hub.h2 = buildPageTitles(
+      {
+        kind: "HUB",
+        contentType: original.content_type,
+        main: asTitle(main),
+        secondary: own.filter((row) => row !== main).map(asTitle),
+        spokeMains,
+      },
+      context
+    ).h2;
+  }
 }
 
 function titleContext(language: string): TitleContext {
@@ -175,8 +310,28 @@ function titleContext(language: string): TitleContext {
 const strategyLimitError = () => new ConflictError("Limite di strategie del progetto raggiunto", "STRATEGY_LIMIT");
 
 /**
+ * Oltre il limite di 20 la rigenerazione elimina le strategie più vecchie, mai il piano corrente (T-2502, D-35
+ * emendata): si legge sotto il lock del workspace, nella transazione che salva la strategia nuova.
+ */
+async function pruneOldestVersions(tx: Prisma.TransactionClient, project: AuthorizedProject, count: number): Promise<void> {
+  const plan = await tx.strategy.findFirst({ where: { project_id: project.id }, orderBy: PLAN_ORDER, select: { id: true } });
+  const oldest = await tx.strategy.findMany({
+    where: { project_id: project.id, ...(plan ? { id: { not: plan.id } } : {}) },
+    orderBy: [{ created_at: "asc" }, { id: "desc" }],
+    take: count,
+    select: { id: true },
+  });
+  await tx.strategy.deleteMany({
+    where: { id: { in: oldest.map((row) => row.id) }, project_id: project.id, project: project.perimeter },
+  });
+}
+
+/**
  * Genera e salva una strategia (T-1903): perimetro, piano (T-1901), titoli (T-1902) e salvataggio in una transazione,
  * sotto il lock del workspace perché due generazioni contemporanee non superino il limite di 20 (CWE-362).
+ * Con regenerate (T-2502) la strategia nuova diventa il piano senza perdere il lavoro iniziato: copia le pagine
+ * bloccate del piano corrente (in scrittura, pubblicate e i loro hub) con titoli, tipo, stato e keyword, ricostruisce le
+ * altre dalle keyword tenute meno quelle già copiate e, oltre 20 strategie, elimina la versione più vecchia.
  */
 export async function generateStrategy(
   user: { id: string },
@@ -185,7 +340,7 @@ export async function generateStrategy(
   defaultName: string
 ): Promise<string> {
   const project = await requireProjectAccess(user, projectId, "strategy.write", { language_code: true });
-  if ((await prisma.strategy.count({ where: { project_id: project.id } })) >= STRATEGY_LIMIT_PER_PROJECT) {
+  if (!request.regenerate && (await prisma.strategy.count({ where: { project_id: project.id } })) >= STRATEGY_LIMIT_PER_PROJECT) {
     throw strategyLimitError();
   }
 
@@ -200,18 +355,29 @@ export async function generateStrategy(
     language = section.language_code_override ?? language;
   }
 
+  const locked: LockedPlan = request.regenerate ? await loadLockedPages(project.id) : { planId: null, pages: [], keywords: [] };
   const [{ keywords, truncated }, seeds] = await Promise.all([
-    loadPerimeter(project.id, settings),
+    loadPerimeter(
+      project.id,
+      settings,
+      new Set(locked.keywords.map((keyword) => keyword.canonical_keyword)),
+      Math.max(0, STRATEGY_MAX_KEYWORDS - locked.keywords.length)
+    ),
     prisma.seed.findMany({
       where: { project_id: project.id, ...(settings.sectionId ? { subproject_id: settings.sectionId } : {}) },
       select: { keyword: true },
     }),
   ]);
-  if (keywords.length === 0) {
+  if (keywords.length === 0 && locked.pages.length === 0) {
     throw new ConflictError("Nessuna keyword nel perimetro della strategia", "STRATEGY_NO_KEYWORDS");
   }
 
-  const plan = buildStrategyPlan({ keywords, seeds: seeds.map((seed) => seed.keyword), language, rules: settings.rules });
+  // Ogni hub bloccato è un'ancora: la sua keyword principale fa da seed e la pilastro accetta keyword solo da scrivere.
+  const lockedMain = new Map(locked.keywords.filter((row) => row.role === "MAIN").map((row) => [row.page_id, row.canonical_keyword]));
+  const anchors: PlanAnchor[] = locked.pages
+    .filter((page) => page.kind === "HUB" && lockedMain.has(page.id))
+    .map((page) => ({ ref: page.id, main: lockedMain.get(page.id)!, open: page.status === "TODO" }));
+  const plan = buildStrategyPlan({ keywords, seeds: seeds.map((seed) => seed.keyword), language, rules: settings.rules, anchors });
   const byCanonical = new Map(keywords.map((keyword) => [keyword.canonical, keyword]));
   const asTitle = (canonical: string): TitleKeyword => {
     const keyword = byCanonical.get(canonical)!;
@@ -220,61 +386,102 @@ export async function generateStrategy(
   const context = titleContext(language);
 
   const strategyId = randomUUID();
-  const pageIds = new Map(plan.pages.map((page) => [page.ref, randomUUID()]));
-  const pageRows = plan.pages.map((page) => {
-    const titles = buildPageTitles(
-      {
-        kind: page.kind,
-        contentType: page.contentType,
-        main: asTitle(page.main),
-        secondary: page.secondary.map(asTitle),
-        spokeMains:
-          page.kind === "HUB" ? plan.pages.filter((spoke) => spoke.hubRef === page.ref).map((spoke) => asTitle(spoke.main)) : undefined,
-      },
-      context
-    );
-    return {
-      id: pageIds.get(page.ref)!,
+  // Id delle pagine nuove: le copie delle pagine bloccate per id di origine, le pagine del motore per ref.
+  const idOf = new Map<string, string>([
+    ...locked.pages.map((page) => [page.id, randomUUID()] as const),
+    ...plan.pages.map((page) => [page.ref, randomUUID()] as const),
+  ]);
+  const pageRows: PageRow[] = [
+    ...locked.pages.map((page) => ({
+      id: idOf.get(page.id)!,
       strategy_id: strategyId,
       kind: page.kind,
-      hub_page_id: page.hubRef ? pageIds.get(page.hubRef)! : null,
-      h1: titles.h1,
-      h2: titles.h2,
-      content_type: page.contentType,
+      hub_page_id: page.hub_page_id ? (idOf.get(page.hub_page_id) ?? null) : null,
+      h1: page.h1,
+      h2: page.h2,
+      h1_edited: page.h1_edited,
+      h2_edited: page.h2_edited,
+      content_type: page.content_type,
       priority: page.priority,
-      position: page.position,
-      reason_code: page.reason.code,
-      reason_params: page.reason.params,
-    };
-  });
+      position: 0,
+      reason_code: page.reason_code,
+      reason_params: page.reason_params as Prisma.InputJsonValue,
+      status: page.status,
+      status_changed_at: page.status_changed_at,
+    })),
+    ...plan.pages.map((page) => {
+      const titles = buildPageTitles(
+        {
+          kind: page.kind,
+          contentType: page.contentType,
+          main: asTitle(page.main),
+          secondary: page.secondary.map(asTitle),
+          spokeMains:
+            page.kind === "HUB" ? plan.pages.filter((spoke) => spoke.hubRef === page.ref).map((spoke) => asTitle(spoke.main)) : undefined,
+        },
+        context
+      );
+      return {
+        id: idOf.get(page.ref)!,
+        strategy_id: strategyId,
+        kind: page.kind,
+        hub_page_id: page.hubRef ? idOf.get(page.hubRef)! : null,
+        h1: titles.h1,
+        h2: titles.h2,
+        content_type: page.contentType,
+        priority: page.priority,
+        position: page.position,
+        reason_code: page.reason.code,
+        reason_params: page.reason.params,
+      };
+    }),
+  ];
 
   const placement = new Map<string, { pageId: string; role: "MAIN" | "SECONDARY" }>();
   for (const page of plan.pages) {
-    const pageId = pageIds.get(page.ref)!;
+    const pageId = idOf.get(page.ref)!;
     placement.set(page.main, { pageId, role: "MAIN" });
     for (const canonical of page.secondary) placement.set(canonical, { pageId, role: "SECONDARY" });
   }
-  const keywordRows = keywords.map((keyword) => ({
-    strategy_id: strategyId,
-    page_id: placement.get(keyword.canonical)?.pageId ?? null,
-    role: placement.get(keyword.canonical)?.role ?? "SECONDARY",
-    keyword: keyword.keyword,
-    canonical_keyword: keyword.canonical,
-    volume: keyword.volume,
-    score: keyword.score,
-    score_source: keyword.scoreSource,
-    search_intent: keyword.searchIntent,
-    keyword_type: keyword.keywordType,
-    is_question: keyword.isQuestion,
-    is_local: keyword.isLocal,
-    source_keyword_id: keyword.sourceId,
-  }));
+  for (const { ref, secondary } of plan.anchored) {
+    for (const canonical of secondary) placement.set(canonical, { pageId: idOf.get(ref)!, role: "SECONDARY" });
+  }
+  const keywordRows: KeywordRow[] = [
+    ...locked.keywords.map(({ page_id: pageId, ...keyword }) => ({
+      ...keyword,
+      id: randomUUID(),
+      strategy_id: strategyId,
+      page_id: idOf.get(pageId!)!,
+    })),
+    ...keywords.map((keyword) => ({
+      id: randomUUID(),
+      strategy_id: strategyId,
+      page_id: placement.get(keyword.canonical)?.pageId ?? null,
+      role: placement.get(keyword.canonical)?.role ?? "SECONDARY",
+      keyword: keyword.keyword,
+      canonical_keyword: keyword.canonical,
+      volume: keyword.volume,
+      score: keyword.score,
+      score_source: keyword.scoreSource,
+      search_intent: keyword.searchIntent,
+      keyword_type: keyword.keywordType,
+      is_question: keyword.isQuestion,
+      is_local: keyword.isLocal,
+      source_keyword_id: keyword.sourceId,
+    })),
+  ];
+  if (locked.pages.length > 0) {
+    refreshAnchoredHubs(locked.pages, pageRows, keywordRows, idOf, context);
+    assignWorkOrder(pageRows, keywordRows);
+  }
 
   await prisma.$transaction(
     async (tx) => {
       await lockWorkspaceRow(tx, project.workspace_id);
-      if ((await tx.strategy.count({ where: { project_id: project.id } })) >= STRATEGY_LIMIT_PER_PROJECT) {
-        throw strategyLimitError();
+      const count = await tx.strategy.count({ where: { project_id: project.id } });
+      if (count >= STRATEGY_LIMIT_PER_PROJECT) {
+        if (!request.regenerate) throw strategyLimitError();
+        await pruneOldestVersions(tx, project, count - STRATEGY_LIMIT_PER_PROJECT + 1);
       }
       await tx.strategy.create({
         data: {
@@ -285,8 +492,8 @@ export async function generateStrategy(
           mode: request.mode,
           settings,
           language,
-          considered_count: keywords.length,
-          assigned_count: keywords.length - plan.unassigned.length,
+          considered_count: keywordRows.length,
+          assigned_count: keywordRows.length - plan.unassigned.length,
           unassigned_count: plan.unassigned.length,
           truncated,
         },
@@ -314,6 +521,7 @@ const SUMMARY_SELECT = {
   unassigned_count: true,
   truncated: true,
   version: true,
+  _count: { select: { pages: true } },
 } satisfies Prisma.StrategySelect;
 
 function toSummary(row: Prisma.StrategyGetPayload<{ select: typeof SUMMARY_SELECT }>): StrategySummaryView {
@@ -328,17 +536,20 @@ function toSummary(row: Prisma.StrategyGetPayload<{ select: typeof SUMMARY_SELEC
     unassignedCount: row.unassigned_count,
     truncated: row.truncated,
     version: row.version,
+    pageCount: row._count.pages,
   };
 }
 
-/** Strategie di un progetto già autorizzato, dalla più recente. */
+/** Strategie di un progetto già autorizzato, dalla più recente: la prima è il piano, le altre le versioni (T-2502). */
 export async function listStrategies(projectId: string): Promise<StrategySummaryView[]> {
-  const rows = await prisma.strategy.findMany({
-    where: { project_id: projectId },
-    orderBy: [{ created_at: "desc" }, { id: "asc" }],
-    select: SUMMARY_SELECT,
-  });
+  const rows = await prisma.strategy.findMany({ where: { project_id: projectId }, orderBy: PLAN_ORDER, select: SUMMARY_SELECT });
   return rows.map(toSummary);
+}
+
+/** Id del piano di un progetto già autorizzato (la strategia più recente, T-2502), null se non ne ha. */
+export async function findPlanId(projectId: string, client: Prisma.TransactionClient = prisma): Promise<string | null> {
+  const plan = await client.strategy.findFirst({ where: { project_id: projectId }, orderBy: PLAN_ORDER, select: { id: true } });
+  return plan?.id ?? null;
 }
 
 const RECORD_SELECT = {
@@ -359,6 +570,8 @@ const RECORD_SELECT = {
       position: true,
       reason_code: true,
       reason_params: true,
+      status: true,
+      status_changed_at: true,
     },
   },
   keywords: {
@@ -397,6 +610,8 @@ function toEditorState(record: StrategyRecord): EditorState {
       priority: page.priority,
       position: page.position,
       reason: { code: page.reason_code, params: page.reason_params } as PlanReason,
+      status: page.status,
+      statusChangedAt: page.status_changed_at?.toISOString() ?? null,
     })),
     keywords: record.keywords.map((keyword) => ({
       id: keyword.id,
@@ -499,7 +714,10 @@ async function persistState(tx: Prisma.TransactionClient, strategyId: string, be
       old.h1Edited === page.h1Edited &&
       old.h2Edited === page.h2Edited &&
       old.contentType === page.contentType &&
-      old.priority === page.priority;
+      old.priority === page.priority &&
+      old.position === page.position &&
+      old.status === page.status &&
+      old.statusChangedAt === page.statusChangedAt;
     if (same) continue;
     await tx.strategyPage.updateMany({
       where: { strategy_id: strategyId, id: page.id },
@@ -512,6 +730,9 @@ async function persistState(tx: Prisma.TransactionClient, strategyId: string, be
         h2_edited: page.h2Edited,
         content_type: page.contentType,
         priority: page.priority,
+        position: page.position,
+        status: page.status,
+        status_changed_at: page.statusChangedAt ? new Date(page.statusChangedAt) : null,
       },
     });
   }
@@ -522,6 +743,19 @@ async function persistState(tx: Prisma.TransactionClient, strategyId: string, be
 
   const assigned = after.keywords.filter((keyword) => keyword.pageId !== null).length;
   return { assigned_count: assigned, unassigned_count: after.keywords.length - assigned };
+}
+
+/**
+ * Solo il piano si modifica (T-2502): su una versione precedente del progetto 409 STRATEGY_READ_ONLY, prima di toccare
+ * la version; una strategia fuori dal progetto arriva a claimVersion, che risponde 404.
+ */
+async function assertCurrentPlan(tx: Prisma.TransactionClient, project: AuthorizedProject, strategyId: string): Promise<void> {
+  const planId = await findPlanId(project.id, tx);
+  if (planId === null || planId === strategyId) return;
+  const exists = await tx.strategy.count({ where: { id: strategyId, project_id: project.id, project: project.perimeter } });
+  if (exists) {
+    throw new ConflictError("Le versioni precedenti del piano sono in sola lettura", "STRATEGY_READ_ONLY");
+  }
 }
 
 /** Modifica del piano con controllo della version (T-1904); restituisce la nuova version. */
@@ -535,6 +769,7 @@ async function mutatePlan(
   const project = await requireProjectAccess(user, projectId, "strategy.write", {});
   await prisma.$transaction(
     async (tx) => {
+      await assertCurrentPlan(tx, project, strategyId);
       await claimVersion(tx, project, strategyId, version);
       const record = await findRecord(tx, project.id, strategyId);
       const before = toEditorState(record);

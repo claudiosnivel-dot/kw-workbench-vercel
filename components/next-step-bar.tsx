@@ -43,6 +43,15 @@ export function NextStepBar({ projectId, progress, onAddTopic }: NextStepBarProp
     case "open_plan":
       text = t("text.open_plan");
       break;
+    case "write_next":
+      text = t("text.write_next", { title: next.page.h1, number: next.page.number });
+      break;
+    case "writing":
+      text = t("text.writing", { count: next.count });
+      break;
+    case "plan_done":
+      text = t("text.plan_done");
+      break;
   }
 
   return (

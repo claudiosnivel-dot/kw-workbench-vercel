@@ -79,13 +79,9 @@ const I18N_MIGRATED_FILES = [
   "components/past-due-banner.tsx",
   "components/plan-limit-notice.tsx",
   "components/admin-launch-card.tsx",
-  // T-1905: pagine e componenti della strategia hub and spoke nascono già con il catalogo.
-  "app/projects/[id]/strategy/page.tsx",
-  "app/projects/[id]/strategy/[strategyId]/page.tsx",
+  // T-1905: pagine e componenti della strategia hub and spoke nascono già con il catalogo; T-2504 sostituisce le pagine
+  // della strategia, strategy-page-card.tsx, strategy-unassigned.tsx e keyword-mover.tsx, rimossi.
   "components/strategy/strategy-settings.tsx",
-  "components/strategy/strategy-page-card.tsx",
-  "components/strategy/strategy-unassigned.tsx",
-  "components/strategy/keyword-mover.tsx",
   // T-2301…T-2305: struttura del progetto, prossimo passo, menu della barra e home nascono già con il catalogo.
   "app/projects/[id]/layout.tsx",
   "components/project-shell.tsx",
@@ -114,6 +110,20 @@ const I18N_MIGRATED_FILES = [
   "components/entity-menu.tsx",
   "components/dialog-actions.tsx",
   "components/classification-select.tsx",
+  // T-2501…T-2506: piano dei contenuti, versioni precedenti, bacheca, pannello e scrittura nascono già con il catalogo.
+  "app/projects/[id]/plan/page.tsx",
+  "app/projects/[id]/plan/versions/page.tsx",
+  "app/projects/[id]/plan/versions/[strategyId]/page.tsx",
+  "components/plan/plan-board.tsx",
+  "components/plan/plan-header.tsx",
+  "components/plan/page-panel.tsx",
+  "components/plan/pick-dialog.tsx",
+  "components/plan/plan-actions.tsx",
+  "components/plan/plan-progress.tsx",
+  "components/plan/plan-requests.tsx",
+  "components/plan/plan-version-menu.tsx",
+  "components/plan/status-menu.tsx",
+  "components/project-card.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

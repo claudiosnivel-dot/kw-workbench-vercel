@@ -1,7 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { KeywordType, SearchIntent } from "@/lib/generated/prisma/enums";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
-import type { PlanReason, StrategyContentType, StrategyKeywordInput, StrategyPageKind, StrategyPlan } from "@/lib/modules/strategy/types";
+import type {
+  PlanReason,
+  StrategyContentType,
+  StrategyKeywordInput,
+  StrategyPageKind,
+  StrategyPageStatus,
+  StrategyPlan,
+} from "@/lib/modules/strategy/types";
 import { prisma } from "@/lib/prisma";
 import english from "../fixtures/strategy/en-running-gear.json";
 import italian from "../fixtures/strategy/it-scarpe-running.json";
@@ -81,6 +88,8 @@ export type PlanPageSpec = {
   h1?: string;
   h2?: string[];
   h2Edited?: boolean;
+  /** Stato di scrittura (T-2501), da scrivere se manca. */
+  status?: StrategyPageStatus;
 };
 
 /**
@@ -93,6 +102,8 @@ export async function insertStrategy(params: {
   unassigned?: PlanKeywordSpec[];
   version?: number;
   name?: string;
+  /** Istante di creazione: il piano del progetto è la strategia più recente (T-2502). */
+  createdAt?: Date;
 }) {
   const unassigned = params.unassigned ?? [];
   const assigned = params.pages.reduce((sum, page) => sum + page.keywords.length, 0);
@@ -107,6 +118,7 @@ export async function insertStrategy(params: {
       assigned_count: assigned,
       unassigned_count: unassigned.length,
       version: params.version ?? 0,
+      ...(params.createdAt ? { created_at: params.createdAt } : {}),
     },
   });
   const pageIds: Record<string, string> = Object.fromEntries(params.pages.map((page) => [page.key, randomUUID()]));
@@ -140,6 +152,8 @@ export async function insertStrategy(params: {
         h1: page.h1 ?? `H1 ${page.key}`,
         h2: page.h2 ?? [`H2 ${page.key}`],
         h2_edited: page.h2Edited ?? false,
+        status: page.status ?? "TODO",
+        status_changed_at: page.status && page.status !== "TODO" ? new Date() : null,
         content_type: "guide" as const,
         priority: page.keywords.reduce((sum, keyword) => sum + (keyword.volume ?? 0), 0),
         position,

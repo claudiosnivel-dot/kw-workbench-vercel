@@ -8,6 +8,7 @@ import {
 import {
   MODIFIER_CATEGORIES,
   type ModifierCategory,
+  type PlanAnchor,
   type PlanPage,
   type PlanReason,
   type ReasonParams,
@@ -39,6 +40,10 @@ import {
  *    pilastro tra le varianti del nucleo, se ci sono). Priorità della pagina: volume complessivo, o punteggio
  *    complessivo se il perimetro non ha volumi (come D-18). Ordine di lavoro: hub per volume complessivo (pilastro più
  *    spoke), ciascuno seguito dai propri spoke per priorità.
+ * 5. Ancore della rigenerazione (T-2502): la keyword principale di un hub ancorato vale come seed (prima delle seed con
+ *    lo stesso nucleo). Il suo hub non ha una pagina pilastro nuova: gli spoke che raggiungono le soglie diventano
+ *    spoke nuovi dell'hub ancorato, le altre keyword vanno nella sua pagina pilastro se è aperta, altrimenti tra le non
+ *    assegnate.
  */
 
 type Item = {
@@ -49,7 +54,13 @@ type Item = {
   words: Set<string>;
 };
 
-type Hub = { core: Set<string>; members: Item[]; reason: (merged: number, faq: number) => PlanReason };
+type Hub = {
+  core: Set<string>;
+  members: Item[];
+  reason: (merged: number, faq: number) => PlanReason;
+  /** Hub ancorato della rigenerazione: le sue pagine nuove sono solo spoke (passo 5). */
+  anchor: PlanAnchor | null;
+};
 
 type DraftPage = {
   kind: "pillar" | "modifier" | "word" | "question";
@@ -135,14 +146,21 @@ function displayWord(item: Item, stem: string, context: Context): string {
   return item.tokens.find((token) => wordStem(token, context.language) === stem) ?? stem;
 }
 
-function seedHubs(seeds: string[], items: Item[], context: Context): { hubs: Hub[]; rest: Item[] } {
-  const cores = new Map<string, { label: string; core: Set<string> }>();
-  for (const seed of [...seeds].map((value) => value.trim()).filter(Boolean).sort()) {
-    const core = keywordWords(canonicalizeKeyword(seed, context.language), context.language);
+function seedHubs(seeds: string[], anchors: PlanAnchor[], items: Item[], context: Context): { hubs: Hub[]; rest: Item[] } {
+  const cores = new Map<string, { label: string; core: Set<string>; anchor: PlanAnchor | null }>();
+  const addCore = (label: string, canonical: string, anchor: PlanAnchor | null) => {
+    const core = keywordWords(canonical, context.language);
     const key = [...core].sort().join(" ");
     if (core.size > 0 && !cores.has(key)) {
-      cores.set(key, { label: seed, core });
+      cores.set(key, { label, core, anchor });
     }
+  };
+  // Le ancore prima delle seed: a parità di nucleo l'hub resta quello ancorato.
+  for (const anchor of [...anchors].sort((a, b) => (a.main < b.main ? -1 : a.main > b.main ? 1 : 0))) {
+    addCore(anchor.main, anchor.main, anchor);
+  }
+  for (const seed of [...seeds].map((value) => value.trim()).filter(Boolean).sort()) {
+    addCore(seed, canonicalizeKeyword(seed, context.language), null);
   }
   // Prima i nuclei con più parole, poi in ordine alfabetico: la prima seed contenuta è la più specifica.
   const ordered = [...cores.entries()]
@@ -163,6 +181,7 @@ function seedHubs(seeds: string[], items: Item[], context: Context): { hubs: Hub
       core: seed.core,
       members: members.get(seed)!,
       reason: (merged: number, faq: number) => planReason("HUB_SEED", { seed: seed.label, merged, faq }),
+      anchor: seed.anchor,
     }));
   return { hubs, rest };
 }
@@ -205,6 +224,7 @@ function termHubs(items: Item[], context: Context): { hubs: Hub[]; unassigned: I
       core,
       members,
       reason: (merged, faq) => planReason("HUB_TERM", { term: anchor.input.keyword, merged, faq }),
+      anchor: null,
     });
   }
   return { hubs, unassigned: rest };
@@ -322,7 +342,9 @@ function buildHubPages(hub: Hub, rules: StrategyRules, context: Context): DraftP
   }
 
   let pillarOwn = [...core].sort(byRank);
-  if (pillarOwn.length === 0 && spokes.length > 0) {
+  // Un hub ancorato ha già la sua pagina pilastro: nessuno spoke ne prende il posto (passo 5).
+  const free = hub.anchor === null;
+  if (free && pillarOwn.length === 0 && spokes.length > 0) {
     // Nessuna variante del nucleo: lo spoke più prioritario diventa la pagina pilastro.
     pillarOwn = spokes.shift()!.own;
   }
@@ -335,7 +357,7 @@ function buildHubPages(hub: Hub, rules: StrategyRules, context: Context): DraftP
     // Sostituito sotto dal motivo dell'hub, quando si conoscono le keyword confluite.
     reason: () => planReason("HUB_SEED", {}),
   };
-  if (pillar.own.length === 0) {
+  if (free && pillar.own.length === 0) {
     pillar.own = pillar.merged;
     pillar.merged = [];
   }
@@ -354,7 +376,7 @@ function buildHubPages(hub: Hub, rules: StrategyRules, context: Context): DraftP
     }
     target.faq.push(...group);
   }
-  if (pillar.own.length === 0) {
+  if (free && pillar.own.length === 0) {
     pillar.own = pillar.faq.sort(byRank);
     pillar.faq = [];
   }
@@ -382,12 +404,15 @@ function toPlanPage(page: DraftPage, ref: string, hubRef: string | null, positio
 /**
  * Piano hub and spoke delle keyword del perimetro (T-1901). Le keyword con la stessa forma canonica contano una volta
  * (la più prioritaria). Ogni keyword compare in al massimo una pagina, ogni pagina ha una sola keyword principale.
+ * Con le ancore della rigenerazione (T-2502) le pagine nuove sotto un hub ancorato hanno hubRef uguale al ref
+ * dell'ancora e nessuna pagina nuova è la pilastro di un hub ancorato.
  */
 export function buildStrategyPlan(params: {
   keywords: StrategyKeywordInput[];
   seeds: string[];
   language: string;
   rules: StrategyRules;
+  anchors?: PlanAnchor[];
 }): StrategyPlan {
   const { language, rules } = params;
   const sorted = [...params.keywords].sort(compareKeywordPriority);
@@ -401,17 +426,32 @@ export function buildStrategyPlan(params: {
   }
   const context: Context = { language, usesVolume: items.some((item) => item.input.volume !== null) };
 
-  const seeded = seedHubs(params.seeds, items, context);
+  const seeded = seedHubs(params.seeds, params.anchors ?? [], items, context);
   const termed = termHubs(seeded.rest, context);
   const hubs = [...seeded.hubs, ...termed.hubs].map((hub) => {
     const pages = buildHubPages(hub, rules, context);
     const total = pages.reduce((sum, page) => sum + pagePriority([...page.own, ...page.faq, ...page.merged], context), 0);
-    return { pages, total, mainCanonical: pages[0].own[0].input.canonical };
+    return { pages, total, mainCanonical: hub.anchor?.main ?? pages[0].own[0].input.canonical, anchor: hub.anchor };
   });
   hubs.sort((a, b) => b.total - a.total || (a.mainCanonical < b.mainCanonical ? -1 : 1));
 
   const pages: PlanPage[] = [];
+  const anchored: StrategyPlan["anchored"] = [];
+  const unassigned = [...termed.unassigned];
   hubs.forEach((hub, hubIndex) => {
+    const { anchor } = hub;
+    if (anchor) {
+      // Passo 5: solo spoke nuovi sotto l'ancora; le keyword della pilastro vanno nella sua pagina o tra le non assegnate.
+      const [pillar, ...spokes] = hub.pages;
+      const rest = [...pillar.own, ...pillar.faq, ...pillar.merged];
+      if (anchor.open && rest.length > 0) {
+        anchored.push({ ref: anchor.ref, secondary: rest.sort(byRank).map((item) => item.input.canonical) });
+      } else {
+        unassigned.push(...rest);
+      }
+      spokes.forEach((page, index) => pages.push(toPlanPage(page, `${anchor.ref}s${index + 1}`, anchor.ref, pages.length, context)));
+      return;
+    }
     const hubRef = `h${hubIndex}`;
     hub.pages.forEach((page, pageIndex) => {
       const ref = pageIndex === 0 ? hubRef : `${hubRef}s${pageIndex}`;
@@ -419,5 +459,5 @@ export function buildStrategyPlan(params: {
     });
   });
 
-  return { pages, unassigned: termed.unassigned.map((item) => item.input.canonical) };
+  return { pages, unassigned: unassigned.sort(byRank).map((item) => item.input.canonical), anchored };
 }

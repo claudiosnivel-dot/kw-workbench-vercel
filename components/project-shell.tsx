@@ -39,7 +39,7 @@ function exportOrigin(pathname: string, projectId: string): ExportOrigin {
   if (pathname.startsWith(`${base}/keywords/`)) {
     return { kind: "topic", topicId: decodeURIComponent(pathname.slice(`${base}/keywords/`.length).split("/")[0]) };
   }
-  return pathname.startsWith(`${base}/strategy`) ? { kind: "plan" } : { kind: "project" };
+  return pathname.startsWith(`${base}/plan`) ? { kind: "plan" } : { kind: "project" };
 }
 
 /**

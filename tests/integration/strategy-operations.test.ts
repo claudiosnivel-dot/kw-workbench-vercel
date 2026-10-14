@@ -1,5 +1,7 @@
 // Gate di T-1904 (AC-1904-1…5): spostamenti, eliminazioni e unioni mantengono le regole del piano, la version
 // respinge le modifiche concorrenti e la PATCH di una pagina valida H1 e H2.
+// Gate di T-2503 (AC-2503-1, AC-2503-2): move_page porta uno spoke in fondo agli spoke di un altro hub e ricalcola gli
+// H2 non modificati dei due hub; un hub come pagina o uno spoke come destinazione sono 400 senza modifiche.
 import { randomUUID } from "node:crypto";
 import { createTranslator } from "next-intl";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -230,5 +232,48 @@ describe("modifiche al piano", () => {
     expect(((await response.json()) as { code: string }).code).toBe("STRATEGY_NOT_FOUND");
     expect(await prisma.strategyPage.count({ where: { id: first.pageIds.H } })).toBe(1);
     expect((await prisma.strategy.findUniqueOrThrow({ where: { id: otherStrategy.id } })).version).toBe(0);
+  });
+});
+
+describe("spostamento di uno spoke sotto un altro hub (T-2503)", () => {
+  const twoHubs: PlanPageSpec[] = [
+    { key: "H1", kind: "HUB", keywords: [kw("scarpe running", 5000)] },
+    { key: "A", kind: "SPOKE", hub: "H1", keywords: [kw("scarpe running donna", 900)] },
+    { key: "B", kind: "SPOKE", hub: "H1", keywords: [kw("scarpe running uomo", 700)] },
+    { key: "H2", kind: "HUB", keywords: [kw("calzini running", 800)] },
+    { key: "C", kind: "SPOKE", hub: "H2", keywords: [kw("calzini running lunghi", 120)] },
+  ];
+  const pageOf = (id: string) => prisma.strategyPage.findUniqueOrThrow({ where: { id }, select: { hub_page_id: true, position: true, h2: true } });
+
+  // covers: AC-2503-1
+  it("move_page mette A dopo C sotto H2, ricalcola gli H2 dei due hub e aumenta la version di 1", async () => {
+    const { strategyId, pageIds } = await createPlan(twoHubs, 3);
+
+    const response = await runOperation(strategyId, 3, { type: "move_page", pageId: pageIds.A, targetHubId: pageIds.H2 });
+
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { data: { version: number } }).data.version).toBe(4);
+    const [moved, last, firstHub, secondHub] = await Promise.all([pageOf(pageIds.A), pageOf(pageIds.C), pageOf(pageIds.H1), pageOf(pageIds.H2)]);
+    expect(moved.hub_page_id).toBe(pageIds.H2);
+    expect(moved.position).toBeGreaterThan(last.position);
+    expect(firstHub.h2).not.toContain("Scarpe running donna");
+    expect(firstHub.h2).toContain("Scarpe running uomo");
+    expect(secondHub.h2).toContain("Scarpe running donna");
+    expect((await prisma.strategy.findUniqueOrThrow({ where: { id: strategyId }, select: { version: true } })).version).toBe(4);
+  });
+
+  // covers: AC-2503-2
+  it("move_page con un hub come pagina o uno spoke come destinazione risponde 400 e il piano non cambia", async () => {
+    const { strategyId, pageIds } = await createPlan(twoHubs, 0);
+    const before = await prisma.strategyPage.findMany({ where: { strategy_id: strategyId }, orderBy: { id: "asc" } });
+
+    const hubAsPage = await runOperation(strategyId, 0, { type: "move_page", pageId: pageIds.H1, targetHubId: pageIds.H2 });
+    const spokeAsTarget = await runOperation(strategyId, 0, { type: "move_page", pageId: pageIds.A, targetHubId: pageIds.B });
+
+    expect([hubAsPage.status, spokeAsTarget.status]).toEqual([400, 400]);
+    expect(((await hubAsPage.json()) as { code: string }).code).toBe("VALIDATION_ERROR");
+    expect(((await spokeAsTarget.json()) as { code: string }).code).toBe("VALIDATION_ERROR");
+    expect(await prisma.strategyPage.findMany({ where: { strategy_id: strategyId }, orderBy: { id: "asc" } })).toEqual(before);
+    expect((await prisma.strategy.findUniqueOrThrow({ where: { id: strategyId }, select: { version: true } })).version).toBe(0);
   });
 });

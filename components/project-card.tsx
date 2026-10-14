@@ -6,6 +6,7 @@ import { useState } from "react";
 import { NewTopicDialog } from "@/components/new-topic-dialog";
 import { NextStepAction } from "@/components/next-step-action";
 import { ProjectCardMenu } from "@/components/project-card-menu";
+import { PlanProgress } from "@/components/plan/plan-progress";
 import { StepMarker } from "@/components/project-sidebar";
 import type { ProjectProgressData } from "@/lib/modules/next-step";
 
@@ -21,7 +22,8 @@ type ProjectCardProps = {
 
 /**
  * Scheda di un progetto nella home (T-2305): nome, stato delle tappe come nella barra laterale, ultima attività, un solo
- * pulsante con il prossimo passo del progetto e il menu ⋯. Nomi resi come testo (CWE-79).
+ * pulsante con il prossimo passo del progetto e il menu ⋯. Con un piano anche la barra e il testo dell'avanzamento della
+ * scrittura (T-2506). Nomi resi come testo (CWE-79).
  */
 export function ProjectCard({ project, lastActivity, progress, primary, canDelete }: ProjectCardProps) {
   const t = useTranslations("dashboard.card");
@@ -46,6 +48,21 @@ export function ProjectCard({ project, lastActivity, progress, primary, canDelet
             {latestStrategy ? t("planPages", { count: latestStrategy.pageCount }) : t("planToCreate")}
           </span>
         </p>
+        {latestStrategy && latestStrategy.pageCount > 0 && (
+          <div className="max-w-sm space-y-1">
+            <p className="text-sm text-slate-600">
+              {t("writing", { published: latestStrategy.publishedCount, total: latestStrategy.pageCount })}
+            </p>
+            <PlanProgress
+              compact
+              counts={{
+                published: latestStrategy.publishedCount,
+                writing: latestStrategy.writingCount,
+                todo: latestStrategy.pageCount - latestStrategy.publishedCount - latestStrategy.writingCount,
+              }}
+            />
+          </div>
+        )}
       </div>
       <time dateTime={lastActivity.iso} className="text-xs text-slate-500">
         {lastActivity.label}
