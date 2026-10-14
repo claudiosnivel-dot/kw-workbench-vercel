@@ -128,7 +128,7 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
     - id: AC-1102-2
       given: "il repository dopo il consolidamento"
       when: "il test esegue git grep di 'function jobStatusTone', 'function formatDate', 'function getValue', 'function checked' e 'type ExportScope'"
-      then: "jobStatusTone e formatDate compaiono solo in lib/view/format.ts, getValue e checked non compaiono, type ExportScope compare solo in lib/modules/export-types.ts"
+      then: "jobStatusTone e formatDate compaiono solo in lib/view/format.ts, getValue e checked non compaiono, type ExportScope compare solo in lib/modules/export-types.ts (emendato da T-2603 il 2026-10-14: jobStatusTone è andata via con la pagina Sezioni, il suo ultimo uso, e non compare più)"
     - id: AC-1102-3
       given: "il repository dopo il consolidamento"
       when: "il test esegue git grep di 'createSessionToken(' in app"
@@ -307,3 +307,4 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0 (in isolamento i soli riferimenti non risolti sono T-108, T-802, T-501, T-403, T-801, T-405, T-506, di altri moduli).
 - Semantico: `self-check-checklist.md` punti 6-10 applicati a T-1101..T-1105.
 - Emendamento (2026-10-13, macrotask 24 ux-keywords): AC-1104-1 analizza la pagina delle keyword dell'argomento (T-2403) e AC-1104-2 la finestra Esporta aperta dalla barra in alto (T-2406), che tiene il focus e lo restituisce al pulsante Esporta.
+- Emendamento (2026-10-14, costruzione del macrotask 26): i file consolidati rimossi con T-2602 e T-2603 (pagine Sezioni e delle impostazioni della sezione, delete-targets.ts, delete-entity-button.tsx, set-default-section-button.tsx, page-header-card.tsx) escono dall'elenco di tests/tooling/jscpd-consolidated.json (AC-1102-1); jobStatusTone è andata via con la pagina Sezioni, il suo ultimo uso (AC-1102-2 emendato).
