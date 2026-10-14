@@ -21,6 +21,8 @@ type ProjectShellProps = {
   recentProjects: { id: string; name: string }[];
   /** Per la finestra Esporta (T-2406): Google Sheets collegato e logo del branding per la copertina del PDF. */
   exportOptions: { sheetsConnected: boolean; hasLogo: boolean };
+  /** section.write nel workspace: riordino degli argomenti nella barra laterale (T-2603). */
+  canReorderTopics: boolean;
   children: ReactNode;
 };
 
@@ -75,7 +77,7 @@ function ExportDialogHost({ project, progress, exportOptions, onClose }: Pick<Pr
  * restituito al pulsante), barra del prossimo passo in fondo all'area del contenuto e dialogo Nuovo argomento, aperto
  * dalla barra laterale o dalla barra del prossimo passo. Nella barra in alto anche il pulsante Esporta (T-2406).
  */
-export function ProjectShell({ project, progress, recentProjects, exportOptions, children }: ProjectShellProps) {
+export function ProjectShell({ project, progress, recentProjects, exportOptions, canReorderTopics, children }: ProjectShellProps) {
   const t = useTranslations("nav");
   const tShell = useTranslations("project.shell");
   const pathname = usePathname();
@@ -101,7 +103,7 @@ export function ProjectShell({ project, progress, recentProjects, exportOptions,
   };
 
   const sidebar = (
-    <ProjectSidebar projectId={project.id} progress={progress} onAddTopic={addTopic} />
+    <ProjectSidebar projectId={project.id} progress={progress} canReorder={canReorderTopics} onAddTopic={addTopic} />
   );
 
   return (

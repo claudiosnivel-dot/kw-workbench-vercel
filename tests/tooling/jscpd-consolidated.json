@@ -1,9 +1,8 @@
 {
-  "description": "File consolidati da T-1102: jscpd con min-tokens 50 non deve trovarvi duplicati (AC-1102-1, tests/tooling/duplication.test.ts). I percorsi, relativi alla radice, si passano a jscpd come argomenti: con --config jscpd li rende assoluti e su Windows il glob non trova i file. Non si chiama .jscpd.json per non cambiare il jscpd di Trueline, che legge quel nome dalla radice. Dal macrotask 24 (T-2403, T-2406) la pagina dei risultati e il pulsante Google Sheets sono sostituiti dalla pagina delle keyword di un argomento e dalla finestra Esporta.",
+  "description": "File consolidati da T-1102: jscpd con min-tokens 50 non deve trovarvi duplicati (AC-1102-1, tests/tooling/duplication.test.ts). I percorsi, relativi alla radice, si passano a jscpd come argomenti: con --config jscpd li rende assoluti e su Windows il glob non trova i file. Non si chiama .jscpd.json per non cambiare il jscpd di Trueline, che legge quel nome dalla radice. Dal macrotask 24 (T-2403, T-2406) la pagina dei risultati e il pulsante Google Sheets sono sostituiti dalla pagina delle keyword di un argomento e dalla finestra Esporta. Dal macrotask 26 (T-2602, T-2603) le pagine Sezioni e delle impostazioni della sezione, il pulsante di eliminazione, quello della sezione predefinita e la scheda d'intestazione delle pagine non esistono più.",
   "minTokens": 50,
   "path": [
     "lib/view/format.ts",
-    "lib/view/delete-targets.ts",
     "lib/client/use-refresh-action.ts",
     "lib/http/search-params.ts",
     "lib/utils.ts",
@@ -16,18 +15,13 @@
     "lib/auth/session-cookie.ts",
     "app/page.tsx",
     "app/projects/[id]/page.tsx",
-    "app/projects/[id]/sections/page.tsx",
     "app/projects/[id]/keywords/[topicId]/page.tsx",
     "app/projects/[id]/settings/page.tsx",
-    "app/projects/[id]/subprojects/[subprojectId]/page.tsx",
     "app/api/auth/login/route.ts",
     "app/api/auth/register/route.ts",
     "app/api/auth/config/route.ts",
     "app/api/user/preferences/route.ts",
     "components/admin-users-dashboard.tsx",
-    "components/delete-entity-button.tsx",
-    "components/set-default-section-button.tsx",
-    "components/page-header-card.tsx",
     "components/export-dialog.tsx"
   ]
 }

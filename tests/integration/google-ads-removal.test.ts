@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { resetDatabase } from "../helpers/db";
+import { dispatch } from "../helpers/route-dispatch";
 
 const auth = vi.hoisted(() => ({ user: null as unknown }));
 
@@ -24,35 +25,6 @@ const MIGRATIONS_DIR = "prisma/migrations";
 const REMOVAL_MIGRATION = "0021_remove_google_ads";
 const SCRATCH_DB = "kwb_t901_migration_check";
 const testUrl = new URL(process.env.TEST_DATABASE_URL ?? "");
-
-/**
- * Instradamento delle rotte API come nel router di Next.js: segmenti statici, poi dinamici `[x]`, poi
- * catch-all `[...x]`; senza un route.ts che esporti il metodo, Next risponde 404 (o 405 se il metodo manca).
- * La risposta reale di Next per la rotta rimossa è provata anche dallo smoke E2E.
- */
-async function dispatch(method: "GET" | "PATCH", pathname: string): Promise<number> {
-  let dir = "app";
-  for (const segment of pathname.split("/").filter(Boolean)) {
-    const entries = existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory()) : [];
-    const next =
-      entries.find((entry) => entry.name === segment) ??
-      entries.find((entry) => /^\[[^.]+\]$/.test(entry.name)) ??
-      entries.find((entry) => /^\[\[?\.\.\./.test(entry.name));
-    if (!next) {
-      return 404;
-    }
-    dir = path.join(dir, next.name);
-    if (/^\[\[?\.\.\./.test(next.name)) {
-      break;
-    }
-  }
-  const routeFile = path.join(dir, "route.ts");
-  if (!existsSync(routeFile)) {
-    return 404;
-  }
-  const handlers = (await import(/* @vite-ignore */ path.resolve(routeFile))) as Record<string, unknown>;
-  return typeof handlers[method] === "function" ? 200 : 405;
-}
 
 function migrationsUpTo(name: string, inclusive: boolean): string[] {
   const names = readdirSync(MIGRATIONS_DIR)

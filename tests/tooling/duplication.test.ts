@@ -62,12 +62,12 @@ describe("duplicazioni consolidate", () => {
   });
 
   // covers: AC-1102-2
-  it("jobStatusTone, formatDate ed ExportScope hanno una sola definizione; getValue e checked non esistono", () => {
-    expect(gitGrep("function jobStatusTone").files).toEqual(["lib/view/format.ts"]);
+  // impacted-by: T-2603 (jobStatusTone è andata via con la pagina Sezioni, il suo ultimo uso)
+  it("formatDate ed ExportScope hanno una sola definizione; jobStatusTone, getValue e checked non esistono", () => {
     expect(gitGrep("function formatDate").files).toEqual(["lib/view/format.ts"]);
     expect(gitGrep("type ExportScope").files).toEqual(["lib/modules/export-types.ts"]);
 
-    for (const pattern of ["function getValue", "function checked"]) {
+    for (const pattern of ["function jobStatusTone", "function getValue", "function checked"]) {
       const result = gitGrep(pattern);
       expect(result.lines, pattern).toEqual([]);
       expect(result.status, pattern).toBe(1);

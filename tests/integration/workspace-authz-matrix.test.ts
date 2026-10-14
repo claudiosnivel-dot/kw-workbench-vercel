@@ -7,7 +7,6 @@ import { POST as cancelJob } from "@/app/api/jobs/[id]/cancel/route";
 import { GET as getJob } from "@/app/api/jobs/[id]/route";
 import { POST as createProject } from "@/app/api/projects/route";
 import { DELETE as deleteProject, PATCH as patchProject } from "@/app/api/projects/[id]/route";
-import { PATCH as setDefaultSection } from "@/app/api/projects/[id]/default-subproject/route";
 import { POST as exportToSheets } from "@/app/api/projects/[id]/export/google-sheets/route";
 import { GET as exportProject } from "@/app/api/projects/[id]/export/route";
 import { GET as plannerExport } from "@/app/api/projects/[id]/planner-export/route";
@@ -139,19 +138,6 @@ const ROUTES: RouteCase[] = [
     action: "project.delete",
     notFoundCode: "PROJECT_NOT_FOUND",
     call: (f, cookie) => callRoute(deleteProject, { method: "DELETE", url: `/api/projects/${f.projectId}`, cookie, params: { id: f.projectId } }),
-  },
-  {
-    name: "PATCH /api/projects/[id]/default-subproject",
-    action: "section.write",
-    notFoundCode: "PROJECT_NOT_FOUND",
-    call: (f, cookie) =>
-      callRoute(setDefaultSection, {
-        method: "PATCH",
-        url: `/api/projects/${f.projectId}/default-subproject`,
-        body: { subprojectId: f.otherSectionId },
-        cookie,
-        params: { id: f.projectId },
-      }),
   },
   {
     name: "GET /api/projects/[id]/export",
@@ -364,6 +350,7 @@ describe("ruoli nel workspace", () => {
 
 describe("id di un altro workspace", () => {
   // covers: AC-1502-3
+  // impacted-by: T-2603 (la rotta default-subproject non esiste più: restano la sezione e le keyword di W2)
   it("sezione, sezione predefinita e keyword di W2 non si toccano passando dal progetto di W1", async () => {
     const user = fixture.actors.OWNER;
     const other = await createUserWithSession({ displayName: "t1502-w2" });
@@ -391,13 +378,6 @@ describe("id di un altro workspace", () => {
       cookie: user.cookie,
       params: { id: p1.id, subprojectId: s2.id },
     });
-    const defaultSection = await callRoute(setDefaultSection, {
-      method: "PATCH",
-      url: `/api/projects/${p1.id}/default-subproject`,
-      body: { subprojectId: s2.id },
-      cookie: user.cookie,
-      params: { id: p1.id },
-    });
     const results = await callRoute(patchResults, {
       method: "PATCH",
       url: `/api/projects/${p1.id}/results`,
@@ -408,7 +388,6 @@ describe("id di un altro workspace", () => {
     });
 
     expect(section.status).toBe(404);
-    expect(defaultSection.status).toBe(404);
     expect(results.status).toBe(200);
     expect(await results.json()).toEqual({ success: true, updated: 0 });
     expect((await prisma.subproject.findUniqueOrThrow({ where: { id: s2.id } })).name).toBe("S2");

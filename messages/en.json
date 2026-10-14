@@ -110,148 +110,65 @@
     "projectNav": "Project menu"
   },
   "projects": {
-    "links": {
-      "settings": "Project settings"
-    },
     "delete": {
-      "confirm": "Delete the project \"{name}\"? The project, its seeds, candidate keywords and jobs will be permanently removed."
+      "confirm": "Delete the project \"{name}\"? Its topics, starting keywords, found keywords, plan and searches will be removed for good."
     },
-    "form": {
-      "step1": "Step 1: Project basics",
-      "mainSettings": "Main settings",
-      "name": "Project name",
-      "nameHint": "Name of the main container (e.g. domain, brand or client).",
-      "firstSection": "First section",
-      "firstSectionHint": "Name of the first working section (recommended: General).",
-      "defaultSectionName": "General",
-      "seeds": "Initial seeds of the first section",
-      "seedsPlaceholder": "keyword one\nkeyword two\nkeyword three",
-      "seedsHint": "One keyword per line (commas and semicolons also work). Seeds detected: {count}.",
-      "step2Title": "Step 2 (required): Set the extraction language and country",
-      "step2Hint": "This step is required: autocomplete quality depends on the language and country you set.",
-      "step2Confirm": "I have checked the language and country for this project.",
-      "step2Required": "Complete Step 2 (language and country) before creating the project.",
-      "step2RequiredTitle": "Complete the required Step 2 first",
-      "seedRequiredTitle": "Enter at least one seed to start right away",
-      "advancedTitle": "Advanced settings",
-      "createAndOpen": "Create and open project",
-      "saveSettings": "Save settings",
-      "createAndRun": "Create and start first extraction",
-      "starting": "Starting...",
+    "settings": {
+      "title": "Settings",
+      "intro": "These choices apply to every topic in the project; a topic can have its own from its ⋯ menu.",
+      "projectBlock": "The project",
+      "name": "Name",
+      "advancedTitle": "Advanced",
+      "advancedIntro": "Search parameters: the defaults usually work well.",
+      "save": "Save settings",
       "saved": "Settings saved.",
-      "runFailedAfterCreate": "Project created, but the automatic extraction could not start."
+      "deleteTitle": "Delete the project",
+      "deleteWarning": "Deleting the project removes its topics, found keywords, plan and searches for good.",
+      "deleteConfirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "brands": {
+      "title": "Competitor brands",
+      "intro": "Keywords with these names start out discarded.",
+      "empty": "No brands yet.",
+      "addLabel": "Add a brand",
+      "addPlaceholder": "Brand name",
+      "add": "+ add",
+      "remove": "Remove {brand}"
     },
     "fields": {
-      "language": "Default language",
-      "country": "Default country",
+      "language": "Search language",
+      "country": "Search country",
       "customCode": "Current non-standard code ({code})",
-      "autocompleteProvider": "Autocomplete provider",
+      "autocompleteProvider": "Suggestion source",
+      "autocompleteProviderHint": "Where suggested keywords come from.",
       "autocompleteGoogle": "Google (default)",
-      "mock": "Mock",
-      "metricsProvider": "Metrics provider",
-      "metricsNone": "No metrics",
+      "autocompleteMock": "Test suggestions",
+      "metricsProvider": "Search volumes",
+      "metricsProviderHint": "Where each keyword's monthly searches come from.",
+      "metricsNone": "No volumes",
+      "metricsMock": "Test volumes",
       "dataForSeo": "DataForSEO (paid)",
       "minVolume": "Minimum volume",
-      "minVolumeHint": "Filters out keywords with a volume below this value (0 = no filter).",
-      "scoringProfile": "Scoring profile",
+      "minVolumeHint": "Keywords with fewer monthly searches are left out (0 = no limit).",
+      "scoringProfile": "Score profile",
+      "scoringProfileHint": "How much volume and competition count in each keyword's score.",
       "scoring": {
         "balanced": "balanced",
         "aggressive": "aggressive",
-        "conservative": "conservative"
+        "conservative": "cautious"
       },
-      "excludeBrands": "Exclude brands",
-      "excludeBrandsHint": "Reduces or flags branded terms according to the blacklist.",
-      "expandAlpha": "Alphabet expansion (a-z)",
-      "expandAlphaHint": "Adds letter variants (e.g. keyword a, keyword b).",
-      "expandNumeric": "Numeric expansion (0-9)",
-      "expandNumericHint": "Adds number variants (e.g. keyword 1, keyword 2).",
-      "expandPatterns": "Semantic pattern expansion",
-      "expandPatternsHint": "Broadens coverage of related queries.",
+      "excludeBrands": "Discard keywords with a brand",
+      "excludeBrandsHint": "On, keywords with a competitor's name start out discarded; off, they stay kept and are flagged for checking.",
+      "searchDepth": "Search depth",
+      "expandAlpha": "With letters (a-z)",
+      "expandAlphaHint": "Also searches \"keyword a\", \"keyword b\" and so on.",
+      "expandNumeric": "With numbers (0-9)",
+      "expandNumericHint": "Also searches \"keyword 1\", \"keyword 2\" and so on.",
+      "expandPatterns": "With phrase patterns",
+      "expandPatternsHint": "Also searches typical phrases such as \"best keyword\" or \"how to keyword\".",
       "autoClassification": "Automatic classification",
-      "autoClassificationHint": "Assigns intent and keyword type during analysis."
-    },
-    "settings": {
-      "title": "Project settings",
-      "intro": "Set the container defaults here. Each section can inherit these values or use its own overrides.",
-      "linkedSections": "Linked sections",
-      "deleteWarning": "Deleting this project removes its sections, seeds, candidate keywords and jobs.",
-      "deleteButton": "Delete project"
-    }
-  },
-  "sections": {
-    "empty": "No sections yet.",
-    "deleteWarning": "Deleting this section removes its seeds, keywords and jobs. The project stays active.",
-    "delete": {
-      "confirm": "Delete the section \"{name}\"? Its seeds, keywords and jobs will be removed."
-    },
-    "manage": {
-      "title": "Manage sections",
-      "projectLabel": "Project:",
-      "addTitle": "Add a new section",
-      "listTitle": "Sections",
-      "columns": {
-        "order": "Order",
-        "name": "Name",
-        "seeds": "Seeds",
-        "keywords": "Keywords",
-        "lastJob": "Last job",
-        "actions": "Actions"
-      },
-      "renameSettings": "Rename / settings",
-      "results": "Results",
-      "run": "Run",
-      "running": "Running..."
-    },
-    "settings": {
-      "title": "Section: {name}",
-      "projectLine": "Project: {name}",
-      "viewSectionResults": "View section results",
-      "viewProjectResults": "View whole project results",
-      "keywords": "Section keywords:",
-      "jobs": "Jobs:",
-      "effectiveLocale": "Effective locale:",
-      "formTitle": "Section settings"
-    },
-    "order": {
-      "moveUp": "Move section {name} up",
-      "moveDown": "Move section {name} down"
-    },
-    "default": {
-      "isDefault": "Default section",
-      "setDefault": "Set as default"
-    },
-    "form": {
-      "name": "Section name",
-      "nameHint": "Free name (e.g. category, cluster, funnel or any working logic).",
-      "description": "Description (optional)",
-      "descriptionPlaceholder": "Internal note",
-      "descriptionHint": "Helps tell sections apart when there are many.",
-      "seeds": "Seed keywords (one per line, commas and semicolons also work)",
-      "seedsHint": "Section-specific seeds. Extraction will only use these initial keywords.",
-      "overridesTitle": "Setting overrides (optional)",
-      "languageOverride": "Language override",
-      "countryOverride": "Country override",
-      "autocompleteOverride": "Autocomplete provider override",
-      "metricsOverride": "Metrics provider override",
-      "minVolumeOverride": "Minimum volume override",
-      "scoringOverride": "Scoring profile override",
-      "excludeBrandsOverride": "Exclude brands override",
-      "expandAlphaOverride": "Alphabet expansion override",
-      "expandNumericOverride": "Numeric expansion override",
-      "expandPatternsOverride": "Pattern expansion override",
-      "autoClassificationOverride": "Automatic classification override",
-      "useProjectDefault": "Use project default",
-      "on": "On",
-      "off": "Off",
-      "providers": {
-        "googleDirect": "GoogleDirectAutocompleteProvider",
-        "mockAutocomplete": "MockAutocompleteProvider",
-        "noMetrics": "NoMetricsProvider",
-        "mockMetrics": "MockMetricsProvider"
-      },
-      "create": "Create section",
-      "save": "Save section",
-      "saved": "Section saved."
+      "autoClassificationHint": "Detects each keyword's intent and type."
     }
   },
   "jobs": {
@@ -285,27 +202,27 @@
   },
   "results": {
     "brand": {
-      "allowed": "allowed",
-      "excluded": "excluded",
-      "review": "to review"
+      "allowed": "no brands",
+      "excluded": "brand discarded",
+      "review": "brand to check"
     },
     "intent": {
-      "informational": "informational",
-      "commercial": "commercial",
-      "transactional": "transactional",
-      "navigational": "navigational",
-      "mixed": "mixed"
+      "informational": "to learn",
+      "commercial": "to compare",
+      "transactional": "to buy",
+      "navigational": "to find a site",
+      "mixed": "varied"
     },
     "type": {
       "generic": "generic",
       "question": "question",
       "comparison": "comparison",
-      "branded": "branded",
+      "branded": "with a brand",
       "local": "local",
       "tool": "tool",
       "service": "service",
       "product": "product",
-      "content_topic": "content topic"
+      "content_topic": "subject to cover"
     }
   },
   "export": {
@@ -324,7 +241,7 @@
       "summary": "{matched} rows matched ({rangeRows} with a range volume), {updated} keywords updated, {unmatched} rows without a matching keyword, {withoutVolume} rows without volume, {skippedRows} rows skipped because they have no keyword or unreadable values."
     },
     "columns": {
-      "subproject_name": "Section",
+      "subproject_name": "Topic",
       "keyword": "Keyword",
       "normalized_keyword": "Normalized keyword",
       "canonical_keyword": "Canonical keyword",
@@ -339,7 +256,7 @@
       "is_tool_intent": "Tool intent",
       "is_commercial_intent": "Commercial intent",
       "metrics_status": "Metrics status",
-      "metrics_provider": "Metrics provider",
+      "metrics_provider": "Volume source",
       "avg_monthly_searches": "Avg. monthly searches",
       "competition": "Competition",
       "low_top_of_page_bid_micros": "Top of page bid low (micros)",
@@ -352,9 +269,9 @@
       "yes": "Yes",
       "no": "No",
       "source": {
-        "seed": "Seed",
-        "google-direct": "Google Autocomplete",
-        "mock-autocomplete": "Test autocomplete"
+        "seed": "Starting keyword",
+        "google-direct": "Google suggestions",
+        "mock-autocomplete": "Test suggestions"
       },
       "metricsStatus": {
         "missing": "missing",
@@ -414,11 +331,12 @@
     "PASSWORD_CHANGE_REQUIRED": "You must change your password before continuing.",
     "LOCALE_UNSUPPORTED": "Unsupported language.",
     "PROJECT_NOT_FOUND": "Project not found.",
-    "SECTION_NOT_FOUND": "Section not found.",
-    "SECTION_NAME_TAKEN": "A section with this name already exists.",
-    "LAST_SECTION": "You cannot delete the last section. Every project needs at least one section.",
-    "NO_SECTIONS": "No sections available. Create a section first.",
+    "SECTION_NOT_FOUND": "Topic not found.",
+    "SECTION_NAME_TAKEN": "A topic with this name already exists.",
+    "LAST_SECTION": "You cannot delete the last topic: every project needs at least one.",
+    "NO_SECTIONS": "The project has no topics: add one first.",
     "FORBIDDEN_FIELD": "This value is reserved for the main administrator.",
+    "BRAND_EXISTS": "This brand is already in the list.",
     "WORKSPACE_NOT_FOUND": "Workspace not found.",
     "MEMBER_NOT_FOUND": "Member not found.",
     "INVITE_NOT_FOUND": "Invitation not found.",
@@ -430,7 +348,7 @@
     "WORKSPACE_LIMIT": "You have reached the maximum number of workspaces you can create.",
     "JOB_SIGNATURE_INVALID": "Invalid continuation signature.",
     "CRON_UNAUTHORIZED": "Unauthorized cron call.",
-    "JOB_ALREADY_ACTIVE": "An extraction is already running for this section.",
+    "JOB_ALREADY_ACTIVE": "A search is already running for this topic.",
     "JOB_NOT_FOUND": "Extraction not found.",
     "JOB_NOT_CANCELABLE": "The extraction has already finished.",
     "EXPORT_FORMAT_INVALID": "Invalid export format.",
@@ -785,9 +703,9 @@
         "redirectUri": "Redirect URI"
       },
       "source": "Source: {source, select, db {saved here} env {environment variable} other {not configured}}",
-      "removeOverride": "Remove override",
-      "removeOverrideAria": "Remove {field} override",
-      "overrideRemoved": "{field} override removed: the environment variable applies, if set.",
+      "removeOverride": "Remove saved value",
+      "removeOverrideAria": "Remove the saved {field} value",
+      "overrideRemoved": "Saved {field} value removed: the environment variable applies, if set.",
       "save": "Save Google Sheets configuration",
       "saved": "Google Sheets OAuth configuration saved.",
       "saveFailed": "Could not save the Google Sheets configuration."
@@ -1011,18 +929,18 @@
     },
     "limits": {
       "maxProjects": "Projects",
-      "maxSectionsPerProject": "Sections per project",
-      "maxSeedsPerSection": "Seeds per section",
+      "maxSectionsPerProject": "Topics per project",
+      "maxSeedsPerSection": "Starting keywords per topic",
       "runsPerDay": "Extractions per day",
       "maxKeywordsPerRun": "Keywords per extraction",
       "keywordsPerMonth": "Keywords per month",
-      "licensedMetricsKeywordsPerMonth": "Keywords per month with provider volumes",
+      "licensedMetricsKeywordsPerMonth": "Keywords per month with paid volumes",
       "seats": "Workspace members"
     },
     "features": {
       "sheetsExport": "Google Sheets export",
       "plannerImport": "Keyword Planner import",
-      "licensedMetrics": "Metrics provider volumes"
+      "licensedMetrics": "Volumes from the paid source"
     },
     "included": "Included",
     "notIncluded": "Not included",
@@ -1118,13 +1036,13 @@
       "methodology": "How we chose"
     },
     "reasons": {
-      "HUB_SEED": "Pillar page for the seed “{seed}”: it gathers the searches that contain all of its words.",
-      "HUB_TERM": "Pillar page on “{term}”, the most searched topic among the keywords that match no seed.",
+      "HUB_SEED": "Pillar page for the starting keyword “{seed}”: it gathers the searches that contain all of its words.",
+      "HUB_TERM": "Pillar page on “{term}”, the most searched topic among the keywords that match no starting keyword.",
       "SPOKE_MODIFIER": "Cluster article for {category, select, comparison {comparison and review} transactional {price and purchase} informational {informational} tool {online tool} local {local} other {same-modifier}} searches on the hub topic.",
       "SPOKE_WORD": "Cluster article for the searches that add “{word}” to the hub topic.",
       "SPOKE_QUESTION": "A question with {volume, number} monthly searches: it deserves its own article.",
       "MERGED_INTO_PILLAR": "{count, plural, one {# keyword with too few searches for a spoke is on the pillar page.} other {# keywords with too few searches for a spoke are on the pillar page.}}",
-      "UNASSIGNED": "These keywords do not contain all the words of a seed and share no terms with other keywords: no hub gathers them."
+      "UNASSIGNED": "These keywords do not fully contain any starting keyword and share no terms with other keywords: no pillar page gathers them."
     },
     "ui": {
       "defaultName": "{mode, select, AUTO {Automatic} other {Expert}} strategy of {date, date, short}",
@@ -1270,7 +1188,11 @@
       "addTopic": "New topic",
       "writing": "Writing",
       "writingProgress": "{published, number} of {total, number} published",
-      "writingToStart": "after the plan"
+      "writingToStart": "after the plan",
+      "topicMenu": "Actions for the topic {name}",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "moveFailed": "The topic could not be moved: try again."
     }
   },
   "nextStep": {
@@ -1407,7 +1329,8 @@
       "searches": "Monthly searches",
       "potential": "Potential",
       "potentialValue": "Potential {value} out of 100",
-      "potentialMissing": "Potential not calculated"
+      "potentialMissing": "Potential not calculated",
+      "otherSource": "Other source"
     },
     "row": {
       "discard": "Discard {keyword}",
@@ -1479,6 +1402,17 @@
       "step2": "In Google Ads open Keyword Planner, choose “Get search volume and forecasts” and upload the file.",
       "step3": "Download the result from Keyword Planner and upload it here.",
       "close": "Close"
+    },
+    "menuOverrides": "Settings different from the project…",
+    "overrides": {
+      "title": "Settings different from the project",
+      "intro": "Change only what must differ for \"{name}\": everything else follows the project.",
+      "asProject": "Same as the project",
+      "yes": "Yes",
+      "no": "No",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…"
     }
   },
   "exportDialog": {

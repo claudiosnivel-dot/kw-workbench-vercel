@@ -3,13 +3,17 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { EntityMenu, type EntityMenuItem } from "@/components/entity-menu";
+import type { TopicOverrides } from "@/components/subproject-form";
+import { TopicOverridesDialog } from "@/components/topic-overrides-dialog";
 import { TopicSeedsDialog } from "@/components/topic-seeds-dialog";
 
 type TopicActionsProps = {
   projectId: string;
-  topic: { id: string; name: string; seeds: string[] };
-  /** section.write nel workspace (D-08): rinomina ed elimina; la rotta resta protetta lato server (T-1502). */
+  topic: { id: string; name: string; seeds: string[]; overrides: TopicOverrides };
+  /** section.write nel workspace (D-08): rinomina, impostazioni diverse ed elimina; la rotta resta protetta lato server (T-1502). */
   canEdit: boolean;
+  /** Root admin: fonte dei suggerimenti e DataForSEO nel dialogo delle impostazioni diverse (D-24, T-902). */
+  canEditAutocompleteProvider: boolean;
 };
 
 // Limite del nome di una sezione (T-809, D-24).
@@ -17,12 +21,13 @@ const TOPIC_NAME_MAX_LENGTH = 120;
 
 /**
  * Azioni dell'intestazione di un argomento (T-2403, T-2404): «+ Trova altre keyword» apre le parole di partenza con il
- * focus sul campo di aggiunta; il menu ⋯ ha Parole di partenza, Rinomina (PATCH del nome) ed Elimina con un dialogo di
- * conferma. Eliminato l'argomento, si torna al progetto.
+ * focus sul campo di aggiunta; il menu ⋯ ha Parole di partenza, Rinomina (PATCH del nome), Impostazioni diverse dal
+ * progetto (T-2602) ed Elimina con un dialogo di conferma. Eliminato l'argomento, si torna al progetto.
  */
-export function TopicActions({ projectId, topic, canEdit }: TopicActionsProps) {
+export function TopicActions({ projectId, topic, canEdit, canEditAutocompleteProvider }: TopicActionsProps) {
   const t = useTranslations("keywords");
   const [seedsOpen, setSeedsOpen] = useState(false);
+  const [overridesOpen, setOverridesOpen] = useState(false);
   const endpoint = `/api/projects/${projectId}/subprojects/${topic.id}`;
   const items: EntityMenuItem[] = [{ kind: "action", label: t("menuSeeds"), onSelect: () => setSeedsOpen(true) }];
   if (canEdit) {
@@ -37,6 +42,7 @@ export function TopicActions({ projectId, topic, canEdit }: TopicActionsProps) {
           endpoint,
         },
       },
+      { kind: "action", label: t("menuOverrides"), onSelect: () => setOverridesOpen(true) },
       {
         kind: "delete",
         label: t("menuDelete"),
@@ -62,6 +68,15 @@ export function TopicActions({ projectId, topic, canEdit }: TopicActionsProps) {
       <EntityMenu label={t("menu", { name: topic.name })} items={items} />
       {seedsOpen && (
         <TopicSeedsDialog projectId={projectId} topicId={topic.id} seeds={topic.seeds} onClose={() => setSeedsOpen(false)} />
+      )}
+      {overridesOpen && (
+        <TopicOverridesDialog
+          projectId={projectId}
+          topic={topic}
+          overrides={topic.overrides}
+          canEditAutocompleteProvider={canEditAutocompleteProvider}
+          onClose={() => setOverridesOpen(false)}
+        />
       )}
     </div>
   );

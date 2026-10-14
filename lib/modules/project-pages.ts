@@ -11,15 +11,6 @@ export type ProjectPageProps = {
   searchParams: Promise<SearchParams>;
 };
 
-/** Sezioni del progetto in ordine di posizione, con i conteggi e l'ultimo job (pagina del progetto e gestione sezioni). */
-export const SECTIONS_WITH_STATS = {
-  orderBy: [{ position: "asc" }, { created_at: "asc" }],
-  include: {
-    _count: { select: { seeds: true, keyword_candidates: true, jobs: true } },
-    jobs: { orderBy: { created_at: "desc" }, take: 1 },
-  },
-} satisfies Prisma.Project$subprojectsArgs;
-
 /**
  * Progetto di un workspace dell'utente con le relazioni richieste (T-1502): notFound() (pagina 404, nessun dato) se non
  * esiste o l'utente non è membro del suo workspace. role è il ruolo dell'utente in quel workspace, per i controlli

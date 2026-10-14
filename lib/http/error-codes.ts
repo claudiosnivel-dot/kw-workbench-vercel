@@ -50,6 +50,8 @@ export const API_ERROR_CODES = [
   "LAST_SECTION",
   "NO_SECTIONS",
   "FORBIDDEN_FIELD",
+  // Marchi dei concorrenti del progetto (T-2601).
+  "BRAND_EXISTS",
   // Workspace, membri e inviti (T-1502…T-1504).
   "WORKSPACE_NOT_FOUND",
   "MEMBER_NOT_FOUND",

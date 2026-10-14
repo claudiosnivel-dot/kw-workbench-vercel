@@ -37,7 +37,8 @@ afterEach(() => {
 
 describe("GoogleSheetsApiConfigCard", () => {
   // covers: AC-908-3
-  it("dopo il salvataggio aggiorna la pagina e mostra l'esito; «Rimuovi override» invia null", async () => {
+  // impacted-by: T-2604 (parole semplici: «Rimuovi il valore salvato» al posto di «Rimuovi override»)
+  it("dopo il salvataggio aggiorna la pagina e mostra l'esito; «Rimuovi il valore salvato» invia null", async () => {
     renderWithIntl(<GoogleSheetsApiConfigCard initial={INITIAL} />);
 
     fireEvent.change(screen.getByLabelText("OAuth Client ID"), { target: { value: "nuovo-id.apps.googleusercontent.com" } });
@@ -46,7 +47,7 @@ describe("GoogleSheetsApiConfigCard", () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
     expect(screen.getByRole("status")).toHaveTextContent("Configurazione OAuth Google Sheets salvata.");
 
-    fireEvent.click(screen.getByRole("button", { name: "Rimuovi override Client ID" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rimuovi il valore salvato di Client ID" }));
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(sentBodies()[1]).toEqual({ clientId: null });
