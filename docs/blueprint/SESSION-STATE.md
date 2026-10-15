@@ -9,7 +9,7 @@
 | **Progetto** | Titan SEO (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-10-14 |
-| **Sessione corrente** | 2026-10-14 (ventinovesima) — BUILD di `ux-fixes` (27), avviato su conferma dell'utente: checkpoint VERDE, CI verde, PR #67 mergiata (`32e959b`) e in produzione senza migrazioni |
+| **Sessione corrente** | 2026-10-14 (trentesima) — nessun macrotask da costruire; brainstorming con l'utente della seconda parte della nuova esperienza d'uso: moduli 28-34 e D-41 approvati dall'utente («approvo») e mergiati su `master` con PR #69 (solo documentazione: nessun deploy) |
 
 ---
 
@@ -44,6 +44,13 @@
 | `ux-settings` (26) | chiuso | VERDE (2026-10-14, prima esecuzione) | T-2601…T-2605 costruiti (D-39): marchi dei concorrenti modificabili con effetto sulle keyword già trovate, impostazioni del progetto a tre blocchi con le Avanzate chiuse e le impostazioni diverse per argomento dal menu ⋯, argomenti riordinabili nella barra laterale, fine delle pagine delle sezioni e della sezione predefinita, parole semplici nei cataloghi del cliente, regole visive dello stile «A»; emendamenti dichiarati dei moduli 08, 11, 12, 13 e 15 (`ddf084e`); build `a397d2b`; baseline visive invariate (E2E senza riscritture), nessun gate umano; nessuna migrazione; PR #64 mergiata su `master` (`97fb99b`), CI verde, deploy di produzione verde |
 | `ux-fixes` (27) | chiuso | VERDE (2026-10-14, prima esecuzione) | T-2701…T-2702 costruiti (D-40): voce «Nome e descrizione» nel menu ⋯ dell'argomento con la descrizione modificabile, RunExtractionButton rimosso; emendamenti dichiarati dei moduli 03 e 12 e note nei moduli 13 e 24 (`954ab08`); build `9b9b843`; baseline visive invariate (E2E della CI verde), nessun gate umano; nessuna migrazione; PR #67 mergiata su `master` (`32e959b`), CI verde, deploy di produzione verde |
 | `ux-shell` (23) | chiuso | VERDE (2026-10-13, prima esecuzione) | T-2301…T-2306 costruiti (D-39): avvio rapido, prossimo passo, struttura del progetto con la barra laterale, barra in alto ridotta, nuova home, onboarding rimosso con la migrazione non additiva 0041; emendamenti dichiarati dei moduli 01, 03, 05, 08, 10, 12, 15, 18, 20 e 23 (`bb00d85`); build `9ddeea9`; baseline visive di dashboard e risultati approvate dall'utente; PR #58 mergiata su `master` (`35293c0`), CI verde, deploy di produzione verde con la migrazione 0041 |
+| `ux-account-shell` (28) | da fare | — | T-2801…T-2803 (D-41): navigazione a sezioni, area «Il tuo account», nome senza password, voce del menu |
+| `ux-account-polish` (29) | da fare | — | T-2901…T-2902 (D-41): preferenze salvate da sole con la lingua, Google Sheets in parole semplici |
+| `ux-email-change` (30) | da fare | — | T-3001…T-3002 (D-41): cambio email con conferma, migrazione additiva 0044 |
+| `ux-workspace` (31) | da fare | — | T-3101…T-3103 (D-41): Generale, Membri, Piano, /billing verso /workspace/plan, «Nuovo workspace…» |
+| `ux-invites` (32) | da fare | — | T-3201…T-3202 (D-41): link d'invito da copiare, inviti scaduti e «Nuovo link» |
+| `ux-admin` (33) | da fare | — | T-3301…T-3303 (D-41): Amministrazione a sezioni, riquadri, filtri con i conteggi, «Crea utente» |
+| `ux-admin-users` (34) | da fare | — | T-3401…T-3403 (D-41): scheda dell'utente, cambio email da root, elenco dei workspace |
 
 ## 2. Macrotask corrente
 
@@ -51,8 +58,8 @@
 - **Ultimo chiuso (2026-10-14)**: `ux-plan` (25), checkpoint VERDE, CI verde, mergiato (`1678f57`) e in produzione con la migrazione additiva `0043_page_status`: stato di scrittura delle pagine, un piano per progetto con «Rigenera» e le versioni precedenti, bacheca con il pannello di dettaglio, tappa Scrittura e prossima pagina da scrivere. Il 24 resta descritto nella voce che segue.
 - **Ultimo chiuso (2026-10-14, ventottesima sessione)**: `ux-settings` (26), checkpoint VERDE (1017 s), E2E Linux 62/62 senza baseline riscritte, nessuna migrazione: marchi dei concorrenti, impostazioni a tre blocchi, impostazioni diverse per argomento, argomenti riordinabili, fine delle pagine delle sezioni, parole semplici e regole visive. PR #64 mergiata (`97fb99b`), CI di `master` verde, in produzione senza migrazioni.
 - **Ultimo chiuso (2026-10-14, ventinovesima sessione)**: `ux-fixes` (27), avviato su conferma dell'utente, checkpoint VERDE (990 s), nessuna migrazione: voce «Nome e descrizione» nel menu ⋯ dell'argomento (la descrizione torna modificabile) e rimozione di RunExtractionButton. PR #67 mergiata (`32e959b`), CI di `master` verde, in produzione senza migrazioni.
-- **Prossimo**: nessun macrotask del blueprint resta da costruire dopo il 27. Da fare: la seconda parte della nuova esperienza d'uso (Personalizza, Account, Workspace, Fatturazione e Amministrazione), da pianificare con l'utente in un brainstorming. Testi della landing e immagine Open Graph da rivedere insieme più avanti; D-14 e D-15 restano in pausa.
-- **Criteri/test di riferimento**: `docs/blueprint/27-ux-fixes.md` (ultimo modulo costruito).
+- **Prossimo**: `ux-account-shell` (28), primo dei sette macrotask della seconda parte della nuova esperienza d'uso (D-41, moduli 28-34), approvato e mergiato (PR #69), da costruire su comando dell'utente. Testi della landing e immagine Open Graph da rivedere insieme più avanti; D-14 e D-15 restano in pausa.
+- **Criteri/test di riferimento**: `docs/blueprint/28-ux-account-shell.md` (prossimo modulo da costruire); ultimo costruito `docs/blueprint/27-ux-fixes.md`.
 
 ## 3. Stato git
 
@@ -121,6 +128,13 @@
 - **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5, jsdom 30 e, da T-407, del progetto `24.x`: funziona con avviso; riferimento la CI su Node 24 da `.nvmrc`). E2E e Vitest su Linux con Node 24: container `mcr.microsoft.com/playwright:v1.63.0-noble` nella rete `kw-workbench-vercel_default`, copia del repo senza `node_modules`, `npm ci`, un proxy TCP in Node da `localhost:54329` a `postgres-test:5432` (la guardia ammette solo host locali), `CI=true`. Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
+
+### Sessione 2026-10-14 (trentesima) — seconda parte della nuova esperienza d'uso, moduli 28-34 (brainstorming con l'utente)
+
+- **Inizio sessione**: nessun macrotask da costruire dopo il 27; l'utente ha avviato il brainstorming della seconda parte («si avviamo il brainstorming»).
+- **Design approvato per sezioni con mockup nel browser**: obiettivi chiarezza e coerenza, riorganizzazione delle voci e funzioni mancanti; aree «Il tuo account» e «Workspace» più Amministrazione; navigazione a sinistra (variante A); perimetro A1, W1, W2, M1, M2, M3 (A2 e A3 rinviati a un modulo di sicurezza futuro, A4, W3 e W4 esclusi); inviti con il link sempre più l'email quando c'è; Amministrazione in cinque sezioni. Su richiesta dell'utente il lavoro è diviso in sette macrotask piccoli, uno per sessione.
+- **Blueprint**: moduli `28-ux-account-shell.md`…`34-ux-admin-users.md` (18 task), ledger D-41, indice, visione e prompt aggiornati sul branch `trueline/blueprint-ux-account`. `validate_blueprint` e `ac_observability_check` OK (173 task). Emendamenti dei moduli 09, 11, 15, 16, 20 e 23 dichiarati nei task, da applicare alla costruzione.
+- **Approvazione**: l'utente ha approvato i moduli 28-34 («approvo»), con le rimozioni elencate in D-41, il cambio di sicurezza del link d'invito e le scelte dell'agente dei Self-check; PR #69 mergiata su `master` (solo documentazione: nessun deploy). Nel riepilogo è stato dichiarato lo spostamento del nome senza password dal 29 al 28 rispetto alla tabella approvata in brainstorming.
 
 ### Sessione 2026-10-14 (ventinovesima) — merge e verifica in produzione del macrotask 27
 
@@ -761,7 +775,7 @@
 - **Utente (DataForSEO)**: prima estrazione di prova scegliendo «DataForSEO (a pagamento)» nelle impostazioni di un progetto; dopo una ricarica (minimo 50 USD) alzare `METRICS_MONTHLY_BUDGET_USD` e `METRICS_RUN_BUDGET_USD` su Vercel e rifare il deploy. Con le credenziali si può anche scaricare l'elenco delle lingue di DataForSEO (`docs/METRICS-PROVIDERS.md`).
 - **Scelte del macrotask 25**: confermate dall'utente il 2026-10-14 (D-40).
 - **Utente (facoltativo)**: provare in produzione la bacheca (trascinamento, stato, pannello) e «Rigenera» su un piano con una pagina in scrittura.
-- **Prossimo lavoro**: nessun macrotask del blueprint resta dopo il 27 `ux-fixes`; la seconda parte della nuova esperienza d'uso (Personalizza, Account, Workspace, Fatturazione e Amministrazione) da pianificare con l'utente. Testi della landing e immagine Open Graph più avanti.
+- **Prossimo lavoro**: moduli 28-34 approvati e mergiati (D-41, PR #69); costruire `ux-account-shell` (28) su comando, un macrotask per sessione fino al 34. Modulo di sicurezza con dispositivi collegati e verifica in due passaggi da decidere più avanti. Testi della landing e immagine Open Graph più avanti.
 - **Utente (facoltativo)**: scaricare in produzione un export dei risultati e uno della strategia con l'interfaccia in italiano e poi in inglese, per vedere intestazioni ed etichette nei fogli reali (verificate solo dai test).
 - **Scelte del macrotask 20**: confermate dall'utente il 2026-10-11 (D-37), tranne il root admin, che nelle proprie estrazioni non avrà alcun limite d'uso (T-2101).
 - **Utente (facoltativo)**: guardare la barra con la voce Fatturazione (il modulo prevedeva un gate sulla baseline della dashboard; il confronto è rimasto entro la tolleranza, quindi la baseline non è cambiata) e provare dal browser Crea workspace ed Esci dal workspace personale.

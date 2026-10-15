@@ -30,7 +30,9 @@ macrotask, senza chiedere conferme.
      12 background-jobs · 13 i18n · 14 accounts-email · 15 workspaces ·
      16 billing · 17 abuse-quotas · 18 marketing-legal · 19 hub-spoke ·
      20 adjustments · 21 refinements · 22 rebrand · 23 ux-shell ·
-     24 ux-keywords · 25 ux-plan · 26 ux-settings · 27 ux-fixes
+     24 ux-keywords · 25 ux-plan · 26 ux-settings · 27 ux-fixes ·
+     28 ux-account-shell · 29 ux-account-polish · 30 ux-email-change ·
+     31 ux-workspace · 32 ux-invites · 33 ux-admin · 34 ux-admin-users
    • Baseline (.trueline/baseline.json, .trueline/hygiene-baseline.json) e budget
      consumato (MAX_RETRIES_PER_FINDING = 2, GLOBAL_WALL_CLOCK_MS = 242401).
    • Per ogni task chiuso: id, output prodotto, esito del gate (quale oracolo/test

@@ -61,6 +61,11 @@ Titan SEO diventa un SaaS vendibile:
    indicato, l'avvio da un solo campo, il gesto unico tieni/scarta, il piano come
    bacheca con lo stato di scrittura e gli strumenti da esperto chiusi finché non
    servono (D-39).
+9. (aggiunto il 2026-10-14, macrotask 28-34) account, workspace e amministrazione
+   con la stessa chiarezza: due aree nel menu dell'utente («Il tuo account» e
+   «Workspace») più Amministrazione, ciascuna a sezioni con la navigazione a
+   sinistra; cambio dell'email, inviti con il link da copiare, scheda dell'utente
+   ed elenco dei workspace per il root admin (D-41).
 
 "Fatto" = `target_tests` verdi e checkpoint Trueline verde al confine di ogni
 macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
@@ -71,7 +76,9 @@ macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
   Google Ads e la domanda di Basic Access è stata respinta (D-09).
 - Scraping dell'interfaccia di Google Keyword Planner o di Google Search (termini di
   servizio).
-- Autenticazione a due fattori, SSO/SAML, login social.
+- Autenticazione a due fattori, SSO/SAML, login social. (2026-10-14: verifica in due
+  passaggi e dispositivi collegati annotati per un modulo di sicurezza futuro, da
+  decidere con l'utente, D-41.)
 - API pubblica per i clienti e app mobile.
 - Analytics di prodotto e A/B test (D-13).
 - Wrapping Electron (citato nel README: resta possibile, non è nel piano).
