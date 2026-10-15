@@ -5,7 +5,7 @@ import { NarrowCard } from "@/components/narrow-card";
 import { readParam, type SearchParams } from "@/lib/http/search-params";
 
 /**
- * Pagina aperta dal link con token di un'email (T-1403, T-1404, invito di T-1503): titolo, testo e form per il token, oppure il
+ * Pagina aperta dal link con token di un'email (T-1403, T-1404, invito di T-1503, cambio dell'email di T-3002): titolo, testo e form per il token, oppure il
  * messaggio del link incompleto. Il token resta nella pagina: Referrer-Policy no-referrer da next.config.ts.
  */
 export async function TokenLinkCard({
@@ -13,7 +13,7 @@ export async function TokenLinkCard({
   searchParams,
   form,
 }: {
-  namespace: "auth.verify" | "auth.reset" | "workspace.accept";
+  namespace: "auth.verify" | "auth.reset" | "auth.emailChange" | "workspace.accept";
   searchParams: Promise<SearchParams>;
   form: (token: string) => ReactNode;
 }) {

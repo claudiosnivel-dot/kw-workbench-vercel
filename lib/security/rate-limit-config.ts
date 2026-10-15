@@ -8,7 +8,7 @@ export type RateLimitRule = { max: number; windowSeconds: number };
  * validato: login per IP+email e per IP, registrazione per IP, richiesta di reset per email e per IP, avvii di
  * estrazione per workspace con il lancio attivo (D-27 emendata), modulo contatti per IP e per email (T-1805),
  * tentativi di password sulla cancellazione dell'account per utente (T-2001). Lette a ogni uso, così i test iniettano
- * soglie basse.
+ * soglie basse. Le richieste di cambio dell'email per utente (T-3001) hanno un limite fisso di 5 l'ora.
  */
 export function rateLimitRules() {
   const loginWindow = getIntEnv("RATE_LIMIT_LOGIN_WINDOW_SECONDS");
@@ -27,6 +27,7 @@ export function rateLimitRules() {
       max: getIntEnv("RATE_LIMIT_ACCOUNT_DELETE_MAX"),
       windowSeconds: getIntEnv("RATE_LIMIT_ACCOUNT_DELETE_WINDOW_SECONDS"),
     },
+    emailChange: { max: 5, windowSeconds: 3600 },
   } satisfies Record<string, RateLimitRule>;
 }
 

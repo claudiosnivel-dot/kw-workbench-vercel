@@ -1,13 +1,15 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
 import { FormDone } from "@/components/form-done";
 import { FormFeedback } from "@/components/form-feedback";
 import { SubmitButton } from "@/components/submit-button";
+import { sendJson } from "@/lib/client/http";
 import { useFormValues } from "@/lib/client/use-form-values";
 import { usePostForm } from "@/lib/client/use-post-form";
 
-// Form delle pagine aperte dai link con token delle email (T-1403, T-1404, T-1503), mostrati da TokenLinkCard.
+// Form delle pagine aperte dai link con token delle email (T-1403, T-1404, T-1503, T-3002), mostrati da TokenLinkCard.
 
 type TokenActionLabels = { success: string; submit: string; submitting: string; goToApp: string };
 
@@ -74,6 +76,48 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <SubmitButton pending={saving} label={t("submit")} pendingLabel={t("submitting")} />
       <FormFeedback error={error} />
     </form>
+  );
+}
+
+type EmailChangeState = "confirming" | "success" | "invalid" | "taken" | "error";
+
+// Esiti di POST /api/auth/email-change/confirm (T-3001); ogni altra risposta è un errore imprevisto.
+const EMAIL_CHANGE_OUTCOMES: Record<number, EmailChangeState> = { 200: "success", 409: "taken", 410: "invalid" };
+
+/**
+ * Conferma del cambio dell'email (T-3002): all'apertura la pagina invia il token alla rotta con una POST, una volta sola,
+ * e mostra l'esito; il token non compare nel contenuto. Il link arriva al nuovo indirizzo: aprirlo è la conferma.
+ */
+export function EmailChangeConfirm({ token }: { token: string }) {
+  const t = useTranslations("auth.emailChange");
+  const tCommon = useTranslations("common");
+  const [state, setState] = useState<EmailChangeState>("confirming");
+  const sent = useRef(false);
+
+  useEffect(() => {
+    if (sent.current) {
+      return;
+    }
+    sent.current = true;
+    sendJson("POST", "/api/auth/email-change/confirm", { token })
+      .then((response) => setState(EMAIL_CHANGE_OUTCOMES[response.status] ?? "error"))
+      .catch(() => setState("error"));
+  }, [token]);
+
+  if (state === "confirming") {
+    return (
+      <p className="text-sm" role="status">
+        {t("confirming")}
+      </p>
+    );
+  }
+  if (state === "success") {
+    return <FormDone message={t("success")} href="/login" linkLabel={t("goToLogin")} />;
+  }
+  return (
+    <p className="text-sm text-red-700" role="alert">
+      {state === "error" ? tCommon("unexpectedError") : t(state)}
+    </p>
   );
 }
 

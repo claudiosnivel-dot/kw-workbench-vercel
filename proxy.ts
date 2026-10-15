@@ -22,6 +22,9 @@ const PUBLIC_PATHS = new Set([
   "/reset-password",
   "/api/auth/password-reset/request",
   "/api/auth/password-reset/confirm",
+  // Conferma del cambio dell'email (T-3001): il link arriva al nuovo indirizzo e si apre anche senza sessione.
+  "/email-change",
+  "/api/auth/email-change/confirm",
   // Health check per il monitoraggio esterno (T-603): solo il percorso esatto, nessun prefisso.
   "/api/health",
   // Cron di Vercel per i job bloccati (T-1203): protetto da CRON_SECRET nella rotta.

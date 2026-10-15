@@ -16,6 +16,7 @@ const AUTH_ROUTE_PREFIXES = [
   "/verify-email",
   "/forgot-password",
   "/reset-password",
+  "/email-change",
   "/accept-terms",
 ];
 

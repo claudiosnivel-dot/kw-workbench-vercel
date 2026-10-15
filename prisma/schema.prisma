@@ -183,6 +183,7 @@ model User {
   google_sheets_credential  GoogleSheetsCredential?
   email_verification_tokens EmailVerificationToken[]
   password_reset_tokens     PasswordResetToken[]
+  email_change_tokens       EmailChangeToken[]
   /// Strategie hub and spoke generate dall'utente (T-1903): alla sua eliminazione restano, senza autore.
   created_strategies        Strategy[]               @relation("StrategyCreator")
 
@@ -581,6 +582,23 @@ model PasswordResetToken {
 
   @@index([user_id, created_at])
   @@map("password_reset_tokens")
+}
+
+/// Richiesta di cambio dell'email (T-3001): il token va a new_email, nel DB solo il suo hash SHA-256 esadecimale,
+/// valido 24 h e monouso. new_email è minuscola (vincolo CHECK email_change_tokens_new_email_lowercase, solo nella
+/// migrazione).
+model EmailChangeToken {
+  id         String    @id @default(cuid())
+  user_id    String
+  new_email  String
+  token_hash String    @unique @db.Char(64)
+  created_at DateTime  @default(now())
+  expires_at DateTime
+  used_at    DateTime?
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("email_change_tokens")
 }
 
 // Abbonamenti per workspace (T-1603): stati di Paddle Billing, aggiornati solo dai webhook firmati.
