@@ -31,6 +31,17 @@ function oauthReasonKey(reason: string | null): (typeof OAUTH_REASONS)[number] |
   return OAUTH_REASONS.find((allowed) => allowed === reason) ?? "unknown";
 }
 
+/**
+ * Perché il collegamento va rifatto (T-2902): Google ha rifiutato il rinnovo o la credenziale è illeggibile
+ * (reauth_required, T-906), oppure lo scope è più ampio di drive.file (needsReconnect, T-907); null se non serve.
+ */
+function reconnectReasonKey(snapshot: GoogleSheetsSnapshot): "reauthReason" | "broaderScope" | null {
+  if (!snapshot.connected) return null;
+  if (snapshot.status === "reauth_required") return "reauthReason";
+  return snapshot.needsReconnect ? "broaderScope" : null;
+}
+
+/** Collegamento personale a Google Sheets nella sezione Collegamenti (T-906, T-907, T-2902). */
 export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSnapshot }) {
   const t = useTranslations("integrations.sheetsPersonal");
   const tErrors = useTranslations("errors");
@@ -43,6 +54,7 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
 
   const oauthStatus = searchParams.get("google_sheets");
   const oauthReason = searchParams.get("reason");
+  const reconnectReason = reconnectReasonKey(initial);
 
   const disconnect = async () => {
     if (!window.confirm(t("disconnectConfirm"))) {
@@ -73,26 +85,24 @@ export function GoogleSheetsPersonalCard({ initial }: { initial: GoogleSheetsSna
         <p className="text-sm text-red-700">{t("failed", { reason: t(`reasons.${oauthReasonKey(oauthReason)}`) })}</p>
       )}
 
-      <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
-        <p>
-          <span className="font-medium">{t("statusLabel")}</span> {t(`statuses.${initial.status}`)}
-        </p>
-        <p>
-          <span className="font-medium">{t("emailLabel")}</span> {initial.connectedEmail ?? "-"}
-        </p>
-        <p>
-          <span className="font-medium">{t("scopeLabel")}</span> {initial.scope ?? "-"}
-        </p>
-      </div>
-
-      {initial.connected && initial.needsReconnect && initial.status === "connected" && (
-        <p className="text-sm text-amber-700">{t("broaderScope")}</p>
+      {/* Tre stati in parole semplici (T-2902): da ricollegare con il perché, collegato con l'email, non collegato. */}
+      {reconnectReason ? (
+        <div className="space-y-1 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">{t("needsReconnect")}</p>
+          <p>{t(reconnectReason)}</p>
+        </div>
+      ) : (
+        initial.connected && (
+          <p className="text-sm">
+            {initial.connectedEmail ? t("connectedAs", { email: initial.connectedEmail }) : t("connectedPlain")}
+          </p>
+        )
       )}
 
       {/* Rotta API che avvia il redirect OAuth, non una pagina: serve una navigazione completa, non <Link>. La regola
           no-html-link-for-pages la scambia per una pagina perché il segmento dinamico app/[lang] (T-1801) combacia con
           ogni percorso senza punti. */}
-      {initial.connected && (initial.status === "reauth_required" || initial.needsReconnect) && (
+      {reconnectReason && (
         // eslint-disable-next-line @next/next/no-html-link-for-pages
         <a className="btn-primary w-full text-center sm:w-auto" href="/api/integrations/google-sheets/connect">
           {t("reconnect")}

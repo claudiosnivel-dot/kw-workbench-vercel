@@ -221,7 +221,7 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
     - "@axe-core/playwright come devDependency a versione fissata, usato da tests/e2e/a11y.spec.ts su /login, dashboard e risultati con l'utente seed di T-103"
     - "Modale di components/google-sheets-export-button.tsx: all'apertura il focus va al primo campo, Tab e Shift+Tab restano dentro il dialog, Esc chiude, alla chiusura il focus torna al pulsante che l'ha aperta"
     - "Pulsanti con sola icona o simbolo segnalati da axe hanno aria-label descrittivo (i pulsanti di riordino delle sezioni sono in T-808)"
-    - "components/personalization-settings-card.tsx: uscendo dalla pagina senza salvare (unmount) data-theme, data-font-scale e data-color-vision tornano ai valori salvati"
+    - "components/personalization-settings-card.tsx: uscendo dalla pagina senza salvare (unmount) data-theme, data-font-scale e data-color-vision tornano ai valori salvati (superato da T-2901 il 2026-10-15: ogni scelta si salva subito, non esiste più un'anteprima non salvata)"
     - "app/layout.tsx: generateMetadata usa branding.appName per il titolo al posto del nome statico del prodotto"
 
   acceptance_criteria:
@@ -234,9 +234,9 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
       when: "l'utente apre la finestra Esporta dal pulsante della barra in alto, preme Tab 20 volte e poi Esc (emendato da T-2406 il 2026-10-13: un solo pulsante Esporta al posto del pulsante Google Sheets)"
       then: "dopo ogni Tab document.activeElement è dentro l'elemento role=dialog e dopo Esc è il pulsante che ha aperto la modale"
     - id: AC-1104-3
-      given: "un utente con tema salvato DARK nella pagina /account/preferences (emendato da T-2803 il 2026-10-15: Personalizza è la sezione Preferenze dell'account)"
-      when: "seleziona il tema LIGHT senza salvare e naviga alla dashboard"
-      then: "l'elemento html ha data-theme uguale a 'DARK'"
+      given: "un utente dedicato al test (non quello delle baseline visive) con tema salvato DARK nella pagina /account/preferences (emendato da T-2803 il 2026-10-15: Personalizza è la sezione Preferenze dell'account; emendato da T-2901 il 2026-10-15: le preferenze si salvano a ogni scelta)"
+      when: "sceglie il tema Chiaro e torna alla home"
+      then: "l'elemento html ha data-theme uguale a 'LIGHT'; alla fine il test riporta il tema a DARK"
     - id: AC-1104-4
       given: "il branding con appName 'Acme SEO'"
       when: "si apre /login"
@@ -309,3 +309,4 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
 - Emendamento (2026-10-13, macrotask 24 ux-keywords): AC-1104-1 analizza la pagina delle keyword dell'argomento (T-2403) e AC-1104-2 la finestra Esporta aperta dalla barra in alto (T-2406), che tiene il focus e lo restituisce al pulsante Esporta.
 - Emendamento (2026-10-14, costruzione del macrotask 26): i file consolidati rimossi con T-2602 e T-2603 (pagine Sezioni e delle impostazioni della sezione, delete-targets.ts, delete-entity-button.tsx, set-default-section-button.tsx, page-header-card.tsx) escono dall'elenco di tests/tooling/jscpd-consolidated.json (AC-1102-1); jobStatusTone è andata via con la pagina Sezioni, il suo ultimo uso (AC-1102-2 emendato).
 - Emendamento (2026-10-15, costruzione del macrotask 28, T-2803): AC-1104-3 apre la sezione Preferenze dell'account (/account/preferences), che ospita la stessa card di Personalizza; /personalizza porta lì con un redirect.
+- Emendamento (2026-10-15, costruzione del macrotask 29, T-2901): le preferenze si salvano a ogni scelta, quindi AC-1104-3 verifica che il tema Chiaro resti tornando alla home, con un utente dedicato (non quello delle baseline visive) e il tema riportato a DARK alla fine; la voce della DoD sull'anteprima non salvata ripristinata all'uscita è superata.

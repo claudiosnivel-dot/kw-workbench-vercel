@@ -404,7 +404,7 @@
     },
     "preferences": {
       "title": "Accessibilità e tema",
-      "intro": "Personalizza l'interfaccia con tema, leggibilità del testo e modalità daltonismo.",
+      "intro": "Scegli lingua, tema, leggibilità del testo e modalità daltonismo: ogni scelta si salva subito.",
       "theme": "Tema",
       "dark": "Scuro",
       "light": "Chiaro",
@@ -417,9 +417,7 @@
         "DEUTERANOPIA": "Deuteranopia",
         "TRITANOPIA": "Tritanopia"
       },
-      "saving": "Salvataggio preferenze...",
-      "save": "Salva preferenze",
-      "saved": "Preferenze salvate correttamente."
+      "saved": "Salvato"
     },
     "branding": {
       "title": "Branding",
@@ -683,7 +681,7 @@
     },
     "sheetsPersonal": {
       "title": "Google Sheets personale",
-      "intro": "Collega il tuo account Google per esportare keyword direttamente su file Sheets nel tuo Drive.",
+      "intro": "Collega il tuo account Google per esportare le keyword su file Sheets nel tuo Drive. L'export usa il collegamento personale di chi esporta: ogni membro del workspace collega il proprio account.",
       "connected": "Account Google Sheets collegato con successo.",
       "failed": "Connessione Google Sheets non riuscita: {reason}",
       "reasons": {
@@ -695,20 +693,16 @@
         "sessione_scaduta": "la sessione è scaduta. Accedi di nuovo e ricollega.",
         "unknown": "errore sconosciuto."
       },
-      "statusLabel": "Stato:",
-      "statuses": {
-        "connected": "Connesso",
-        "reauth_required": "Da ricollegare",
-        "disconnected": "Non connesso"
-      },
-      "emailLabel": "Email:",
-      "scopeLabel": "Scope:",
-      "broaderScope": "Il collegamento usa un permesso più ampio di quello che serve: ricollega Google Sheets per passare all'accesso ai soli file creati da questa app.",
-      "reconnect": "Ricollega Google Sheets",
-      "connect": "Connetti a Google Sheets",
-      "disconnecting": "Disconnessione...",
-      "disconnect": "Disconnetti Google Sheets",
-      "disconnectConfirm": "Disconnettere Google Sheets da questo account?"
+      "connectedAs": "Collegato come {email}",
+      "connectedPlain": "Collegato",
+      "needsReconnect": "Da ricollegare",
+      "reauthReason": "Google non accetta più questo collegamento: ricollegalo per continuare a esportare.",
+      "broaderScope": "Il collegamento usa un permesso più ampio di quello che serve: ricollegalo per dare accesso ai soli file creati da questa app.",
+      "reconnect": "Ricollega",
+      "connect": "Collega Google Sheets",
+      "disconnecting": "Scollegamento...",
+      "disconnect": "Scollega",
+      "disconnectConfirm": "Scollegare Google Sheets da questo account?"
     }
   },
   "emails": {
