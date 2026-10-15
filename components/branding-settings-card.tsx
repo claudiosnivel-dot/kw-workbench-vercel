@@ -25,7 +25,7 @@ const LOGO_ACCEPT = ALLOWED_LOGO_TYPES.join(",");
 
 type LogoTarget = "dark" | "light";
 
-export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSnapshot; canEdit: boolean }) {
+export function BrandingSettingsCard({ initial }: { initial: BrandingSnapshot }) {
   const t = useTranslations("settings.branding");
   const tErrors = useTranslations("errors");
   const tCommon = useTranslations("common");
@@ -138,12 +138,8 @@ export function BrandingSettingsCard({ initial, canEdit }: { initial: BrandingSn
     <section className="card space-y-5">
       <CardIntro title={t("title")} intro={t("intro")} />
 
-      {!canEdit && (
-        <p className="text-sm text-slate-600">{t("readOnly")}</p>
-      )}
-
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <fieldset className="min-w-0 space-y-5" disabled={!canEdit}>
+        <fieldset className="min-w-0 space-y-5">
           <div>
             <label className="label" htmlFor="appName">
               {t("appName")}
