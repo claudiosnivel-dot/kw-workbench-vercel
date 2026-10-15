@@ -576,6 +576,7 @@
       "nav": "Menu dell'amministrazione",
       "overview": "Panoramica",
       "users": "Utenti",
+      "workspaces": "Workspace",
       "settings": "Impostazioni",
       "log": "Registro"
     },
@@ -612,24 +613,14 @@
         "user": "Utente",
         "role": "Ruolo",
         "status": "Stato",
-        "created": "Creato",
-        "lastLogin": "Ultimo login",
-        "actions": "Azioni"
+        "lastLogin": "Ultimo login"
       },
       "rootBadge": "Root Admin",
-      "roleOf": "Ruolo di {name}",
-      "statusOf": "Stato di {name}",
       "noEmail": "senza email (account legacy)",
-      "save": "Salva",
-      "newPasswordPlaceholder": "Nuova password",
-      "resetPassword": "Reset password",
       "empty": "Nessun utente trovato per i filtri correnti.",
       "pageInfo": "Pagina {page} di {totalPages} · {total} utenti",
       "previous": "Precedente",
-      "next": "Successiva",
-      "updated": "Utente aggiornato con successo.",
-      "deleteConfirm": "Eliminare definitivamente l'utente \"{name}\"?",
-      "deleted": "Utente eliminato definitivamente."
+      "next": "Successiva"
     },
     "audit": {
       "title": "Registro delle azioni amministrative",
@@ -686,6 +677,79 @@
       "pausing": "Pausa...",
       "pauseConfirm": "Rimettere in pausa il lancio commerciale? Gli utenti tornano senza limiti e la registrazione pubblica si chiude.",
       "updated": "Stato del lancio aggiornato."
+    },
+    "user": {
+      "back": "← Utenti",
+      "emailVerified": "verificata",
+      "emailNotVerified": "da verificare",
+      "summary": {
+        "title": "Riepilogo",
+        "created": "Creato il",
+        "lastLogin": "Ultimo accesso",
+        "terms": "Termini accettati",
+        "termsValue": "versione {version}, {date}",
+        "termsMissing": "non ancora accettati"
+      },
+      "workspaces": {
+        "title": "Workspace",
+        "intro": "I workspace dell'utente con il suo ruolo. Dei progetti si vede solo il numero.",
+        "name": "Nome",
+        "role": "Ruolo",
+        "projects": "Progetti",
+        "keywords": "Keyword del mese",
+        "personal": "personale",
+        "empty": "L'utente non è in nessun workspace."
+      },
+      "actions": {
+        "title": "Azioni",
+        "intro": "Le modifiche valgono subito e restano nel registro delle azioni amministrative.",
+        "role": "Ruolo",
+        "saveRole": "Salva il ruolo",
+        "suspend": "Sospendi",
+        "reactivate": "Riattiva",
+        "newPassword": "Nuova password",
+        "resetPassword": "Reimposta la password",
+        "changeEmail": "Cambia email",
+        "updated": "Utente aggiornato."
+      },
+      "email": {
+        "title": "Cambia l'email di {name}",
+        "label": "Nuova email",
+        "hint": "Con il lancio in pausa la nuova email vale già come verificata; con il lancio attivo l'utente riceve il link di verifica. Se l'invio delle email è attivo, il vecchio indirizzo riceve un avviso.",
+        "cancel": "Annulla",
+        "submit": "Salva l'email",
+        "saving": "Salvataggio...",
+        "changed": "Email aggiornata."
+      },
+      "audit": {
+        "title": "Registro",
+        "intro": "Le ultime 20 azioni amministrative su questo utente."
+      },
+      "danger": {
+        "warning": "L'eliminazione è definitiva: l'account e i suoi dati personali vanno via. Il suo workspace personale con altri membri passa al membro di ruolo più alto.",
+        "delete": "Elimina l'utente",
+        "confirm": "Eliminare definitivamente l'utente \"{name}\"?"
+      }
+    },
+    "workspaces": {
+      "title": "Workspace della piattaforma",
+      "intro": "Nome, proprietario, membri, progetti e piano di ogni workspace. I dati dei progetti restano privati.",
+      "search": "Cerca workspace o proprietario",
+      "searchPlaceholder": "es. agenzia",
+      "searchSubmit": "Cerca",
+      "columns": {
+        "name": "Workspace",
+        "owner": "Proprietario",
+        "members": "Membri",
+        "projects": "Progetti",
+        "plan": "Piano"
+      },
+      "personal": "personale",
+      "noOwner": "senza proprietario",
+      "empty": "Nessun workspace trovato.",
+      "pageInfo": "Pagina {page} di {totalPages} · {total} workspace",
+      "previous": "Precedente",
+      "next": "Successiva"
     }
   },
   "integrations": {
