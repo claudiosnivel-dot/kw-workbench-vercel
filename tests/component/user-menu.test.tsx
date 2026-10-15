@@ -1,5 +1,7 @@
 // Gate di T-2304 (AC-2304-1…3): barra in alto ridotta a marchio, progetto e menu dell'utente; voci per ruolo, tastiera
-// del menu e cambio del workspace attivo con la stessa richiesta del selettore di T-1504.
+// del menu e cambio del workspace attivo con la stessa richiesta del selettore di T-1504. Gate di T-2803 (AC-2803-1): la
+// voce «Il tuo account» prende il posto di Personalizza e Account.
+// impacted-by: T-2803 (AC-2304-1 emendato: il menu di MEMBER, OWNER e root admin ha «Il tuo account» verso /account)
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TopNav } from "@/components/top-nav";
@@ -55,18 +57,20 @@ describe("barra in alto e menu dell'utente", () => {
         />
       );
       const barHrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
-      const items = within(openMenu())
-        .getAllByRole("menuitem")
-        .map((item) => item.textContent);
+      const menuItems = within(openMenu()).getAllByRole("menuitem");
+      const items = menuItems.map((item) => item.textContent);
+      const itemHrefs = menuItems.map((item) => item.getAttribute("href"));
       cleanup();
-      return { barHrefs, items };
+      return { barHrefs, items, itemHrefs };
     });
 
-    for (const { barHrefs } of menus) {
+    for (const { barHrefs, items, itemHrefs } of menus) {
       expect(barHrefs).toEqual(["/"]);
       for (const href of ["/personalizza", "/projects/new", "/billing", "/admin"]) {
         expect(barHrefs).not.toContain(href);
       }
+      expect(items[itemHrefs.indexOf("/account")]).toBe("Il tuo account");
+      expect(itemHrefs).not.toContain("/personalizza");
     }
     const [member, owner, rootAdmin] = menus.map((menu) => menu.items);
     expect(member).not.toContain("Fatturazione");
@@ -74,7 +78,7 @@ describe("barra in alto e menu dell'utente", () => {
     expect(owner).toContain("Fatturazione");
     expect(owner).not.toContain("Amministrazione");
     expect(rootAdmin).toContain("Amministrazione");
-    expect(member).toEqual(["Personalizza", "Account", "Workspace", "Supporto", "Esci"]);
+    expect(member).toEqual(["Il tuo account", "Workspace", "Supporto", "Esci"]);
   });
 
   // covers: AC-2304-2
@@ -88,12 +92,24 @@ describe("barra in alto e menu dell'utente", () => {
     fireEvent.keyDown(document.activeElement as Element, { key: "ArrowDown" });
     fireEvent.keyDown(document.activeElement as Element, { key: "ArrowDown" });
     expect(document.activeElement).toBe(within(menu).getAllByRole("menuitem")[1]);
-    expect(document.activeElement).toHaveTextContent("Account");
+    expect(document.activeElement).toHaveTextContent("Workspace");
 
     fireEvent.keyDown(document.activeElement as Element, { key: "Escape" });
     expect(screen.queryByRole("menu")).toBeNull();
     expect(button).toHaveAttribute("aria-expanded", "false");
     expect(document.activeElement).toBe(button);
+  });
+
+  // covers: AC-2803-1
+  it("il menu di un MEMBER ha una sola voce «Il tuo account» verso /account e nessuna voce Personalizza", () => {
+    renderWithIntl(<UserMenu user={USER} showBillingLink={false} showAdminLink={false} workspaces={[]} activeWorkspaceId={null} />);
+    const items = within(openMenu()).getAllByRole("menuitem");
+
+    const account = items.filter((item) => item.textContent === "Il tuo account");
+    expect(account).toHaveLength(1);
+    expect(account[0]).toHaveAttribute("href", "/account");
+    expect(items.filter((item) => item.getAttribute("href") === "/personalizza")).toHaveLength(0);
+    expect(items.filter((item) => item.textContent === "Personalizza")).toHaveLength(0);
   });
 
   // covers: AC-2304-3

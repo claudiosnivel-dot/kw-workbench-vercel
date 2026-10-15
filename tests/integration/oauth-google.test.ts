@@ -80,7 +80,8 @@ beforeEach(async () => {
 
 describe("OAuth Google Sheets", () => {
   // covers: AC-906-1
-  it("connect senza configurazione reindirizza a Personalizza con il codice config_oauth_mancante", async () => {
+  // impacted-by: T-2801 (AC-906-1 emendato: il ritorno da Google arriva sui Collegamenti dell'account)
+  it("connect senza configurazione reindirizza ai Collegamenti dell'account con il codice config_oauth_mancante", async () => {
     vi.stubEnv("GOOGLE_SHEETS_OAUTH_CLIENT_ID", "");
     vi.stubEnv("GOOGLE_SHEETS_OAUTH_CLIENT_SECRET", "");
     vi.stubEnv("GOOGLE_SHEETS_OAUTH_REDIRECT_URI", "");
@@ -90,7 +91,7 @@ describe("OAuth Google Sheets", () => {
 
     expect(response.status).toBe(302);
     const location = locationOf(response);
-    expect(location.pathname + location.search).toBe("/personalizza?google_sheets=error&reason=config_oauth_mancante");
+    expect(location.pathname + location.search).toBe("/account/connections?google_sheets=error&reason=config_oauth_mancante");
     expect(response.headers.get("content-type") ?? "").not.toContain("application/json");
   });
 

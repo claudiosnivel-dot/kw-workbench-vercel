@@ -15,7 +15,7 @@ type SettingsCardProps = {
   children: ReactNode;
 };
 
-/** Card di Personalizza e dell'admin (T-1303): titolo, contenuto, pulsante di salvataggio facoltativo ed esito. */
+/** Card dell'account e dell'admin (T-1303, T-2802): titolo, contenuto, pulsante di salvataggio facoltativo ed esito. */
 export function SettingsCard({ title, intro, className = "space-y-4", id, error, success, save, children }: SettingsCardProps) {
   return (
     <section id={id} className={`card ${className}`}>

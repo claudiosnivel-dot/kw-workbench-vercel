@@ -93,7 +93,7 @@
     }
   },
   "nav": {
-    "personalize": "Personalize",
+    "yourAccount": "Your account",
     "billing": "Billing",
     "admin": "Administration",
     "openMenu": "Open menu",
@@ -101,7 +101,6 @@
     "login": "Sign in",
     "register": "Sign up",
     "support": "Support",
-    "account": "Account",
     "workspace": "Workspace",
     "userMenu": "Menu for {name}",
     "projectMenu": "Project {name}: switch project",
@@ -351,12 +350,12 @@
     "EXPORT_FORMAT_INVALID": "Invalid export format.",
     "EXPORT_DIALECT_INVALID": "Invalid CSV dialect: use excel-it or rfc4180.",
     "SHEETS_FILE_NAME_REQUIRED": "A file name is required.",
-    "SHEETS_NOT_CONNECTED": "Connect Google Sheets in Personalize before exporting.",
+    "SHEETS_NOT_CONNECTED": "Connect Google Sheets from Your account › Connections before exporting.",
     "SHEETS_OAUTH_CONFIG_MISSING": "The Google Sheets OAuth configuration is missing. Contact the main admin.",
     "SHEETS_TIMEOUT": "Google did not respond within 30 seconds or is unreachable.",
     "SHEETS_NO_ROWS": "No keywords to export with the selected filters and scope.",
     "GOOGLE_SHEETS_EXPORT_ERROR": "Google Sheets export failed: Google returned an error. Please try again.",
-    "GOOGLE_REAUTH_REQUIRED": "Google Sheets needs to be reconnected: open Personalize and connect your account again.",
+    "GOOGLE_REAUTH_REQUIRED": "Google Sheets needs to be reconnected: open Your account › Connections and connect your account again.",
     "FILE_TOO_LARGE": "File too large: the maximum is 5 MB.",
     "PLANNER_FILE_REQUIRED": "Attach the file downloaded from Keyword Planner.",
     "PLANNER_FILE_TYPE_INVALID": "Format not allowed: upload a .csv or .tsv file.",
@@ -399,8 +398,6 @@
     }
   },
   "settings": {
-    "title": "Personalize",
-    "intro": "Manage visual preferences, account credentials and personal connections in one place.",
     "passwordChange": {
       "title": "Change your password",
       "intro": "An administrator reset your password. Before continuing choose a new one: enter the password you received as the current password."
@@ -423,24 +420,6 @@
       "saving": "Saving preferences...",
       "save": "Save preferences",
       "saved": "Preferences saved."
-    },
-    "account": {
-      "title": "Account",
-      "intro": "Update the display name and the password of your personal account.",
-      "accountEmail": "Email:",
-      "activeDisplayName": "Current name:",
-      "newDisplayName": "New name",
-      "displayNamePlaceholder": "Display name",
-      "currentPassword": "Current password (required)",
-      "currentPasswordPlaceholder": "Current password",
-      "newPassword": "New password (optional)",
-      "newPasswordPlaceholder": "Leave empty to keep it",
-      "confirmPassword": "Confirm new password",
-      "saving": "Saving account...",
-      "save": "Save account settings",
-      "saved": "Credentials updated.",
-      "logoutEverywhereHint": "Signs you out on every device where you are signed in, including this one.",
-      "logoutEverywhere": "Sign out of all devices"
     },
     "branding": {
       "title": "Branding",
@@ -491,7 +470,7 @@
       "intro": "Name, members, roles and invitations of the active workspace. Switch workspace from the selector at the top.",
       "personal": "This is your personal workspace: you can invite other people, and you can leave it only after transferring ownership to another member.",
       "yourRole": "Your role: {role}",
-      "sheetsNote": "Google Sheets export uses the personal Google connection of whoever exports: each member connects their own account from Personalize.",
+      "sheetsNote": "Google Sheets export uses the personal Google connection of whoever exports: each member connects their own account from Your account › Connections.",
       "billingLink": "Plan and billing"
     },
     "name": {
@@ -565,11 +544,6 @@
       "success": "Invitation accepted: the workspace is now the active one.",
       "missingToken": "The invitation link is incomplete: open it again from the email.",
       "goToApp": "Go to the dashboard"
-    },
-    "settingsLink": {
-      "title": "Workspace and members",
-      "intro": "Name of the active workspace, members, roles and invitations.",
-      "open": "Manage the workspace"
     }
   },
   "admin": {
@@ -957,12 +931,40 @@
     "lastUpdated": "Last updated: {date}"
   },
   "account": {
-    "title": "Account data",
-    "intro": "Download a copy of your data or delete your account.",
-    "settingsLink": {
-      "title": "Account data",
-      "intro": "Export your data and delete your account.",
-      "open": "Manage your data"
+    "sections": {
+      "title": "Your account",
+      "intro": "Your profile, sign-in, preferences, connections and data.",
+      "nav": "Your account menu",
+      "profile": "Profile",
+      "security": "Sign-in",
+      "preferences": "Preferences",
+      "connections": "Connections",
+      "data": "Your data"
+    },
+    "profile": {
+      "title": "Profile",
+      "intro": "The name other workspace members see.",
+      "email": "Email:",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "Your name",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Name saved."
+    },
+    "password": {
+      "title": "Password",
+      "intro": "Changing your password requires the current one. Afterwards your other devices are signed out.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Repeat the new password",
+      "save": "Change password",
+      "saving": "Saving...",
+      "saved": "Password changed."
+    },
+    "devices": {
+      "title": "Devices",
+      "intro": "Signs you out on every device where you are signed in, including this one.",
+      "action": "Sign out of all devices"
     },
     "export": {
       "title": "Download your data",

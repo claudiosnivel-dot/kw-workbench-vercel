@@ -1,4 +1,4 @@
-import { type ErrorTranslator, readApiResponse } from "@/lib/client/http";
+import { type ErrorTranslator, readApiResponse, sendJson } from "@/lib/client/http";
 
 /**
  * Risposta riuscita del login: requiresTermsAcceptance se i termini correnti non sono ancora accettati (T-1405); code
@@ -19,4 +19,15 @@ export async function postCredentials(
     body: JSON.stringify(body),
   });
   return readApiResponse<CredentialsResponse>(response, tErrors);
+}
+
+/**
+ * PATCH /api/auth/config (T-2802): il solo nome mostrato dal Profilo, oppure la password attuale con la nuova e la
+ * conferma dalla sezione Accesso. Una risposta non riuscita lancia l'errore del catalogo.
+ */
+export async function patchAuthConfig(
+  body: { displayName: string } | { currentPassword: string; newPassword: string; confirmPassword: string },
+  tErrors: ErrorTranslator
+): Promise<{ data?: { displayName: string } } | null> {
+  return readApiResponse(await sendJson("PATCH", "/api/auth/config", body), tErrors);
 }

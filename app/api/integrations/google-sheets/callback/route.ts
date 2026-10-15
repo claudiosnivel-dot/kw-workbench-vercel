@@ -45,7 +45,7 @@ async function fetchProfileEmail(accessToken: string): Promise<string | undefine
 }
 
 /**
- * Callback del consenso Google Sheets (T-906): ogni uscita torna a Personalizza con un codice della whitelist e
+ * Callback del consenso Google Sheets (T-906): ogni uscita torna ai Collegamenti dell'account (T-2801) con un codice della whitelist e
  * cancella il cookie di state; la credenziale si salva solo se lo scope richiesto è tra quelli concessi.
  */
 export const GET = withApiErrors(async (request: NextRequest) => {

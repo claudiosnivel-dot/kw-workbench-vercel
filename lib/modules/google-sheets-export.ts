@@ -35,7 +35,7 @@ export class GoogleSheetsExportError extends AppError {
 /** La credenziale Google Sheets va ricollegata (T-906): invalid_grant o credenziale illeggibile. */
 export class GoogleReauthRequiredError extends AppError {
   constructor() {
-    super(409, "GOOGLE_REAUTH_REQUIRED", "Google Sheets va ricollegato: apri Personalizza e collega di nuovo l'account.");
+    super(409, "GOOGLE_REAUTH_REQUIRED", "Google Sheets va ricollegato: apri Il tuo account › Collegamenti e collega di nuovo l'account.");
     this.name = "GoogleReauthRequiredError";
   }
 }
@@ -184,7 +184,7 @@ async function refreshUserAccessToken(userId: string): Promise<string> {
     if (await getGoogleSheetsCredentialRecord(userId)) {
       throw new GoogleReauthRequiredError();
     }
-    throw new GoogleSheetsExportError("Collega Google Sheets in Personalizza prima di esportare.", 400, "SHEETS_NOT_CONNECTED");
+    throw new GoogleSheetsExportError("Collega Google Sheets da Il tuo account › Collegamenti prima di esportare.", 400, "SHEETS_NOT_CONNECTED");
   }
 
   const config = await getGoogleSheetsApiConfig();

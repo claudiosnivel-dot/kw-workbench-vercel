@@ -2,6 +2,7 @@
 // focus della modale di export Sheets, anteprima del tema non salvata ripristinata, titolo dal branding.
 // impacted-by: T-2403, T-2406 (i risultati sono la pagina delle keyword e gli export partono dalla finestra Esporta della
 // barra in alto: AC-1104-1 e AC-1104-2 emendati)
+// impacted-by: T-2803 (Personalizza è la sezione Preferenze dell'account: AC-1104-3 apre /account/preferences)
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
@@ -66,9 +67,9 @@ test.describe("accessibilità di base", () => {
   });
 
   // covers: AC-1104-3
-  test("il tema scelto senza salvare non resta uscendo da /personalizza", async ({ page }) => {
+  test("il tema scelto senza salvare non resta uscendo dalle preferenze dell'account", async ({ page }) => {
     await login(page);
-    await page.goto("/personalizza");
+    await page.goto("/account/preferences");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "DARK");
 
     await page.getByRole("button", { name: "Chiaro" }).click();

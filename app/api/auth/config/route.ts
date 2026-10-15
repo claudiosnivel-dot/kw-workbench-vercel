@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateAuthCredentials, verifyUserPassword } from "@/lib/auth/credentials";
-import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
+import { PasswordChangeRequiredError, requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { setSessionCookie } from "@/lib/auth/session-cookie";
 import { errorResponse, withApiErrors } from "@/lib/http/errors";
 
-/** Cambio di nome mostrato e password: l'unica rotta di dati ammessa durante il cambio password obbligato (T-1704). */
+/**
+ * Cambio di nome mostrato e password (T-2802): il nome si cambia senza password, la password solo con la password
+ * attuale. È l'unica rotta di dati ammessa durante il cambio password obbligato (T-1704), e lì solo per la password.
+ */
 export const PATCH = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request, { allowPendingPasswordChange: true });
 
@@ -15,26 +18,32 @@ export const PATCH = withApiErrors(async (request: NextRequest) => {
     confirmPassword?: string;
   };
 
-  const currentPassword = String(payload.currentPassword ?? "");
-  if (!currentPassword) {
-    return errorResponse(400, "CURRENT_PASSWORD_REQUIRED", "La password attuale è obbligatoria");
-  }
-
-  const currentValid = await verifyUserPassword(user.id, currentPassword);
-  if (!currentValid) {
-    return errorResponse(401, "CURRENT_PASSWORD_INVALID", "La password attuale non è valida");
-  }
-
   const displayName = String(payload.displayName ?? "").trim();
   const newPassword = String(payload.newPassword ?? "");
   const confirmPassword = String(payload.confirmPassword ?? "");
+
+  // Con la password impostata da un admin la rotta resta aperta solo per sceglierne una nuova (CWE-269).
+  if (user.mustChangePassword && !newPassword) {
+    throw new PasswordChangeRequiredError();
+  }
 
   if (!displayName && !newPassword) {
     return errorResponse(400, "NO_CHANGES", "Nessuna modifica da salvare");
   }
 
-  if (newPassword && newPassword !== confirmPassword) {
-    return errorResponse(400, "PASSWORD_MISMATCH", "Nuova password e conferma non coincidono");
+  if (newPassword) {
+    const currentPassword = String(payload.currentPassword ?? "");
+    if (!currentPassword) {
+      return errorResponse(400, "CURRENT_PASSWORD_REQUIRED", "La password attuale è obbligatoria");
+    }
+
+    if (!(await verifyUserPassword(user.id, currentPassword))) {
+      return errorResponse(401, "CURRENT_PASSWORD_INVALID", "La password attuale non è valida");
+    }
+
+    if (newPassword !== confirmPassword) {
+      return errorResponse(400, "PASSWORD_MISMATCH", "Nuova password e conferma non coincidono");
+    }
   }
 
   // Errori di validazione (400) arrivano come AppError a withApiErrors; il nome mostrato non è univoco (T-1401).

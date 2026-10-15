@@ -38,9 +38,9 @@ export function clearOAuthStateCookie(response: NextResponse): NextResponse {
   return response;
 }
 
-/** Redirect a Personalizza con l'esito del collegamento; il cookie di state è sempre cancellato. */
+/** Redirect alla sezione Collegamenti dell'account (T-2801) con l'esito del collegamento; il cookie di state è sempre cancellato. */
 export function oauthRedirect(request: Request, outcome: { error: GoogleSheetsOAuthReason } | "connected"): NextResponse {
-  const target = new URL("/personalizza", request.url);
+  const target = new URL("/account/connections", request.url);
   if (outcome === "connected") {
     target.searchParams.set("google_sheets", "connected");
   } else {

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Card d'apertura di una pagina (T-1303): titolo h1 e testo introduttivo, come in Personalizza, Admin e Nuovo progetto. */
+/** Card d'apertura di una pagina (T-1303): titolo h1 e testo introduttivo, come nell'account, in Admin e in Nuovo progetto. */
 export function PageIntro({ title, intro }: { title: ReactNode; intro: ReactNode }) {
   return (
     <section className="card">
