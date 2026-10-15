@@ -1,6 +1,8 @@
 // Gate di T-1503 (AC-1503-1…4): inviti con token monouso salvato solo come hash, accettazione legata all'email
 // verificata del destinatario, gestione dei membri e invariante «il workspace ha sempre un OWNER».
 // Gate di T-2007 (AC-2007-1, AC-2007-2): uscita dal workspace personale quando un altro membro ne è OWNER.
+// impacted-by: T-3201 (AC-1503-1 emendato: la risposta della creazione ha inviteUrl ed emailSent, senza invio delle
+// email l'invito resta pendente con emailSent false)
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DELETE as deleteUser } from "@/app/api/admin/users/[id]/route";
@@ -80,7 +82,7 @@ afterEach(() => {
 
 describe("creazione degli inviti", () => {
   // covers: AC-1503-1
-  it("l'ADMIN invita: 201 senza token, hash SHA-256 nel DB, scadenza a 7 giorni ed email con il link; il MEMBER riceve 403", async () => {
+  it("l'ADMIN invita: 201 con il link, hash SHA-256 nel DB, scadenza a 7 giorni ed email con il link; il MEMBER riceve 403", async () => {
     const owner = await createUserWithSession({ displayName: "t1503-owner" });
     const admin = await createUserWithSession({ displayName: "t1503-admin" });
     const member = await createUserWithSession({ displayName: "t1503-member" });
@@ -95,8 +97,9 @@ describe("creazione degli inviti", () => {
 
     expect(created.status).toBe(201);
     const body = (await created.json()) as { data: Record<string, unknown> };
-    expect(Object.keys(body.data).sort()).toEqual(["email", "expiresAt", "id", "role"]);
-    expect(JSON.stringify(body)).not.toMatch(/token/i);
+    expect(Object.keys(body.data).sort()).toEqual(["email", "emailSent", "expiresAt", "id", "inviteUrl", "role"]);
+    expect(body.data.emailSent).toBe(true);
+    const linkToken = new URL(String(body.data.inviteUrl)).searchParams.get("token") ?? "";
     const rows = await prisma.workspaceInvite.findMany();
     expect(rows).toHaveLength(1);
     expect(rows[0].email).toBe("nuovo@example.com");
@@ -106,11 +109,23 @@ describe("creazione degli inviti", () => {
     expect(outbox).toHaveLength(1);
     expect(outbox[0].to_address).toBe("nuovo@example.com");
     expect(sha256Hex(await tokenFromOutbox("nuovo@example.com"))).toBe(rows[0].token_hash);
+    expect(sha256Hex(linkToken)).toBe(rows[0].token_hash);
 
     const denied = await inviteAs(member, workspaceId, { email: "altro@example.com", role: "MEMBER" });
     expect(denied.status).toBe(403);
     expect(((await denied.json()) as { code: string }).code).toBe("FORBIDDEN");
     expect(await prisma.workspaceInvite.count()).toBe(1);
+
+    vi.stubEnv("EMAIL_TRANSPORT", "resend");
+    vi.stubEnv("RESEND_API_KEY", "");
+    vi.stubEnv("EMAIL_FROM", "");
+    resetEnvForTests();
+    const withoutEmail = await inviteAs(admin, workspaceId, { email: "senza-email@example.com", role: "MEMBER" });
+    expect(withoutEmail.status).toBe(201);
+    expect(((await withoutEmail.json()) as { data: { emailSent: boolean } }).data.emailSent).toBe(false);
+    const pending = await prisma.workspaceInvite.findFirstOrThrow({ where: { email: "senza-email@example.com" } });
+    expect([pending.accepted_at, pending.revoked_at]).toEqual([null, null]);
+    expect(pending.expires_at.getTime()).toBeGreaterThan(Date.now());
   });
 
   it("409 INVITE_PENDING per un invito già pendente e ALREADY_MEMBER per l'email di un membro; la revoca libera l'email", async () => {

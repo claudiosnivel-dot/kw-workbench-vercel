@@ -1,6 +1,8 @@
 // Gate di T-3101 (AC-3101-1, AC-3101-2) e T-3102 (AC-3102-1): area «Workspace» con Generale, Membri e Piano, controlli
-// per ruolo e «Azioni irreversibili»; il vecchio indirizzo /billing porta alla sezione Piano.
-import { randomBytes } from "node:crypto";
+// per ruolo e «Azioni irreversibili»; il vecchio indirizzo /billing porta alla sezione Piano. Gate di T-3202 (AC-3202-3):
+// inviti aperti con l'etichetta «Scaduto», «Nuovo link» e «Revoca».
+// impacted-by: T-3201 (AC-3101-1 emendato: l'invito parte dal pulsante «Invita una persona», non da un modulo aperto)
+import { createHash, randomBytes } from "node:crypto";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
 import { createE2EUser } from "./credentials";
@@ -82,13 +84,12 @@ test.describe("area Workspace", () => {
     await expect(members).toContainText("Amministratore");
     await expect(members).toContainText("Membro");
     await expect(member.getByRole("button", { name: "Rimuovi" })).toHaveCount(0);
-    await expect(member.getByRole("button", { name: "Invia invito" })).toHaveCount(0);
+    await expect(member.getByRole("button", { name: "Invita una persona" })).toHaveCount(0);
 
     const admin = await userPage(browser, ADMIN_EMAIL, ids.team);
     await openSection(admin, "/workspace", "Generale");
     await openSection(admin, "/workspace/members", "Membri");
-    await expect(admin.getByRole("heading", { name: "Invita una persona" })).toBeVisible();
-    await expect(admin.getByRole("button", { name: "Invia invito" })).toBeVisible();
+    await expect(admin.getByRole("button", { name: "Invita una persona" })).toBeVisible();
   });
 
   // covers: AC-3101-2
@@ -102,6 +103,40 @@ test.describe("area Workspace", () => {
     await openSection(solo, "/workspace", "Generale");
     await expect(solo.getByRole("heading", { name: "Trasferisci la proprietà" })).toHaveCount(0);
     await expect(solo.getByRole("button", { name: "Abbandona" })).toHaveCount(0);
+  });
+
+  // covers: AC-3202-3
+  test("l'ADMIN vede l'invito in attesa e quello «Scaduto», ciascuno con «Nuovo link» e «Revoca»", async ({ browser }) => {
+    const day = 24 * 60 * 60 * 1000;
+    const tokenHash = () => createHash("sha256").update(randomBytes(32)).digest("hex");
+    const invite = (email: string, expiresAt: number) =>
+      ({ workspace_id: ids.team, email, role: "MEMBER", token_hash: tokenHash(), expires_at: new Date(expiresAt) }) as const;
+    await prisma.workspaceInvite.createMany({
+      data: [
+        invite("e2e-wss-inv1@example.test", Date.now() + day),
+        invite("e2e-wss-inv2@example.test", Date.now() - day),
+      ],
+    });
+    const admin = await userPage(browser, ADMIN_EMAIL, ids.team);
+
+    await openSection(admin, "/workspace/members", "Membri");
+
+    const invites = admin.getByRole("region", { name: "Inviti" }).getByRole("listitem");
+    const expired = invites.filter({ has: admin.getByText("Scaduto", { exact: true }) });
+    await expect(invites).toHaveCount(2);
+    await expect(expired).toHaveCount(1);
+    await expect(expired).toContainText("e2e-wss-inv2@example.test");
+    for (const row of await invites.all()) {
+      await expect(row.getByRole("button", { name: "Nuovo link" })).toBeVisible();
+      await expect(row.getByRole("button", { name: "Revoca" })).toBeVisible();
+    }
+
+    await expired.getByRole("button", { name: "Nuovo link" }).click();
+    // Il rinnovo prova anche l'email con la chiave Resend finta dell'ambiente E2E: la risposta può tardare.
+    const dialog = admin.getByRole("dialog", { name: "Nuovo link per e2e-wss-inv2@example.test" });
+    await expect(dialog.getByRole("textbox")).toHaveValue(/\/invites\/accept\?token=/, { timeout: 15_000 });
+    await dialog.getByRole("button", { name: "Fatto" }).click();
+    await expect(expired).toHaveCount(0);
   });
 
   // covers: AC-3102-1
