@@ -9,7 +9,7 @@
 | **Progetto** | Titan SEO (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-10-14 |
-| **Sessione corrente** | 2026-10-14 (trentesima) — nessun macrotask da costruire; brainstorming con l'utente della seconda parte della nuova esperienza d'uso: moduli 28-34 e D-41 sul branch `trueline/blueprint-ux-account`, da approvare |
+| **Sessione corrente** | 2026-10-14 (trentesima) — nessun macrotask da costruire; brainstorming con l'utente della seconda parte della nuova esperienza d'uso: moduli 28-34 e D-41 approvati dall'utente («approvo») e mergiati su `master` con PR #69 (solo documentazione: nessun deploy) |
 
 ---
 
@@ -58,7 +58,7 @@
 - **Ultimo chiuso (2026-10-14)**: `ux-plan` (25), checkpoint VERDE, CI verde, mergiato (`1678f57`) e in produzione con la migrazione additiva `0043_page_status`: stato di scrittura delle pagine, un piano per progetto con «Rigenera» e le versioni precedenti, bacheca con il pannello di dettaglio, tappa Scrittura e prossima pagina da scrivere. Il 24 resta descritto nella voce che segue.
 - **Ultimo chiuso (2026-10-14, ventottesima sessione)**: `ux-settings` (26), checkpoint VERDE (1017 s), E2E Linux 62/62 senza baseline riscritte, nessuna migrazione: marchi dei concorrenti, impostazioni a tre blocchi, impostazioni diverse per argomento, argomenti riordinabili, fine delle pagine delle sezioni, parole semplici e regole visive. PR #64 mergiata (`97fb99b`), CI di `master` verde, in produzione senza migrazioni.
 - **Ultimo chiuso (2026-10-14, ventinovesima sessione)**: `ux-fixes` (27), avviato su conferma dell'utente, checkpoint VERDE (990 s), nessuna migrazione: voce «Nome e descrizione» nel menu ⋯ dell'argomento (la descrizione torna modificabile) e rimozione di RunExtractionButton. PR #67 mergiata (`32e959b`), CI di `master` verde, in produzione senza migrazioni.
-- **Prossimo**: `ux-account-shell` (28), primo dei sette macrotask della seconda parte della nuova esperienza d'uso (D-41, moduli 28-34), da costruire su comando dell'utente dopo l'approvazione e il merge dei moduli. Testi della landing e immagine Open Graph da rivedere insieme più avanti; D-14 e D-15 restano in pausa.
+- **Prossimo**: `ux-account-shell` (28), primo dei sette macrotask della seconda parte della nuova esperienza d'uso (D-41, moduli 28-34), approvato e mergiato (PR #69), da costruire su comando dell'utente. Testi della landing e immagine Open Graph da rivedere insieme più avanti; D-14 e D-15 restano in pausa.
 - **Criteri/test di riferimento**: `docs/blueprint/28-ux-account-shell.md` (prossimo modulo da costruire); ultimo costruito `docs/blueprint/27-ux-fixes.md`.
 
 ## 3. Stato git
@@ -134,7 +134,7 @@
 - **Inizio sessione**: nessun macrotask da costruire dopo il 27; l'utente ha avviato il brainstorming della seconda parte («si avviamo il brainstorming»).
 - **Design approvato per sezioni con mockup nel browser**: obiettivi chiarezza e coerenza, riorganizzazione delle voci e funzioni mancanti; aree «Il tuo account» e «Workspace» più Amministrazione; navigazione a sinistra (variante A); perimetro A1, W1, W2, M1, M2, M3 (A2 e A3 rinviati a un modulo di sicurezza futuro, A4, W3 e W4 esclusi); inviti con il link sempre più l'email quando c'è; Amministrazione in cinque sezioni. Su richiesta dell'utente il lavoro è diviso in sette macrotask piccoli, uno per sessione.
 - **Blueprint**: moduli `28-ux-account-shell.md`…`34-ux-admin-users.md` (18 task), ledger D-41, indice, visione e prompt aggiornati sul branch `trueline/blueprint-ux-account`. `validate_blueprint` e `ac_observability_check` OK (173 task). Emendamenti dei moduli 09, 11, 15, 16, 20 e 23 dichiarati nei task, da applicare alla costruzione.
-- **Decisione richiesta all'utente**: approvazione dei moduli 28-34 (con le rimozioni elencate in D-41 e le scelte dell'agente nei Self-check) e del merge su `master` (solo documentazione: nessun deploy).
+- **Approvazione**: l'utente ha approvato i moduli 28-34 («approvo»), con le rimozioni elencate in D-41, il cambio di sicurezza del link d'invito e le scelte dell'agente dei Self-check; PR #69 mergiata su `master` (solo documentazione: nessun deploy). Nel riepilogo è stato dichiarato lo spostamento del nome senza password dal 29 al 28 rispetto alla tabella approvata in brainstorming.
 
 ### Sessione 2026-10-14 (ventinovesima) — merge e verifica in produzione del macrotask 27
 
@@ -775,7 +775,7 @@
 - **Utente (DataForSEO)**: prima estrazione di prova scegliendo «DataForSEO (a pagamento)» nelle impostazioni di un progetto; dopo una ricarica (minimo 50 USD) alzare `METRICS_MONTHLY_BUDGET_USD` e `METRICS_RUN_BUDGET_USD` su Vercel e rifare il deploy. Con le credenziali si può anche scaricare l'elenco delle lingue di DataForSEO (`docs/METRICS-PROVIDERS.md`).
 - **Scelte del macrotask 25**: confermate dall'utente il 2026-10-14 (D-40).
 - **Utente (facoltativo)**: provare in produzione la bacheca (trascinamento, stato, pannello) e «Rigenera» su un piano con una pagina in scrittura.
-- **Prossimo lavoro**: approvare i moduli 28-34 (D-41) e farne il merge; poi costruire `ux-account-shell` (28) su comando, un macrotask per sessione fino al 34. Modulo di sicurezza con dispositivi collegati e verifica in due passaggi da decidere più avanti. Testi della landing e immagine Open Graph più avanti.
+- **Prossimo lavoro**: moduli 28-34 approvati e mergiati (D-41, PR #69); costruire `ux-account-shell` (28) su comando, un macrotask per sessione fino al 34. Modulo di sicurezza con dispositivi collegati e verifica in due passaggi da decidere più avanti. Testi della landing e immagine Open Graph più avanti.
 - **Utente (facoltativo)**: scaricare in produzione un export dei risultati e uno della strategia con l'interfaccia in italiano e poi in inglese, per vedere intestazioni ed etichette nei fogli reali (verificate solo dai test).
 - **Scelte del macrotask 20**: confermate dall'utente il 2026-10-11 (D-37), tranne il root admin, che nelle proprie estrazioni non avrà alcun limite d'uso (T-2101).
 - **Utente (facoltativo)**: guardare la barra con la voce Fatturazione (il modulo prevedeva un gate sulla baseline della dashboard; il confronto è rimasto entro la tolleranza, quindi la baseline non è cambiata) e provare dal browser Crea workspace ed Esci dal workspace personale.
