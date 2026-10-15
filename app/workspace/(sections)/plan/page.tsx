@@ -1,11 +1,8 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { BillingPortalButton, CancelSubscriptionButton, ChangePlanForm } from "@/components/billing-actions";
 import { CheckoutButton } from "@/components/checkout-button";
-import { PageIntro } from "@/components/page-intro";
 import { UsageSummary } from "@/components/usage-summary";
-import { requirePageUser } from "@/lib/auth/page-guard";
 import { canPerform } from "@/lib/authz/permissions";
-import { getPageWorkspace } from "@/lib/authz/workspace";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import { isCommercialLive } from "@/lib/billing/launch";
 import { FREE_PLAN_ID, getPlan } from "@/lib/billing/plans";
@@ -13,6 +10,7 @@ import { getBillingSummary, listPurchasableOptions } from "@/lib/billing/summary
 import { getUsageSummary } from "@/lib/billing/usage";
 import { getPaddleClientToken, getPaddleSettings } from "@/lib/env";
 import { formatDate } from "@/lib/view/format";
+import { requireCurrentWorkspace } from "@/lib/workspaces/current";
 
 export const dynamic = "force-dynamic";
 
@@ -20,13 +18,12 @@ export const dynamic = "force-dynamic";
 const MANAGEABLE = new Set(["trialing", "active", "past_due"]);
 
 /**
- * Fatturazione del workspace attivo (T-1604): piano, stato, rinnovo e disdetta programmata per tutti i membri; checkout,
- * portale, cambio piano e disdetta solo per l'OWNER (billing.manage), riverificati dalle rotte. Con il lancio commerciale
- * in pausa (D-32) la pagina lo dice e non mostra azioni.
+ * Sezione Piano del workspace (T-3102, T-1604): «Il tuo piano» (piano, stato, rinnovo o disdetta programmata) e «Uso del
+ * mese» per tutti i membri; «Gestisci» con checkout, portale, cambio piano e disdetta solo per l'OWNER (billing.manage),
+ * riverificati dalle rotte. Con il lancio commerciale in pausa (D-32) la sezione lo dice e non mostra azioni.
  */
-export default async function BillingPage() {
-  const user = await requirePageUser();
-  const { workspace } = await getPageWorkspace(user.id);
+export default async function WorkspacePlanPage() {
+  const { workspace } = await requireCurrentWorkspace();
   const [t, tAll, format, live, summary] = await Promise.all([
     getTranslations("billing"),
     getTranslations(),
@@ -34,15 +31,9 @@ export default async function BillingPage() {
     isCommercialLive(),
     getBillingSummary(workspace.id),
   ]);
-  const intro = <PageIntro title={t("title")} intro={t("intro", { name: workspace.name })} />;
 
   if (!live) {
-    return (
-      <div className="space-y-6">
-        {intro}
-        <section className="card text-sm text-slate-600">{t("paused")}</section>
-      </div>
-    );
+    return <section className="card text-sm text-slate-600">{t("paused")}</section>;
   }
 
   // Nome del piano dal catalogo (nameKey di lib/billing/plans.ts); senza voce nel catalogo, l'id del piano.
@@ -64,10 +55,9 @@ export default async function BillingPage() {
   const canCheckout = summary === null || summary.status === "canceled";
 
   return (
-    <div className="space-y-6">
-      {intro}
-
+    <>
       <section className="card space-y-2 text-sm" data-testid="billing-summary">
+        <h2 className="text-lg font-semibold">{t("summaryTitle")}</h2>
         <p className="font-medium">{t("plan", { plan: planName(summary?.planId ?? FREE_PLAN_ID) })}</p>
         <p>{t("status", { status: t(`statuses.${summary?.status ?? "none"}`) })}</p>
         {summary?.cancelAt ? (
@@ -76,18 +66,18 @@ export default async function BillingPage() {
           manageable &&
           summary.currentPeriodEnd && <p>{t("renewal", { date: formatDate(summary.currentPeriodEnd, format) })}</p>
         )}
+        {!isOwner && <p className="text-slate-600">{t("ownerOnly")}</p>}
       </section>
 
       <UsageSummary usage={usage} />
 
-      {!isOwner ? (
-        <p className="text-sm text-slate-600">{t("ownerOnly")}</p>
-      ) : (
+      {isOwner && (
         <section className="card space-y-4">
+          <h2 className="text-lg font-semibold">{t("manageTitle")}</h2>
           {summary && <BillingPortalButton workspaceId={workspace.id} />}
           {manageable && (
             <>
-              <h2 className="text-lg font-semibold">{t("changePlanTitle")}</h2>
+              <h3 className="font-semibold">{t("changePlanTitle")}</h3>
               <ChangePlanForm
                 workspaceId={workspace.id}
                 options={options
@@ -99,7 +89,7 @@ export default async function BillingPage() {
           )}
           {canCheckout && (
             <>
-              <h2 className="text-lg font-semibold">{t("checkoutTitle")}</h2>
+              <h3 className="font-semibold">{t("checkoutTitle")}</h3>
               {options.length === 0 || !paddle || !clientToken ? (
                 <p className="text-sm text-slate-600">{t("noPaidPlans")}</p>
               ) : (
@@ -119,6 +109,6 @@ export default async function BillingPage() {
           )}
         </section>
       )}
-    </div>
+    </>
   );
 }

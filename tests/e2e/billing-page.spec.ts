@@ -1,6 +1,7 @@
 // Gate di T-1604 nel browser (AC-1604-2…4): banner del pagamento scaduto sulla dashboard, data di fine dopo il
-// webhook di disdetta e pagina /billing del MEMBER senza azioni. Paddle non viene chiamato: le chiamate all'API sono
-// coperte da tests/integration/billing-portal.test.ts, qui gli stati arrivano dal DB e da un webhook firmato.
+// webhook di disdetta e sezione Piano del workspace del MEMBER senza azioni. Paddle non viene chiamato: le chiamate
+// all'API sono coperte da tests/integration/billing-portal.test.ts, qui gli stati arrivano dal DB e da un webhook firmato.
+// impacted-by: T-3102 (AC-1604-3 e AC-1604-4 emendati: la fatturazione è la sezione Piano, /workspace/plan)
 import { createHmac, randomBytes } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { upsertSettingValue } from "@/lib/integrations/app-settings";
@@ -102,7 +103,7 @@ test.describe("fatturazione del workspace", () => {
     await seedSubscription({ status: "active" });
     await memberPage(page);
 
-    await page.goto("/billing");
+    await page.goto("/workspace/plan");
 
     const summary = page.getByTestId("billing-summary");
     await expect(summary).toContainText("Piano: pro");
@@ -111,7 +112,7 @@ test.describe("fatturazione del workspace", () => {
   });
 
   // covers: AC-1604-3
-  test("dopo il webhook di disdetta programmata /billing mostra la data di fine", async ({ page }) => {
+  test("dopo il webhook di disdetta programmata la sezione Piano mostra la data di fine", async ({ page }) => {
     await seedSubscription({ status: "active" });
     const body = JSON.stringify({
       event_id: `evt_e2e_${randomBytes(6).toString("hex")}`,
@@ -139,7 +140,7 @@ test.describe("fatturazione del workspace", () => {
     });
     expect(delivered.status()).toBe(200);
     await memberPage(page);
-    await page.goto("/billing");
+    await page.goto("/workspace/plan");
 
     await expect(page.getByTestId("billing-cancel-at")).toContainText("15/12/26");
   });

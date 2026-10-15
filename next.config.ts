@@ -44,6 +44,8 @@ const nextConfig: NextConfig = {
       { source: "/onboarding/:path*", destination: "/", permanent: false },
       // Personalizza è diventata la sezione Preferenze dell'account (T-2802, D-41).
       { source: "/personalizza", destination: "/account/preferences", permanent: false },
+      // La fatturazione è la sezione Piano del workspace (T-3102, D-41): i vecchi link, come quelli dei prezzi, arrivano lì.
+      { source: "/billing", destination: "/workspace/plan", permanent: false },
     ];
   },
 };

@@ -212,10 +212,10 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
     - id: AC-1604-3
       given: "l'OWNER di W con abbonamento active e Paddle mockato"
       when: "invia POST /api/billing/cancel e in seguito arriva il webhook subscription.updated con scheduled_change action cancel ed effective_at X"
-      then: "il mock ha ricevuto 1 POST /subscriptions/{sub}/cancel con effective_from next_billing_period; prima del webhook lo status locale è ancora active; dopo il webhook /billing mostra la data X e getEntitlements restituisce ancora i limiti del piano pagato"
+      then: "il mock ha ricevuto 1 POST /subscriptions/{sub}/cancel con effective_from next_billing_period; prima del webhook lo status locale è ancora active; dopo il webhook /workspace/plan mostra la data X (emendato da T-3102 il 2026-10-15) e getEntitlements restituisce ancora i limiti del piano pagato"
     - id: AC-1604-4
       given: "l'OWNER di W sul piano pro e un MEMBER di W"
-      when: "l'OWNER invia POST /api/billing/change-plan verso un altro piano pubblico e il MEMBER apre /billing"
+      when: "l'OWNER invia POST /api/billing/change-plan verso un altro piano pubblico e il MEMBER apre /workspace/plan (emendato da T-3102 il 2026-10-15)"
       then: "il mock ha ricevuto 1 PATCH /subscriptions/{sub} con items[0].price_id del nuovo piano e proration_billing_mode uguale a quello configurato; il MEMBER vede nome del piano e data di rinnovo e 0 elementi con data-testid billing-action"
 
   target_tests:
@@ -351,3 +351,4 @@ Dare al prodotto piani e limiti letti da un'unica configurazione (`lib/billing/p
   - T-1604: portale, cambio piano e disdetta senza abbonamento gestibile rispondono 404 `SUBSCRIPTION_NOT_FOUND`; cambio piano e disdetta rispondono 202; anche la disdetta risponde 409 `BILLING_PAUSED` in pausa. L'E2E non usa il fake HTTP di Paddle (`next start` gira in production, dove `PADDLE_API_BASE_URL` è rifiutata): le chiamate a Paddle sono nel test d'integrazione, l'E2E usa stati nel DB e un webhook firmato.
   - T-1605: i diritti si leggono prima della transazione (`loadPlanGuard`), dentro restano lock e conteggi (`assertWithinLimit(tx, guard, limitKey, countAfter, countBefore?)`); con `countBefore` una modifica che non aumenta il conteggio passa anche oltre il limite (dati oltre limite modificabili dopo un downgrade). `maxProjects` vale anche per il progetto creato dall'onboarding. Con il lancio attivo DATAFORSEO lo decide il diritto `licensedMetrics` per tutti, root admin compreso. L'invito all'upgrade è un avviso del layout acceso da `lib/client/http.ts` a ogni 402 `PLAN_LIMIT`.
   - T-1606: le voci legal e captcha leggono `areLegalTextsPublished()` (`lib/legal/version.ts`) e `isTurnstileReady()` (`lib/security/turnstile.ts`), false finché T-1803 e T-1702 non le collegano; AC-1606-4 le simula pronte. In pausa anche la pagina `/register` mostra la registrazione chiusa.
+- Emendamento dichiarato (2026-10-15, costruzione del macrotask 31, T-3102, D-41): la fatturazione è la sezione Piano del workspace e /billing porta a /workspace/plan, quindi AC-1604-3 e AC-1604-4 aprono /workspace/plan; tests/integration/billing-portal.test.ts rende la pagina della sezione Piano e tests/e2e/billing-page.spec.ts apre /workspace/plan. Il resto dei criteri è invariato.

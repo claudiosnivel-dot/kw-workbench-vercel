@@ -2,10 +2,10 @@
 // Con T-1801: la barra degli anonimi ha solo prezzi, accesso, registrazione e lingua.
 // Gate di T-2005 (AC-2005-1): voce Fatturazione verso /billing per chi ha billing.manage nel workspace attivo.
 // impacted-by: T-2304 (AC-1805-4 e AC-2005-1 emendati: Supporto e Fatturazione sono voci del menu dell'utente)
+// impacted-by: T-3103 (AC-2005-1 superato: la fatturazione è la sezione Piano del workspace e nessun menu ha /billing)
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TopNav } from "@/components/top-nav";
-import { canPerform } from "@/lib/authz/permissions";
 import { renderWithIntl } from "./intl";
 
 const navigation = vi.hoisted(() => ({ pathname: "/" }));
@@ -45,7 +45,7 @@ describe("barra di navigazione", () => {
   });
 
   // covers: AC-2005-1
-  it("il menu dell'OWNER del workspace attivo contiene la voce /billing, quello del MEMBER no", () => {
+  it("né il menu dell'OWNER del workspace attivo né quello del MEMBER contengono la voce /billing", () => {
     navigation.pathname = "/";
     const billingHrefs = (role: "OWNER" | "MEMBER") => {
       renderWithIntl(
@@ -53,7 +53,8 @@ describe("barra di navigazione", () => {
           brandName="Titan SEO"
           themeMode="DARK"
           user={{ displayName: role, email: `${role.toLowerCase()}@example.test` }}
-          showBillingLink={canPerform(role, "billing.manage")}
+          workspaces={[{ id: `ws-${role}`, name: "Squadra", isPersonal: false }]}
+          activeWorkspaceId={`ws-${role}`}
         />
       );
       const hrefs = menuLinks(role)
@@ -63,7 +64,7 @@ describe("barra di navigazione", () => {
       return hrefs;
     };
 
-    expect(billingHrefs("OWNER")).toEqual(["/billing"]);
+    expect(billingHrefs("OWNER")).toEqual([]);
     expect(billingHrefs("MEMBER")).toEqual([]);
   });
 });

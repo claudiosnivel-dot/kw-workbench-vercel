@@ -1,5 +1,6 @@
 // Gate di T-1604 (AC-1604-1…4): portale cliente, tolleranza dei pagamenti scaduti, disdetta e cambio piano dell'OWNER.
-// Il percorso nel browser (banner sulla dashboard, pagina /billing) è anche in tests/e2e/billing-page.spec.ts.
+// Il percorso nel browser (banner sulla dashboard, sezione Piano del workspace) è anche in tests/e2e/billing-page.spec.ts.
+// impacted-by: T-3102 (AC-1604-3 e AC-1604-4 emendati: la pagina resa è la sezione Piano, /workspace/plan)
 import { getFormatter } from "next-intl/server";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -33,7 +34,7 @@ vi.mock("next/navigation", async (importOriginal) => ({
     throw new Error(`redirect ${url}`);
   },
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }),
-  usePathname: () => "/billing",
+  usePathname: () => "/workspace/plan",
 }));
 
 // Tabelle di public in cui compare il testo cercato: SQL statico, il testo è un parametro legato.
@@ -66,12 +67,12 @@ afterEach(() => {
 const post = (handler: typeof portal, url: string, cookie: string, body: Record<string, unknown>) =>
   callRoute(handler, { method: "POST", url, body, cookie });
 
-/** Pagina /billing resa per l'utente con il workspace attivo dal cookie kwb_workspace. */
-async function renderBillingPage(userId: string, workspaceId: string): Promise<string> {
+/** Sezione Piano del workspace (/workspace/plan) resa per l'utente con il workspace attivo dal cookie kwb_workspace. */
+async function renderPlanSection(userId: string, workspaceId: string): Promise<string> {
   page.user = await findAuthUserById(userId);
   setRequestCookie("kwb_workspace", workspaceId);
-  const { default: BillingPage } = await import("@/app/billing/page");
-  return renderToStaticMarkup(await BillingPage());
+  const { default: WorkspacePlanPage } = await import("@/app/workspace/(sections)/plan/page");
+  return renderToStaticMarkup(await WorkspacePlanPage());
 }
 
 describe("fatturazione dell'OWNER", () => {
@@ -155,7 +156,7 @@ describe("fatturazione dell'OWNER", () => {
       ["POST", `/subscriptions/${subscription.provider_subscription_id}/cancel`, { effective_from: "next_billing_period" }],
     ]);
     expect([before.status, before.cancel_at]).toEqual(["active", null]);
-    const html = await renderBillingPage(owner.user.id, workspaceId);
+    const html = await renderPlanSection(owner.user.id, workspaceId);
     expect(html).toContain('data-testid="billing-cancel-at"');
     expect(html).toContain(formatDate(cancelAt, await getFormatter()));
     expect((await getEntitlements(workspaceId)).limits).toEqual(TEST_PRO_LIMITS);
@@ -168,7 +169,7 @@ describe("fatturazione dell'OWNER", () => {
     const paddle = fakePaddleApi({ [`PATCH /subscriptions/${subscription.provider_subscription_id}`]: { id: subscription.provider_subscription_id } });
 
     const changed = await post(changePlan, "/api/billing/change-plan", owner.cookie, { workspaceId, planId: "team", interval: "month" });
-    const html = await renderBillingPage(member.user.id, workspaceId);
+    const html = await renderPlanSection(member.user.id, workspaceId);
 
     expect(changed.status).toBe(202);
     expect(paddle.requests).toHaveLength(1);

@@ -6,8 +6,9 @@ import { useEffect, useState } from "react";
 import { PLAN_LIMIT_EVENT } from "@/lib/client/http";
 
 /**
- * Invito all'upgrade dopo una risposta 402 PLAN_LIMIT di qualunque API (T-1605): per l'OWNER il link alla pagina di
- * fatturazione, per gli altri ruoli l'invito a contattare il proprietario. Informativo: i limiti li applica il server.
+ * Invito all'upgrade dopo una risposta 402 PLAN_LIMIT di qualunque API (T-1605): per l'OWNER il link alla sezione Piano
+ * del workspace (T-3102), per gli altri ruoli l'invito a contattare il proprietario. Informativo: i limiti li applica
+ * il server.
  */
 export function PlanLimitNotice({ canManageBilling }: { canManageBilling: boolean }) {
   const t = useTranslations("billing.limit");
@@ -30,7 +31,7 @@ export function PlanLimitNotice({ canManageBilling }: { canManageBilling: boolea
         <p>{canManageBilling ? t("owner") : t("member")}</p>
         <div className="flex shrink-0 gap-2">
           {canManageBilling && (
-            <Link href="/billing" className="btn-secondary">
+            <Link href="/workspace/plan" className="btn-secondary">
               {t("ownerLink")}
             </Link>
           )}

@@ -100,7 +100,6 @@ export function TopNav({
   brandLogoUrlLegacy,
   themeMode,
   showAdminLink = false,
-  showBillingLink = false,
   user = null,
   workspaces = [],
   activeWorkspaceId = null,
@@ -111,8 +110,6 @@ export function TopNav({
   brandLogoUrlLegacy?: string;
   themeMode: "DARK" | "LIGHT";
   showAdminLink?: boolean;
-  /** true se l'utente ha billing.manage nel workspace attivo (T-2005), calcolato dal layout con la tabella dei permessi. */
-  showBillingLink?: boolean;
   user?: { displayName: string; email: string | null } | null;
   /** Workspace dell'utente (T-1504): il selettore compare solo se ce n'è più d'uno tra cui scegliere. */
   workspaces?: WorkspaceOption[];
@@ -215,7 +212,6 @@ export function TopNav({
             </div>
             <UserMenu
               user={user}
-              showBillingLink={showBillingLink}
               showAdminLink={showAdminLink}
               workspaces={workspaces}
               activeWorkspaceId={activeWorkspaceId}

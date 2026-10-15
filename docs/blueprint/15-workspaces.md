@@ -206,7 +206,7 @@ Oggi ogni query di progetti, sezioni, risultati, export, job e onboarding filtra
     - id: AC-1504-3
       given: "un MEMBER e un ADMIN del workspace W"
       when: "entrambi aprono /workspace e l'ADMIN rinomina W in 'Team SEO'"
-      then: "il MEMBER vede l'elenco membri con i ruoli, il campo nome con attributo disabled e 0 pulsanti di rimozione; dopo il salvataggio dell'ADMIN il menu dell'utente della barra in alto mostra la voce 'Team SEO' selezionata"
+      then: "il MEMBER vede l'elenco membri con i ruoli e 0 pulsanti di rimozione in /workspace/members e il campo nome con attributo disabled in /workspace (emendato da T-3101 il 2026-10-15); dopo il salvataggio dell'ADMIN il menu dell'utente della barra in alto mostra la voce 'Team SEO' selezionata"
     - id: AC-1504-4
       given: "un utente non membro di W2 che conosce l'URL /projects/{P2}"
       when: "apre l'URL nel browser"
@@ -232,3 +232,4 @@ Oggi ogni query di progetti, sezioni, risultati, export, job e onboarding filtra
 - Emendamento del 2026-10-07 (costruzione): T-1403 e T-1503 erano già costruiti, quindi accettazione e controlli sono attivi; i 404 tengono i code di risorsa introdotti da T-1303 (le caratterizzazioni di T-105 li asseriscono e restano invariate); l'elenco delle rotte segue le rimozioni di T-1101 e le rotte di Keyword Planner di T-904 e T-910; il selettore compare con almeno due workspace. Il design non cambia.
 - Emendamento (2026-10-13, costruzione del macrotask 23): AC-1502-1 perde le rotte dell'onboarding, rimosse con T-2306; AC-1504-1 e AC-1504-3 cercano il workspace nel menu dell'utente (T-2304: il selettore separato non c'è più) e AC-1504-1 legge l'elenco dei progetti dalla nuova home (T-2305).
 - Emendamento (2026-10-14, costruzione del macrotask 26): la rotta /api/projects/[id]/default-subproject è rimossa con T-2603 (D-21 emendata), quindi esce dalla matrice di AC-1502-1 e da AC-1502-3; restano le altre rotte.
+- Emendamento dichiarato (2026-10-15, costruzione del macrotask 31, T-3101, D-41): la pagina del workspace è divisa nelle sezioni Generale (/workspace) e Membri (/workspace/members), quindi in AC-1504-3 il MEMBER vede l'elenco dei membri con i ruoli e 0 pulsanti «Rimuovi» in /workspace/members e il campo nome con disabled in /workspace; il resto del criterio è invariato.
