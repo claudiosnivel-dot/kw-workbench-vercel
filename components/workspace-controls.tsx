@@ -16,13 +16,13 @@ import { useSaveAction } from "@/lib/client/use-save-action";
 /** Ruoli assegnabili da un invito o da un cambio di ruolo: la proprietà passa solo con il trasferimento. */
 const ASSIGNABLE_ROLES = ["MEMBER", "ADMIN"] as const;
 
-type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
+export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
-function workspaceUrl(workspaceId: string, path = "") {
+export function workspaceUrl(workspaceId: string, path = "") {
   return `/api/workspaces/${encodeURIComponent(workspaceId)}${path}`;
 }
 
-function RoleOptions() {
+export function RoleOptions() {
   const t = useTranslations("workspace.roles");
   return ASSIGNABLE_ROLES.map((role) => (
     <option key={role} value={role}>
@@ -124,58 +124,6 @@ export function RevokeInviteButton({ workspaceId, inviteId, email }: { workspace
       pendingLabel={t("revoking")}
       request={() => fetch(workspaceUrl(workspaceId, `/invites/${encodeURIComponent(inviteId)}`), { method: "DELETE" })}
     />
-  );
-}
-
-/** Invito via email con ruolo ADMIN o MEMBER; la pagina si ricarica con il nuovo invito in attesa. */
-export function InviteForm({ workspaceId }: { workspaceId: string }) {
-  const t = useTranslations("workspace.invites");
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<AssignableRole>("MEMBER");
-  const { saving, error, success, save } = useSaveAction();
-
-  const send = () =>
-    save(async (tErrors) => {
-      await readApiResponse(await sendJson("POST", workspaceUrl(workspaceId, "/invites"), { email, role }), tErrors);
-      setEmail("");
-      router.refresh();
-      return t("sent");
-    });
-
-  return (
-    <SettingsCard
-      title={t("formTitle")}
-      intro={t("formIntro")}
-      error={error}
-      success={success}
-      save={{ onClick: send, pending: saving, label: t("send"), pendingLabel: t("sending") }}
-    >
-      <div className="grid gap-3 md:grid-cols-2">
-        <div>
-          <label className="label" htmlFor="invite-email">
-            {t("emailLabel")}
-          </label>
-          <input
-            id="invite-email"
-            className="input"
-            type="email"
-            autoComplete="off"
-            placeholder={t("emailPlaceholder")}
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </div>
-        <div>
-          <label className="label" htmlFor="invite-role">
-            {t("roleLabel")}
-          </label>
-          <select id="invite-role" className="select" value={role} onChange={(event) => setRole(event.target.value as AssignableRole)}>
-            <RoleOptions />
-          </select>
-        </div>
-      </div>
-    </SettingsCard>
   );
 }
 

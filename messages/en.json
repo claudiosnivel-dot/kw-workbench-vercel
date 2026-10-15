@@ -350,7 +350,7 @@
     "INVITE_PENDING": "There is already a pending invitation for this email.",
     "ALREADY_MEMBER": "This person is already a member of the workspace.",
     "INVITE_INVALID": "The invitation is not valid: it may have expired, been revoked or already been used.",
-    "INVITE_EMAIL_MISMATCH": "The invitation is for another email: sign in with the account it was sent to.",
+    "INVITE_EMAIL_MISMATCH": "The invitation is for another address: sign out and sign in with the account of the invited address.",
     "LAST_OWNER": "The workspace must have an owner: transfer ownership first.",
     "WORKSPACE_LIMIT": "You have reached the maximum number of workspaces you can create.",
     "JOB_SIGNATURE_INVALID": "Invalid continuation signature.",
@@ -505,8 +505,8 @@
       "removeConfirm": "Remove {name} from the workspace?"
     },
     "invites": {
-      "title": "Pending invitations",
-      "empty": "No pending invitations.",
+      "title": "Invitations",
+      "empty": "No open invitations.",
       "email": "Email",
       "role": "Role",
       "expires": "Expires",
@@ -518,9 +518,20 @@
       "emailLabel": "Email",
       "emailPlaceholder": "name@example.com",
       "roleLabel": "Role",
-      "send": "Send invitation",
-      "sending": "Sending...",
-      "sent": "Invitation sent."
+      "send": "Create invitation",
+      "sending": "Creating...",
+      "expired": "Expired",
+      "cancel": "Cancel",
+      "linkLabel": "Invitation link for {email}",
+      "copy": "Copy",
+      "copied": "Link copied.",
+      "onlyNow": "You only see it now: copy it and send it to the person you are inviting.",
+      "validUntil": "The link is valid until {date}.",
+      "emailSent": "We also sent them an email.",
+      "done": "Done",
+      "renew": "New link",
+      "renewing": "Creating the link...",
+      "renewTitle": "New link for {email}"
     },
     "transfer": {
       "title": "Transfer ownership",
@@ -551,11 +562,11 @@
     },
     "accept": {
       "title": "Workspace invitation",
-      "intro": "Accept the invitation to join the workspace with the account it was sent to.",
+      "intro": "Accept the invitation to join the workspace with the account of the invited address.",
       "submit": "Accept invitation",
       "submitting": "Accepting...",
       "success": "Invitation accepted: the workspace is now the active one.",
-      "missingToken": "The invitation link is incomplete: open it again from the email.",
+      "missingToken": "The invitation link is incomplete: open the link you received again.",
       "goToApp": "Go to the dashboard"
     }
   },

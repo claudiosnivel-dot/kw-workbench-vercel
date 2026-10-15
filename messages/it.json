@@ -350,7 +350,7 @@
     "INVITE_PENDING": "Esiste già un invito in attesa per questa email.",
     "ALREADY_MEMBER": "Questa persona fa già parte del workspace.",
     "INVITE_INVALID": "L'invito non è valido: potrebbe essere scaduto, revocato o già usato.",
-    "INVITE_EMAIL_MISMATCH": "L'invito è per un'altra email: accedi con l'account a cui è stato inviato.",
+    "INVITE_EMAIL_MISMATCH": "L'invito è per un altro indirizzo: esci ed entra con l'account dell'indirizzo invitato.",
     "LAST_OWNER": "Il workspace deve avere un proprietario: trasferisci prima la proprietà.",
     "WORKSPACE_LIMIT": "Hai raggiunto il numero massimo di workspace che puoi creare.",
     "JOB_SIGNATURE_INVALID": "Firma della continuazione non valida.",
@@ -505,8 +505,8 @@
       "removeConfirm": "Rimuovere {name} dal workspace?"
     },
     "invites": {
-      "title": "Inviti in attesa",
-      "empty": "Nessun invito in attesa.",
+      "title": "Inviti",
+      "empty": "Nessun invito aperto.",
       "email": "Email",
       "role": "Ruolo",
       "expires": "Scade",
@@ -518,9 +518,20 @@
       "emailLabel": "Email",
       "emailPlaceholder": "nome@esempio.com",
       "roleLabel": "Ruolo",
-      "send": "Invia invito",
-      "sending": "Invio...",
-      "sent": "Invito inviato."
+      "send": "Crea l'invito",
+      "sending": "Creazione...",
+      "expired": "Scaduto",
+      "cancel": "Annulla",
+      "linkLabel": "Link dell'invito per {email}",
+      "copy": "Copia",
+      "copied": "Link copiato.",
+      "onlyNow": "Lo vedi solo adesso: copialo e mandalo alla persona che inviti.",
+      "validUntil": "Il link vale fino al {date}.",
+      "emailSent": "Gli abbiamo mandato anche un'email.",
+      "done": "Fatto",
+      "renew": "Nuovo link",
+      "renewing": "Creazione del link...",
+      "renewTitle": "Nuovo link per {email}"
     },
     "transfer": {
       "title": "Trasferisci la proprietà",
@@ -551,11 +562,11 @@
     },
     "accept": {
       "title": "Invito in un workspace",
-      "intro": "Accetta l'invito per entrare nel workspace con l'account a cui è stato inviato.",
+      "intro": "Accetta l'invito per entrare nel workspace con l'account dell'indirizzo invitato.",
       "submit": "Accetta invito",
       "submitting": "Accettazione...",
       "success": "Invito accettato: il workspace è ora quello attivo.",
-      "missingToken": "Il link dell'invito non è completo: aprilo di nuovo dalla email.",
+      "missingToken": "Il link dell'invito non è completo: riapri il link che hai ricevuto.",
       "goToApp": "Vai alla dashboard"
     }
   },
