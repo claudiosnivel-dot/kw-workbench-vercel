@@ -1,38 +1,48 @@
+import type { ReactNode } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { CardIntro } from "@/components/card-intro";
 import type { PlatformKpi } from "@/lib/admin/kpi-types";
 
-/** Conteggi per chiave come elenco «chiave: valore», oppure «Nessuno». */
-function Counts({ counts, empty }: { counts: Record<string, number>; empty: string }) {
-  const entries = Object.entries(counts).filter(([, value]) => value > 0);
-  return <p className="text-slate-600">{entries.length === 0 ? empty : entries.map(([key, value]) => `${key}: ${value}`).join(" · ")}</p>;
+/** Riquadro di un indicatore: etichetta, numero grande ed eventuale dettaglio sotto. */
+function KpiTile({ label, value, detail }: { label: string; value: ReactNode; detail?: string }) {
+  return (
+    <div data-testid="admin-kpi-tile" className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-muted)] px-4 py-3">
+      <p className="text-xs uppercase tracking-wide text-slate-600">{label}</p>
+      <p className="mt-1 text-2xl font-semibold">{value}</p>
+      {detail ? <p className="mt-1 text-xs text-slate-600">{detail}</p> : null}
+    </div>
+  );
 }
 
-/** Indicatori aggregati della piattaforma (T-1705), solo per il root admin: nessun dato dei progetti degli utenti. */
+/**
+ * Indicatori aggregati della piattaforma (T-1705) in sei riquadri (T-3302), solo per il root admin: nessun dato dei
+ * progetti degli utenti. Con il lancio in pausa abbonamenti ed entrate restano a 0.
+ */
 export function AdminKpiCard({ kpi }: { kpi: PlatformKpi }) {
   const t = useTranslations("admin.kpi");
   const format = useFormatter();
   const extractions = kpi.extractionsPerDay.reduce((sum, day) => sum + day.count, 0);
   // Importi in unità minima: due decimali per le valute dell'app (EUR, USD).
-  const mrr = Object.entries(kpi.mrr).map(([currency, minor]) => format.number(minor / 100, { style: "currency", currency }));
+  const revenue = Object.entries(kpi.mrr).map(([currency, minor]) => format.number(minor / 100, { style: "currency", currency }));
 
   return (
-    <section className="card space-y-3 text-sm" data-testid="admin-kpi">
+    <section className="card space-y-4" data-testid="admin-kpi">
       <CardIntro title={t("title")} intro={t("intro")} />
-      <p>{t("users", kpi.users)}</p>
-      <p>{t("workspaces", kpi.workspaces)}</p>
-      <h3 className="font-semibold">{t("subscriptionsByStatus")}</h3>
-      <Counts counts={kpi.subscriptions.byStatus} empty={t("none")} />
-      <h3 className="font-semibold">{t("subscriptionsByPlan")}</h3>
-      <Counts counts={kpi.subscriptions.byPlan} empty={t("none")} />
-      <h3 className="font-semibold">{t("mrr")}</h3>
-      <p className="text-slate-600">{mrr.length === 0 ? t("none") : mrr.join(" · ")}</p>
-      <p>{t("extractions", { total: extractions })}</p>
-      <p>
-        {kpi.failedJobRate7d === null
-          ? t("failedRateNone")
-          : t("failedRate", { rate: format.number(kpi.failedJobRate7d, { style: "percent", maximumFractionDigits: 1 }) })}
-      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <KpiTile label={t("users")} value={kpi.users.total} detail={t("usersDetail", kpi.users)} />
+        <KpiTile label={t("workspaces")} value={kpi.workspaces.total} />
+        <KpiTile label={t("extractions")} value={extractions} />
+        <KpiTile
+          label={t("failedRate")}
+          value={
+            kpi.failedJobRate7d === null
+              ? t("failedRateNone")
+              : format.number(kpi.failedJobRate7d, { style: "percent", maximumFractionDigits: 1 })
+          }
+        />
+        <KpiTile label={t("subscriptions")} value={kpi.subscriptions.byStatus.active ?? 0} />
+        <KpiTile label={t("revenue")} value={revenue.length === 0 ? format.number(0) : revenue.join(" · ")} />
+      </div>
     </section>
   );
 }

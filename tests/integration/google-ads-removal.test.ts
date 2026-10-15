@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
   },
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
-  usePathname: () => "/admin",
+  usePathname: () => "/admin/settings",
 }));
 
 const MIGRATIONS_DIR = "prisma/migrations";
@@ -65,7 +65,7 @@ afterAll(async () => {
 
 describe("rimozione dell'integrazione Google Ads", () => {
   // covers: AC-901-1
-  it("le rotte Google Ads rispondono 404 e /admin non mostra più Google Keyword Planner", async () => {
+  it("le rotte Google Ads rispondono 404 e /admin/settings non mostra più Google Keyword Planner", async () => {
     expect(await dispatch("GET", "/api/integrations/google-ads")).toBe(404);
     expect(await dispatch("GET", "/api/integrations/google-ads/connect")).toBe(404);
     expect(await dispatch("PATCH", "/api/integrations/google-ads/config")).toBe(404);
@@ -76,11 +76,12 @@ describe("rimozione dell'integrazione Google Ads", () => {
       data: { display_name: "t901-root", password_hash: "hash-fittizio", role: "ADMIN", is_root_admin: true },
     });
     auth.user = { id: root.id, displayName: root.display_name, role: "ADMIN", isRootAdmin: true };
-    const { default: AdminPage } = await import("@/app/admin/page");
+    // impacted-by: T-3301 (AC-901-1 emendato: le integrazioni stanno nella sezione Impostazioni, /admin/settings)
+    const { default: AdminSettingsPage } = await import("@/app/admin/(sections)/settings/page");
 
-    const html = renderToStaticMarkup(await AdminPage());
+    const html = renderToStaticMarkup(await AdminSettingsPage());
 
-    expect(html).toContain("Dashboard Admin");
+    expect(html).toContain("Lancio commerciale");
     expect(html).not.toContain("Google Keyword Planner");
     await prisma.user.delete({ where: { id: root.id } });
   });

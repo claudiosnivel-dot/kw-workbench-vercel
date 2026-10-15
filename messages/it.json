@@ -433,7 +433,6 @@
     "branding": {
       "title": "Branding",
       "intro": "Configura loghi dedicati per tema scuro e chiaro. In navbar viene usato il logo del tema corrente con fallback automatico.",
-      "readOnly": "Il branding è globale: solo il root admin può modificarlo.",
       "appName": "Nome applicazione",
       "appNamePlaceholder": "Titan SEO",
       "darkLogo": "Logo tema scuro",
@@ -571,8 +570,15 @@
     }
   },
   "admin": {
-    "title": "Dashboard Admin",
-    "intro": "Qui trovi amministrazione utenti e impostazioni piattaforma. I dati progetto degli utenti restano sempre privati.",
+    "sections": {
+      "title": "Amministrazione",
+      "intro": "Gestisci gli utenti e la piattaforma. I dati dei progetti degli utenti restano sempre privati.",
+      "nav": "Menu dell'amministrazione",
+      "overview": "Panoramica",
+      "users": "Utenti",
+      "settings": "Impostazioni",
+      "log": "Registro"
+    },
     "roles": {
       "ADMIN": "Admin",
       "SUBSCRIBER": "Sottoscrittore"
@@ -581,27 +587,23 @@
       "ACTIVE": "Attivo",
       "SUSPENDED": "Sospeso"
     },
-    "totals": {
-      "users": "Utenti",
-      "admins": "Admin",
-      "subscribers": "Sottoscrittori",
-      "active": "Attivi",
-      "suspended": "Sospesi"
-    },
     "filters": {
       "search": "Cerca email o nome",
       "searchPlaceholder": "es. mario",
-      "role": "Ruolo",
-      "status": "Stato",
+      "label": "Filtra gli utenti",
       "all": "Tutti",
-      "refreshing": "Aggiornamento...",
-      "apply": "Applica filtri"
+      "active": "Attivi",
+      "suspended": "Sospesi",
+      "admins": "Admin"
     },
     "create": {
+      "open": "Crea utente",
       "title": "Crea utente",
       "nonRootHint": "Come admin non-root puoi creare solo utenti Sottoscrittori.",
+      "role": "Ruolo",
+      "cancel": "Annulla",
       "creating": "Creazione...",
-      "submit": "Crea utente",
+      "submit": "Crea",
       "created": "Utente creato con successo."
     },
     "manage": {
@@ -615,6 +617,8 @@
         "actions": "Azioni"
       },
       "rootBadge": "Root Admin",
+      "roleOf": "Ruolo di {name}",
+      "statusOf": "Stato di {name}",
       "noEmail": "senza email (account legacy)",
       "save": "Salva",
       "newPasswordPlaceholder": "Nuova password",
@@ -638,19 +642,22 @@
     "kpi": {
       "title": "Indicatori della piattaforma",
       "intro": "Solo valori aggregati: nessun dato dei progetti degli utenti.",
-      "users": "Utenti: {total} (attivi {active}, sospesi {suspended})",
-      "workspaces": "Workspace: {total}",
-      "subscriptionsByStatus": "Abbonamenti per stato",
-      "subscriptionsByPlan": "Abbonamenti per piano",
-      "none": "Nessuno",
-      "mrr": "MRR stimato",
-      "extractions": "Estrazioni negli ultimi 30 giorni: {total}",
-      "failedRate": "Job falliti negli ultimi 7 giorni: {rate}",
-      "failedRateNone": "Job falliti negli ultimi 7 giorni: nessun job concluso"
+      "users": "Utenti",
+      "usersDetail": "{active, plural, one {# attivo} other {# attivi}}, {suspended, plural, one {# sospeso} other {# sospesi}}",
+      "workspaces": "Workspace",
+      "extractions": "Estrazioni negli ultimi 30 giorni",
+      "failedRate": "Job falliti negli ultimi 7 giorni",
+      "failedRateNone": "nessun job concluso",
+      "subscriptions": "Abbonamenti attivi",
+      "revenue": "Entrate mensili stimate"
     },
     "spend": {
       "title": "Spesa fornitore metriche",
-      "body": "Mese {month} (UTC): {spent} su un tetto di {budget}, {requests} richieste per {keywords} keyword. Tetti in METRICS_MONTHLY_BUDGET_USD e METRICS_RUN_BUDGET_USD."
+      "month": "Mese {month} (UTC)",
+      "amount": "{spent} su un tetto di {budget}",
+      "bar": "Parte del tetto del mese già spesa",
+      "usage": "{requests} richieste per {keywords} keyword",
+      "caps": "Tetti in METRICS_MONTHLY_BUDGET_USD e METRICS_RUN_BUDGET_USD."
     },
     "launch": {
       "title": "Lancio commerciale",

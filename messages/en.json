@@ -433,7 +433,6 @@
     "branding": {
       "title": "Branding",
       "intro": "Set dedicated logos for the dark and light themes. The navbar uses the current theme's logo with automatic fallback.",
-      "readOnly": "Branding is global: only the root admin can change it.",
       "appName": "Application name",
       "appNamePlaceholder": "Titan SEO",
       "darkLogo": "Dark theme logo",
@@ -571,8 +570,15 @@
     }
   },
   "admin": {
-    "title": "Admin dashboard",
-    "intro": "Here you manage users and platform settings. Users' project data always stays private.",
+    "sections": {
+      "title": "Administration",
+      "intro": "Manage users and the platform. Users' project data always stays private.",
+      "nav": "Administration menu",
+      "overview": "Overview",
+      "users": "Users",
+      "settings": "Settings",
+      "log": "Log"
+    },
     "roles": {
       "ADMIN": "Admin",
       "SUBSCRIBER": "Subscriber"
@@ -581,27 +587,23 @@
       "ACTIVE": "Active",
       "SUSPENDED": "Suspended"
     },
-    "totals": {
-      "users": "Users",
-      "admins": "Admins",
-      "subscribers": "Subscribers",
-      "active": "Active",
-      "suspended": "Suspended"
-    },
     "filters": {
       "search": "Search email or name",
       "searchPlaceholder": "e.g. mario",
-      "role": "Role",
-      "status": "Status",
+      "label": "Filter users",
       "all": "All",
-      "refreshing": "Refreshing...",
-      "apply": "Apply filters"
+      "active": "Active",
+      "suspended": "Suspended",
+      "admins": "Admins"
     },
     "create": {
+      "open": "Create user",
       "title": "Create user",
       "nonRootHint": "As a non-root admin you can only create Subscriber users.",
+      "role": "Role",
+      "cancel": "Cancel",
       "creating": "Creating...",
-      "submit": "Create user",
+      "submit": "Create",
       "created": "User created."
     },
     "manage": {
@@ -615,6 +617,8 @@
         "actions": "Actions"
       },
       "rootBadge": "Root Admin",
+      "roleOf": "Role of {name}",
+      "statusOf": "Status of {name}",
       "noEmail": "no email (legacy account)",
       "save": "Save",
       "newPasswordPlaceholder": "New password",
@@ -638,19 +642,22 @@
     "kpi": {
       "title": "Platform indicators",
       "intro": "Aggregate values only: no data from users' projects.",
-      "users": "Users: {total} (active {active}, suspended {suspended})",
-      "workspaces": "Workspaces: {total}",
-      "subscriptionsByStatus": "Subscriptions by status",
-      "subscriptionsByPlan": "Subscriptions by plan",
-      "none": "None",
-      "mrr": "Estimated MRR",
-      "extractions": "Extractions in the last 30 days: {total}",
-      "failedRate": "Failed jobs in the last 7 days: {rate}",
-      "failedRateNone": "Failed jobs in the last 7 days: no finished jobs"
+      "users": "Users",
+      "usersDetail": "{active} active, {suspended} suspended",
+      "workspaces": "Workspaces",
+      "extractions": "Extractions in the last 30 days",
+      "failedRate": "Failed jobs in the last 7 days",
+      "failedRateNone": "no finished jobs",
+      "subscriptions": "Active subscriptions",
+      "revenue": "Estimated monthly revenue"
     },
     "spend": {
       "title": "Metrics provider spend",
-      "body": "Month {month} (UTC): {spent} of a {budget} cap, {requests} requests for {keywords} keywords. Caps in METRICS_MONTHLY_BUDGET_USD and METRICS_RUN_BUDGET_USD."
+      "month": "Month {month} (UTC)",
+      "amount": "{spent} of a {budget} cap",
+      "bar": "Share of this month's cap already spent",
+      "usage": "{requests} requests for {keywords} keywords",
+      "caps": "Caps in METRICS_MONTHLY_BUDGET_USD and METRICS_RUN_BUDGET_USD."
     },
     "launch": {
       "title": "Commercial launch",

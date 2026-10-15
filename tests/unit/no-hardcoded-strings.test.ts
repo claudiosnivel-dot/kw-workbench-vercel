@@ -32,8 +32,16 @@ const I18N_MIGRATED_FILES = [
   // T-2802: la pagina è la sezione Preferenze dell'account, la card i moduli Profilo e Password).
   "components/personalization-settings-card.tsx",
   "components/branding-settings-card.tsx",
-  "app/admin/page.tsx",
+  "app/admin/(sections)/layout.tsx",
+  "app/admin/(sections)/page.tsx",
+  "app/admin/(sections)/users/page.tsx",
+  "app/admin/(sections)/settings/page.tsx",
+  "app/admin/(sections)/log/page.tsx",
   "components/admin-users-dashboard.tsx",
+  // T-3302, T-3303: riquadri della Panoramica, filtri degli utenti e finestra «Crea utente».
+  "components/admin-kpi-card.tsx",
+  "components/admin-user-filters.tsx",
+  "components/create-user-dialog.tsx",
   "components/metrics-spend-card.tsx",
   "components/google-sheets-api-config-card.tsx",
   "components/google-sheets-personal-card.tsx",

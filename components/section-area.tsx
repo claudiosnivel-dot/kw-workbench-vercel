@@ -12,8 +12,8 @@ type SectionAreaProps = {
 };
 
 /**
- * Area del menu dell'utente con le sue sezioni (T-2801, T-3101): intestazione, navigazione a sinistra (sopra sotto i
- * 768 px) e contenuto della sezione aperta. La usano «Il tuo account» e «Workspace».
+ * Area del menu dell'utente con le sue sezioni (T-2801, T-3101, T-3301): intestazione, navigazione a sinistra (sopra
+ * sotto i 768 px) e contenuto della sezione aperta. La usano «Il tuo account», «Workspace» e «Amministrazione».
  */
 export function SectionArea({ title, intro, navLabel, items, children }: SectionAreaProps) {
   return (
