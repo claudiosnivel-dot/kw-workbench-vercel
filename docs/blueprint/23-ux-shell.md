@@ -164,14 +164,14 @@ Le pagine interne del progetto (risultati, strategia, impostazioni) restano quel
 
   definition_of_done:
     - "components/top-nav.tsx per l'utente autenticato: marchio con link alla home; dentro un progetto il nome del progetto con un menu dei progetti del workspace (i 10 con last_activity_at più recente e «Tutti i progetti» verso la home); a destra il menu dell'utente con il nome mostrato. Spariscono dalla barra i link Panoramica, Personalizza, Nuovo progetto, Fatturazione, Amministrazione e Supporto e il selettore di workspace come elemento separato."
-    - "components/user-menu.tsx: menu a comparsa con Personalizza, Account (emendato da T-2803 il 2026-10-15: una sola voce «Il tuo account» verso /account), Workspace (con l'elenco dei workspace dell'utente per cambiare quello attivo, come workspace-switcher.tsx), Fatturazione solo per chi può gestirla (regola di T-2005), Amministrazione solo per il root admin, Supporto, cambio della lingua, Esci. Pulsante con aria-haspopup e aria-expanded, navigazione con le frecce, chiusura con Esc e focus restituito al pulsante."
+    - "components/user-menu.tsx: menu a comparsa con Personalizza, Account (emendato da T-2803 il 2026-10-15: una sola voce «Il tuo account» verso /account), Workspace (con l'elenco dei workspace dell'utente per cambiare quello attivo, come workspace-switcher.tsx), Fatturazione solo per chi può gestirla (regola di T-2005; tolta da T-3103 il 2026-10-15), Amministrazione solo per il root admin, Supporto, cambio della lingua, Esci. Pulsante con aria-haspopup e aria-expanded, navigazione con le frecce, chiusura con Esc e focus restituito al pulsante."
     - "La barra delle pagine pubbliche e di accesso (anonimi) non cambia."
 
   acceptance_criteria:
     - id: AC-2304-1
       given: "un MEMBER senza gestione della fatturazione, un OWNER e il root admin"
       when: "si rende la barra in alto per ciascuno e si apre il menu dell'utente"
-      then: "nessuna delle tre barre contiene link diretti a /personalizza, /projects/new, /billing o /admin; il menu del MEMBER non contiene Fatturazione né Amministrazione; quello dell'OWNER contiene Fatturazione; quello del root admin contiene Amministrazione; il menu di MEMBER, OWNER e root admin contiene «Il tuo account» con href /account e nessuna voce verso /personalizza (emendato da T-2803 il 2026-10-15)"
+      then: "nessuna delle tre barre contiene link diretti a /personalizza, /projects/new, /billing o /admin; il menu del MEMBER non contiene Fatturazione né Amministrazione; quello dell'OWNER non contiene Fatturazione (emendato da T-3103 il 2026-10-15); quello del root admin contiene Amministrazione; il menu di MEMBER, OWNER e root admin contiene «Il tuo account» con href /account e nessuna voce verso /personalizza (emendato da T-2803 il 2026-10-15)"
     - id: AC-2304-2
       given: "il menu dell'utente reso e aperto con il pulsante"
       when: "si preme freccia giù due volte e poi Esc"
@@ -290,3 +290,4 @@ Le pagine interne del progetto (risultati, strategia, impostazioni) restano quel
 - Emendamento dichiarato (2026-10-14, macrotask 25 ux-plan): il piano del progetto sta in /plan e la strategia più recente è il piano (T-2502), quindi AC-2302-3 e i DoD di T-2302 e T-2303 puntano al piano; la barra laterale ha la tappa 3 «Scrittura» e il prossimo passo segue la scrittura delle pagine (T-2506). In tests/unit/next-step.test.ts l'uguaglianza del terzo test include steps.writing; in tests/integration/project-progress.test.ts latestStrategy include le pagine pubblicate e in scrittura (impacted-by T-2506).
 - Scelte dell'agente e note di costruzione confermate dall'utente il 2026-10-14 (D-40).
 - Emendamento dichiarato (2026-10-15, costruzione del macrotask 28, T-2803, D-41): nel menu dell'utente «Il tuo account» (/account) sostituisce Personalizza e Account; AC-2304-1 lo verifica per MEMBER, OWNER e root admin. In AC-2304-2 la seconda voce raggiunta con le frecce è ora Workspace.
+- Emendamento dichiarato (2026-10-15, costruzione del macrotask 31, T-3103, D-41): la voce Fatturazione esce dal menu dell'utente (la fatturazione è la sezione Piano del workspace, T-3102), quindi in AC-2304-1 nessun menu contiene Fatturazione, nemmeno quello dell'OWNER; il resto del criterio è invariato.
