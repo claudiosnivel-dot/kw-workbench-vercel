@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 import { CardIntro } from "@/components/card-intro";
@@ -14,6 +15,8 @@ type AuditRow = {
   actorEmail: string | null;
   targetType: string;
   targetId: string | null;
+  /** Nome del bersaglio quando è un utente che esiste ancora (T-3401). */
+  targetUserName: string | null;
   metadata: unknown;
 };
 
@@ -21,9 +24,18 @@ type AuditPage = ApiErrorPayload & { data?: AuditRow[]; meta?: { nextCursor: str
 
 /**
  * Registro delle azioni amministrative (T-1704), solo per il root admin: la prima pagina arriva dal server, le
- * successive da GET /api/admin/audit-log con il cursore. La rotta riverifica il ruolo.
+ * successive da GET /api/admin/audit-log con il cursore. La rotta riverifica il ruolo. Il bersaglio che è un utente
+ * ancora esistente porta alla sua scheda (T-3401); la scheda usa la card con le sue righe, titolo e testo propri.
  */
-export function AdminAuditLogCard({ initial }: { initial: { rows: AuditRow[]; nextCursor: string | null } }) {
+export function AdminAuditLogCard({
+  initial,
+  title,
+  intro,
+}: {
+  initial: { rows: AuditRow[]; nextCursor: string | null };
+  title?: string;
+  intro?: string;
+}) {
   const t = useTranslations("admin.audit");
   const format = useFormatter();
   const [rows, setRows] = useState(initial.rows);
@@ -41,7 +53,7 @@ export function AdminAuditLogCard({ initial }: { initial: { rows: AuditRow[]; ne
 
   return (
     <section className="card space-y-4" data-testid="admin-audit-log">
-      <CardIntro title={t("title")} intro={t("intro")} />
+      <CardIntro title={title ?? t("title")} intro={intro ?? t("intro")} />
       {rows.length === 0 ? (
         <p className="text-sm text-slate-600">{t("empty")}</p>
       ) : (
@@ -56,8 +68,15 @@ export function AdminAuditLogCard({ initial }: { initial: { rows: AuditRow[]; ne
                 {row.actorEmail ?? t("system")}
               </p>
               <p className="break-all text-xs text-slate-600">
-                {row.targetType}
-                {row.targetId ? ` ${row.targetId}` : ""} {JSON.stringify(row.metadata)}
+                {row.targetType}{" "}
+                {row.targetId && row.targetUserName ? (
+                  <Link href={`/admin/users/${row.targetId}`} className="underline underline-offset-2">
+                    {row.targetUserName}
+                  </Link>
+                ) : (
+                  row.targetId
+                )}{" "}
+                {JSON.stringify(row.metadata)}
               </p>
             </li>
           ))}

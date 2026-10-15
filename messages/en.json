@@ -576,6 +576,7 @@
       "nav": "Administration menu",
       "overview": "Overview",
       "users": "Users",
+      "workspaces": "Workspaces",
       "settings": "Settings",
       "log": "Log"
     },
@@ -612,24 +613,14 @@
         "user": "User",
         "role": "Role",
         "status": "Status",
-        "created": "Created",
-        "lastLogin": "Last login",
-        "actions": "Actions"
+        "lastLogin": "Last login"
       },
       "rootBadge": "Root Admin",
-      "roleOf": "Role of {name}",
-      "statusOf": "Status of {name}",
       "noEmail": "no email (legacy account)",
-      "save": "Save",
-      "newPasswordPlaceholder": "New password",
-      "resetPassword": "Reset password",
       "empty": "No users found for the current filters.",
       "pageInfo": "Page {page} of {totalPages} · {total} users",
       "previous": "Previous",
-      "next": "Next",
-      "updated": "User updated.",
-      "deleteConfirm": "Permanently delete the user \"{name}\"?",
-      "deleted": "User permanently deleted."
+      "next": "Next"
     },
     "audit": {
       "title": "Administrative action log",
@@ -686,6 +677,79 @@
       "pausing": "Pausing...",
       "pauseConfirm": "Pause the commercial launch? Users go back to no limits and public sign-up closes.",
       "updated": "Launch status updated."
+    },
+    "user": {
+      "back": "← Users",
+      "emailVerified": "verified",
+      "emailNotVerified": "not verified",
+      "summary": {
+        "title": "Summary",
+        "created": "Created on",
+        "lastLogin": "Last sign-in",
+        "terms": "Terms accepted",
+        "termsValue": "version {version}, {date}",
+        "termsMissing": "not accepted yet"
+      },
+      "workspaces": {
+        "title": "Workspaces",
+        "intro": "The user's workspaces with their role. Only the number of projects is shown.",
+        "name": "Name",
+        "role": "Role",
+        "projects": "Projects",
+        "keywords": "Keywords this month",
+        "personal": "personal",
+        "empty": "The user is not in any workspace."
+      },
+      "actions": {
+        "title": "Actions",
+        "intro": "Changes apply immediately and stay in the administrative action log.",
+        "role": "Role",
+        "saveRole": "Save role",
+        "suspend": "Suspend",
+        "reactivate": "Reactivate",
+        "newPassword": "New password",
+        "resetPassword": "Reset password",
+        "changeEmail": "Change email",
+        "updated": "User updated."
+      },
+      "email": {
+        "title": "Change the email of {name}",
+        "label": "New email",
+        "hint": "While the launch is paused the new email counts as verified; once the launch is live the user receives the verification link. If email sending is active, the old address receives a notice.",
+        "cancel": "Cancel",
+        "submit": "Save email",
+        "saving": "Saving...",
+        "changed": "Email updated."
+      },
+      "audit": {
+        "title": "Log",
+        "intro": "The last 20 administrative actions on this user."
+      },
+      "danger": {
+        "warning": "Deletion is permanent: the account and its personal data are removed. Their personal workspace with other members passes to the member with the highest role.",
+        "delete": "Delete user",
+        "confirm": "Permanently delete the user \"{name}\"?"
+      }
+    },
+    "workspaces": {
+      "title": "Platform workspaces",
+      "intro": "Name, owner, members, projects and plan of every workspace. Project data stays private.",
+      "search": "Search workspace or owner",
+      "searchPlaceholder": "e.g. agency",
+      "searchSubmit": "Search",
+      "columns": {
+        "name": "Workspace",
+        "owner": "Owner",
+        "members": "Members",
+        "projects": "Projects",
+        "plan": "Plan"
+      },
+      "personal": "personal",
+      "noOwner": "no owner",
+      "empty": "No workspaces found.",
+      "pageInfo": "Page {page} of {totalPages} · {total} workspaces",
+      "previous": "Previous",
+      "next": "Next"
     }
   },
   "integrations": {

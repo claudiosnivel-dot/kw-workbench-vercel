@@ -3,7 +3,7 @@ import { normalizeEmail } from "@/lib/auth/email-address";
 import { generateOneTimeToken, hashOneTimeToken } from "@/lib/auth/one-time-token";
 import { isUniqueViolation } from "@/lib/db/unique-violation";
 import { isEmailDeliveryAvailable, sendTemplateEmail } from "@/lib/email";
-import type { UiLocale } from "@/lib/generated/prisma/client";
+import type { Prisma, UiLocale } from "@/lib/generated/prisma/client";
 import { AppError } from "@/lib/http/errors";
 import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
 import { prisma } from "@/lib/prisma";
@@ -26,6 +26,16 @@ export type EmailChangeConfirmation =
 
 /** Indirizzo preso da un altro utente tra la richiesta e la conferma: annulla la transazione della conferma. */
 class EmailTakenOnConfirm extends Error {}
+
+/**
+ * I link di verifica e di recupero password ancora aperti erano del vecchio indirizzo e smettono di valere: alla conferma
+ * del cambio (T-3001) e al cambio da parte del root admin (T-3402).
+ */
+export async function closeOldAddressLinks(tx: Prisma.TransactionClient, userId: string, now: Date): Promise<void> {
+  const stillOpen = { user_id: userId, used_at: null };
+  await tx.emailVerificationToken.updateMany({ where: stillOpen, data: { used_at: now } });
+  await tx.passwordResetToken.updateMany({ where: stillOpen, data: { used_at: now } });
+}
 
 /** Le richieste non usate dell'utente diventano inutilizzabili (nuova richiesta o Annulla). */
 function closePendingRequests(userId: string, now: Date) {
@@ -148,9 +158,7 @@ export async function confirmEmailChange(token: string): Promise<EmailChangeConf
         data: { email: request.new_email, email_verified_at: now },
         select: { id: true },
       });
-      const stillOpen = { user_id: request.user_id, used_at: null };
-      await tx.emailVerificationToken.updateMany({ where: stillOpen, data: { used_at: now } });
-      await tx.passwordResetToken.updateMany({ where: stillOpen, data: { used_at: now } });
+      await closeOldAddressLinks(tx, request.user_id, now);
       return { email: before.email, displayName: before.display_name, uiLocale: before.ui_locale };
     });
     return previous ? { outcome: "changed", previous } : { outcome: "invalid" };

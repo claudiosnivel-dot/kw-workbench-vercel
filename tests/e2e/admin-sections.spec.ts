@@ -1,5 +1,6 @@
 // Gate di T-3301 (AC-3301-1…3): Amministrazione a sezioni con la navigazione comune; il root admin vede Panoramica,
-// Utenti, Impostazioni e Registro, l'admin non root solo Utenti, gli altri utenti tornano alla home.
+// Utenti, Workspace, Impostazioni e Registro, l'admin non root solo Utenti, gli altri utenti tornano alla home.
+// Gate di T-3401 (AC-3401-4): dal nome nell'elenco degli utenti si apre la scheda, le azioni escono dalle righe.
 import { randomBytes } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
@@ -45,11 +46,13 @@ function sectionNav(page: Page) {
 
 test.describe("area Amministrazione", () => {
   // covers: AC-3301-1
-  test("il root admin apre le quattro sezioni con la voce corrente e senza violazioni axe gravi", async ({ browser }) => {
+  // impacted-by: T-3403 (voce Workspace dopo Utenti: la navigazione del root admin ha 5 voci)
+  test("il root admin apre le cinque sezioni con la voce corrente e senza violazioni axe gravi", async ({ browser }) => {
     const root = await userPage(browser, E2E_EMAIL, E2E_USER_PASSWORD);
     const sections = [
       { path: "/admin", item: "Panoramica" },
       { path: "/admin/users", item: "Utenti" },
+      { path: "/admin/workspaces", item: "Workspace" },
       { path: "/admin/settings", item: "Impostazioni" },
       { path: "/admin/log", item: "Registro" },
     ];
@@ -57,7 +60,7 @@ test.describe("area Amministrazione", () => {
     for (const section of sections) {
       const response = await root.goto(section.path);
       expect(response?.status(), section.path).toBe(200);
-      await expect(sectionNav(root).getByRole("link")).toHaveCount(4);
+      await expect(sectionNav(root).getByRole("link")).toHaveCount(5);
       await expect(sectionNav(root).getByRole("link", { name: section.item })).toHaveAttribute("aria-current", "page");
       if (section.path === "/admin/settings") {
         await expect(root.getByRole("heading", { name: "Lancio commerciale" })).toBeVisible();
@@ -88,5 +91,32 @@ test.describe("area Amministrazione", () => {
 
     expect(new URL(subscriber.url()).pathname).toBe("/");
     await expect(sectionNav(subscriber)).toHaveCount(0);
+  });
+
+  // covers: AC-3401-4
+  test("il root admin apre la scheda dal nome nell'elenco e le righe non hanno più i controlli", async ({ browser }) => {
+    const root = await userPage(browser, E2E_EMAIL, E2E_USER_PASSWORD);
+    const subscriber = await prisma.user.findUniqueOrThrow({ where: { email: SUBSCRIBER_EMAIL }, select: { id: true, display_name: true } });
+
+    await root.goto("/admin/users");
+    await root.getByLabel("Cerca email o nome").fill(SUBSCRIBER_EMAIL);
+    await root.getByRole("link", { name: subscriber.display_name, exact: true }).click();
+
+    await expect(root).toHaveURL(new RegExp(`/admin/users/${subscriber.id}$`));
+    await expect(sectionNav(root).getByRole("link", { name: "Utenti" })).toHaveAttribute("aria-current", "page");
+    for (const card of ["Riepilogo", "Workspace", "Registro", "Azioni"]) {
+      await expect(root.getByRole("heading", { name: card, exact: true })).toBeVisible();
+    }
+    for (const action of ["Sospendi", "Reimposta la password", "Cambia email", "Elimina l'utente"]) {
+      await expect(root.getByRole("button", { name: action })).toBeVisible();
+    }
+    expect(await seriousViolations(root)).toEqual([]);
+
+    await root.getByRole("link", { name: "← Utenti" }).click();
+    await expect(root).toHaveURL(/\/admin\/users$/);
+    const rows = root.getByRole("row");
+    await expect(rows.nth(1)).toBeVisible();
+    await expect(root.locator("tbody select")).toHaveCount(0);
+    await expect(root.locator("tbody").getByRole("button", { name: /password/i })).toHaveCount(0);
   });
 });

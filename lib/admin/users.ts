@@ -1,7 +1,11 @@
 import { Prisma, type UiLocale, UserRole, UserStatus } from "@/lib/generated/prisma/client";
+import { closeOldAddressLinks, notifyEmailChanged } from "@/lib/account/email-change";
 import { type AuditEntry, writeAuditLog } from "@/lib/admin/audit";
-import { type AuthUser, registerUser, updateUserAdminFields, validatePassword } from "@/lib/auth/credentials";
+import { type AuthUser, EmailTakenError, registerUser, updateUserAdminFields, validatePassword } from "@/lib/auth/credentials";
+import { normalizeEmail } from "@/lib/auth/email-address";
+import { issueVerificationToken } from "@/lib/auth/email-verification";
 import { isCommercialLive } from "@/lib/billing/launch";
+import { isUniqueViolation } from "@/lib/db/unique-violation";
 import { sendTemplateEmail } from "@/lib/email";
 import { runAfterResponse } from "@/lib/http/after-response";
 import { AppError } from "@/lib/http/errors";
@@ -211,6 +215,15 @@ async function findTargetUser(targetUserId: string) {
   });
 }
 
+/** Utente appena creato o modificato, come lo restituiscono le rotte dell'admin. */
+async function readAdminUserRecord(userId: string, missingMessage: string): Promise<AdminUserRecord> {
+  const row = await findTargetUser(userId);
+  if (!row) {
+    throw new AdminActionError(missingMessage, 500, "INTERNAL_ERROR");
+  }
+  return toAdminUserRecord(row as AdminUserRow);
+}
+
 /** Autore e IP delle righe del registro delle azioni admin (T-1704). */
 type AuditContext = { ip?: string | null };
 
@@ -299,13 +312,7 @@ export async function createUserFromAdmin(
         ip: context.ip,
       }),
   });
-  const row = await findTargetUser(created.id);
-
-  if (!row) {
-    throw new AdminActionError("Utente creato ma non trovato", 500, "INTERNAL_ERROR");
-  }
-
-  return toAdminUserRecord(row as AdminUserRow);
+  return readAdminUserRecord(created.id, "Utente creato ma non trovato");
 }
 
 /**
@@ -413,12 +420,54 @@ export async function updateUserFromAdmin(
     notifyAdminPasswordReset(target);
   }
 
-  const row = await findTargetUser(updated.id);
-  if (!row) {
-    throw new AdminActionError("Utente aggiornato ma non trovato", 500, "INTERNAL_ERROR");
+  return readAdminUserRecord(updated.id, "Utente aggiornato ma non trovato");
+}
+
+/**
+ * Cambio dell'email da parte del root admin (T-3402), l'unico possibile finché l'invio delle email non è attivo: mai il
+ * root né sé stessi (CWE-269). Come nella creazione da admin, con il lancio in pausa il nuovo indirizzo nasce verificato,
+ * con il lancio attivo parte la verifica (T-1403). Nella stessa transazione si chiudono le richieste di cambio in attesa
+ * (T-3001) e i link aperti del vecchio indirizzo, e si scrive la riga user.email_change senza indirizzi (CWE-532).
+ */
+export async function changeUserEmailFromAdmin(
+  actor: AuthUser,
+  input: { targetUserId: string; email: unknown },
+  context: AuditContext = {}
+): Promise<AdminUserRecord> {
+  if (!actor.isRootAdmin) {
+    throw new AdminActionError("Solo il root admin può cambiare l'email di un utente", 403, "FORBIDDEN");
+  }
+  const target = await findManageableTarget(actor, input.targetUserId);
+  const email = normalizeEmail(input.email);
+  if (!email) {
+    throw new AdminActionError("Email non valida", 400, "EMAIL_INVALID");
+  }
+  if (email === target.email) {
+    throw new AdminActionError("Nessuna modifica da salvare", 400, "VALIDATION_ERROR");
   }
 
-  return toAdminUserRecord(row as AdminUserRow);
+  const live = await isCommercialLive();
+  const now = new Date();
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: target.id }, data: { email, email_verified_at: live ? null : now }, select: { id: true } });
+      await tx.emailChangeToken.updateMany({ where: { user_id: target.id, used_at: null }, data: { used_at: now } });
+      await closeOldAddressLinks(tx, target.id, now);
+      await writeAuditLog(tx, { actorUserId: actor.id, action: "user.email_change", targetType: "user", targetId: target.id, ip: context.ip });
+    });
+  } catch (error) {
+    throw isUniqueViolation(error) ? new EmailTakenError(email) : error;
+  }
+
+  // Dopo la risposta, quindi dopo il commit: verifica verso il nuovo indirizzo e avviso al vecchio (se l'invio è attivo).
+  if (live) {
+    runAfterResponse("admin_email_change_verification_failed", () => issueVerificationToken(target.id));
+  }
+  runAfterResponse("admin_email_change_notice_failed", () =>
+    notifyEmailChanged({ email: target.email, displayName: target.display_name, uiLocale: target.ui_locale })
+  );
+
+  return readAdminUserRecord(target.id, "Utente aggiornato ma non trovato");
 }
 
 /**
