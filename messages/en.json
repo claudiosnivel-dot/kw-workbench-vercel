@@ -104,7 +104,6 @@
   },
   "nav": {
     "yourAccount": "Your account",
-    "billing": "Billing",
     "admin": "Administration",
     "openMenu": "Open menu",
     "pricing": "Pricing",
@@ -467,8 +466,9 @@
   },
   "workspace": {
     "switcher": {
-      "label": "Active workspace",
-      "personal": "{name} (personal)"
+      "label": "Your workspaces",
+      "personal": "{name} (personal)",
+      "create": "New workspace…"
     },
     "roles": {
       "OWNER": "Owner",
@@ -476,12 +476,13 @@
       "MEMBER": "Member"
     },
     "page": {
-      "heading": "Workspace: {name}",
-      "intro": "Name, members, roles and invitations of the active workspace. Switch workspace from the selector at the top.",
-      "personal": "This is your personal workspace: you can invite other people, and you can leave it only after transferring ownership to another member.",
-      "yourRole": "Your role: {role}",
-      "sheetsNote": "Google Sheets export uses the personal Google connection of whoever exports: each member connects their own account from Your account › Connections.",
-      "billingLink": "Plan and billing"
+      "nav": "Workspace menu",
+      "general": "General",
+      "members": "Members",
+      "plan": "Plan",
+      "summary": "Your role: {role} · {kind}",
+      "personal": "Personal workspace",
+      "team": "Team workspace"
     },
     "name": {
       "title": "Workspace name",
@@ -493,7 +494,6 @@
     "members": {
       "title": "Members",
       "name": "Name",
-      "email": "Email",
       "role": "Role",
       "joined": "Joined",
       "actions": "Actions",
@@ -531,12 +531,11 @@
       "confirm": "Transfer ownership of the workspace to {name}?"
     },
     "create": {
-      "title": "Create a workspace",
-      "intro": "A team workspace separate from your personal workspace: you will be its owner and it will become the active workspace.",
-      "label": "New workspace name",
-      "submit": "Create workspace",
+      "title": "New workspace",
+      "label": "Name",
+      "submit": "Create",
       "submitting": "Creating...",
-      "created": "Workspace created: it is now the active one."
+      "cancel": "Cancel"
     },
     "leave": {
       "title": "Leave the workspace",
@@ -545,6 +544,10 @@
       "submit": "Leave",
       "submitting": "Leaving...",
       "confirm": "Leave the workspace {name}?"
+    },
+    "danger": {
+      "title": "Irreversible actions",
+      "warning": "Transferring ownership and leaving the workspace cannot be undone from here."
     },
     "accept": {
       "title": "Workspace invitation",
@@ -784,9 +787,8 @@
     }
   },
   "billing": {
-    "title": "Billing",
-    "intro": "Plan and subscription of the {name} workspace.",
-    "paused": "The commercial launch is not active yet: the workspace has no limits and plans cannot be bought.",
+    "paused": "For now the workspace has no limits and no plan can be bought.",
+    "summaryTitle": "Your plan",
     "plans": {
       "free": "Free"
     },
@@ -805,8 +807,9 @@
     "ownerOnly": "Only the workspace owner manages billing.",
     "checkoutTitle": "Choose a plan",
     "noPaidPlans": "No paid plan available.",
+    "manageTitle": "Manage",
     "usage": {
-      "title": "Workspace usage",
+      "title": "This month's usage",
       "runs": "Extractions today: {used} of {limit}",
       "keywords": "Keywords saved this month: {used} of {limit}",
       "unlimited": "unlimited",
@@ -835,7 +838,7 @@
     },
     "limit": {
       "owner": "You have reached a limit of the workspace plan.",
-      "ownerLink": "Change plan from Billing",
+      "ownerLink": "Open the workspace plan",
       "member": "You have reached a limit of the workspace plan: ask the owner to move to a higher plan."
     }
   },

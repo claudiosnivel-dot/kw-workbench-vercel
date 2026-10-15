@@ -63,12 +63,10 @@ const I18N_MIGRATED_FILES = [
   "components/submit-button.tsx",
   "components/form-done.tsx",
   // T-1503, T-1504: workspace, membri, inviti e selettore nascono già con il catalogo.
-  "app/workspace/page.tsx",
   "app/invites/accept/page.tsx",
   "components/workspace-controls.tsx",
   "components/confirmed-action-button.tsx",
   // T-1602…T-1606: fatturazione, avvisi del piano e interruttore del lancio nascono già con il catalogo.
-  "app/billing/page.tsx",
   "components/billing-actions.tsx",
   "components/checkout-button.tsx",
   "components/past-due-banner.tsx",
@@ -133,6 +131,12 @@ const I18N_MIGRATED_FILES = [
   // T-3002: cambio dell'email nel Profilo e pagina pubblica del link di conferma.
   "components/email-change-section.tsx",
   "app/email-change/page.tsx",
+  // T-3101…T-3103: area «Workspace» con Generale, Membri e Piano e la finestra «Nuovo workspace».
+  "app/workspace/(sections)/layout.tsx",
+  "app/workspace/(sections)/page.tsx",
+  "app/workspace/(sections)/members/page.tsx",
+  "app/workspace/(sections)/plan/page.tsx",
+  "components/new-workspace-dialog.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

@@ -6,7 +6,7 @@ import { formatDate } from "@/lib/view/format";
 
 /**
  * Pagamento scaduto del workspace corrente (T-1604): data di fine della tolleranza per tutti i membri, link al metodo di
- * pagamento (pagina di fatturazione) solo per l'OWNER.
+ * pagamento (sezione Piano del workspace, T-3102) solo per l'OWNER.
  */
 export function PastDueBanner({ graceEndsAt, canManageBilling }: { graceEndsAt: string; canManageBilling: boolean }) {
   const t = useTranslations("billing.pastDue");
@@ -16,7 +16,7 @@ export function PastDueBanner({ graceEndsAt, canManageBilling }: { graceEndsAt: 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p>{t("banner", { date: formatDate(graceEndsAt, format) })}</p>
         {canManageBilling && (
-          <Link href="/billing" className="btn-secondary shrink-0">
+          <Link href="/workspace/plan" className="btn-secondary shrink-0">
             {t("update")}
           </Link>
         )}

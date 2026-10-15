@@ -2,6 +2,7 @@
 // /workspace per ruolo e 404 delle pagine di progetto per chi non è membro.
 // impacted-by: T-2304, T-2305 (AC-1504-1 e AC-1504-3 emendati: il cambio di workspace sta nel menu dell'utente e la
 // home elenca i progetti come schede, non più in una tabella)
+// impacted-by: T-3101 (AC-1504-3 emendato: l'elenco dei membri sta in /workspace/members, il nome in /workspace)
 import { randomBytes } from "node:crypto";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
@@ -121,14 +122,15 @@ test.describe("pagina del workspace", () => {
   }) => {
     const memberPage = await newUserPage(browser, MEMBER_EMAIL);
     await activate(memberPage, ids.team);
-    await memberPage.goto("/workspace");
+    await memberPage.goto("/workspace/members");
     const members = memberPage.locator("table");
     await expect(members).toContainText("e2e-ws-owner");
     await expect(members).toContainText("Proprietario");
     await expect(members).toContainText("Amministratore");
     await expect(members).toContainText("Membro");
-    await expect(memberPage.getByLabel("Nome", { exact: true })).toBeDisabled();
     await expect(memberPage.getByRole("button", { name: "Rimuovi" })).toHaveCount(0);
+    await memberPage.goto("/workspace");
+    await expect(memberPage.getByLabel("Nome", { exact: true })).toBeDisabled();
 
     const adminPage = await newUserPage(browser, ADMIN_EMAIL);
     await activate(adminPage, ids.team);

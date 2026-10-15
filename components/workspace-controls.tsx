@@ -10,8 +10,8 @@ import { readApiResponse, sendJson } from "@/lib/client/http";
 import { useRefreshAction } from "@/lib/client/use-refresh-action";
 import { useSaveAction } from "@/lib/client/use-save-action";
 
-// Controlli della pagina /workspace (T-1504) sulle API di T-1503: la pagina li rende solo ai ruoli ammessi dalla
-// tabella dei permessi, le rotte riverificano ruolo e membership a ogni richiesta.
+// Controlli delle sezioni Generale e Membri del workspace (T-1504, T-3101) sulle API di T-1503: le pagine li rendono
+// solo ai ruoli ammessi dalla tabella dei permessi, le rotte riverificano ruolo e membership a ogni richiesta.
 
 /** Ruoli assegnabili da un invito o da un cambio di ruolo: la proprietà passa solo con il trasferimento. */
 const ASSIGNABLE_ROLES = ["MEMBER", "ADMIN"] as const;
@@ -64,39 +64,6 @@ export function WorkspaceNameForm({ workspaceId, name, canEdit }: { workspaceId:
           disabled={!canEdit}
           onChange={(event) => setValue(event.target.value)}
         />
-      </div>
-    </SettingsCard>
-  );
-}
-
-/** Nuovo workspace di squadra (T-2008): diventa quello attivo, e con almeno due workspace la barra mostra il selettore. */
-export function CreateWorkspaceForm() {
-  const t = useTranslations("workspace.create");
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const { saving, error, success, save } = useSaveAction();
-
-  const create = () =>
-    save(async (tErrors) => {
-      await readApiResponse(await sendJson("POST", "/api/workspaces", { name }), tErrors);
-      setName("");
-      router.refresh();
-      return t("created");
-    });
-
-  return (
-    <SettingsCard
-      title={t("title")}
-      intro={t("intro")}
-      error={error}
-      success={success}
-      save={{ onClick: create, pending: saving, label: t("submit"), pendingLabel: t("submitting") }}
-    >
-      <div>
-        <label className="label" htmlFor="new-workspace-name">
-          {t("label")}
-        </label>
-        <input id="new-workspace-name" className="input" maxLength={80} value={name} onChange={(event) => setName(event.target.value)} />
       </div>
     </SettingsCard>
   );
@@ -212,16 +179,16 @@ export function InviteForm({ workspaceId }: { workspaceId: string }) {
   );
 }
 
-/** Trasferimento della proprietà a un altro membro (solo OWNER). */
+/** Trasferimento della proprietà a un altro membro (solo OWNER), dentro «Azioni irreversibili» (T-3101). */
 export function TransferOwnershipForm({ workspaceId, members }: { workspaceId: string; members: { id: string; name: string }[] }) {
   const t = useTranslations("workspace.transfer");
   const [target, setTarget] = useState(members[0]?.id ?? "");
   const targetName = members.find((member) => member.id === target)?.name ?? "";
 
   return (
-    <section className="card space-y-3">
+    <div className="space-y-3">
       <div>
-        <h2 className="text-lg font-semibold">{t("title")}</h2>
+        <h3 className="font-semibold">{t("title")}</h3>
         <p className="text-sm text-slate-600">{t("intro")}</p>
       </div>
       <label className="label" htmlFor="transfer-target">
@@ -240,7 +207,7 @@ export function TransferOwnershipForm({ workspaceId, members }: { workspaceId: s
         pendingLabel={t("submitting")}
         request={() => sendJson("POST", workspaceUrl(workspaceId, "/transfer"), { userId: target })}
       />
-    </section>
+    </div>
   );
 }
 

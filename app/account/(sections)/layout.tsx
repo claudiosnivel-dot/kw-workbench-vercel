@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
-import { PageIntro } from "@/components/page-intro";
-import { SectionNav } from "@/components/section-nav";
+import { SectionArea } from "@/components/section-area";
 import { requirePageUser } from "@/lib/auth/page-guard";
 
 /** Sezioni dell'area «Il tuo account», nell'ordine della navigazione. */
@@ -22,12 +21,13 @@ export default async function AccountSectionsLayout({ children }: { children: Re
   const t = await getTranslations("account.sections");
 
   return (
-    <div className="space-y-6">
-      <PageIntro title={t("title")} intro={t("intro")} />
-      <div className="section-layout">
-        <SectionNav label={t("nav")} items={ACCOUNT_SECTIONS.map((section) => ({ href: section.href, label: t(section.label) }))} />
-        <div className="min-w-0 space-y-6">{children}</div>
-      </div>
-    </div>
+    <SectionArea
+      title={t("title")}
+      intro={t("intro")}
+      navLabel={t("nav")}
+      items={ACCOUNT_SECTIONS.map((section) => ({ href: section.href, label: t(section.label) }))}
+    >
+      {children}
+    </SectionArea>
   );
 }

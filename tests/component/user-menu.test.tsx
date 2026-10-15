@@ -1,12 +1,13 @@
 // Gate di T-2304 (AC-2304-1…3): barra in alto ridotta a marchio, progetto e menu dell'utente; voci per ruolo, tastiera
 // del menu e cambio del workspace attivo con la stessa richiesta del selettore di T-1504. Gate di T-2803 (AC-2803-1): la
-// voce «Il tuo account» prende il posto di Personalizza e Account.
+// voce «Il tuo account» prende il posto di Personalizza e Account. Gate di T-3103 (AC-3103-1…3): «Nuovo workspace…» apre
+// la finestra che crea il workspace con POST /api/workspaces e la voce Fatturazione esce dal menu.
 // impacted-by: T-2803 (AC-2304-1 emendato: il menu di MEMBER, OWNER e root admin ha «Il tuo account» verso /account)
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+// impacted-by: T-3103 (AC-2304-1 emendato: nessun menu ha la voce Fatturazione, nemmeno quello dell'OWNER)
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TopNav } from "@/components/top-nav";
 import { UserMenu } from "@/components/user-menu";
-import { canPerform } from "@/lib/authz/permissions";
 import { renderWithIntl } from "./intl";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
@@ -39,23 +40,16 @@ function openMenu(): HTMLElement {
 
 describe("barra in alto e menu dell'utente", () => {
   // covers: AC-2304-1
-  it("nessuna barra ha link diretti alle pagine secondarie; Fatturazione all'OWNER, Amministrazione al root admin", () => {
+  it("nessuna barra ha link diretti alle pagine secondarie; nessun menu ha Fatturazione, Amministrazione al root admin", () => {
     const cases = [
       { role: "MEMBER" as const, rootAdmin: false },
       { role: "OWNER" as const, rootAdmin: false },
       { role: "OWNER" as const, rootAdmin: true },
     ];
 
-    const menus = cases.map(({ role, rootAdmin }) => {
-      renderWithIntl(
-        <TopNav
-          brandName="Titan SEO"
-          themeMode="DARK"
-          user={USER}
-          showBillingLink={canPerform(role, "billing.manage")}
-          showAdminLink={rootAdmin}
-        />
-      );
+    // Il ruolo non cambia più le voci: la fatturazione è la sezione Piano del workspace (T-3102).
+    const menus = cases.map(({ rootAdmin }) => {
+      renderWithIntl(<TopNav brandName="Titan SEO" themeMode="DARK" user={USER} showAdminLink={rootAdmin} />);
       const barHrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
       const menuItems = within(openMenu()).getAllByRole("menuitem");
       const items = menuItems.map((item) => item.textContent);
@@ -75,7 +69,7 @@ describe("barra in alto e menu dell'utente", () => {
     const [member, owner, rootAdmin] = menus.map((menu) => menu.items);
     expect(member).not.toContain("Fatturazione");
     expect(member).not.toContain("Amministrazione");
-    expect(owner).toContain("Fatturazione");
+    expect(owner).not.toContain("Fatturazione");
     expect(owner).not.toContain("Amministrazione");
     expect(rootAdmin).toContain("Amministrazione");
     expect(member).toEqual(["Il tuo account", "Workspace", "Supporto", "Esci"]);
@@ -83,7 +77,7 @@ describe("barra in alto e menu dell'utente", () => {
 
   // covers: AC-2304-2
   it("freccia giù due volte porta il focus alla seconda voce; Esc chiude il menu e torna al pulsante", () => {
-    renderWithIntl(<UserMenu user={USER} showBillingLink={false} showAdminLink={false} workspaces={[]} activeWorkspaceId={null} />);
+    renderWithIntl(<UserMenu user={USER} showAdminLink={false} workspaces={[]} activeWorkspaceId={null} />);
     const button = screen.getByRole("button", { name: "Menu di Giulia" });
     expect(button).toHaveAttribute("aria-haspopup", "menu");
     const menu = openMenu();
@@ -102,7 +96,7 @@ describe("barra in alto e menu dell'utente", () => {
 
   // covers: AC-2803-1
   it("il menu di un MEMBER ha una sola voce «Il tuo account» verso /account e nessuna voce Personalizza", () => {
-    renderWithIntl(<UserMenu user={USER} showBillingLink={false} showAdminLink={false} workspaces={[]} activeWorkspaceId={null} />);
+    renderWithIntl(<UserMenu user={USER} showAdminLink={false} workspaces={[]} activeWorkspaceId={null} />);
     const items = within(openMenu()).getAllByRole("menuitem");
 
     const account = items.filter((item) => item.textContent === "Il tuo account");
@@ -117,7 +111,6 @@ describe("barra in alto e menu dell'utente", () => {
     renderWithIntl(
       <UserMenu
         user={USER}
-        showBillingLink={false}
         showAdminLink={false}
         workspaces={[
           { id: "ws-personal", name: "Giulia", isPersonal: true },
@@ -135,5 +128,61 @@ describe("barra in alto e menu dell'utente", () => {
     expect(url).toBe("/api/workspaces/active");
     expect(init?.method).toBe("POST");
     expect(JSON.parse(String(init?.body))).toEqual({ workspaceId: "ws-team" });
+  });
+});
+
+describe("nuovo workspace dal menu dell'utente", () => {
+  const ONE_WORKSPACE = [{ id: "ws-personal", name: "Giulia", isPersonal: true }];
+
+  /** Menu di un OWNER con il solo workspace personale: «Nuovo workspace…» apre la finestra con il nome. */
+  function openNewWorkspaceDialog(): HTMLElement {
+    renderWithIntl(<UserMenu user={USER} showAdminLink={false} workspaces={ONE_WORKSPACE} activeWorkspaceId="ws-personal" />);
+    fireEvent.click(within(openMenu()).getByRole("menuitem", { name: "Nuovo workspace…" }));
+    return screen.getByRole("dialog", { name: "Nuovo workspace" });
+  }
+
+  beforeEach(() => {
+    router.refresh.mockReset();
+  });
+
+  // covers: AC-3103-1
+  it("«Nuovo workspace…» crea il workspace con il nome scritto, chiude la finestra e aggiorna la pagina", async () => {
+    fetchMock.mockResolvedValue(Response.json({ data: { id: "ws-new", name: "Clienti 2027" } }, { status: 201 }));
+    const dialog = openNewWorkspaceDialog();
+
+    fireEvent.change(within(dialog).getByLabelText("Nome"), { target: { value: "Clienti 2027" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Crea" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/workspaces");
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(String(init?.body))).toEqual({ name: "Clienti 2027" });
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  // covers: AC-3103-2
+  it("con un nome vuoto l'errore della rotta compare in un elemento role alert e la finestra resta aperta", async () => {
+    fetchMock.mockResolvedValue(Response.json({ code: "VALIDATION_ERROR", error: "Nome non valido" }, { status: 400 }));
+    const dialog = openNewWorkspaceDialog();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Crea" }));
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Dati non validi: controlla i campi e riprova.");
+    expect(screen.getByRole("dialog", { name: "Nuovo workspace" })).toBeInTheDocument();
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ name: "" });
+    expect(router.refresh).not.toHaveBeenCalled();
+  });
+
+  // covers: AC-3103-3
+  it("il menu dell'OWNER non ha la voce Fatturazione né link a /billing e ha una voce Workspace verso /workspace", () => {
+    renderWithIntl(<UserMenu user={USER} showAdminLink={false} workspaces={ONE_WORKSPACE} activeWorkspaceId="ws-personal" />);
+    const items = within(openMenu()).getAllByRole("menuitem");
+
+    expect(items.filter((item) => item.getAttribute("href") === "/billing" || item.textContent === "Fatturazione")).toHaveLength(0);
+    const workspace = items.filter((item) => item.textContent === "Workspace");
+    expect(workspace).toHaveLength(1);
+    expect(workspace[0]).toHaveAttribute("href", "/workspace");
   });
 });

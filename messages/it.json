@@ -104,7 +104,6 @@
   },
   "nav": {
     "yourAccount": "Il tuo account",
-    "billing": "Fatturazione",
     "admin": "Amministrazione",
     "openMenu": "Apri menu",
     "pricing": "Prezzi",
@@ -467,8 +466,9 @@
   },
   "workspace": {
     "switcher": {
-      "label": "Workspace attivo",
-      "personal": "{name} (personale)"
+      "label": "I tuoi workspace",
+      "personal": "{name} (personale)",
+      "create": "Nuovo workspace…"
     },
     "roles": {
       "OWNER": "Proprietario",
@@ -476,12 +476,13 @@
       "MEMBER": "Membro"
     },
     "page": {
-      "heading": "Workspace: {name}",
-      "intro": "Nome, membri, ruoli e inviti del workspace attivo. Cambia workspace dal selettore in alto.",
-      "personal": "Questo è il tuo workspace personale: puoi invitare altre persone e lo puoi abbandonare solo dopo averne trasferito la proprietà a un altro membro.",
-      "yourRole": "Il tuo ruolo: {role}",
-      "sheetsNote": "L'export su Google Sheets usa la connessione Google personale di chi esporta: ogni membro collega il proprio account da Il tuo account › Collegamenti.",
-      "billingLink": "Piano e fatturazione"
+      "nav": "Menu del workspace",
+      "general": "Generale",
+      "members": "Membri",
+      "plan": "Piano",
+      "summary": "Il tuo ruolo: {role} · {kind}",
+      "personal": "Workspace personale",
+      "team": "Workspace di squadra"
     },
     "name": {
       "title": "Nome del workspace",
@@ -493,7 +494,6 @@
     "members": {
       "title": "Membri",
       "name": "Nome",
-      "email": "Email",
       "role": "Ruolo",
       "joined": "Ingresso",
       "actions": "Azioni",
@@ -531,12 +531,11 @@
       "confirm": "Trasferire la proprietà del workspace a {name}?"
     },
     "create": {
-      "title": "Crea un workspace",
-      "intro": "Un workspace di squadra separato dal tuo workspace personale: ne sarai il proprietario e diventerà il workspace attivo.",
-      "label": "Nome del nuovo workspace",
-      "submit": "Crea workspace",
+      "title": "Nuovo workspace",
+      "label": "Nome",
+      "submit": "Crea",
       "submitting": "Creazione...",
-      "created": "Workspace creato: ora è quello attivo."
+      "cancel": "Annulla"
     },
     "leave": {
       "title": "Abbandona il workspace",
@@ -545,6 +544,10 @@
       "submit": "Abbandona",
       "submitting": "Uscita...",
       "confirm": "Abbandonare il workspace {name}?"
+    },
+    "danger": {
+      "title": "Azioni irreversibili",
+      "warning": "Il trasferimento della proprietà e l'uscita dal workspace non si annullano da qui."
     },
     "accept": {
       "title": "Invito in un workspace",
@@ -784,9 +787,8 @@
     }
   },
   "billing": {
-    "title": "Fatturazione",
-    "intro": "Piano e abbonamento del workspace {name}.",
-    "paused": "Il lancio commerciale non è ancora attivo: il workspace non ha limiti e non si può acquistare un piano.",
+    "paused": "In questa fase il workspace non ha limiti e non si acquista nessun piano.",
+    "summaryTitle": "Il tuo piano",
     "plans": {
       "free": "Free"
     },
@@ -805,8 +807,9 @@
     "ownerOnly": "Solo il proprietario del workspace gestisce la fatturazione.",
     "checkoutTitle": "Scegli un piano",
     "noPaidPlans": "Nessun piano a pagamento disponibile.",
+    "manageTitle": "Gestisci",
     "usage": {
-      "title": "Uso del workspace",
+      "title": "Uso del mese",
       "runs": "Estrazioni oggi: {used} su {limit}",
       "keywords": "Keyword salvate questo mese: {used} su {limit}",
       "unlimited": "illimitate",
@@ -835,7 +838,7 @@
     },
     "limit": {
       "owner": "Hai raggiunto un limite del piano del workspace.",
-      "ownerLink": "Cambia piano da Fatturazione",
+      "ownerLink": "Apri il piano del workspace",
       "member": "Hai raggiunto un limite del piano del workspace: chiedi al proprietario di passare a un piano superiore."
     }
   },
