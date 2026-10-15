@@ -404,7 +404,7 @@
     },
     "preferences": {
       "title": "Accessibility and theme",
-      "intro": "Customize the interface with theme, text readability and color vision mode.",
+      "intro": "Choose language, theme, text readability and color vision mode: every choice is saved right away.",
       "theme": "Theme",
       "dark": "Dark",
       "light": "Light",
@@ -417,9 +417,7 @@
         "DEUTERANOPIA": "Deuteranopia",
         "TRITANOPIA": "Tritanopia"
       },
-      "saving": "Saving preferences...",
-      "save": "Save preferences",
-      "saved": "Preferences saved."
+      "saved": "Saved"
     },
     "branding": {
       "title": "Branding",
@@ -683,7 +681,7 @@
     },
     "sheetsPersonal": {
       "title": "Personal Google Sheets",
-      "intro": "Connect your Google account to export keywords directly to Sheets files in your Drive.",
+      "intro": "Connect your Google account to export keywords to Sheets files in your Drive. Exports use the personal connection of whoever exports: each workspace member connects their own account.",
       "connected": "Google Sheets account connected.",
       "failed": "Google Sheets connection failed: {reason}",
       "reasons": {
@@ -695,19 +693,15 @@
         "sessione_scaduta": "your session has expired. Sign in again and reconnect.",
         "unknown": "unknown error."
       },
-      "statusLabel": "Status:",
-      "statuses": {
-        "connected": "Connected",
-        "reauth_required": "Needs reconnecting",
-        "disconnected": "Not connected"
-      },
-      "emailLabel": "Email:",
-      "scopeLabel": "Scope:",
-      "broaderScope": "The connection uses a broader permission than needed: reconnect Google Sheets to switch to access to only the files created by this app.",
-      "reconnect": "Reconnect Google Sheets",
-      "connect": "Connect to Google Sheets",
+      "connectedAs": "Connected as {email}",
+      "connectedPlain": "Connected",
+      "needsReconnect": "Needs reconnecting",
+      "reauthReason": "Google no longer accepts this connection: reconnect it to keep exporting.",
+      "broaderScope": "The connection uses a broader permission than needed: reconnect it to grant access only to the files created by this app.",
+      "reconnect": "Reconnect",
+      "connect": "Connect Google Sheets",
       "disconnecting": "Disconnecting...",
-      "disconnect": "Disconnect Google Sheets",
+      "disconnect": "Disconnect",
       "disconnectConfirm": "Disconnect Google Sheets from this account?"
     }
   },

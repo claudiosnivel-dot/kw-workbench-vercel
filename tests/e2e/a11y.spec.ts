@@ -1,16 +1,33 @@
 // Gate di T-1104 (AC-1104-1…4): nessuna violazione axe serious o critical su login, dashboard e risultati,
-// focus della modale di export Sheets, anteprima del tema non salvata ripristinata, titolo dal branding.
+// focus della modale di export Sheets, tema scelto nelle preferenze che resta tornando alla home, titolo dal branding.
 // impacted-by: T-2403, T-2406 (i risultati sono la pagina delle keyword e gli export partono dalla finestra Esporta della
 // barra in alto: AC-1104-1 e AC-1104-2 emendati)
 // impacted-by: T-2803 (Personalizza è la sezione Preferenze dell'account: AC-1104-3 apre /account/preferences)
+// impacted-by: T-2901 (le preferenze si salvano a ogni scelta: AC-1104-3 emendato, il tema Chiaro resta tornando alla home
+// e il test usa un utente dedicato)
+import { randomBytes } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
+import { prisma } from "@/lib/prisma";
+import { createE2EUser, E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 
-async function login(page: Page): Promise<void> {
-  const response = await page.request.post("/api/auth/login", {
-    data: { email: E2E_EMAIL, password: E2E_USER_PASSWORD },
-  });
+// Utente dedicato al tema (AC-1104-3): le pagine fotografate dall'utente seed restano scure. Password generata a ogni
+// esecuzione, mai una credenziale reale.
+const THEME_EMAIL = "e2e-theme@example.test";
+const THEME_PASSWORD = randomBytes(18).toString("hex");
+
+test.beforeAll(async () => {
+  await prisma.user.deleteMany({ where: { email: THEME_EMAIL } });
+  await createE2EUser(THEME_EMAIL, THEME_PASSWORD);
+});
+
+test.afterAll(async () => {
+  await prisma.user.deleteMany({ where: { email: THEME_EMAIL } });
+  await prisma.$disconnect();
+});
+
+async function login(page: Page, email = E2E_EMAIL, password = E2E_USER_PASSWORD): Promise<void> {
+  const response = await page.request.post("/api/auth/login", { data: { email, password } });
   expect(response.status()).toBe(200);
 }
 
@@ -67,18 +84,24 @@ test.describe("accessibilità di base", () => {
   });
 
   // covers: AC-1104-3
-  test("il tema scelto senza salvare non resta uscendo dalle preferenze dell'account", async ({ page }) => {
-    await login(page);
-    await page.goto("/account/preferences");
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "DARK");
+  test("il tema Chiaro scelto nelle preferenze dell'account resta tornando alla home", async ({ page }) => {
+    await login(page, THEME_EMAIL, THEME_PASSWORD);
+    try {
+      await page.goto("/account/preferences");
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "DARK");
 
-    await page.getByRole("button", { name: "Chiaro" }).click();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "LIGHT");
+      await page.getByRole("button", { name: "Chiaro" }).click();
+      await expect(page.getByRole("status").filter({ hasText: "Salvato" })).toBeVisible();
 
-    // impacted-by: T-2304 (la barra non ha più la voce Panoramica: alla home porta il marchio)
-    await page.getByRole("link", { name: "Titan SEO" }).first().click();
-    await page.waitForURL((url) => url.pathname === "/");
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "DARK");
+      // impacted-by: T-2304 (la barra non ha più la voce Panoramica: alla home porta il marchio)
+      await page.getByRole("link", { name: "Titan SEO" }).first().click();
+      await page.waitForURL((url) => url.pathname === "/");
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "LIGHT");
+    } finally {
+      // Il tema torna DARK anche se un passo fallisce.
+      const response = await page.request.patch("/api/user/preferences", { data: { themeMode: "DARK" } });
+      expect(response.status()).toBe(200);
+    }
   });
 
   // covers: AC-1104-4
