@@ -10,7 +10,7 @@ import {
 
 const GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
-/** Avvio del consenso Google Sheets; sessione scaduta o configurazione mancante tornano a Personalizza (T-906). */
+/** Avvio del consenso Google Sheets; sessione scaduta o configurazione mancante tornano ai Collegamenti dell'account (T-906, T-2801). */
 export const GET = withApiErrors(async (request: Request) => {
   const preflight = await oauthPreflight(request);
   if (preflight instanceof NextResponse) {

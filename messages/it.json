@@ -93,7 +93,7 @@
     }
   },
   "nav": {
-    "personalize": "Personalizza",
+    "yourAccount": "Il tuo account",
     "billing": "Fatturazione",
     "admin": "Amministrazione",
     "openMenu": "Apri menu",
@@ -101,7 +101,6 @@
     "login": "Accedi",
     "register": "Registrati",
     "support": "Supporto",
-    "account": "Account",
     "workspace": "Workspace",
     "userMenu": "Menu di {name}",
     "projectMenu": "Progetto {name}: cambia progetto",
@@ -351,12 +350,12 @@
     "EXPORT_FORMAT_INVALID": "Formato di export non valido.",
     "EXPORT_DIALECT_INVALID": "Dialetto CSV non valido: usa excel-it o rfc4180.",
     "SHEETS_FILE_NAME_REQUIRED": "Nome file obbligatorio.",
-    "SHEETS_NOT_CONNECTED": "Collega Google Sheets in Personalizza prima di esportare.",
+    "SHEETS_NOT_CONNECTED": "Collega Google Sheets da Il tuo account › Collegamenti prima di esportare.",
     "SHEETS_OAUTH_CONFIG_MISSING": "Configurazione OAuth Google Sheets mancante. Contatta l'admin principale.",
     "SHEETS_TIMEOUT": "Google non ha risposto entro 30 secondi o non è raggiungibile.",
     "SHEETS_NO_ROWS": "Nessuna keyword da esportare con i filtri e lo scope selezionati.",
     "GOOGLE_SHEETS_EXPORT_ERROR": "Export su Google Sheets non riuscito: Google ha restituito un errore. Riprova.",
-    "GOOGLE_REAUTH_REQUIRED": "Google Sheets va ricollegato: apri Personalizza e collega di nuovo l'account.",
+    "GOOGLE_REAUTH_REQUIRED": "Google Sheets va ricollegato: apri Il tuo account › Collegamenti e collega di nuovo l'account.",
     "FILE_TOO_LARGE": "File troppo grande: il massimo è 5 MB.",
     "PLANNER_FILE_REQUIRED": "Allega il file scaricato da Keyword Planner.",
     "PLANNER_FILE_TYPE_INVALID": "Formato non ammesso: carica un file .csv o .tsv.",
@@ -399,8 +398,6 @@
     }
   },
   "settings": {
-    "title": "Personalizza",
-    "intro": "Gestisci preferenze visive, credenziali account e connessioni personali da un unico punto.",
     "passwordChange": {
       "title": "Cambia la password",
       "intro": "Un amministratore ha reimpostato la tua password. Prima di continuare scegline una nuova: come password attuale inserisci quella che hai ricevuto."
@@ -423,24 +420,6 @@
       "saving": "Salvataggio preferenze...",
       "save": "Salva preferenze",
       "saved": "Preferenze salvate correttamente."
-    },
-    "account": {
-      "title": "Account",
-      "intro": "Aggiorna il nome mostrato e la password del tuo account personale.",
-      "accountEmail": "Email:",
-      "activeDisplayName": "Nome attuale:",
-      "newDisplayName": "Nuovo nome",
-      "displayNamePlaceholder": "Nome mostrato",
-      "currentPassword": "Password attuale (obbligatoria)",
-      "currentPasswordPlaceholder": "Password attuale",
-      "newPassword": "Nuova password (opzionale)",
-      "newPasswordPlaceholder": "Lascia vuoto per mantenerla",
-      "confirmPassword": "Conferma nuova password",
-      "saving": "Salvataggio account...",
-      "save": "Salva impostazioni account",
-      "saved": "Credenziali aggiornate.",
-      "logoutEverywhereHint": "Chiude la sessione su ogni dispositivo in cui hai effettuato l'accesso, compreso questo.",
-      "logoutEverywhere": "Esci da tutti i dispositivi"
     },
     "branding": {
       "title": "Branding",
@@ -491,7 +470,7 @@
       "intro": "Nome, membri, ruoli e inviti del workspace attivo. Cambia workspace dal selettore in alto.",
       "personal": "Questo è il tuo workspace personale: puoi invitare altre persone e lo puoi abbandonare solo dopo averne trasferito la proprietà a un altro membro.",
       "yourRole": "Il tuo ruolo: {role}",
-      "sheetsNote": "L'export su Google Sheets usa la connessione Google personale di chi esporta: ogni membro collega il proprio account da Personalizza.",
+      "sheetsNote": "L'export su Google Sheets usa la connessione Google personale di chi esporta: ogni membro collega il proprio account da Il tuo account › Collegamenti.",
       "billingLink": "Piano e fatturazione"
     },
     "name": {
@@ -565,11 +544,6 @@
       "success": "Invito accettato: il workspace è ora quello attivo.",
       "missingToken": "Il link dell'invito non è completo: aprilo di nuovo dalla email.",
       "goToApp": "Vai alla dashboard"
-    },
-    "settingsLink": {
-      "title": "Workspace e membri",
-      "intro": "Nome del workspace attivo, membri, ruoli e inviti.",
-      "open": "Gestisci il workspace"
     }
   },
   "admin": {
@@ -957,12 +931,40 @@
     "lastUpdated": "Ultimo aggiornamento: {date}"
   },
   "account": {
-    "title": "Dati dell'account",
-    "intro": "Scarica una copia dei tuoi dati o cancella l'account.",
-    "settingsLink": {
-      "title": "Dati dell'account",
-      "intro": "Export dei tuoi dati e cancellazione dell'account.",
-      "open": "Gestisci i tuoi dati"
+    "sections": {
+      "title": "Il tuo account",
+      "intro": "Il tuo profilo, l'accesso, le preferenze, i collegamenti e i tuoi dati.",
+      "nav": "Menu del tuo account",
+      "profile": "Profilo",
+      "security": "Accesso",
+      "preferences": "Preferenze",
+      "connections": "Collegamenti",
+      "data": "I tuoi dati"
+    },
+    "profile": {
+      "title": "Profilo",
+      "intro": "Il nome con cui ti vedono gli altri membri dei workspace.",
+      "email": "Email:",
+      "displayName": "Nome mostrato",
+      "displayNamePlaceholder": "Il tuo nome",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "saved": "Nome salvato."
+    },
+    "password": {
+      "title": "Password",
+      "intro": "Per cambiare la password serve quella attuale. Dopo il cambio gli altri dispositivi escono dall'account.",
+      "current": "Password attuale",
+      "new": "Nuova password",
+      "confirm": "Ripeti la nuova password",
+      "save": "Cambia la password",
+      "saving": "Salvataggio...",
+      "saved": "Password cambiata."
+    },
+    "devices": {
+      "title": "Dispositivi",
+      "intro": "Chiude la sessione su ogni dispositivo in cui hai effettuato l'accesso, compreso questo.",
+      "action": "Esci da tutti i dispositivi"
     },
     "export": {
       "title": "Scarica i tuoi dati",

@@ -28,10 +28,9 @@ const I18N_MIGRATED_FILES = [
   "components/planner-import-upload.tsx",
   // T-1303: impostazioni, admin, integrazioni e pagine d'errore. components/google-ads-integration-card.tsx non esiste
   // più (rimossa con T-901), le pagine e i componenti dell'onboarding nemmeno (rimossi con T-2306); metrics-spend-card.tsx
-  // è nata dopo il blueprint.
-  "app/personalizza/page.tsx",
+  // è nata dopo il blueprint. app/personalizza/page.tsx e components/auth-settings-card.tsx non esistono più (rimossi con
+  // T-2802: la pagina è la sezione Preferenze dell'account, la card i moduli Profilo e Password).
   "components/personalization-settings-card.tsx",
-  "components/auth-settings-card.tsx",
   "components/branding-settings-card.tsx",
   "app/admin/page.tsx",
   "components/admin-users-dashboard.tsx",
@@ -120,6 +119,17 @@ const I18N_MIGRATED_FILES = [
   "components/plan/plan-version-menu.tsx",
   "components/plan/status-menu.tsx",
   "components/project-card.tsx",
+  // T-2801…T-2803: area «Il tuo account» con la navigazione a sezioni nasce già con il catalogo.
+  "components/section-nav.tsx",
+  "app/account/(sections)/layout.tsx",
+  "app/account/(sections)/page.tsx",
+  "app/account/(sections)/security/page.tsx",
+  "app/account/(sections)/preferences/page.tsx",
+  "app/account/(sections)/connections/page.tsx",
+  "app/account/(sections)/data/page.tsx",
+  "app/account/password/page.tsx",
+  "components/profile-card.tsx",
+  "components/account-security-cards.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.

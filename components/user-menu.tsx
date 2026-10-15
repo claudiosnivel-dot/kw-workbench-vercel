@@ -25,7 +25,7 @@ type UserMenuProps = {
 const ITEM_CLASS = "user-menu-item";
 
 /**
- * Menu dell'utente nella barra in alto (T-2304, D-39): Personalizza, Account, Workspace con il cambio del workspace
+ * Menu dell'utente nella barra in alto (T-2304, D-39): Il tuo account (T-2803), Workspace con il cambio del workspace
  * attivo (stessa richiesta del selettore di T-1504), Fatturazione per chi la gestisce, Amministrazione per il root
  * admin, Supporto, lingua ed Esci. Le voci nascoste lo sono per comodità: le pagine restano protette lato server.
  */
@@ -38,8 +38,7 @@ export function UserMenu({ user, showBillingLink, showAdminLink, workspaces, act
   const { open, close, onKeyDown, wrapperRef, buttonRef, menuRef, buttonProps, menuProps } = useMenuButton();
 
   const links = [
-    { href: "/personalizza", label: t("personalize") },
-    { href: "/account", label: t("account") },
+    { href: "/account", label: t("yourAccount") },
     { href: "/workspace", label: t("workspace") },
     ...(showBillingLink ? [{ href: "/billing", label: t("billing") }] : []),
     ...(showAdminLink ? [{ href: "/admin", label: t("admin") }] : []),

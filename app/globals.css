@@ -591,13 +591,15 @@ a {
 }
 
 .project-step:hover,
-.project-topic:hover {
+.project-topic:hover,
+.section-nav-link:hover {
   background: var(--nav-link-hover-bg);
   color: var(--nav-link-hover-text);
 }
 
 .project-step.is-current,
-.project-topic.is-current {
+.project-topic.is-current,
+.section-nav-link.is-current {
   background: var(--nav-link-active-bg);
   color: var(--nav-link-active-text);
   box-shadow: inset 0 0 0 1px var(--nav-link-active-ring);
@@ -633,6 +635,59 @@ a {
   margin: 0.5rem 0.2rem;
   height: 1px;
   background: var(--surface-border);
+}
+
+/* Navigazione a sezioni delle aree del menu dell'utente (T-2801): sopra il contenuto come riga scorrevole, da 768 px a
+   sinistra. Passaggio e voce attiva come nella barra laterale del progetto. */
+.section-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.section-nav {
+  overflow-x: auto;
+  border-radius: 20px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  padding: 0.5rem;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(12px);
+}
+
+.section-nav-list {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.section-nav-link {
+  display: block;
+  white-space: nowrap;
+  border-radius: 12px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-800);
+  text-decoration: none;
+}
+
+@media (min-width: 768px) {
+  .section-layout {
+    grid-template-columns: 13rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .section-nav {
+    position: sticky;
+    top: 5.5rem;
+    padding: 0.75rem;
+  }
+
+  .section-nav-list {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
 }
 
 /* Modali e pannello a scomparsa del progetto (T-2303). */

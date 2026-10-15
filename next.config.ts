@@ -39,7 +39,11 @@ const nextConfig: NextConfig = {
   },
   // Onboarding a 7 passi rimosso (T-2306): i vecchi indirizzi portano alla home, con 307 (permanent false).
   async redirects() {
-    return [{ source: "/onboarding/:path*", destination: "/", permanent: false }];
+    return [
+      { source: "/onboarding/:path*", destination: "/", permanent: false },
+      // Personalizza è diventata la sezione Preferenze dell'account (T-2802, D-41).
+      { source: "/personalizza", destination: "/account/preferences", permanent: false },
+    ];
   },
 };
 
