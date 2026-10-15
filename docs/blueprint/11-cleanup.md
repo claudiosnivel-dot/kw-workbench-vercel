@@ -234,7 +234,7 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
       when: "l'utente apre la finestra Esporta dal pulsante della barra in alto, preme Tab 20 volte e poi Esc (emendato da T-2406 il 2026-10-13: un solo pulsante Esporta al posto del pulsante Google Sheets)"
       then: "dopo ogni Tab document.activeElement è dentro l'elemento role=dialog e dopo Esc è il pulsante che ha aperto la modale"
     - id: AC-1104-3
-      given: "un utente con tema salvato DARK nella pagina /personalizza"
+      given: "un utente con tema salvato DARK nella pagina /account/preferences (emendato da T-2803 il 2026-10-15: Personalizza è la sezione Preferenze dell'account)"
       when: "seleziona il tema LIGHT senza salvare e naviga alla dashboard"
       then: "l'elemento html ha data-theme uguale a 'DARK'"
     - id: AC-1104-4
@@ -308,3 +308,4 @@ del task: un elemento che nel frattempo ha acquisito chiamanti esce dalla propos
 - Semantico: `self-check-checklist.md` punti 6-10 applicati a T-1101..T-1105.
 - Emendamento (2026-10-13, macrotask 24 ux-keywords): AC-1104-1 analizza la pagina delle keyword dell'argomento (T-2403) e AC-1104-2 la finestra Esporta aperta dalla barra in alto (T-2406), che tiene il focus e lo restituisce al pulsante Esporta.
 - Emendamento (2026-10-14, costruzione del macrotask 26): i file consolidati rimossi con T-2602 e T-2603 (pagine Sezioni e delle impostazioni della sezione, delete-targets.ts, delete-entity-button.tsx, set-default-section-button.tsx, page-header-card.tsx) escono dall'elenco di tests/tooling/jscpd-consolidated.json (AC-1102-1); jobStatusTone è andata via con la pagina Sezioni, il suo ultimo uso (AC-1102-2 emendato).
+- Emendamento (2026-10-15, costruzione del macrotask 28, T-2803): AC-1104-3 apre la sezione Preferenze dell'account (/account/preferences), che ospita la stessa card di Personalizza; /personalizza porta lì con un redirect.

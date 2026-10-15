@@ -32,7 +32,7 @@ L'isolamento resta applicativo (ecosistema `postgres-jsts`, D-02): ogni controll
     - "PATCH /api/auth/config: dopo un cambio password riemette il cookie con il nuovo ver per il solo dispositivo corrente; il cambio del solo username non riemette il cookie (lo username non è più nel token)."
     - "PATCH /api/user/preferences non imposta più il cookie di sessione; le preferenze restano lette dal DB in current-user come oggi."
     - "Un solo helper (es. lib/auth/session-cookie.ts) crea il token e imposta il cookie per login, register e auth/config, con attributi invariati: httpOnly, SameSite=Lax, path /, secure da shouldUseSecureCookies, maxAge da getSessionMaxAgeSeconds."
-    - "Pulsante «Esci da tutti i dispositivi» in components/auth-settings-card.tsx (pagina app/personalizza) che chiama POST /api/auth/logout-all e porta a /login."
+    - "Pulsante «Esci da tutti i dispositivi» in components/auth-settings-card.tsx (pagina app/personalizza) che chiama POST /api/auth/logout-all e porta a /login (emendato da T-2802 il 2026-10-15: il pulsante sta in components/account-security-cards.tsx, nella sezione Accesso /account/security; auth-settings-card.tsx e Personalizza sono rimossi)."
     - "I token emessi prima del deploy diventano invalidi (D-05 ammette l'invalidazione delle sessioni); la conseguenza è annotata nel messaggio di commit e in SESSION-STATE."
 
   acceptance_criteria:
@@ -393,3 +393,4 @@ L'isolamento resta applicativo (ecosistema `postgres-jsts`, D-02): ogni controll
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
 - Emendamento (2026-10-13, costruzione del macrotask 23): con l'onboarding rimosso (T-2306) AC-505-3 visita la home del primo accesso di T-2305 al posto di una pagina dell'onboarding.
+- Emendamento (2026-10-15, costruzione del macrotask 28, T-2802, D-41): «Esci da tutti i dispositivi» passa nella sezione Accesso dell'account (components/account-security-cards.tsx) con la stessa richiesta; il cambio del solo nome mostrato non chiede più la password attuale e non riemette il cookie, come già prima.

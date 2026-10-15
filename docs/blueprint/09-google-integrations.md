@@ -388,7 +388,7 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
     (rimosso da T-901).
 
   definition_of_done:
-    - "app/api/integrations/google-sheets/connect/route.ts: configurazione OAuth mancante o sessione scaduta -> redirect 302 a /personalizza con google_sheets=error e reason config_oauth_mancante o sessione_scaduta, invece di JSON"
+    - "app/api/integrations/google-sheets/connect/route.ts: configurazione OAuth mancante o sessione scaduta -> redirect 302 a /personalizza con google_sheets=error e reason config_oauth_mancante o sessione_scaduta, invece di JSON (emendato da T-2801 il 2026-10-15: il ritorno è /account/connections, la sezione Collegamenti dell'account)"
     - "Callback Sheets: il campo scope della risposta token (scope concessi, separati da spazio) deve contenere lo scope richiesto da connect (oggi auth/spreadsheets, auth/drive.file dopo T-907), letto da una costante condivisa tra connect e callback; se manca, nessuna credenziale salvata e reason scope_mancante"
     - "Il cookie kwb_google_sheets_oauth_state è cancellato con maxAge 0 su tutti i return della callback, inclusi errore Google, state non valido e configurazione mancante"
     - "reason nell'URL è sempre un codice di una whitelist (accesso_negato, stato_non_valido, config_oauth_mancante, scope_mancante, scambio_token_fallito, sessione_scaduta), mai error.message né error_description di Google; GoogleSheetsPersonalCard mostra il testo italiano del codice e un testo generico per codici sconosciuti"
@@ -401,7 +401,7 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
     - id: AC-906-1
       given: "configurazione OAuth Google Sheets assente in DB ed env e un utente autenticato"
       when: "si chiama GET /api/integrations/google-sheets/connect"
-      then: "la risposta è 302 con Location '/personalizza?google_sheets=error&reason=config_oauth_mancante' e Content-Type non è application/json"
+      then: "la risposta è 302 con Location '/account/connections?google_sheets=error&reason=config_oauth_mancante' e Content-Type non è application/json (emendato da T-2801 il 2026-10-15: Personalizza è diventata l'area «Il tuo account»)"
     - id: AC-906-2
       given: "una callback Sheets con state valido che riceve error='<b>x</b>' oppure, in un secondo caso, una risposta token con scope 'openid email' senza lo scope richiesto"
       when: "l'utente arriva su GET /api/integrations/google-sheets/callback"
@@ -537,3 +537,4 @@ I DoD citano solo questi fatti; ciò che non è stato possibile verificare è ma
 - Semantico: `self-check-checklist.md` punti 6-10 applicati a T-901..T-908; rilievo di atomicità aperto su T-901 (contratto + rimozione + migrazione dell'enum) e T-905, da confermare o dividere con l'utente.
 - **Emendamento 2026-10-06** (all'avvio del BUILD, decisione dell'utente del 2026-10-05 sui rilievi di atomicità): T-902 diviso in T-902 (richiesta, lotti, filtro, mappe, parsing, costo, credenziali; AC-902-1…3) e T-909 (limitatore, timeout e retry; l'AC-902-4 diventa AC-909-1 con lo stesso testo, target test `tests/unit/dataforseo-limiter.test.ts`); T-905 diviso in T-905 (parser e fixture; AC-905-1, AC-905-2) e T-910 (migrazione PLANNER_CSV, servizio, upload e CLI; gli AC-905-3 e AC-905-4 diventano AC-910-1 e AC-910-2 con lo stesso testo). Le voci di DoD sono le stesse, ripartite; in più T-909 esplicita l'esito del lotto che esaurisce i tentativi (metrics_status failed, gli altri lotti proseguono). T-903 dipende anche da T-909. I riferimenti a T-905 negli altri moduli per servizio, upload e ricalcolo del punteggio valgono per T-910.
 - **Emendamento 2026-10-06** (decisione dell'utente alla prima chiusura del 09, D-19 emendata): T-910 conserva i volumi importati al re-run quando il provider effettivo è NONE (voce di DoD e AC-910-3, target test `tests/integration/planner-rerun.test.ts`).
+- **Emendamento 2026-10-15** (costruzione del macrotask 28, T-2801, D-41): il flusso OAuth di Google Sheets torna sulla sezione Collegamenti dell'account (/account/connections) con gli stessi parametri google_sheets e reason; AC-906-1 attende quella Location e il test `tests/integration/oauth-google.test.ts` la segue. I testi degli errori SHEETS_NOT_CONNECTED e GOOGLE_REAUTH_REQUIRED e la nota della pagina del workspace indicano «Il tuo account › Collegamenti».
