@@ -56,6 +56,16 @@
       "missingToken": "The verification link is incomplete: open it again from the email or request a new one.",
       "goToApp": "Go to the app"
     },
+    "emailChange": {
+      "title": "Email change",
+      "intro": "Confirmation of the new email address of your account.",
+      "confirming": "Confirming...",
+      "success": "Email changed: from now on, sign in with the new address.",
+      "invalid": "The link is invalid or has expired: if you still need it, request the change again from your profile.",
+      "taken": "This address is already used by another account: the email has not changed.",
+      "missingToken": "The link is incomplete: open it again from the email.",
+      "goToLogin": "Go to sign in"
+    },
     "forgot": {
       "title": "Forgot password",
       "intro": "Enter the email of your account: if it is registered you will receive a link to choose a new password.",
@@ -317,6 +327,8 @@
     "EMAIL_ALREADY_VERIFIED": "Your email is already verified.",
     "EMAIL_UNAVAILABLE": "Sending emails is not available right now: try again later.",
     "VERIFICATION_TOKEN_INVALID": "Invalid or expired verification link: request a new one.",
+    "EMAIL_UNCHANGED": "This is already your account email: enter a different one.",
+    "EMAIL_CHANGE_INVALID": "Invalid or expired link: request the change again from your profile.",
     "RESET_TOKEN_INVALID": "Invalid or expired reset link: request a new one.",
     "TERMS_NOT_ACCEPTED": "To continue, accept the terms of service and the privacy policy.",
     "TERMS_VERSION_CHANGED": "The terms have changed: reload the page and accept the new version.",
@@ -721,6 +733,18 @@
       "action": "Choose a new password",
       "expiry": "The link expires in 1 hour and can be used only once."
     },
+    "emailChange": {
+      "subject": "Confirm your new email address",
+      "intro": "you asked to use this address for your account. Confirm it to complete the change.",
+      "action": "Confirm the new address",
+      "expiry": "The link expires in 24 hours and can be used only once. Until you open it, the account keeps the previous address."
+    },
+    "emailChanged": {
+      "subject": "Your account email has changed",
+      "intro": "the address you sign in with has been changed. From now on, account emails go to the new address.",
+      "notYou": "If you didn't ask for this change, write to support right away from the Contact page of the site.",
+      "footer": "You received this email because your account address has changed."
+    },
     "accountExists": {
       "subject": "You already have an account",
       "intro": "someone tried to sign up with this email address, which already has an account. If it was you, sign in or recover your password.",
@@ -938,12 +962,27 @@
     "profile": {
       "title": "Profile",
       "intro": "The name other workspace members see.",
-      "email": "Email:",
       "displayName": "Display name",
       "displayNamePlaceholder": "Your name",
       "save": "Save",
       "saving": "Saving...",
       "saved": "Name saved."
+    },
+    "email": {
+      "title": "Email",
+      "intro": "The address you sign in with and receive account emails at.",
+      "current": "Email:",
+      "change": "Change email",
+      "unavailable": "Sending emails is not active yet: to change your email, ask the administrator.",
+      "pending": "Waiting for confirmation: {email}",
+      "expires": "Open the link we sent you by {date}. Until then, your email stays the previous one.",
+      "cancel": "Cancel",
+      "dialogIntro": "We send a link to the new address: the email changes when you open it.",
+      "newEmail": "New email",
+      "currentPassword": "Current password",
+      "submit": "Send the confirmation link",
+      "submitting": "Sending...",
+      "close": "Cancel"
     },
     "password": {
       "title": "Password",

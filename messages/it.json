@@ -56,6 +56,16 @@
       "missingToken": "Il link di verifica non è completo: aprilo di nuovo dalla email o chiedi un nuovo invio.",
       "goToApp": "Vai all'app"
     },
+    "emailChange": {
+      "title": "Cambio email",
+      "intro": "Conferma del nuovo indirizzo email del tuo account.",
+      "confirming": "Conferma in corso...",
+      "success": "Email cambiata: da adesso accedi con il nuovo indirizzo.",
+      "invalid": "Il link non è valido o è scaduto: se ti serve ancora, chiedi di nuovo il cambio dal tuo profilo.",
+      "taken": "Questo indirizzo è già usato da un altro account: l'email non è cambiata.",
+      "missingToken": "Il link non è completo: aprilo di nuovo dalla email.",
+      "goToLogin": "Vai all'accesso"
+    },
     "forgot": {
       "title": "Password dimenticata",
       "intro": "Inserisci l'email del tuo account: se è registrata riceverai un link per scegliere una nuova password.",
@@ -317,6 +327,8 @@
     "EMAIL_ALREADY_VERIFIED": "La tua email è già verificata.",
     "EMAIL_UNAVAILABLE": "L'invio delle email non è disponibile in questo momento: riprova più tardi.",
     "VERIFICATION_TOKEN_INVALID": "Link di verifica non valido o scaduto: chiedi un nuovo invio.",
+    "EMAIL_UNCHANGED": "È già l'email del tuo account: scrivine una diversa.",
+    "EMAIL_CHANGE_INVALID": "Link non valido o scaduto: chiedi di nuovo il cambio dal tuo profilo.",
     "RESET_TOKEN_INVALID": "Link di reimpostazione non valido o scaduto: richiedine uno nuovo.",
     "TERMS_NOT_ACCEPTED": "Per continuare accetta termini di servizio e informativa sulla privacy.",
     "TERMS_VERSION_CHANGED": "I termini sono cambiati: ricarica la pagina e accetta la nuova versione.",
@@ -721,6 +733,18 @@
       "action": "Scegli una nuova password",
       "expiry": "Il link scade tra 1 ora e si può usare una sola volta."
     },
+    "emailChange": {
+      "subject": "Conferma il nuovo indirizzo email",
+      "intro": "hai chiesto di usare questo indirizzo per il tuo account. Confermalo per completare il cambio.",
+      "action": "Conferma il nuovo indirizzo",
+      "expiry": "Il link scade tra 24 ore e si può usare una sola volta. Finché non lo apri, l'account resta sull'indirizzo di prima."
+    },
+    "emailChanged": {
+      "subject": "L'email del tuo account è cambiata",
+      "intro": "l'indirizzo con cui accedi al tuo account è stato cambiato. Da adesso le email dell'account arrivano al nuovo indirizzo.",
+      "notYou": "Se non hai chiesto tu il cambio, scrivi subito al supporto dalla pagina Contatti del sito.",
+      "footer": "Hai ricevuto questa email perché l'indirizzo del tuo account è cambiato."
+    },
     "accountExists": {
       "subject": "Hai già un account",
       "intro": "qualcuno ha provato a registrarsi con questo indirizzo email, che ha già un account. Se eri tu, accedi oppure recupera la password.",
@@ -938,12 +962,27 @@
     "profile": {
       "title": "Profilo",
       "intro": "Il nome con cui ti vedono gli altri membri dei workspace.",
-      "email": "Email:",
       "displayName": "Nome mostrato",
       "displayNamePlaceholder": "Il tuo nome",
       "save": "Salva",
       "saving": "Salvataggio...",
       "saved": "Nome salvato."
+    },
+    "email": {
+      "title": "Email",
+      "intro": "L'indirizzo con cui accedi e ricevi le email dell'account.",
+      "current": "Email:",
+      "change": "Cambia email",
+      "unavailable": "L'invio delle email non è ancora attivo: per cambiare l'email chiedi all'amministratore.",
+      "pending": "In attesa di conferma: {email}",
+      "expires": "Apri il link che ti abbiamo mandato entro {date}. Fino ad allora l'email resta quella di prima.",
+      "cancel": "Annulla",
+      "dialogIntro": "Ti mandiamo un link al nuovo indirizzo: l'email cambia quando lo apri.",
+      "newEmail": "Nuova email",
+      "currentPassword": "Password attuale",
+      "submit": "Manda il link di conferma",
+      "submitting": "Invio...",
+      "close": "Annulla"
     },
     "password": {
       "title": "Password",

@@ -10,7 +10,10 @@ export type EmailTemplate =
   // Password reimpostata da un admin (T-1704).
   | "admin-password-reset"
   // Messaggio del modulo contatti verso l'indirizzo di supporto (T-1805).
-  | "contact-message";
+  | "contact-message"
+  // Cambio dell'email (T-3001): link di conferma al nuovo indirizzo, avviso al vecchio dopo la conferma.
+  | "email-change"
+  | "email-changed";
 
 /** Messaggio pronto per l'invio: id è anche la Idempotency-Key di Resend, quindi un ritentativo non duplica l'email. */
 export type EmailMessage = {

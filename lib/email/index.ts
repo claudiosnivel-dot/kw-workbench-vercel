@@ -7,6 +7,8 @@ import { render as accountExists } from "@/lib/email/templates/account-exists";
 import { render as adminPasswordReset } from "@/lib/email/templates/admin-password-reset";
 import { render as billingNotice } from "@/lib/email/templates/billing-notice";
 import { render as contactMessage } from "@/lib/email/templates/contact-message";
+import { render as emailChange } from "@/lib/email/templates/email-change";
+import { render as emailChanged } from "@/lib/email/templates/email-changed";
 import type { RenderedEmail } from "@/lib/email/templates/layout";
 import { render as passwordReset } from "@/lib/email/templates/password-reset";
 import { render as verifyEmail } from "@/lib/email/templates/verify-email";
@@ -23,6 +25,8 @@ const RENDERERS = {
   "billing-notice": billingNotice,
   "admin-password-reset": adminPasswordReset,
   "contact-message": contactMessage,
+  "email-change": emailChange,
+  "email-changed": emailChanged,
 } satisfies Record<EmailTemplate, (locale: AppLocale, vars: never) => RenderedEmail>;
 
 type TemplateVars = { [K in EmailTemplate]: Parameters<(typeof RENDERERS)[K]>[1] };
@@ -38,6 +42,14 @@ export function getEmailSender(outbox: OutboxStore = databaseOutbox): EmailSende
 
   const settings = getResendSettings();
   return settings ? new ResendEmailSender(new Resend(settings.apiKey), settings.from) : unconfiguredResendSender;
+}
+
+/**
+ * true se le email possono partire (T-3001): con l'outbox, oppure con Resend configurato (RESEND_API_KEY ed EMAIL_FROM,
+ * D-11 emendata). Con resend senza configurazione ogni invio fallirebbe: le funzioni che ne dipendono si spengono.
+ */
+export function isEmailDeliveryAvailable(): boolean {
+  return getEmailTransport() === "outbox" || getResendSettings() !== null;
 }
 
 /**

@@ -20,8 +20,13 @@ type OneTimeTokenTable = {
 /** Delegate Prisma delle due tabelle di token. */
 type TokenTableName = "emailVerificationToken" | "passwordResetToken";
 
-/** SHA-256 esadecimale del token: è l'unica forma salvata nel DB (T-1403, T-1404). */
-function hashOneTimeToken(token: string): string {
+/** Token in chiaro da 32 byte di crypto.randomBytes in base64url (CWE-330): esiste solo nel link dell'email. */
+export function generateOneTimeToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+/** SHA-256 esadecimale del token: è l'unica forma salvata nel DB (T-1403, T-1404, T-3001). */
+export function hashOneTimeToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
@@ -31,7 +36,7 @@ function hashOneTimeToken(token: string): string {
  * non dal DB: scadenze e limiti di reinvio si confrontano con lo stesso clock.
  */
 async function storeOneTimeToken(table: OneTimeTokenTable, userId: string, ttlMs: number): Promise<string> {
-  const token = randomBytes(32).toString("base64url");
+  const token = generateOneTimeToken();
   const now = new Date();
   await table.updateMany({ where: { user_id: userId, used_at: null }, data: { used_at: now } });
   await table.create({

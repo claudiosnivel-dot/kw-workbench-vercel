@@ -5,13 +5,17 @@ import { APP_TIME_ZONE, type AppLocale } from "@/lib/i18n/locale";
 
 export type RenderedEmail = { subject: string; html: string; text: string };
 
-/** Testi di un'email: tutti già tradotti; le variabili sono interpolate dal catalogo e poi sottoposte a escape. */
+/**
+ * Testi di un'email: tutti già tradotti; le variabili sono interpolate dal catalogo e poi sottoposte a escape. Senza
+ * action l'email non ha pulsante né link (avviso di email cambiata, T-3001); footer sostituisce il piè di pagina comune.
+ */
 export type EmailContent = {
   subject: string;
   name: string;
   intro: string;
-  action: { label: string; url: string };
+  action?: { label: string; url: string };
   notes?: string[];
+  footer?: string;
 };
 
 /** Traduttore del namespace emails nella lingua dell'email (users.ui_locale, fallback it). */
@@ -55,21 +59,30 @@ export function composeEmail(locale: AppLocale, content: EmailContent): Rendered
   const t = emailTranslator(locale);
   const greeting = t("greeting", { name: content.name });
   const notes = content.notes ?? [];
-  const { label, url } = content.action;
+  const footer = content.footer ?? t("footer");
+  const { action } = content;
+  const button = action
+    ? [
+        `<p style="margin:0 0 16px"><a href="${escapeHtml(action.url)}" style="display:inline-block;padding:10px 18px;border-radius:8px;background:#0f172a;color:#ffffff;text-decoration:none">${escapeHtml(action.label)}</a></p>`,
+      ]
+    : [];
+  const plainLink = action
+    ? [paragraph(t("linkHint")), `<p style="margin:0 0 16px;word-break:break-all">${escapeHtml(action.url)}</p>`]
+    : [];
 
   const html = [
     `<!doctype html><html lang="${locale}"><body style="margin:0;padding:24px;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#0f172a">`,
     paragraph(greeting),
     paragraph(content.intro),
-    `<p style="margin:0 0 16px"><a href="${escapeHtml(url)}" style="display:inline-block;padding:10px 18px;border-radius:8px;background:#0f172a;color:#ffffff;text-decoration:none">${escapeHtml(label)}</a></p>`,
+    ...button,
     ...notes.map(paragraph),
-    paragraph(t("linkHint")),
-    `<p style="margin:0 0 16px;word-break:break-all">${escapeHtml(url)}</p>`,
-    `<p style="margin:0;color:#64748b;font-size:13px">${escapeHtml(t("footer"))}</p>`,
+    ...plainLink,
+    `<p style="margin:0;color:#64748b;font-size:13px">${escapeHtml(footer)}</p>`,
     "</body></html>",
   ].join("");
 
-  const text = [greeting, content.intro, `${label}: ${url}`, ...notes, t("footer")].join("\n\n");
+  const actionText = action ? [`${action.label}: ${action.url}`] : [];
+  const text = [greeting, content.intro, ...actionText, ...notes, footer].join("\n\n");
 
   return { subject: content.subject, html, text };
 }

@@ -130,6 +130,9 @@ const I18N_MIGRATED_FILES = [
   "app/account/password/page.tsx",
   "components/profile-card.tsx",
   "components/account-security-cards.tsx",
+  // T-3002: cambio dell'email nel Profilo e pagina pubblica del link di conferma.
+  "components/email-change-section.tsx",
+  "app/email-change/page.tsx",
 ];
 
 // Attributi JSX con testo per l'utente.
