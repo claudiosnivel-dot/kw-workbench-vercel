@@ -34,7 +34,8 @@ ridiscute il design.
    28 ux-account-shell (05, 09, 11, 14, 17, 18, 23) · 29 ux-account-polish (09, 11, 13, 28) ·
    30 ux-email-change (14, 28) · 31 ux-workspace (15, 16, 17, 20, 28) ·
    32 ux-invites (14, 15, 30, 31) · 33 ux-admin (05, 09, 16, 17, 28) ·
-   34 ux-admin-users (14, 15, 16, 17, 20, 30, 33)
+   34 ux-admin-users (14, 15, 16, 17, 20, 30, 33) ·
+   35 ai-titles-core (09, 17, 19, 33) · 36 ai-titles-panel (15, 17, 19, 25, 35)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15

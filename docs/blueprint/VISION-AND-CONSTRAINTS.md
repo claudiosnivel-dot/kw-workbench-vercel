@@ -66,6 +66,10 @@ Titan SEO diventa un SaaS vendibile:
    «Workspace») più Amministrazione, ciascuna a sezioni con la navigazione a
    sinistra; cambio dell'email, inviti con il link da copiare, scheda dell'utente
    ed elenco dei workspace per il root admin (D-41).
+10. (aggiunto il 2026-10-16, macrotask 35-36) titoli più naturali a richiesta: nel
+    pannello di una pagina del piano una proposta di H1 e H2 scritta da un modello
+    gratuito via OpenRouter, che l'utente usa o scarta; alla generazione restano i
+    modelli fissi (D-33 emendata, D-42).
 
 "Fatto" = `target_tests` verdi e checkpoint Trueline verde al confine di ogni
 macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
@@ -83,8 +87,10 @@ macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
 - Analytics di prodotto e A/B test (D-13).
 - Wrapping Electron (citato nel README: resta possibile, non è nel piano).
 - Lingue oltre italiano e inglese.
-- Analisi della SERP, scraping dei siti dei competitor e titoli scritti da modelli AI per la
-  strategia hub and spoke (D-33).
+- Analisi della SERP e scraping dei siti dei competitor per la strategia hub and spoke
+  (D-33). I titoli scritti da un modello AI non sono più esclusi: dal 2026-10-16 sono una
+  proposta a richiesta per una pagina alla volta (D-42); restano esclusi alla generazione
+  del piano e con modelli a pagamento.
 - Testi legali definitivi scritti dall'agente (D-15).
 - TypeScript 7 e Prisma 8 (D-03).
 
