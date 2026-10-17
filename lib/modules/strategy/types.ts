@@ -99,6 +99,9 @@ export type StrategyKeywordView = {
   isQuestion: boolean;
 };
 
+/** Proposta dei titoli con l'AI conservata nella pagina (T-3601, D-43): createdAt in ISO 8601. */
+export type StrategyAiProposal = { h1: string; h2: string[]; model: string; createdAt: string };
+
 /** Pagina di una strategia salvata con le sue keyword (principale per prima, poi le secondarie per priorità). */
 export type StrategyPageView = {
   id: string;
@@ -115,6 +118,8 @@ export type StrategyPageView = {
   status: StrategyPageStatus;
   /** Istante dell'ultimo cambio di stato in ISO 8601, null se la pagina non l'ha mai cambiato. */
   statusChangedAt: string | null;
+  /** Ultima proposta dell'AI non ancora usata né scartata (T-3602); sempre null nelle versioni precedenti. */
+  aiProposal: StrategyAiProposal | null;
   keywords: StrategyKeywordView[];
 };
 

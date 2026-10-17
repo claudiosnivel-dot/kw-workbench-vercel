@@ -39,7 +39,7 @@ export default async function PlanVersionPage({ params }: { params: Promise<{ id
         </Link>
       }
     >
-      <PlanBoard projectId={project.id} strategy={strategy} group="hub" view="list" readOnly openPageId={null} />
+      <PlanBoard projectId={project.id} strategy={strategy} group="hub" view="list" readOnly aiTitlesAvailable={false} openPageId={null} />
     </PlanShell>
   );
 }

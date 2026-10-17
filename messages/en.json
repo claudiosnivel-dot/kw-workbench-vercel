@@ -1707,6 +1707,15 @@
       "deleteText": "The page “{title}” goes away and its keywords move to the ones without a page.",
       "readOnly": "Previous version: read only."
     },
+    "ai": {
+      "suggest": "Improve the headings with AI",
+      "loading": "Writing the headings…",
+      "title": "AI suggestion",
+      "model": "Model: {model}",
+      "use": "Use these headings",
+      "discard": "Discard",
+      "rateLimited": "You have reached the suggestion limit: you can ask for another one from {time}."
+    },
     "regenerateDialog": {
       "title": "Regenerate the plan",
       "text": "I reorganize the pages not started yet with today's kept keywords. The pages being written or published stay as they are.",

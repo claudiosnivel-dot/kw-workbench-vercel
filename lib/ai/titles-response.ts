@@ -69,8 +69,9 @@ const tooLong = (title: string) => Array.from(title).length > MAX_TITLE_LENGTH;
 
 /**
  * Proposta del modello per la pagina (T-3502): H1 non vuoto, entro 200 caratteri e con tutte le parole della keyword
- * principale (keywordWords di T-1901); da 1 al massimo di H2 della pagina dopo aver tolto vuoti e doppioni senza
- * distinzione di maiuscole, ciascuno entro 200 caratteri. Un controllo non superato → AI_INVALID_RESPONSE, mai un taglio.
+ * principale (keywordWords di T-1901); almeno un H2 dopo aver tolto vuoti e doppioni senza distinzione di maiuscole,
+ * oltre il massimo della pagina solo i primi nell'ordine della risposta (T-3601, D-43), ciascuno entro 200 caratteri.
+ * Un controllo non superato → AI_INVALID_RESPONSE.
  */
 export function parseTitlesResponse(content: string, page: TitlePage, language: string): { h1: string; h2: string[] } {
   if (content.length > MAX_CONTENT_LENGTH) {
@@ -91,16 +92,17 @@ export function parseTitlesResponse(content: string, page: TitlePage, language: 
   }
 
   const seen = new Set<string>();
-  const h2: string[] = [];
+  const distinct: string[] = [];
   for (const title of (value.h2 as string[]).map(cleanTitle)) {
     const key = title.toLowerCase();
     if (title && !seen.has(key)) {
       seen.add(key);
-      h2.push(title);
+      distinct.push(title);
     }
   }
-  if (h2.length === 0 || h2.length > MAX_H2[page.kind] || h2.some(tooLong)) {
-    throw invalid(`servono da 1 a ${MAX_H2[page.kind]} H2 entro ${MAX_TITLE_LENGTH} caratteri`);
+  const h2 = distinct.slice(0, MAX_H2[page.kind]);
+  if (h2.length === 0 || h2.some(tooLong)) {
+    throw invalid(`serve almeno un H2 entro ${MAX_TITLE_LENGTH} caratteri`);
   }
   return { h1, h2 };
 }

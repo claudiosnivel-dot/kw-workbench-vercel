@@ -1,6 +1,6 @@
 import { ValidationError } from "@/lib/http/errors";
 import { compareKeywordPriority } from "@/lib/modules/strategy/cluster";
-import { buildPageTitles, type TitleContext, type TitleKeyword } from "@/lib/modules/strategy/titles";
+import { buildPageTitles, type TitleContext, type TitleKeyword, type TitlePage } from "@/lib/modules/strategy/titles";
 import type {
   StrategyContentType,
   StrategyKeywordView,
@@ -19,8 +19,11 @@ import type {
 /** Keyword nello stato del piano: quella della vista con la sua pagina (null per le non assegnate). */
 export type EditorKeyword = StrategyKeywordView & { pageId: string | null };
 
-/** Pagina nello stato del piano: quella della vista senza le keyword, che stanno in EditorState.keywords. */
-export type EditorPage = Omit<StrategyPageView, "keywords">;
+/**
+ * Pagina nello stato del piano: quella della vista senza le keyword, che stanno in EditorState.keywords, e senza la
+ * proposta dell'AI, che le modifiche del piano non toccano (T-3602).
+ */
+export type EditorPage = Omit<StrategyPageView, "keywords" | "aiProposal">;
 
 export type EditorState = { pages: EditorPage[]; keywords: EditorKeyword[] };
 
@@ -207,25 +210,27 @@ export function orderedSpokes(state: EditorState, hubId: string): EditorPage[] {
   return spokesOf(state, hubId).sort((a, b) => b.priority - a.priority || a.position - b.position);
 }
 
-/** Titoli suggeriti della pagina nello stato corrente. */
-export function suggestedTitles(state: EditorState, page: EditorPage, context: TitleContext): { h1: string; h2: string[] } {
+/** Pagina da titolare nello stato corrente: secondarie per priorità e, per la pilastro, le principali dei suoi spoke. */
+export function titlePageOf(state: EditorState, page: EditorPage): TitlePage {
   const keywords = keywordsOf(state, page.id).sort(compareKeywordPriority);
   const main = keywords.find((keyword) => keyword.role === "MAIN") ?? keywords[0];
-  return buildPageTitles(
-    {
-      kind: page.kind,
-      contentType: page.contentType,
-      main: titleKeyword(main),
-      secondary: keywords.filter((keyword) => keyword !== main).map(titleKeyword),
-      spokeMains:
-        page.kind === "HUB"
-          ? orderedSpokes(state, page.id).flatMap((spoke) =>
-              keywordsOf(state, spoke.id).filter((keyword) => keyword.role === "MAIN").map(titleKeyword)
-            )
-          : undefined,
-    },
-    context
-  );
+  return {
+    kind: page.kind,
+    contentType: page.contentType,
+    main: titleKeyword(main),
+    secondary: keywords.filter((keyword) => keyword !== main).map(titleKeyword),
+    spokeMains:
+      page.kind === "HUB"
+        ? orderedSpokes(state, page.id).flatMap((spoke) =>
+            keywordsOf(state, spoke.id).filter((keyword) => keyword.role === "MAIN").map(titleKeyword)
+          )
+        : undefined,
+  };
+}
+
+/** Titoli suggeriti della pagina nello stato corrente. */
+export function suggestedTitles(state: EditorState, page: EditorPage, context: TitleContext): { h1: string; h2: string[] } {
+  return buildPageTitles(titlePageOf(state, page), context);
 }
 
 function refreshTitles(editor: Editor, context: TitleContext): void {

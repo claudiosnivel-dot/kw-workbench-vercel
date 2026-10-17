@@ -3,7 +3,9 @@ import { PlanActions } from "@/components/plan/plan-actions";
 import { PlanBoard } from "@/components/plan/plan-board";
 import { PlanShell } from "@/components/plan/plan-header";
 import { StrategySettings } from "@/components/strategy/strategy-settings";
+import { isAiTitlesAvailable } from "@/lib/ai/settings";
 import { requirePageUser } from "@/lib/auth/page-guard";
+import { canPerform } from "@/lib/authz/permissions";
 import type { PlanGroup, PlanView } from "@/lib/modules/next-step";
 import { requireProjectPage } from "@/lib/modules/project-pages";
 import { DEFAULT_RULES, RULE_LIMITS } from "@/lib/modules/strategy/rules";
@@ -18,7 +20,8 @@ const single = (value: string | string[] | undefined) => (Array.isArray(value) ?
 /**
  * Piano dei contenuti del progetto (T-2502, T-2504): il piano è la strategia più recente. Senza piano, «Costruisci il
  * piano» con le opzioni avanzate chiuse; con il piano, intestazione con «Rigenera», versioni precedenti e menu ⋯, poi la
- * bacheca. group, view e page arrivano dall'URL; l'Esporta della barra in alto riceve il piano aperto (T-2406).
+ * bacheca. group, view e page arrivano dall'URL; l'Esporta della barra in alto riceve il piano aperto (T-2406). Il
+ * pannello della pagina propone i titoli con l'AI se la funzione è accesa e l'utente può modificare il piano (T-3603).
  */
 export default async function PlanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<SearchParams> }) {
   const user = await requirePageUser();
@@ -47,7 +50,10 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
     );
   }
 
-  const strategy = await readStrategy(project.id, strategies[0].id);
+  const [strategy, aiTitlesAvailable] = await Promise.all([
+    readStrategy(project.id, strategies[0].id),
+    canPerform(project.role, "strategy.write") ? isAiTitlesAvailable() : false,
+  ]);
   const group: PlanGroup = single(query.group) === "status" ? "status" : "hub";
   const viewParam = single(query.view);
   const view: PlanView | null = viewParam === "board" || viewParam === "list" ? viewParam : null;
@@ -66,7 +72,16 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
         </>
       }
     >
-      <PlanBoard key={openPageId ?? ""} projectId={project.id} strategy={strategy} group={group} view={view} readOnly={false} openPageId={openPageId} />
+      <PlanBoard
+        key={openPageId ?? ""}
+        projectId={project.id}
+        strategy={strategy}
+        group={group}
+        view={view}
+        readOnly={false}
+        aiTitlesAvailable={aiTitlesAvailable}
+        openPageId={openPageId}
+      />
     </PlanShell>
   );
 }

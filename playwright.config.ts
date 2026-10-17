@@ -66,6 +66,10 @@ const appEnv: Record<string, string> = {
   RATE_LIMIT_LOGIN_IP_EMAIL_MAX: "10000",
   RATE_LIMIT_LOGIN_IP_MAX: "100000",
   RATE_LIMIT_RUN_START_MAX: "10000",
+  // Titoli con l'AI (T-3603): il finto OpenRouter del global setup, sulla porta del finto autocomplete, con una chiave
+  // di prova generata a ogni esecuzione; la funzione resta spenta finché un test non la accende dalla card del root admin.
+  OPENROUTER_BASE_URL: "http://127.0.0.1:3199",
+  OPENROUTER_API_KEY: `sk-or-e2e-${testSecret()}`,
   // Paddle sandbox senza chiave API (T-1603, T-1604): i webhook firmati sì, nessuna chiamata all'API di Paddle.
   PADDLE_ENV: "sandbox",
   PADDLE_WEBHOOK_SECRET: process.env.E2E_PADDLE_WEBHOOK_SECRET,

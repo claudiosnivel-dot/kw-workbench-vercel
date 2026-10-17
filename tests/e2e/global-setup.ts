@@ -15,9 +15,33 @@ const AUTOCOMPLETE_STUB_PORT = 3199;
 // risultati si apre (AC-2305-1). Nessuna richiesta esce verso Google.
 const AUTOCOMPLETE_STUB_DELAY_MS = 3_000;
 
-/** Finto autocomplete nel processo di Playwright (formato del client firefox: [query, [suggerimenti]]). */
+/**
+ * Finto OpenRouter (T-3603): risponde a POST /chat/completions con un H1 e due H2 costruiti dalla keyword principale del
+ * messaggio dell'utente, nel formato delle risposte di OpenRouter. Nessuna richiesta esce verso OpenRouter.
+ */
+function answerCompletion(body: string): string {
+  const request = JSON.parse(body) as { model: string; messages: { role: string; content: string }[] };
+  const page = JSON.parse(request.messages.find((message) => message.role === "user")?.content ?? "{}") as { mainKeyword?: string };
+  const main = page.mainKeyword ?? "pagina";
+  const titles = { h1: `Guida a ${main}: la proposta dell'AI`, h2: [`Come scegliere ${main}`, "Domande frequenti"] };
+  return JSON.stringify({ model: request.model, choices: [{ message: { role: "assistant", content: JSON.stringify(titles) } }] });
+}
+
+/**
+ * Finto autocomplete nel processo di Playwright (formato del client firefox: [query, [suggerimenti]]), che fa anche da
+ * finto OpenRouter (OPENROUTER_BASE_URL in playwright.config.ts).
+ */
 function startAutocompleteStub(): Promise<() => Promise<void>> {
   const server = createServer((request, response) => {
+    if (request.method === "POST" && request.url === "/chat/completions") {
+      const chunks: Buffer[] = [];
+      request.on("data", (chunk: Buffer) => chunks.push(chunk));
+      request.on("end", () => {
+        response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(answerCompletion(Buffer.concat(chunks).toString("utf8")));
+      });
+      return;
+    }
     const query = new URL(request.url ?? "/", "http://localhost").searchParams.get("q") ?? "";
     setTimeout(() => {
       response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });

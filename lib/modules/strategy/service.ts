@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { expectOneRow, requireProjectAccess, type AuthorizedProject } from "@/lib/authz/workspace";
-import type { Prisma } from "@/lib/generated/prisma/client";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { AppError, ConflictError, ValidationError } from "@/lib/http/errors";
 import { KEPT_WHERE } from "@/lib/modules/keep-rule";
 import { SectionNotFoundError } from "@/lib/modules/project-access";
@@ -13,16 +13,18 @@ import {
   type EditorState,
   type PagePatch,
   type StrategyOperation,
+  titlePageOf,
   UnknownStrategyItemError,
 } from "@/lib/modules/strategy/editor";
 import { AUTO_SETTINGS, expertSettingsSchema, resolveExpertSettings, type StrategySettings } from "@/lib/modules/strategy/rules";
-import { buildPageTitles, MAX_TITLE_LENGTH, type TitleContext, type TitleKeyword } from "@/lib/modules/strategy/titles";
+import { buildPageTitles, MAX_TITLE_LENGTH, type TitleContext, type TitleKeyword, type TitlePage } from "@/lib/modules/strategy/titles";
 import { strategyTranslator } from "@/lib/modules/strategy/translator";
 import {
   STRATEGY_CONTENT_TYPES,
   STRATEGY_PAGE_STATUSES,
   type PlanAnchor,
   type PlanReason,
+  type StrategyAiProposal,
   type StrategyKeywordInput,
   type StrategyKeywordView,
   type StrategyMode,
@@ -572,6 +574,7 @@ const RECORD_SELECT = {
       reason_params: true,
       status: true,
       status_changed_at: true,
+      ai_proposal: true,
     },
   },
   keywords: {
@@ -630,16 +633,34 @@ function keywordView({ pageId: _pageId, ...keyword }: EditorState["keywords"][nu
   return keyword;
 }
 
-/** Vista della strategia: hub nell'ordine di lavoro (position), principale per prima e secondarie per priorità. */
-function toView(record: StrategyRecord): StrategyView {
+const isStringList = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string");
+
+/** Proposta salvata nella pagina (T-3601) → vista; un valore senza la forma attesa non si mostra. */
+function toAiProposal(value: Prisma.JsonValue): StrategyAiProposal | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const { h1, h2, model, createdAt } = value;
+  if (typeof h1 !== "string" || !isStringList(h2) || typeof model !== "string" || typeof createdAt !== "string") return null;
+  return { h1, h2, model, createdAt };
+}
+
+/**
+ * Vista della strategia: hub nell'ordine di lavoro (position), principale per prima e secondarie per priorità. Le
+ * proposte dell'AI si mostrano solo nel piano corrente (T-3602): nelle versioni precedenti restano nelle righe.
+ */
+function toView(record: StrategyRecord, current: boolean): StrategyView {
   const state = toEditorState(record);
   const keywordsOf = (pageId: string | null) =>
     state.keywords
       .filter((keyword) => keyword.pageId === pageId)
       .sort((a, b) => Number(b.role === "MAIN") - Number(a.role === "MAIN") || compareKeywordPriority(a, b))
       .map(keywordView);
+  const proposals = new Map(record.pages.map((page) => [page.id, current ? toAiProposal(page.ai_proposal) : null]));
   const pages = [...state.pages].sort((a, b) => a.position - b.position);
-  const pageView = (page: EditorState["pages"][number]): StrategyPageView => ({ ...page, keywords: keywordsOf(page.id) });
+  const pageView = (page: EditorState["pages"][number]): StrategyPageView => ({
+    ...page,
+    aiProposal: proposals.get(page.id) ?? null,
+    keywords: keywordsOf(page.id),
+  });
   const hubIds = new Set(pages.filter((page) => page.kind === "HUB").map((page) => page.id));
 
   return {
@@ -658,7 +679,55 @@ function toView(record: StrategyRecord): StrategyView {
 
 /** Strategia completa di un progetto già autorizzato; 404 STRATEGY_NOT_FOUND se non è del progetto. */
 export async function readStrategy(projectId: string, strategyId: string): Promise<StrategyView> {
-  return toView(await findRecord(prisma, projectId, strategyId));
+  const [record, planId] = await Promise.all([findRecord(prisma, projectId, strategyId), findPlanId(projectId)]);
+  return toView(record, planId === strategyId);
+}
+
+/**
+ * Pagina del piano corrente per le proposte dell'AI (T-3601, T-3602): 404 STRATEGY_NOT_FOUND se la strategia o la
+ * pagina non sono del progetto, 409 STRATEGY_READ_ONLY per una pagina di una versione precedente.
+ */
+export async function requirePlanPage(project: AuthorizedProject, strategyId: string, pageId: string): Promise<void> {
+  const [pages, planId] = await Promise.all([
+    prisma.strategyPage.count({
+      where: { id: pageId, strategy_id: strategyId, strategy: { project_id: project.id, project: project.perimeter } },
+    }),
+    findPlanId(project.id),
+  ]);
+  if (pages === 0) throw new StrategyNotFoundError();
+  if (planId !== strategyId) {
+    throw new ConflictError("Le versioni precedenti del piano sono in sola lettura", "STRATEGY_READ_ONLY");
+  }
+}
+
+/** Pagina da titolare e lingua del piano (T-3601), letti dopo requirePlanPage; 404 se nel frattempo è sparita. */
+export async function readPlanTitlePage(
+  project: AuthorizedProject,
+  strategyId: string,
+  pageId: string
+): Promise<{ language: string; page: TitlePage }> {
+  const record = await findRecord(prisma, project.id, strategyId);
+  const state = toEditorState(record);
+  const page = state.pages.find((item) => item.id === pageId);
+  if (!page) throw new StrategyNotFoundError();
+  return { language: record.language, page: titlePageOf(state, page) };
+}
+
+/**
+ * Salva (proposta) o toglie (null) la proposta dell'AI della pagina (T-3601, T-3602): solo la colonna ai_proposal, con
+ * pagina, strategia e perimetro del progetto nel where (CWE-639); titoli, flag e version della strategia non cambiano.
+ */
+export async function savePageAiProposal(
+  project: AuthorizedProject,
+  strategyId: string,
+  pageId: string,
+  proposal: StrategyAiProposal | null
+): Promise<void> {
+  const { count } = await prisma.strategyPage.updateMany({
+    where: { id: pageId, strategy_id: strategyId, strategy: { project_id: project.id, project: project.perimeter } },
+    data: { ai_proposal: proposal ?? Prisma.DbNull },
+  });
+  expectOneRow(count, () => new StrategyNotFoundError());
 }
 
 /**

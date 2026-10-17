@@ -793,6 +793,9 @@ model StrategyPage {
   /// Stato di scrittura (T-2501); status_changed_at è l'istante dell'ultimo cambio di stato.
   status            StrategyPageStatus  @default(TODO)
   status_changed_at DateTime?
+  /// Ultima proposta riuscita dei titoli con l'AI ({ h1, h2, model, createdAt }, T-3601, D-43); null se non c'è o è
+  /// stata usata o scartata (T-3602).
+  ai_proposal       Json?
   strategy          Strategy            @relation(fields: [strategy_id], references: [id], onDelete: Cascade)
   hub               StrategyPage?       @relation("HubSpokes", fields: [hub_page_id], references: [id], onDelete: SetNull)
   spokes            StrategyPage[]      @relation("HubSpokes")
