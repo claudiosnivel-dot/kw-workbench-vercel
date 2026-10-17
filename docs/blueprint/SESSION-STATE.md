@@ -9,7 +9,7 @@
 | **Progetto** | Titan SEO (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-10-16 |
-| **Sessione corrente** | 2026-10-16 (trentasettesima, dopo la chiusura del 34) — brainstorming con l'utente dei titoli con l'AI: moduli 35-36 e D-42 sul branch `trueline/blueprint-ai-titles`, da approvare |
+| **Sessione corrente** | 2026-10-16 (trentasettesima, dopo la chiusura del 34) — brainstorming con l'utente dei titoli con l'AI: moduli 35-36 e D-42 approvati dall'utente e mergiati su `master` il 2026-10-17 |
 
 ---
 
@@ -67,7 +67,7 @@
 - **Ultimo chiuso (2026-10-15, trentacinquesima sessione)**: `ux-invites` (32), avviato su conferma dell'utente, checkpoint VERDE (1168 s), nessuna migrazione: ogni invito restituisce a chi invita il link da copiare, una sola volta (risposta no-store), e l'email parte solo quando l'invio è disponibile (in produzione oggi no, D-11), quindi creare un invito non fallisce più con 503; finestra «Invita una persona» con «Copia»; inviti scaduti in elenco con «Scaduto» e «Nuovo link» (nuovo token, 7 giorni, il vecchio link non vale più); limite di 20 inviti l'ora per workspace. PR #78 mergiata (`fe78db9`), CI di `master` verde, in produzione senza migrazioni.
 - **Ultimo chiuso (2026-10-15, trentaseiesima sessione)**: `ux-admin` (33), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE (1126 s), nessuna migrazione: Amministrazione a sezioni con la navigazione a sinistra (Panoramica, Utenti, Impostazioni e Registro per il root admin; l'admin non root vede solo Utenti e dalle altre pagine arriva lì), Panoramica con sei riquadri e la barra della spesa DataForSEO, Impostazioni con branding, API di Google Sheets e lancio commerciale, Utenti con i filtri a pulsante e il conteggio (Tutti, Attivi, Sospesi e, per il root, Admin) e «Crea utente» in una finestra. PR #80 mergiata (`02b0352`), CI di `master` verde, in produzione senza migrazioni.
 - **Ultimo chiuso (2026-10-16, trentasettesima sessione)**: `ux-admin-users` (34), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE (1164 s), nessuna migrazione: scheda dell'utente aperta dal nome nell'elenco (riepilogo, workspace con ruolo, numero di progetti e keyword del mese, azioni, registro e zona rossa; l'admin non root vede solo riepilogo, azioni ed Elimina), tabella degli utenti con utente, ruolo, stato e ultimo accesso, «Cambia email» del root admin (con il lancio in pausa la nuova email nasce verificata, con il lancio attivo parte la verifica), sezione Workspace del root con proprietario, membri, progetti e piano. PR #82 mergiata (`075601d`), CI di `master` verde, in produzione senza migrazioni.
-- **Prossimo**: `ai-titles-core` (35), primo dei due macrotask dei titoli con l'AI (D-42, moduli 35-36), da costruire su comando dell'utente dopo l'approvazione e il merge dei moduli. Più avanti: modulo di sicurezza con dispositivi collegati e verifica in due passaggi, testi della landing e immagine Open Graph; D-14 e D-15 restano in pausa.
+- **Prossimo**: `ai-titles-core` (35), primo dei due macrotask dei titoli con l'AI (D-42, moduli 35-36), da costruire su comando dell'utente (moduli approvati e mergiati il 2026-10-17). Più avanti: modulo di sicurezza con dispositivi collegati e verifica in due passaggi, testi della landing e immagine Open Graph; D-14 e D-15 restano in pausa.
 - **Criteri/test di riferimento**: `docs/blueprint/35-ai-titles-core.md` (prossimo modulo da costruire); ultimo costruito `docs/blueprint/34-ux-admin-users.md`.
 
 ## 3. Stato git
@@ -150,7 +150,7 @@
 - **Inizio**: l'utente ha proposto di generare H1 e H2 con un modello gratuito via OpenRouter («apriamo il brainstorming»); risposte iniziali: titoli migliorati a richiesta, keyword a un servizio esterno ammesse, account OpenRouter già presente.
 - **Design approvato per sezioni**: proposta per una pagina alla volta nel pannello, da accettare con «Usa questi titoli» o da scartare; accesso a chi può modificare il piano con 10 proposte per workspace e 45 per la piattaforma nelle ultime 24 ore (account OpenRouter gratuito); approccio A (chiave su Vercel, modello solo `:free` e limiti nella card del root admin); dati inviati, controlli della risposta, esiti e log; privacy e sicurezza; due moduli da due task.
 - **Blueprint**: moduli `35-ai-titles-core.md` e `36-ai-titles-panel.md` (4 task, 177 in totale), ledger D-42 e D-33 emendata, indice, visione e prompt aggiornati sul branch `trueline/blueprint-ai-titles`. Emendamenti dei moduli 17, 25 e 33 dichiarati nei task, da applicare alla costruzione.
-- **Decisione richiesta all'utente**: approvazione dei moduli 35-36 (con le scelte dell'agente nei Self-check) e del merge su `master` (solo documentazione: nessun deploy).
+- **Approvazione**: il 2026-10-17 l'utente ha approvato il merge su `master` dei moduli 35-36 («approvo il merge su master»; solo documentazione, nessun deploy). Le scelte dell'agente nei Self-check restano da confermare.
 
 ### Sessione 2026-10-16 (trentasettesima) — BUILD, merge e verifica in produzione di `ux-admin-users` (34)
 
@@ -888,7 +888,8 @@
 - **Utente (DataForSEO)**: prima estrazione di prova scegliendo «DataForSEO (a pagamento)» nelle impostazioni di un progetto; dopo una ricarica (minimo 50 USD) alzare `METRICS_MONTHLY_BUDGET_USD` e `METRICS_RUN_BUDGET_USD` su Vercel e rifare il deploy. Con le credenziali si può anche scaricare l'elenco delle lingue di DataForSEO (`docs/METRICS-PROVIDERS.md`).
 - **Scelte del macrotask 25**: confermate dall'utente il 2026-10-14 (D-40).
 - **Utente (facoltativo)**: provare in produzione la bacheca (trascinamento, stato, pannello) e «Rigenera» su un piano con una pagina in scrittura.
-- **Prossimo lavoro**: approvare i moduli 35-36 (D-42) e farne il merge; poi costruire `ai-titles-core` (35) su comando e, in un'altra sessione, `ai-titles-panel` (36).
+- **Prossimo lavoro**: moduli 35-36 (D-42) approvati e mergiati il 2026-10-17; costruire `ai-titles-core` (35) su comando e, in un'altra sessione, `ai-titles-panel` (36).
+- **Scelte dei moduli 35-36 (Self-check)**: istruzioni in italiano per 'it' e in inglese per le altre lingue, fino a 30 secondarie, più H2 del massimo come risposta non valida, ogni richiesta partita conta nei limiti, testi dei pulsanti; da confermare dall'utente.
 - **Utente, per i titoli con l'AI (D-42)**: dopo il merge del 35, `OPENROUTER_API_KEY` su Vercel (Production e Preview, Sensitive) e un redeploy; verificare nelle impostazioni di privacy dell'account OpenRouter che gli endpoint gratuiti siano ammessi; accendere la funzione dalla card «Titoli con l'AI» delle Impostazioni dopo il merge del 36 (`docs/AI-TITLES.md`). La privacy policy (D-15) dovrà nominare OpenRouter fra i servizi esterni. Modulo di sicurezza con dispositivi collegati e verifica in due passaggi da decidere più avanti. Testi della landing e immagine Open Graph più avanti.
 - **Utente (facoltativo)**: scaricare in produzione un export dei risultati e uno della strategia con l'interfaccia in italiano e poi in inglese, per vedere intestazioni ed etichette nei fogli reali (verificate solo dai test).
 - **Scelte del macrotask 20**: confermate dall'utente il 2026-10-11 (D-37), tranne il root admin, che nelle proprie estrazioni non avrà alcun limite d'uso (T-2101).
