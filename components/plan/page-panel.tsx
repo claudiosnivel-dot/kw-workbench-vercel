@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { DialogActions } from "@/components/dialog-actions";
 import { EntityMenu, type EntityMenuItem } from "@/components/entity-menu";
 import { ModalDialog } from "@/components/modal-dialog";
+import { AiTitles } from "@/components/plan/ai-titles";
 import { type PickGroup, PickDialog } from "@/components/plan/pick-dialog";
 import { type PlanRequestResult, usePlanRequests } from "@/components/plan/plan-requests";
 import { StatusLabel } from "@/components/plan/status-menu";
@@ -13,6 +14,7 @@ import { useModalFocus } from "@/lib/client/use-modal-focus";
 import {
   STRATEGY_CONTENT_TYPES,
   STRATEGY_PAGE_STATUSES,
+  type StrategyAiProposal,
   type StrategyKeywordView,
   type StrategyPageStatus,
   type StrategyPageView,
@@ -31,6 +33,8 @@ export type PagePanelProps = {
   destinations: PickGroup[];
   /** Versione precedente del piano: solo lettura, senza campi né menu. */
   readOnly: boolean;
+  /** Titoli con l'AI accesi, con la chiave, e permesso di modificare il piano (T-3603): «Migliora i titoli con l'AI». */
+  aiTitlesAvailable: boolean;
   onClose: () => void;
 };
 
@@ -57,10 +61,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * non li riscrive), tipo, keyword con «Sposta in…» e «Togli», motivo e collegamenti; le azioni rare nel menu ⋯. Si
  * modifica scrivendo: H1 e H2 si salvano all'uscita dal campo o dopo 800 ms senza digitare, sempre con la version
  * corrente (CWE-362). Un errore di validazione resta sotto il campo senza perdere il testo; dopo un 409
- * STRATEGY_CONFLICT il piano si ricarica con il suo messaggio. Esc chiude e il focus torna alla scheda. Tutti i testi
- * del piano sono resi come testo (CWE-79).
+ * STRATEGY_CONFLICT il piano si ricarica con il suo messaggio. Sotto i campi, se disponibile, la proposta dei titoli con
+ * l'AI (T-3603). Esc chiude e il focus torna alla scheda. Tutti i testi del piano sono resi come testo (CWE-79).
  */
-export function PagePanel({ page, hub, links, destinations, readOnly, onClose }: PagePanelProps) {
+export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAvailable, onClose }: PagePanelProps) {
   const t = useTranslations("plan.panel");
   const tPick = useTranslations("plan.pick");
   const tStrategy = useTranslations("strategy");
@@ -135,6 +139,26 @@ export function PagePanel({ page, hub, links, destinations, readOnly, onClose }:
   // All'uscita dal campo si salva subito solo se un salvataggio era in attesa.
   const blur = (field: Field) => {
     if (timers.current[field] !== undefined) flush(field, valueOf(field));
+  };
+
+  // «Usa questi titoli» (T-3603): H1 e H2 della proposta in una sola PATCH; i salvataggi in attesa non partono più.
+  const useProposal = async (proposal: StrategyAiProposal): Promise<PlanRequestResult> => {
+    Object.values(timers.current).forEach((timer) => clearTimeout(timer));
+    timers.current = {};
+    setSaveState("saving");
+    setFieldError(null);
+    setMessage(null);
+    const result = await requests.patchPage(page.id, { h1: proposal.h1, h2: proposal.h2 });
+    if (result.ok) {
+      setDrafts({ h1: proposal.h1, h2: proposal.h2.join("\n") });
+      setEdited({ h1: true, h2: true });
+      setSaveState("saved");
+    } else {
+      // Dopo un 409 il piano si ricarica: i campi ripartono dai valori dell'ultima versione.
+      if (result.code === "STRATEGY_CONFLICT") setDrafts({});
+      setSaveState("idle");
+    }
+    return result;
   };
 
   const operate = async (operation: Record<string, unknown> & { type: string }): Promise<PlanRequestResult> => {
@@ -301,6 +325,9 @@ export function PagePanel({ page, hub, links, destinations, readOnly, onClose }:
             <p className="min-h-5 text-sm text-slate-600" role="status">
               {saveState === "saving" ? t("saving") : saveState === "saved" ? t("saved") : ""}
             </p>
+
+            {/* Il piano ricaricato con un'altra proposta (o senza) riparte dalla proposta salvata nella pagina. */}
+            {aiTitlesAvailable && <AiTitles key={page.aiProposal?.createdAt ?? ""} page={page} onUse={useProposal} />}
           </>
         )}
 

@@ -78,13 +78,12 @@ describe("controllo della risposta", () => {
   });
 
   // covers: AC-3502-3
-  it("rifiuta una risposta senza JSON, un H1 senza la principale, troppi H2 e H2 vuoti", () => {
+  // impacted-by: T-3601 (D-43: gli H2 oltre il massimo si tengono nei primi, AC-3601-6 sulla rotta)
+  it("rifiuta una risposta senza JSON, un H1 senza la principale e H2 vuoti", () => {
     const h1 = "Scarpe running donna: guida";
-    const thirteen = Array.from({ length: 13 }, (_, index) => `Argomento numero ${index + 1}`);
     const responses = [
       "Non posso aiutarti con questa richiesta.",
       JSON.stringify({ h1: "Le migliori calzature", h2: ["Ammortizzazione"] }),
-      JSON.stringify({ h1, h2: thirteen }),
       JSON.stringify({ h1, h2: [] }),
       JSON.stringify({ h1, h2: ["   "] }),
     ];

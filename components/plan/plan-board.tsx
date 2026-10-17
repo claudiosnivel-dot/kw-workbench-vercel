@@ -35,6 +35,8 @@ export type PlanBoardProps = {
   view: PlanView | null;
   /** Versione precedente: solo l'elenco, senza modifiche. */
   readOnly: boolean;
+  /** «Migliora i titoli con l'AI» nel pannello della pagina (T-3603): funzione accesa, chiave e permesso di modifica. */
+  aiTitlesAvailable: boolean;
   /** Pagina il cui pannello è aperto all'arrivo (parametro page, T-2506). */
   openPageId: string | null;
 };
@@ -131,7 +133,7 @@ function Column({ title, count, target, testId, children }: { title: string; cou
 
 type ColumnTarget = { active: boolean; props: Record<string, unknown> };
 
-function PlanBoardContent({ projectId, strategy, group, view, readOnly, openPageId }: PlanBoardProps) {
+function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitlesAvailable, openPageId }: PlanBoardProps) {
   const t = useTranslations("plan");
   const requests = usePlanRequests();
   const model = useMemo(() => planModel(strategy), [strategy]);
@@ -363,6 +365,7 @@ function PlanBoardContent({ projectId, strategy, group, view, readOnly, openPage
           links={openPage.id === hub.pillar.id ? hub.spokes.map((spoke) => spoke.h1) : [hub.pillar.h1]}
           destinations={model.destinations}
           readOnly={readOnly}
+          aiTitlesAvailable={aiTitlesAvailable && !readOnly}
           onClose={closePanel}
         />
       )}

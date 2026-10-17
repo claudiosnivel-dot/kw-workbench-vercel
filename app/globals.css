@@ -1433,6 +1433,14 @@ input[type="checkbox"] {
   }
 }
 
+/* Proposta dei titoli con l'AI nel pannello della pagina (T-3603). */
+.plan-ai-card {
+  border-radius: 16px;
+  border: 1px solid var(--surface-border-strong);
+  background: var(--surface);
+  padding: 0.9rem;
+}
+
 @keyframes card-rise {
   from {
     opacity: 0;

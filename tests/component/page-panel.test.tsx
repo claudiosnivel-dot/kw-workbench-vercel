@@ -30,6 +30,7 @@ const PAGE: StrategyPageView = {
   reason: { code: "SPOKE_MODIFIER", params: { category: "comparison", faq: 0 } },
   status: "TODO",
   statusChangedAt: null,
+  aiProposal: null,
   keywords: [
     { id: "k1", keyword: "migliori scarpe running", canonical: "migliori scarpe running", role: "MAIN", volume: 2900, score: 80, isQuestion: false },
     { id: "k2", keyword: "scarpe running recensioni", canonical: "scarpe running recensioni", role: "SECONDARY", volume: 390, score: 60, isQuestion: false },
@@ -41,7 +42,7 @@ const HUB: StrategyPageView = { ...PAGE, id: "hub1", kind: "HUB", hubPageId: nul
 function renderPanel(overrides: Partial<PagePanelProps> = {}) {
   return renderWithIntl(
     <PlanRequestsProvider projectId="p1" strategyId="s1" version={4}>
-      <PagePanel page={PAGE} hub={HUB} links={[HUB.h1]} destinations={[]} readOnly={false} onClose={vi.fn()} {...overrides} />
+      <PagePanel page={PAGE} hub={HUB} links={[HUB.h1]} destinations={[]} readOnly={false} aiTitlesAvailable={false} onClose={vi.fn()} {...overrides} />
     </PlanRequestsProvider>
   );
 }

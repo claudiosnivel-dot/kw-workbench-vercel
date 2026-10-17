@@ -64,6 +64,11 @@ export async function getAiTitlesSettings(): Promise<AiTitlesSettings> {
   return parseSettings(values[SETTINGS_KEY]);
 }
 
+/** Funzione accesa e chiave presente (T-3603): la pagina del piano mostra «Migliora i titoli con l'AI». */
+export async function isAiTitlesAvailable(): Promise<boolean> {
+  return getOpenRouterSettings() !== null && (await getAiTitlesSettings()).enabled;
+}
+
 /** Proposte delle ultime 24 ore: i tentativi della chiave della piattaforma ancora dentro la finestra della regola. */
 async function countUsedInWindow(now: Date): Promise<number> {
   const since = new Date(now.getTime() - rateLimitRules().aiTitlesPlatform.windowSeconds * 1000);

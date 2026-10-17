@@ -4,9 +4,18 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { createContext, type ReactNode, useContext, useState } from "react";
 import { type ApiErrorPayload, buildApiErrorMessage, messageOf, readJsonSafe, sendJson } from "@/lib/client/http";
+import type { StrategyAiProposal } from "@/lib/modules/strategy/types";
 
 /** Esito di una modifica del piano: la nuova version, oppure code e messaggio già tradotto. */
 export type PlanRequestResult = { ok: true; version: number } | { ok: false; code: string | null; message: string };
+
+/**
+ * Esito di una richiesta dei titoli con l'AI (T-3603): la proposta (null per lo scarto), oppure code, messaggio già
+ * tradotto e, per RATE_LIMITED, i secondi dopo cui la proposta torna disponibile.
+ */
+export type AiTitlesResult =
+  | { ok: true; proposal: StrategyAiProposal | null }
+  | { ok: false; code: string | null; message: string; retryAfterSeconds: number | null };
 
 export type PlanRequests = {
   pending: boolean;
@@ -15,6 +24,10 @@ export type PlanRequests = {
   clearError: () => void;
   operate: (operation: Record<string, unknown> & { type: string }) => Promise<PlanRequestResult>;
   patchPage: (pageId: string, patch: Record<string, unknown>) => Promise<PlanRequestResult>;
+  /** Chiede la proposta dei titoli con l'AI della pagina (T-3601): non cambia la version del piano. */
+  suggestTitles: (pageId: string) => Promise<AiTitlesResult>;
+  /** Scarta la proposta salvata nella pagina (T-3602). */
+  discardProposal: (pageId: string) => Promise<AiTitlesResult>;
 };
 
 const PlanRequestsContext = createContext<PlanRequests | null>(null);
@@ -75,12 +88,36 @@ export function PlanRequestsProvider({
     }
   };
 
+  // Le proposte dell'AI stanno nella pagina (T-3602): dopo una richiesta riuscita il piano si ricarica, così il pannello
+  // riaperto mostra la proposta salvata.
+  const aiTitles = async (method: "POST" | "DELETE", pageId: string): Promise<AiTitlesResult> => {
+    try {
+      const response = await fetch(`${base}/pages/${pageId}/titles/suggest`, { method });
+      const payload = await readJsonSafe<ApiErrorPayload & { data?: StrategyAiProposal; retryAfter?: number }>(response);
+      if (response.ok) {
+        router.refresh();
+        return { ok: true, proposal: payload?.data ?? null };
+      }
+      const retryAfter = Number(payload?.retryAfter ?? response.headers.get("Retry-After"));
+      return {
+        ok: false,
+        code: payload?.code ?? null,
+        message: buildApiErrorMessage(response, payload, tErrors),
+        retryAfterSeconds: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
+      };
+    } catch (requestError) {
+      return { ok: false, code: null, message: messageOf(requestError, tCommon("unexpectedError")), retryAfterSeconds: null };
+    }
+  };
+
   const value: PlanRequests = {
     pending,
     error,
     clearError: () => setError(null),
     operate: (operation) => send((version) => sendJson("POST", `${base}/operations`, { version, operation })),
     patchPage: (pageId, patch) => send((version) => sendJson("PATCH", `${base}/pages/${pageId}`, { version, ...patch })),
+    suggestTitles: (pageId) => aiTitles("POST", pageId),
+    discardProposal: (pageId) => aiTitles("DELETE", pageId),
   };
   return <PlanRequestsContext.Provider value={value}>{children}</PlanRequestsContext.Provider>;
 }

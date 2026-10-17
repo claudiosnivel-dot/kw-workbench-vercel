@@ -1707,6 +1707,15 @@
       "deleteText": "La pagina «{title}» va via e le sue keyword finiscono tra quelle senza pagina.",
       "readOnly": "Versione precedente: si può solo consultare."
     },
+    "ai": {
+      "suggest": "Migliora i titoli con l'AI",
+      "loading": "Sto scrivendo i titoli…",
+      "title": "Proposta dell'AI",
+      "model": "Modello: {model}",
+      "use": "Usa questi titoli",
+      "discard": "Scarta",
+      "rateLimited": "Hai raggiunto il limite delle proposte: potrai chiederne un'altra dalle {time}."
+    },
     "regenerateDialog": {
       "title": "Rigenera il piano",
       "text": "Riorganizzo le pagine non ancora iniziate con le keyword tenute di oggi. Le pagine in scrittura o pubblicate restano come sono.",
