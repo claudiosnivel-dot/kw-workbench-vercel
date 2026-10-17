@@ -393,7 +393,12 @@
     "STRATEGY_LIMIT": "The project already has 20 strategies: delete one before generating another.",
     "STRATEGY_NOT_FOUND": "Strategy not found.",
     "STRATEGY_CONFLICT": "The strategy was changed in the meantime: reload the plan and try again.",
-    "STRATEGY_READ_ONLY": "This is a previous version of the plan: it is read only."
+    "STRATEGY_READ_ONLY": "This is a previous version of the plan: it is read only.",
+    "AI_NOT_CONFIGURED": "AI titles are not available right now.",
+    "AI_TIMEOUT": "The model did not answer in time. Try again shortly.",
+    "AI_UNAVAILABLE": "The AI titles service cannot be reached. Try again shortly.",
+    "AI_INVALID_RESPONSE": "The model gave an answer that cannot be used. Try again.",
+    "AI_MODEL_NOT_FREE": "The model must be free: an ID like author/model:free."
   },
   "errorPages": {
     "error": {
@@ -677,6 +682,22 @@
       "pausing": "Pausing...",
       "pauseConfirm": "Pause the commercial launch? Users go back to no limits and public sign-up closes.",
       "updated": "Launch status updated."
+    },
+    "aiTitles": {
+      "title": "AI titles",
+      "intro": "H1 and H2 suggestions written by a free model through OpenRouter, one plan page at a time. The key lives only in the server environment (OPENROUTER_API_KEY): here you choose whether the feature is on, the model and the limits.",
+      "enabled": "Feature for users",
+      "on": "On",
+      "off": "Off",
+      "model": "Model",
+      "modelHint": "Free models only (ID ending in :free)",
+      "platformLimit": "Platform cap (suggestions in 24 hours)",
+      "workspaceLimit": "Limit per workspace (suggestions in 24 hours)",
+      "keyConfigured": "Key configured: {configured, select, yes {yes} other {no}}",
+      "used": "Suggestions in the last 24 hours: {used} of {limit}",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Saved"
     },
     "user": {
       "back": "← Users",

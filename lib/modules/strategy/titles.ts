@@ -38,8 +38,8 @@ export const TEMPLATE_VARIANTS: Record<StrategyContentType, readonly string[]> =
   tool: ["v1", "v2", "v3"],
 };
 
-/** Massimo di H2 per tipo di pagina, chiusure comprese (T-1902; pilastro fino a 20, T-2104). */
-const MAX_H2: Record<StrategyPageKind, number> = { HUB: 20, SPOKE: 12 };
+/** Massimo di H2 per tipo di pagina, chiusure comprese (T-1902; pilastro fino a 20, T-2104); anche per l'AI (T-3502). */
+export const MAX_H2: Record<StrategyPageKind, number> = { HUB: 20, SPOKE: 12 };
 export const MAX_TITLE_LENGTH = 200;
 
 function capitalize(text: string): string {

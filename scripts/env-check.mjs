@@ -10,6 +10,8 @@ const ENVIRONMENTS = [
   { name: "development", label: "Development", file: ".env.development.local", required: false },
 ];
 const URL_KEYS = ["DATABASE_URL", "DIRECT_URL"];
+// Segreti facoltativi di cui si dice solo se ci sono, mai il valore (T-3501: chiave di OpenRouter).
+const SECRET_KEYS = ["OPENROUTER_API_KEY"];
 
 function parseArgs(argv) {
   const paths = {};
@@ -47,6 +49,14 @@ function describeUrl(url) {
   }
 }
 
+/** Stato di un segreto senza il valore: le variabili Sensitive di Vercel arrivano da vercel env pull senza valore. */
+function describeSecret(values, key) {
+  if (!(key in values)) {
+    return "non impostata";
+  }
+  return values[key] ? "impostata (valore non mostrato; su Vercel va segnata Sensitive)" : "presente senza valore leggibile (Sensitive)";
+}
+
 function main() {
   const paths = parseArgs(process.argv.slice(2));
   const loaded = {};
@@ -69,6 +79,9 @@ function main() {
     for (const key of URL_KEYS) {
       const url = loaded[environment.name][key];
       console.log(`  ${key}: ${url ? describeUrl(url) : "non impostata"}`);
+    }
+    for (const key of SECRET_KEYS) {
+      console.log(`  ${key}: ${describeSecret(loaded[environment.name], key)}`);
     }
   }
 

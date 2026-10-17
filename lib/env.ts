@@ -190,6 +190,10 @@ const envSchema = z.object({
   // CAPTCHA Cloudflare Turnstile (T-1702, D-12): insieme o nessuna; voce captcha della checklist del lancio (T-1606).
   TURNSTILE_SECRET_KEY: optional,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: optional,
+  // Titoli con l'AI via OpenRouter (T-3501, D-42): chiave facoltativa, solo nel server (Sensitive su Vercel); la base
+  // cambia solo negli E2E, verso un finto server locale.
+  OPENROUTER_API_KEY: optional,
+  OPENROUTER_BASE_URL: optional,
 });
 
 type RawEnv = z.infer<typeof envSchema>;
@@ -330,6 +334,11 @@ const validatedSchema = envSchema.superRefine((raw, ctx) => {
   const publicUrl = present(raw.APP_PUBLIC_URL)?.trim();
   if (publicUrl !== undefined && !isPublicAppUrl(publicUrl)) {
     ctx.addIssue({ code: "custom", path: ["APP_PUBLIC_URL"], message: "deve essere un URL https (http solo per localhost)" });
+  }
+
+  const openRouterBaseUrl = present(raw.OPENROUTER_BASE_URL)?.trim();
+  if (openRouterBaseUrl !== undefined && !isPublicAppUrl(openRouterBaseUrl)) {
+    ctx.addIssue({ code: "custom", path: ["OPENROUTER_BASE_URL"], message: "deve essere un URL https (http solo per localhost)" });
   }
 
   const adminEmail = present(raw.APP_ADMIN_EMAIL);
@@ -606,6 +615,18 @@ export function getDataForSeoCredentials(source: EnvSource = process.env): { log
   const login = present(source.DATAFORSEO_LOGIN)?.trim();
   const password = present(source.DATAFORSEO_PASSWORD);
   return login && password ? { login, password } : null;
+}
+
+/**
+ * Chiave e base dell'API di OpenRouter dei titoli con l'AI (T-3501); null senza chiave (funzione non configurata). La
+ * chiave non va mai nei log; la base, senza barra finale, la cambia solo l'ambiente degli E2E, mai la richiesta.
+ */
+export function getOpenRouterSettings(source: EnvSource = process.env): { apiKey: string; baseUrl: string } | null {
+  const apiKey = present(source.OPENROUTER_API_KEY)?.trim();
+  if (!apiKey) {
+    return null;
+  }
+  return { apiKey, baseUrl: (present(source.OPENROUTER_BASE_URL)?.trim() ?? "https://openrouter.ai/api/v1").replace(/\/+$/, "") };
 }
 
 /** Segreto HMAC delle chiamate interne dei job (T-1203); assente fuori produzione se non configurato. */

@@ -113,6 +113,12 @@ export const API_ERROR_CODES = [
   "STRATEGY_NOT_FOUND",
   "STRATEGY_CONFLICT",
   "STRATEGY_READ_ONLY",
+  // Titoli con l'AI (T-3501, T-3502, D-42).
+  "AI_NOT_CONFIGURED",
+  "AI_TIMEOUT",
+  "AI_UNAVAILABLE",
+  "AI_INVALID_RESPONSE",
+  "AI_MODEL_NOT_FREE",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

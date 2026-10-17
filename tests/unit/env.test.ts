@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { envInt, parseEnv } from "@/lib/env";
+import { envInt, getOpenRouterSettings, parseEnv } from "@/lib/env";
 
 // Segreto fittizio conforme ai vincoli di produzione (almeno 32 caratteri), mai un valore reale.
 const VALID_SECRET = "x".repeat(40);
@@ -130,6 +130,24 @@ describe("DSN di Sentry (T-601)", () => {
     const message = errorMessageOf(() => parseEnv({ NODE_ENV: "development", NEXT_PUBLIC_SENTRY_DSN: "http://valore-errato" }));
     expect(message).toMatch(/NEXT_PUBLIC_SENTRY_DSN/);
     expect(message).not.toContain("valore-errato");
+  });
+});
+
+describe("OpenRouter dei titoli con l'AI (T-3501)", () => {
+  it("senza chiave non è configurato; la base ha un default e accetta http solo per localhost", () => {
+    expect(getOpenRouterSettings({})).toBeNull();
+    expect(getOpenRouterSettings({ OPENROUTER_API_KEY: " chiave-prova " })).toEqual({
+      apiKey: "chiave-prova",
+      baseUrl: "https://openrouter.ai/api/v1",
+    });
+    expect(getOpenRouterSettings({ OPENROUTER_API_KEY: "chiave-prova", OPENROUTER_BASE_URL: "http://127.0.0.1:3299/v1/" })?.baseUrl).toBe(
+      "http://127.0.0.1:3299/v1"
+    );
+
+    expect(() => parseEnv({ NODE_ENV: "development", OPENROUTER_BASE_URL: "http://127.0.0.1:3299/v1" })).not.toThrow();
+    expect(errorMessageOf(() => parseEnv({ NODE_ENV: "development", OPENROUTER_BASE_URL: "http://interno.example" }))).toMatch(
+      /OPENROUTER_BASE_URL/
+    );
   });
 });
 

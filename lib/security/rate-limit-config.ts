@@ -9,7 +9,9 @@ export type RateLimitRule = { max: number; windowSeconds: number };
  * estrazione per workspace con il lancio attivo (D-27 emendata), modulo contatti per IP e per email (T-1805),
  * tentativi di password sulla cancellazione dell'account per utente (T-2001). Lette a ogni uso, così i test iniettano
  * soglie basse. Le richieste di cambio dell'email per utente (T-3001) hanno un limite fisso di 5 l'ora, la creazione e
- * il rinnovo degli inviti per workspace (T-3202) uno condiviso di 20 l'ora.
+ * il rinnovo degli inviti per workspace (T-3202) uno condiviso di 20 l'ora. Le proposte dei titoli con l'AI per
+ * workspace e per la piattaforma (T-3501) hanno una finestra di 24 ore: il max lo leggono dalle impostazioni del root
+ * admin a ogni richiesta (T-3601), qui i loro default (lib/ai/settings.ts).
  */
 export function rateLimitRules() {
   const loginWindow = getIntEnv("RATE_LIMIT_LOGIN_WINDOW_SECONDS");
@@ -30,6 +32,8 @@ export function rateLimitRules() {
     },
     emailChange: { max: 5, windowSeconds: 3600 },
     workspaceInvite: { max: 20, windowSeconds: 3600 },
+    aiTitlesWorkspace: { max: 10, windowSeconds: 86_400 },
+    aiTitlesPlatform: { max: 45, windowSeconds: 86_400 },
   } satisfies Record<string, RateLimitRule>;
 }
 
