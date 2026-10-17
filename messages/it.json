@@ -393,7 +393,12 @@
     "STRATEGY_LIMIT": "Il progetto ha già 20 strategie: eliminane una prima di generarne un'altra.",
     "STRATEGY_NOT_FOUND": "Strategia non trovata.",
     "STRATEGY_CONFLICT": "La strategia è stata modificata nel frattempo: ricarica il piano e riprova.",
-    "STRATEGY_READ_ONLY": "Questa è una versione precedente del piano: si può solo consultare."
+    "STRATEGY_READ_ONLY": "Questa è una versione precedente del piano: si può solo consultare.",
+    "AI_NOT_CONFIGURED": "I titoli con l'AI non sono attivi in questo momento.",
+    "AI_TIMEOUT": "Il modello non ha risposto in tempo. Riprova tra poco.",
+    "AI_UNAVAILABLE": "Il servizio dei titoli con l'AI non è raggiungibile. Riprova tra poco.",
+    "AI_INVALID_RESPONSE": "Il modello ha dato una risposta non utilizzabile. Riprova.",
+    "AI_MODEL_NOT_FREE": "Il modello deve essere gratuito: un ID come autore/modello:free."
   },
   "errorPages": {
     "error": {
@@ -677,6 +682,22 @@
       "pausing": "Pausa...",
       "pauseConfirm": "Rimettere in pausa il lancio commerciale? Gli utenti tornano senza limiti e la registrazione pubblica si chiude.",
       "updated": "Stato del lancio aggiornato."
+    },
+    "aiTitles": {
+      "title": "Titoli con l'AI",
+      "intro": "Proposte di H1 e H2 scritte da un modello gratuito tramite OpenRouter, una pagina del piano alla volta. La chiave sta solo nell'ambiente del server (OPENROUTER_API_KEY): qui scegli se la funzione è attiva, il modello e i limiti.",
+      "enabled": "Funzione per gli utenti",
+      "on": "Attiva",
+      "off": "Spenta",
+      "model": "Modello",
+      "modelHint": "Solo modelli gratuiti (ID che finisce con :free)",
+      "platformLimit": "Tetto della piattaforma (proposte in 24 ore)",
+      "workspaceLimit": "Limite per workspace (proposte in 24 ore)",
+      "keyConfigured": "Chiave configurata: {configured, select, yes {sì} other {no}}",
+      "used": "Proposte nelle ultime 24 ore: {used} su {limit}",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "saved": "Salvato"
     },
     "user": {
       "back": "← Utenti",

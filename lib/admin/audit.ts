@@ -21,13 +21,15 @@ export type AdminAuditAction =
   | "branding.update"
   // Cambio dell'interruttore del lancio commerciale (T-1606, D-32).
   | "launch.update"
+  // Impostazioni dei titoli con l'AI (T-3501, D-42): solo i campi cambiati, mai la chiave di OpenRouter.
+  | "ai.update"
   // Tetto dei rimborsi automatici della quota raggiunto (T-1703, D-27 emendata): evento di sistema, actor null.
   | "quota.refund_cap_reached";
 
 export type AuditEntry = {
   actorUserId: string | null;
   action: AdminAuditAction;
-  targetType: "user" | "branding" | "launch" | "workspace";
+  targetType: "user" | "branding" | "launch" | "workspace" | "ai";
   targetId?: string | null;
   metadata?: Prisma.InputJsonObject;
   ip?: string | null;

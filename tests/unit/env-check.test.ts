@@ -65,6 +65,20 @@ describe("env-check", () => {
     expect(result.stdout + result.stderr).not.toContain("Pw-Prova-123");
   });
 
+  it("dice se la chiave di OpenRouter c'è senza mostrarne il valore (T-3501)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "env-check-"));
+    const production = envFile(dir, "production.env", "postgres.prodref", "pw-prova", "prod.pooler.example.com");
+    writeFileSync(production, `${readFileSync(production, "utf8")}OPENROUTER_API_KEY="prova-prova-prova"\n`);
+    const preview = envFile(dir, "preview.env", "postgres.stagingref", "pw-prova", "staging.pooler.example.com");
+    writeFileSync(preview, `${readFileSync(preview, "utf8")}OPENROUTER_API_KEY=""\n`);
+
+    const result = envCheck(["--production", production, "--preview", preview, "--development", join(dir, "assente.env")]);
+
+    expect(result.stdout).toContain("OPENROUTER_API_KEY: impostata");
+    expect(result.stdout).toContain("OPENROUTER_API_KEY: presente senza valore leggibile");
+    expect(result.stdout + result.stderr).not.toContain("prova-prova-prova");
+  });
+
   // covers: AC-203-3
   it("senza il file di Preview esce con 1 e indica il comando vercel env pull", () => {
     const dir = mkdtempSync(join(tmpdir(), "env-check-"));

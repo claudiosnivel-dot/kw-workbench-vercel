@@ -23,7 +23,7 @@ Oggi `/admin` è una colonna di sette blocchi (indicatori, lancio, branding, Goo
 
   definition_of_done:
     - "Layout delle sezioni (app/admin/(sections)/layout.tsx): requirePageUser e isAdminUser (gli altri utenti vanno alla home, come oggi); PageIntro «Amministrazione» e SectionNav con Panoramica (/admin), Utenti (/admin/users), Impostazioni (/admin/settings) e Registro (/admin/log) per il root admin; per l'admin non root la sola voce Utenti."
-    - "Pagine: Panoramica con AdminKpiCard e MetricsSpendCard; Utenti con AdminUsersDashboard; Impostazioni con BrandingSettingsCard, GoogleSheetsApiConfigCard e AdminLaunchCard; Registro con AdminAuditLogCard. Panoramica, Impostazioni e Registro sono del solo root: l'admin non root che le apre va a /admin/users. La card del branding in sola lettura per l'admin non root sparisce."
+    - "Pagine: Panoramica con AdminKpiCard e MetricsSpendCard; Utenti con AdminUsersDashboard; Impostazioni con BrandingSettingsCard, GoogleSheetsApiConfigCard, AdminLaunchCard e AiTitlesSettingsCard (emendato da T-3501 il 2026-10-17: la card dei titoli con l'AI dopo il lancio commerciale; prima le sole prime tre); Registro con AdminAuditLogCard. Panoramica, Impostazioni e Registro sono del solo root: l'admin non root che le apre va a /admin/users. La card del branding in sola lettura per l'admin non root sparisce."
     - "Emendamento dichiarato: AC-901-1 (modulo 09) — la pagina /admin/settings resa per il root admin non contiene il testo 'Google Keyword Planner'."
 
   acceptance_criteria:

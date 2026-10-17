@@ -93,6 +93,8 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 | `VERCEL` | no (di sistema: `1` sulle deployment; solo lì `x-forwarded-for` è l'IP del client nelle chiavi del rate limit e nel `remoteip` del CAPTCHA, T-1701) | no (di sistema) | no (fuori da Vercel l'IP vale `unknown`) | no | piattaforma (Vercel) |
 | `TURNSTILE_SECRET_KEY` | facolt. finché il lancio commerciale è in pausa (D-32), poi obbl. (voce captcha della checklist di T-1606): secret di Cloudflare Turnstile, insieme a `NEXT_PUBLIC_TURNSTILE_SITE_KEY`; le chiavi di test di Cloudflare (`1x00000…`, `2x00000…`, `3x00000…`) sono rifiutate all'avvio; mai nel sorgente né nei log | come Production | facolt. (chiavi di test di Cloudflare che passano sempre) | sì | Vercel (Sensitive) / locale |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | come `TURNSTILE_SECRET_KEY` (insieme o nessuna): site key del widget; letta in build, accende il widget su registrazione e recupero password e aggiunge `challenges.cloudflare.com` a `script-src` e `frame-src` della CSP | come Production | facolt. | no (finisce nel bundle client) | Vercel / locale |
+| `OPENROUTER_API_KEY` | facolt. (senza, i titoli con l'AI non sono configurati e la proposta risponde 503 `AI_NOT_CONFIGURED`): chiave dell'account OpenRouter dei titoli con l'AI (T-3501, D-42, `docs/AI-TITLES.md`); solo nel server, mai nelle risposte né nei log (la card del root admin dice solo se c'è) | come Production | facolt. | sì | Vercel (Sensitive) / locale |
+| `OPENROUTER_BASE_URL` | no (default `https://openrouter.ai/api/v1`; URL https, http solo per localhost) | no | facolt. | no | solo E2E (finto server locale) |
 
 ## Production
 
