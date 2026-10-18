@@ -73,6 +73,11 @@ Titan SEO diventa un SaaS vendibile:
 11. (aggiunto il 2026-10-18, macrotask 37) ricerche che trovano davvero le keyword:
     più parole brevi nell'avvio rapido, composizioni nella lingua del progetto e un
     invito a cambiare le parole quando Google trova poco (D-44).
+12. (aggiunto il 2026-10-18, macrotask 38-46) dal piano all'articolo: titoli e
+    testi scritti da modelli gratuiti con le riserve quando uno è occupato,
+    l'articolo di una pagina scritto a blocchi come da una persona, con i canoni
+    SEO e i link interni del piano, riletto e modificato dall'utente, poi copiato,
+    scaricato o inviato come bozza a WordPress (D-46).
 
 "Fatto" = `target_tests` verdi e checkpoint Trueline verde al confine di ogni
 macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
