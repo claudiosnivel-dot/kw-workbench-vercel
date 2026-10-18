@@ -71,9 +71,10 @@ const tooLong = (title: string) => Array.from(title).length > MAX_TITLE_LENGTH;
  * Proposta del modello per la pagina (T-3502): H1 non vuoto, entro 200 caratteri e con tutte le parole della keyword
  * principale (keywordWords di T-1901); almeno un H2 dopo aver tolto vuoti e doppioni senza distinzione di maiuscole,
  * oltre il massimo della pagina solo i primi nell'ordine della risposta (T-3601, D-43), ciascuno entro 200 caratteri.
- * Un controllo non superato → AI_INVALID_RESPONSE.
+ * droppedH2 conta gli H2 validi tenuti fuori oltre il massimo (T-3802, D-48). Un controllo non superato →
+ * AI_INVALID_RESPONSE.
  */
-export function parseTitlesResponse(content: string, page: TitlePage, language: string): { h1: string; h2: string[] } {
+export function parseTitlesResponse(content: string, page: TitlePage, language: string): { h1: string; h2: string[]; droppedH2: number } {
   if (content.length > MAX_CONTENT_LENGTH) {
     throw invalid("testo troppo lungo");
   }
@@ -104,5 +105,6 @@ export function parseTitlesResponse(content: string, page: TitlePage, language: 
   if (h2.length === 0 || h2.some(tooLong)) {
     throw invalid(`serve almeno un H2 entro ${MAX_TITLE_LENGTH} caratteri`);
   }
-  return { h1, h2 };
+  const droppedH2 = distinct.slice(h2.length).filter((title) => !tooLong(title)).length;
+  return { h1, h2, droppedH2 };
 }

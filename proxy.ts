@@ -29,6 +29,8 @@ const PUBLIC_PATHS = new Set([
   "/api/health",
   // Cron di Vercel per i job bloccati (T-1203): protetto da CRON_SECRET nella rotta.
   "/api/cron/reap-jobs",
+  // Cron del catalogo dei modelli di OpenRouter (T-3803): protetto da CRON_SECRET nella rotta.
+  "/api/cron/ai-catalog",
   // Scelta della lingua (T-1301): anche dalle pagine di login e registrazione; aggiorna l'utente solo con sessione valida.
   "/api/locale",
   // Webhook di Paddle (T-1603): nessuna sessione, solo la firma HMAC verificata dalla rotta.

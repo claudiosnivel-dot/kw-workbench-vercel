@@ -1,7 +1,7 @@
 // Gate di T-3603 (AC-3603-1…4): «Migliora i titoli con l'AI» nel pannello della pagina del piano. La proposta arriva in
 // una card con «Usa questi titoli» (PATCH dei titoli con la version, poi DELETE della proposta) e «Scarta» (solo il
 // DELETE); il limite raggiunto mostra l'ora in cui la proposta torna disponibile; la proposta salvata compare
-// all'apertura del pannello senza richieste.
+// all'apertura del pannello senza richieste. Con T-3802 (AC-3802-5) la card dice quanti H2 non sono stati tenuti.
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PagePanel, type PagePanelProps } from "@/components/plan/page-panel";
@@ -19,9 +19,11 @@ vi.mock("next/navigation", () => ({
 const fetchMock = vi.fn<typeof fetch>();
 const SUGGEST_URL = "/api/projects/p1/strategies/s1/pages/sp1/titles/suggest";
 const PAGE_URL = "/api/projects/p1/strategies/s1/pages/sp1";
+// impacted-by: T-3802 (la proposta porta droppedH2, gli H2 tenuti fuori oltre il massimo)
 const PROPOSAL = {
   h1: "Scarpe running donna: come sceglierle",
   h2: ["Ammortizzazione e peso", "Taglie e calzata"],
+  droppedH2: 0,
   model: "autore/modello-prova:free",
   createdAt: "2026-10-17T08:00:00.000Z",
 };
@@ -159,5 +161,22 @@ describe("titoli con l'AI nel pannello della pagina", () => {
     const card = screen.getByRole("region", { name: "Proposta dell'AI" });
     await waitFor(() => expect(within(card).getByRole("alert")).toHaveTextContent("Il piano è stato modificato da un altro membro"));
     expect(calls()).toEqual([`PATCH ${PAGE_URL}`]);
+  });
+
+  // covers: AC-3802-5
+  it("con H2 tenuti fuori la card dice quanti, senza la riga quando sono 0", async () => {
+    const twelve = Array.from({ length: 12 }, (_, index) => `Argomento numero ${index + 1}`);
+    routeFetch({ suggest: () => json(200, { data: { ...PROPOSAL, h2: twelve, droppedH2: 2 } }) });
+    const view = renderWithIntl(panel());
+
+    fireEvent.click(screen.getByRole("button", { name: "Migliora i titoli con l'AI" }));
+    const card = await screen.findByRole("region", { name: "Proposta dell'AI" });
+
+    expect(within(card).getAllByRole("listitem")).toHaveLength(12);
+    expect(card).toHaveTextContent("Altri 2 titoli proposti non sono stati tenuti.");
+
+    view.unmount();
+    renderWithIntl(panel({ page: { ...PAGE, aiProposal: PROPOSAL } }));
+    expect(screen.getByRole("region", { name: "Proposta dell'AI" })).not.toHaveTextContent("non sono stati tenuti");
   });
 });

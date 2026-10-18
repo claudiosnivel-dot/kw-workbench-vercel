@@ -398,7 +398,9 @@
     "AI_TIMEOUT": "Il modello non ha risposto in tempo. Riprova tra poco.",
     "AI_UNAVAILABLE": "Il servizio dei titoli con l'AI non è raggiungibile. Riprova tra poco.",
     "AI_INVALID_RESPONSE": "Il modello ha dato una risposta non utilizzabile. Riprova.",
-    "AI_MODEL_NOT_FREE": "Il modello deve essere gratuito: un ID come autore/modello:free."
+    "AI_MODEL_NOT_FREE": "Il modello deve essere gratuito: un ID come autore/modello:free.",
+    "AI_BUSY": "I modelli gratuiti sono tutti occupati: riprova tra qualche minuto.",
+    "AI_DAILY_LIMIT": "Le richieste all'AI di oggi sono finite: riprova domani."
   },
   "errorPages": {
     "error": {
@@ -685,12 +687,29 @@
     },
     "aiTitles": {
       "title": "Titoli con l'AI",
-      "intro": "Proposte di H1 e H2 scritte da un modello gratuito tramite OpenRouter, una pagina del piano alla volta. La chiave sta solo nell'ambiente del server (OPENROUTER_API_KEY): qui scegli se la funzione è attiva, il modello e i limiti.",
+      "intro": "Proposte di H1 e H2 scritte da un modello gratuito tramite OpenRouter, una pagina del piano alla volta. La chiave sta solo nell'ambiente del server (OPENROUTER_API_KEY): qui scegli se la funzione è attiva, i modelli e i limiti.",
       "enabled": "Funzione per gli utenti",
       "on": "Attiva",
       "off": "Spenta",
-      "model": "Modello",
-      "modelHint": "Solo modelli gratuiti (ID che finisce con :free)",
+      "models": "Modelli, dal primo da provare",
+      "modelsHint": "Solo modelli gratuiti (ID che finisce con :free), da 1 a 8. Se un modello è occupato o risponde male si prova il successivo.",
+      "up": "Su",
+      "down": "Giù",
+      "remove": "Togli",
+      "addModel": "Aggiungi modello",
+      "add": "Aggiungi",
+      "notFree": "Solo modelli gratuiti: un ID che finisce con :free.",
+      "duplicate": "Il modello è già nell'elenco.",
+      "full": "L'elenco ha già 8 modelli: togline uno per aggiungerne un altro.",
+      "status": {
+        "ok": "disponibile",
+        "missing": "non più nel catalogo",
+        "unknown": "da verificare"
+      },
+      "catalogChecked": "Ultimo controllo del catalogo di OpenRouter: {date}",
+      "catalogNever": "Catalogo di OpenRouter non ancora controllato",
+      "catalogNew": "Modelli gratuiti del catalogo non ancora nell'elenco",
+      "catalogNoNew": "Tutti i modelli gratuiti del catalogo sono già nell'elenco.",
       "platformLimit": "Tetto della piattaforma (proposte in 24 ore)",
       "workspaceLimit": "Limite per workspace (proposte in 24 ore)",
       "keyConfigured": "Chiave configurata: {configured, select, yes {sì} other {no}}",
@@ -1736,7 +1755,8 @@
       "model": "Modello: {model}",
       "use": "Usa questi titoli",
       "discard": "Scarta",
-      "rateLimited": "Hai raggiunto il limite delle proposte: potrai chiederne un'altra dalle {time}."
+      "rateLimited": "Hai raggiunto il limite delle proposte: potrai chiederne un'altra dalle {time}.",
+      "droppedH2": "{count, plural, one {Un altro titolo proposto non è stato tenuto.} other {Altri # titoli proposti non sono stati tenuti.}}"
     },
     "regenerateDialog": {
       "title": "Rigenera il piano",

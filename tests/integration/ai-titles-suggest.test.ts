@@ -122,6 +122,7 @@ describe("proposta dei titoli con l'AI", () => {
   });
 
   // covers: AC-3601-3
+  // impacted-by: T-3802 (con i modelli di riserva, nessuna risposta valida da tutto l'elenco è 502 AI_UNAVAILABLE)
   it("senza chiave o a funzione spenta risponde 503 senza consumare i limiti; una risposta non valida è 502 e conta", async () => {
     const { member, spoke } = await memberWithPlan("t3601");
     fetchMock.mockImplementation(async () => completion({ h1: "Le migliori calzature", h2: ["Ammortizzazione"] }));
@@ -138,7 +139,7 @@ describe("proposta dei titoli con l'AI", () => {
     expect(await statuses([missingKey, disabled, invalid])).toEqual([
       "503 AI_NOT_CONFIGURED",
       "503 AI_NOT_CONFIGURED",
-      "502 AI_INVALID_RESPONSE",
+      "502 AI_UNAVAILABLE",
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(await used24h()).toBe(1);

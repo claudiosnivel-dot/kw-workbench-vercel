@@ -15,7 +15,8 @@ export type AiTitlesProps = {
  * «Migliora i titoli con l'AI» nel pannello della pagina (T-3603, D-42 emendata da D-43): la proposta arriva in una card
  * con «Usa questi titoli» (PATCH dei titoli, poi DELETE della proposta) e «Scarta» (DELETE). La proposta salvata nella
  * pagina compare all'apertura senza richieste; una nuova la sostituisce. Gli errori lasciano titoli e proposta com'erano.
- * Titoli e modello sono resi come testo (CWE-79).
+ * La card dice quanti H2 validi oltre il massimo non sono stati tenuti (T-3802, D-48). Titoli e modello sono resi come
+ * testo (CWE-79).
  */
 export function AiTitles({ page, onUse }: AiTitlesProps) {
   const t = useTranslations("plan.ai");
@@ -84,6 +85,7 @@ export function AiTitles({ page, onUse }: AiTitlesProps) {
               <li key={`${index}-${heading}`}>{heading}</li>
             ))}
           </ol>
+          {proposal.droppedH2 > 0 && <p className="text-xs text-slate-600">{t("droppedH2", { count: proposal.droppedH2 })}</p>}
           <p className="text-xs text-slate-600">{t("model", { model: proposal.model })}</p>
           {cardError && (
             <p className="text-sm text-red-700" role="alert">
