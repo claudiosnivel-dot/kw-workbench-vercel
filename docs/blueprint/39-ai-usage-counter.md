@@ -92,6 +92,46 @@ Con i modelli di riserva (modulo 38) una proposta può costare più richieste, e
 
   out_of_scope:
     - "Contatori o avvisi per gli utenti dei workspace (scelta dell'utente del 2026-10-18: solo il root admin)."
+
+- id: T-3903
+  title: "Avviso in Panoramica sulle richieste rifiutate da DataForSEO"
+  macrotask: "ai-usage-counter"
+  depends_on: [T-3902, T-3704, T-903]
+
+  objective: >
+    Far sapere al root admin che DataForSEO sta rifiutando le richieste dei volumi, senza dover aprire la pagina di un
+    argomento (scelta dell'utente del 2026-10-18, D-48).
+
+  definition_of_done:
+    - "Migrazione 0047_ai_requests (la stessa di T-3901): metrics_provider_requests.provider_code integer null; settleProviderRequest salva il codice di DataForSEO dell'esito (T-3704), null per timeout ed errori di rete."
+    - "Panoramica dell'amministrazione, solo per il root admin: se nelle ultime 24 ore ci sono richieste DATAFORSEO non riuscite, l'avviso «DataForSEO ha rifiutato N richieste nelle ultime 24 ore» seguito dal motivo dell'ultima con i testi di keywords.volumes.reason (T-3704: credenziali, account da verificare, codice N, nessuna risposta); testi admin it ed en."
+
+  acceptance_criteria:
+    - id: AC-3903-1
+      given: "2 richieste DATAFORSEO non riuscite nelle ultime 24 ore, l'ultima con provider_code 40104, e una riuscita"
+      when: "il root admin legge la Panoramica"
+      then: "l'avviso dice «DataForSEO ha rifiutato 2 richieste nelle ultime 24 ore» con il testo dell'account da verificare"
+    - id: AC-3903-2
+      given: "nessuna richiesta non riuscita nelle ultime 24 ore, poi le stesse richieste di AC-3903-1 con un admin non root"
+      when: "si legge la Panoramica"
+      then: "in nessuno dei due casi c'è l'avviso di DataForSEO"
+    - id: AC-3903-3
+      given: "un fetch simulato di DataForSEO che risponde 403 con status_code 40104"
+      when: "si esegue una ricerca con DATAFORSEO"
+      then: "la riga di metrics_provider_requests della richiesta ha provider_code 40104"
+
+  target_tests:
+    - file: "tests/component/admin-ai-usage.test.tsx"
+      covers: [AC-3903-1, AC-3903-2]
+    - file: "tests/integration/dataforseo-errors.test.ts"
+      covers: [AC-3903-3]
+
+  security_notes:
+    - "A01 / CWE-285: avviso solo per il root admin."
+    - "A09 / CWE-532: nel registro solo il codice numerico, mai il messaggio del fornitore."
+
+  out_of_scope:
+    - "Avvisi per email o notifiche fuori dall'app."
 ```
 
 ## Self-check
@@ -100,3 +140,4 @@ Con i modelli di riserva (modulo 38) una proposta può costare più richieste, e
 - Gate umani: nessuno.
 - Nota per l'utente: dopo l'acquisto dei crediti, tetto della piattaforma e limiti per workspace vanno alzati dalla card (default 900 richieste).
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): conservazione di 30 giorni; tetto da 1 a 5000; avviso dei modelli sotto i 5 contando anche quelli «da verificare».
+- Emendamento (2026-10-18, D-48): T-3903 aggiunto su scelta dell'utente (avviso al root admin sulle richieste rifiutate da DataForSEO); il modulo passa a tre task.
