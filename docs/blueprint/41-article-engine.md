@@ -24,7 +24,7 @@ Un articolo costa 10-25 richieste da circa 10 secondi: più del tempo di una ric
     - "lib/articles/run.ts: advanceArticleRun(runId, deadlineMs) prende la lease (locked_until) e il battito come advanceJob (T-1202), esegue passi della fase corrente finché resta tempo e salva cursor, phase e avanzamento dopo ogni richiesta al modello; fasi di questo modulo: outline (T-4102) e done; le fasi successive si aggiungono nei moduli 42 e 43. Un lavoro senza fasi rimaste diventa completed e l'articolo READY."
     - "Rotta app/api/internal/article-runs/[id]/advance (POST, maxDuration 300) con la firma HMAC di T-1203 calcolata su 'article-run:' più l'id, così una firma di un job delle ricerche non vale per un lavoro di articolo; 202 subito e il passo in after(); la continuazione si programma come scheduleJobContinuation."
     - "Il cron reap-jobs (T-1203) riprende anche i lavori di articolo pending o running con lease scaduta e fallisce dopo 5 tentativi; errore di una fase → lavoro failed, articolo FAILED con error_code (AI_BUSY, AI_DAILY_LIMIT, AI_UNAVAILABLE, AI_INVALID_RESPONSE o INTERNAL_ERROR); DELETE del lavoro (T-4002) → canceled al passo successivo."
-    - "Ogni richiesta del lavoro usa requestWithFallback (scadenza 60 s per richiesta) e scrive ai_requests con feature article e il workspace del lavoro."
+    - "Ogni richiesta del lavoro usa requestWithFallback (45 s per tentativo, 120 s per richiesta compresi i modelli di riserva, sempre entro la maxDuration del passo) e scrive ai_requests con feature article e il workspace del lavoro."
 
   acceptance_criteria:
     - id: AC-4101-1
@@ -103,4 +103,4 @@ Un articolo costa 10-25 richieste da circa 10 secondi: più del tempo di una ric
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal brainstorming del 2026-10-18 (D-46): approccio A, lavoro in background a sezioni con scaletta; segnaposto immagine con il prompt per un generatore (aggiunta dell'utente).
 - Gate umani: nessuno.
-- Scelte dell'agente da confermare: tetti SHORT 800, MEDIUM 1500, LONG 2500 parole; 60 s per richiesta del lavoro; spoke collegabili agli altri spoke dello stesso hub; immagini da 1 a 6 in .webp.
+- Scelte dell'agente da confermare: tetti SHORT 800, MEDIUM 1500, LONG 2500 parole; 45 s per tentativo e 120 s per richiesta nel lavoro; spoke collegabili agli altri spoke dello stesso hub; immagini da 1 a 6 in .webp.
