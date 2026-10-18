@@ -1363,10 +1363,12 @@
       "title": "Di cosa parla il tuo sito?",
       "intro": "Scrivi un argomento: Titan SEO trova le ricerche che la gente fa su Google e le trasforma in un piano di pagine da scrivere.",
       "compactLabel": "Nuovo progetto: di cosa parla il sito?",
-      "placeholder": "es. scarpe running",
+      "placeholder": "es. scarpe running, scarpe trail",
+      "help": "1-3 parole per idea; più idee separate da virgola (fino a {max})",
       "submit": "Trova le keyword",
       "submitting": "Avvio della ricerca…",
       "required": "Scrivi di cosa parla il sito.",
+      "tooMany": "Puoi scrivere al massimo {max} idee separate da virgola.",
       "targeting": "Ricerche in {language} · {country}",
       "change": "cambia",
       "languageLabel": "Lingua delle ricerche",
@@ -1528,6 +1530,11 @@
       "saveAndSearch": "Salva e cerca",
       "saving": "Salvataggio…"
     },
+    "fewResults": {
+      "label": "Pochi suggerimenti",
+      "text": "Google ha pochi suggerimenti per queste parole: prova con parole più brevi o più generali.",
+      "change": "Cambia le parole di partenza"
+    },
     "volumes": {
       "notice": "Non sappiamo ancora quante persone cercano queste keyword.",
       "open": "Aggiungi i volumi",
@@ -1540,7 +1547,22 @@
       "step1": "Scarica il file con le keyword.",
       "step2": "In Google Ads apri Keyword Planner, scegli «Ottieni volume di ricerca e previsioni» e carica il file.",
       "step3": "Scarica il risultato da Keyword Planner e caricalo qui.",
-      "close": "Chiudi"
+      "close": "Chiudi",
+      "reason": {
+        "credentials": "DataForSEO ha rifiutato le credenziali: controlla login e password configurati per l'app.",
+        "verifyAccount": "L'account DataForSEO va verificato: completa la verifica nel pannello di DataForSEO, poi rifai la ricerca.",
+        "code": "DataForSEO ha risposto con il codice {code}.",
+        "noResponse": "DataForSEO non ha risposto in tempo: riprova più tardi.",
+        "notice": {
+          "PROVIDER_NOT_CONFIGURED": "DataForSEO non è configurato: mancano le credenziali.",
+          "LOCATION_UNSUPPORTED": "DataForSEO non ha i volumi per il paese di questo argomento.",
+          "LANGUAGE_UNSUPPORTED": "DataForSEO non ha i volumi per la lingua di questo argomento.",
+          "METRICS_BUDGET_EXCEEDED": "È stato raggiunto il tetto di spesa mensile per i volumi.",
+          "RUN_BUDGET_EXCEEDED": "La ricerca ha raggiunto il tetto di spesa per estrazione: i volumi di alcune keyword non sono arrivati.",
+          "PLAN_NO_LICENSED_METRICS": "Il piano del workspace non comprende i volumi di DataForSEO.",
+          "LICENSED_METRICS_QUOTA_EXCEEDED": "È finita la quota mensile di keyword con i volumi di DataForSEO."
+        }
+      }
     },
     "menuOverrides": "Impostazioni diverse dal progetto…",
     "overrides": {

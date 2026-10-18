@@ -14,6 +14,7 @@ import { RESULTS_SORTS } from "@/lib/modules/results-order";
 import { parsePagingParams } from "@/lib/modules/results-paging";
 import { loadResultsPage, type ResultsPage } from "@/lib/modules/results-query";
 import { toUrlSearchParams } from "@/lib/modules/results-view";
+import { type VolumesReason, volumesReasonOf } from "@/lib/modules/volumes-reason";
 import { prisma } from "@/lib/prisma";
 
 /** Righe della pagina delle keyword: tenute ed elenco delle scartate, ciascuno con la sua paginazione (T-801). */
@@ -97,6 +98,19 @@ export async function loadKeywordsView(projectId: string, topicId: string | null
     sort,
     filterParams: activeFilterParams(source, filters),
   };
+}
+
+/**
+ * Ultima ricerca completata di un argomento del progetto (T-3703, T-3704): null se non ce n'è nessuna, altrimenti il
+ * motivo dei volumi mancanti letto dal suo result. projectId e topicId sono già risolti nel workspace dell'utente.
+ */
+export async function loadLastCompletedSearch(projectId: string, topicId: string): Promise<{ volumesReason: VolumesReason | null } | null> {
+  const job = await prisma.job.findFirst({
+    where: { project_id: projectId, subproject_id: topicId, status: "completed" },
+    orderBy: [{ completed_at: { sort: "desc", nulls: "last" } }, { created_at: "desc" }],
+    select: { result: true },
+  });
+  return job ? { volumesReason: volumesReasonOf(job.result) } : null;
 }
 
 /** Riga per i componenti della pagina (T-2403): la colonna Argomento solo nella vista del progetto. */

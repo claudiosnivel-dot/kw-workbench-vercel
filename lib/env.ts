@@ -610,10 +610,14 @@ export function parseEnv(source: EnvSource): Env {
   };
 }
 
-/** Credenziali DataForSEO dall'ambiente; null se una delle due manca (provider non configurato). */
+/**
+ * Credenziali DataForSEO dall'ambiente, senza spazi, tabulazioni e a capo ai lati (T-3704: un a capo di Windows finale
+ * nella password fa rifiutare le credenziali con 40100); null se una delle due manca o è fatta solo di spazi (provider
+ * non configurato).
+ */
 export function getDataForSeoCredentials(source: EnvSource = process.env): { login: string; password: string } | null {
   const login = present(source.DATAFORSEO_LOGIN)?.trim();
-  const password = present(source.DATAFORSEO_PASSWORD);
+  const password = present(source.DATAFORSEO_PASSWORD)?.trim();
   return login && password ? { login, password } : null;
 }
 

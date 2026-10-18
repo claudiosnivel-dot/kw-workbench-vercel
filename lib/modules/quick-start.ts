@@ -23,9 +23,10 @@ const EXTRACTION_BLOCKERS = new Set(["EMAIL_NOT_VERIFIED", "PLAN_LIMIT", "RATE_L
 
 /**
  * Crea in una transazione il progetto nel workspace già autorizzato (project.create), il primo argomento (position 0,
- * argomento predefinito del progetto) e la seed uguale al topic (T-2301). Lingua e paese sono quelli del corpo, se
- * presenti, altrimenti targeting. Limiti del piano come la creazione normale (T-1605); il progetto creato in un
- * workspace ancora senza progetti è created_via_onboarding e resta fuori da maxProjects (T-2004, uno per workspace).
+ * argomento predefinito del progetto) e le seed, una per voce del topic nell'ordine (T-2301, T-3701); il nome viene
+ * dalla prima voce. Lingua e paese sono quelli del corpo, se presenti, altrimenti targeting. Limiti del piano come la
+ * creazione normale (T-1605), maxSeedsPerSection sul numero di voci; il progetto creato in un workspace ancora senza
+ * progetti è created_via_onboarding e resta fuori da maxProjects (T-2004, uno per workspace).
  */
 export async function createQuickStartProject(
   user: Pick<AuthUser, "id" | "isRootAdmin">,
@@ -33,7 +34,7 @@ export async function createQuickStartProject(
   input: QuickStartInput,
   targeting: Targeting
 ): Promise<QuickStartCreation> {
-  const name = quickStartName(input.topic);
+  const name = quickStartName(input.seeds[0]);
   const { data } = parseProjectCreate(
     {
       name,
@@ -53,7 +54,7 @@ export async function createQuickStartProject(
       await assertWithinLimit(tx, plan, "maxProjects", async () => (await countLimitedProjects(tx, workspaceId)) + 1);
     }
     await assertWithinLimit(tx, plan, "maxSectionsPerProject", () => 1);
-    await assertWithinLimit(tx, plan, "maxSeedsPerSection", () => 1);
+    await assertWithinLimit(tx, plan, "maxSeedsPerSection", () => input.seeds.length);
 
     const project = await tx.project.create({
       data: { workspace_id: workspaceId, created_by_user_id: user.id, created_via_onboarding: firstProject, ...data },
@@ -64,7 +65,9 @@ export async function createQuickStartProject(
       where: { id: project.id, workspace_id: workspaceId },
       data: { default_subproject_id: topic.id },
     });
-    await tx.seed.create({ data: { project_id: project.id, subproject_id: topic.id, keyword: input.topic } });
+    await tx.seed.createMany({
+      data: input.seeds.map((keyword) => ({ project_id: project.id, subproject_id: topic.id, keyword })),
+    });
     return { projectId: project.id, topicId: topic.id };
   });
 }

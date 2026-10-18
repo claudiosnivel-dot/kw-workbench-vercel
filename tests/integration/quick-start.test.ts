@@ -1,5 +1,6 @@
 // Gate di T-2301 (AC-2301-1…4): l'avvio rapido crea progetto, primo argomento e parola di partenza nel workspace attivo
 // e avvia la ricerca; lingua e paese dal progetto più recente o dalla lingua dell'interfaccia (D-39).
+// Gate di T-3701 (AC-3701-1…3, D-44): fino a 5 voci separate da virgola, ognuna una parola di partenza dell'argomento.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as quickStart } from "@/app/api/projects/quick-start/route";
 import { WORKSPACE_COOKIE_NAME } from "@/lib/authz/workspace";
@@ -136,5 +137,58 @@ describe("POST /api/projects/quick-start", () => {
     expect(limited.status).toBe(402);
     expect(((await limited.json()) as { code: string }).code).toBe("PLAN_LIMIT");
     expect(await prisma.project.count({ where: { workspace_id: workspaceId } })).toBe(1);
+  });
+});
+
+describe("POST /api/projects/quick-start con più voci (T-3701)", () => {
+  // covers: AC-3701-1
+  it("divide il topic sulle virgole: voci senza spazi ai lati, senza vuote e senza doppioni, nome dalla prima", async () => {
+    const { member, workspaceId } = await billingTeam("qs3701a");
+
+    const response = await postQuickStart(inWorkspace(member.cookie, workspaceId), {
+      topic: "letto ospedaliero, Letto elettrico,  materasso antidecubito , letto ospedaliero",
+    });
+
+    expect(response.status).toBe(201);
+    const { data } = (await response.json()) as QuickStartBody;
+    expect(data.extraction).toBe("started");
+    const project = await prisma.project.findUniqueOrThrow({ where: { id: data.projectId }, select: { name: true } });
+    expect(project.name).toBe("Letto ospedaliero");
+    const seeds = await prisma.seed.findMany({
+      where: { subproject_id: data.topicId },
+      orderBy: [{ created_at: "asc" }, { id: "asc" }],
+      select: { keyword: true },
+    });
+    expect(seeds.map((seed) => seed.keyword)).toEqual(["letto ospedaliero", "Letto elettrico", "materasso antidecubito"]);
+  });
+
+  // covers: AC-3701-2
+  it("6 voci diverse o un topic fatto solo di virgole sono 400 VALIDATION_ERROR senza creare progetti", async () => {
+    const { member, workspaceId } = await billingTeam("qs3701b");
+    const cookie = inWorkspace(member.cookie, workspaceId);
+    const before = await prisma.project.count();
+
+    const tooMany = await postQuickStart(cookie, { topic: "uno, due, tre, quattro, cinque, sei" });
+    const empty = await postQuickStart(cookie, { topic: " , , " });
+
+    for (const response of [tooMany, empty]) {
+      expect(response.status).toBe(400);
+      expect(((await response.json()) as { code: string }).code).toBe("VALIDATION_ERROR");
+    }
+    expect(await prisma.project.count()).toBe(before);
+  });
+
+  // covers: AC-3701-3
+  it("con il lancio attivo e maxSeedsPerSection 2, tre voci sono 402 PLAN_LIMIT senza creare progetti", async () => {
+    await setCommercialLaunchForTests("live");
+    configureTestBilling({ maxSeedsPerSection: 2 });
+    const { member, workspaceId } = await billingTeam("qs3701c");
+    const before = await prisma.project.count();
+
+    const response = await postQuickStart(inWorkspace(member.cookie, workspaceId), { topic: "yoga, pilates, meditazione" });
+
+    expect(response.status).toBe(402);
+    expect(((await response.json()) as { code: string }).code).toBe("PLAN_LIMIT");
+    expect(await prisma.project.count()).toBe(before);
   });
 });

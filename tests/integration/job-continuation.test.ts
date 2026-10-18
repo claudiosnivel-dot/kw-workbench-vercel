@@ -77,7 +77,12 @@ async function createPendingJob() {
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   await prisma.seed.create({ data: { project_id: project.id, subproject_id: section.id, keyword: "caffe" } });
   await prisma.expansionPattern.createMany({
-    data: ["{seed} moka", "{seed} espresso", "{seed} solubile"].map((pattern) => ({ project_id: project.id, pattern })),
+    // impacted-by: T-3702 (composizioni nella lingua del progetto, it, come prima del filtro per lingua)
+    data: ["{seed} moka", "{seed} espresso", "{seed} solubile"].map((pattern) => ({
+      project_id: project.id,
+      language_code: "it",
+      pattern,
+    })),
   });
   const { job } = await enqueueExtractionJob(project.id, section.id);
   return job;

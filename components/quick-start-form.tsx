@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { type FormEvent, useId, useState } from "react";
 import { LocaleCodeOptions } from "@/components/locale-code-options";
 import { readApiData, sendJson } from "@/lib/client/http";
+import { QUICK_START_MAX_TOPICS, splitQuickStartTopics } from "@/lib/modules/quick-start-topics";
 import { useLocaleOptions } from "@/lib/client/use-locale-options";
 import { useOpenTopic } from "@/lib/client/use-open-topic";
 
@@ -16,15 +17,16 @@ type QuickStartFormProps = {
 
 type QuickStartData = { projectId: string; topicId: string; extraction: string };
 
-// Limite del topic: è la parola di partenza del primo argomento (D-24).
-const TOPIC_MAX_LENGTH = 200;
+// Limite del campo: fino a 5 voci da 200 caratteri (limite delle seed, D-24) con i separatori.
+const TOPIC_MAX_LENGTH = QUICK_START_MAX_TOPICS * 202;
 const EXAMPLES = ["one", "two", "three"] as const;
 
 /**
  * Avvio rapido della home (T-2305): un campo, lingua e paese già scelti e modificabili, esempi cliccabili al primo
- * accesso. L'invio chiama POST /api/projects/quick-start (T-2301) e porta ai risultati dell'argomento creato; se la
- * ricerca non è partita, i risultati mostrano il messaggio del code. Nella home con progetti il pulsante è secondario:
- * il primario resta al prossimo passo del primo progetto (D-39).
+ * accesso. Nel campo fino a 5 idee separate da virgola, con il testo d'aiuto sotto (T-3701): oltre, l'errore resta
+ * sotto il campo e la richiesta non parte. L'invio chiama POST /api/projects/quick-start (T-2301) e porta ai risultati
+ * dell'argomento creato; se la ricerca non è partita, i risultati mostrano il messaggio del code. Nella home con
+ * progetti il pulsante è secondario: il primario resta al prossimo passo del primo progetto (D-39).
  */
 export function QuickStartForm({ variant, targeting }: QuickStartFormProps) {
   const t = useTranslations("dashboard.quickStart");
@@ -33,6 +35,7 @@ export function QuickStartForm({ variant, targeting }: QuickStartFormProps) {
   const openTopic = useOpenTopic();
   const titleId = useId();
   const fieldId = useId();
+  const helpId = useId();
   const { languageOptions, countryOptions } = useLocaleOptions();
   const [topic, setTopic] = useState("");
   const [languageCode, setLanguageCode] = useState(targeting.languageCode);
@@ -45,8 +48,13 @@ export function QuickStartForm({ variant, targeting }: QuickStartFormProps) {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!topic.trim()) {
+    const topics = splitQuickStartTopics(topic);
+    if (topics.length === 0) {
       setError(t("required"));
+      return;
+    }
+    if (topics.length > QUICK_START_MAX_TOPICS) {
+      setError(t("tooMany", { max: QUICK_START_MAX_TOPICS }));
       return;
     }
 
@@ -87,12 +95,16 @@ export function QuickStartForm({ variant, targeting }: QuickStartFormProps) {
           maxLength={TOPIC_MAX_LENGTH}
           placeholder={t("placeholder")}
           aria-labelledby={first ? titleId : undefined}
+          aria-describedby={helpId}
           onChange={(event) => setTopic(event.target.value)}
         />
         <button type="submit" className={`${first ? "btn-primary" : "btn-secondary"} shrink-0`} disabled={pending}>
           {pending ? t("submitting") : t("submit")}
         </button>
       </div>
+      <p id={helpId} className="text-xs text-slate-500">
+        {t("help", { max: QUICK_START_MAX_TOPICS })}
+      </p>
       {error && (
         <p className="text-sm text-red-700" role="alert">
           {error}

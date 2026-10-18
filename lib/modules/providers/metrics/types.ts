@@ -42,9 +42,17 @@ export type MetricsNotice =
   // Quota mensile di keyword arricchite dal fornitore con licenza esaurita (T-1703): le altre restano senza volumi.
   | "LICENSED_METRICS_QUOTA_EXCEEDED";
 
+/**
+ * Ultimo tentativo non riuscito di un lotto del fornitore (T-3704, D-45): status HTTP e codice numerico del fornitore,
+ * null per un timeout o un errore di rete. Mai credenziali, messaggi del fornitore o keyword (CWE-532).
+ */
+export type MetricsProviderError = { httpStatus: number | null; code: number | null };
+
 export type MetricsOutcome = {
   metrics: Map<string, KeywordMetric>;
   notice?: MetricsNotice;
+  /** Lotto non riuscito: l'ultimo tentativo dell'ultimo lotto fallito. */
+  providerError?: MetricsProviderError;
   costUsd?: number;
   /** Richieste inviate al fornitore, tentativi compresi. */
   requests?: number;
@@ -58,6 +66,7 @@ export type MetricsOutcome = {
 export function toMetricsResult(outcome: MetricsOutcome) {
   return {
     ...(outcome.notice ? { metricsNotice: outcome.notice } : {}),
+    ...(outcome.providerError ? { metricsProviderError: outcome.providerError } : {}),
     ...(outcome.costUsd !== undefined ? { metricsCostUsd: outcome.costUsd } : {}),
     ...(outcome.requests !== undefined ? { metricsRequests: outcome.requests } : {}),
     ...(outcome.spellCorrected !== undefined ? { metricsSpellCorrected: outcome.spellCorrected } : {}),

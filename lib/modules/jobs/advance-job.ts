@@ -173,8 +173,9 @@ function monthlyQuotaOf(job: Job, limitKey: "keywordsPerMonth" | "licensedMetric
 }
 
 /**
- * Fase expand: impostazioni effettive, seed e query fissate nel cursore. Un piano senza metriche con licenza porta
- * DATAFORSEO a NONE senza chiamate al fornitore, con metricsNotice PLAN_NO_LICENSED_METRICS (T-1605).
+ * Fase expand: impostazioni effettive, seed e query fissate nel cursore, con le composizioni della lingua della ricerca
+ * (T-3702). Un piano senza metriche con licenza porta DATAFORSEO a NONE senza chiamate al fornitore, con metricsNotice
+ * PLAN_NO_LICENSED_METRICS (T-1605).
  */
 async function expandBatch(job: Job, lease: Lease): Promise<void> {
   const subproject = await prisma.subproject.findUnique({
@@ -197,9 +198,12 @@ async function expandBatch(job: Job, lease: Lease): Promise<void> {
     throw new NoSeedsError(subproject.id);
   }
 
+  // Solo le composizioni della lingua effettiva della ricerca (T-3702, D-44): una lingua senza composizioni usa solo la
+  // parola, le lettere e le cifre.
   const patternRows = await prisma.expansionPattern.findMany({
     where: {
       enabled: true,
+      language_code: settings.language_code,
       OR: [{ project_id: null }, { project_id: job.project_id }],
     },
     orderBy: [{ project_id: "desc" }, { pattern: "asc" }],
@@ -292,6 +296,8 @@ async function autocompleteBatch(job: Job, lease: Lease): Promise<void> {
 function addMetricsTotals(totals: MetricsTotals = {}, outcome: MetricsOutcome): MetricsTotals {
   const sum = (a?: number, b?: number) => (a === undefined && b === undefined ? undefined : (a ?? 0) + (b ?? 0));
   const notice = totals.notice ?? outcome.notice;
+  // L'errore del fornitore più recente (T-3704): quello del batch appena arricchito, altrimenti quello già visto.
+  const providerError = outcome.providerError ?? totals.providerError;
   const costUsd = sum(totals.costUsd, outcome.costUsd);
   const requests = sum(totals.requests, outcome.requests);
   const spellCorrected = sum(totals.spellCorrected, outcome.spellCorrected);
@@ -301,6 +307,7 @@ function addMetricsTotals(totals: MetricsTotals = {}, outcome: MetricsOutcome): 
   }
   return {
     ...(notice ? { notice } : {}),
+    ...(providerError ? { providerError } : {}),
     ...(costUsd !== undefined ? { costUsd: Math.round(costUsd * 10_000) / 10_000 } : {}),
     ...(requests !== undefined ? { requests } : {}),
     ...(spellCorrected !== undefined ? { spellCorrected } : {}),

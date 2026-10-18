@@ -14,6 +14,7 @@ import {
   MetricsItem,
   MetricsOutcome,
   MetricsProvider,
+  MetricsProviderError,
   missingOutcome,
 } from "@/lib/modules/providers/metrics/types";
 import { logger } from "@/lib/observability/logger";
@@ -51,9 +52,15 @@ type SearchVolumeResponse = {
   tasks?: { id?: string; status_code?: number; cost?: number; result?: SearchVolumeResult[] | null }[];
 };
 
-/** Esito di un tentativo: status HTTP se la risposta non è 2xx, altrimenti status_code del task. */
+/**
+ * Esito di un tentativo: status HTTP se la risposta non è 2xx, altrimenti status_code del task (la base dei nuovi
+ * tentativi). httpStatus e code sono lo status HTTP e il codice di DataForSEO, null per un timeout o un errore di rete
+ * (T-3704).
+ */
 type AttemptResult = {
   status: number | "timeout" | "network";
+  httpStatus: number | null;
+  code: number | null;
   taskId?: string;
   costUsd: number;
   results: SearchVolumeResult[];
@@ -148,12 +155,16 @@ async function postOnce(
     });
   } catch (error) {
     const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
-    return { status: timedOut ? "timeout" : "network", costUsd: 0, results: [] };
+    return { status: timedOut ? "timeout" : "network", httpStatus: null, code: null, costUsd: 0, results: [] };
   }
   const body = (await response.json().catch(() => ({}))) as SearchVolumeResponse;
   const task = body.tasks?.[0];
+  // Codice di DataForSEO: quello del task, oppure quello della risposta se lo status HTTP non è 2xx o il task manca.
+  const code = response.ok && task ? task.status_code : (body.status_code ?? task?.status_code);
   return {
     status: !response.ok ? response.status : (task?.status_code ?? body.status_code ?? 0),
+    httpStatus: response.status,
+    code: typeof code === "number" ? code : null,
     taskId: task?.id,
     costUsd: typeof body.cost === "number" ? body.cost : 0,
     results: task?.result ?? [],
@@ -168,8 +179,8 @@ type BatchOutcome = { attempt?: AttemptResult; attempts: number; costUsd: number
 /**
  * Invia un lotto con al massimo DATAFORSEO_MAX_ATTEMPTS tentativi: si ripete solo su 429, 5xx, timeout e codici
  * interni ripetibili, con backoff esponenziale e jitter. Ogni tentativo passa dal limitatore e dalla prenotazione
- * sui tetti di spesa (T-903): oltre un tetto non parte e il lotto resta senza volumi. I log riportano status, id
- * del task e costo, mai le credenziali (CWE-532).
+ * sui tetti di spesa (T-903): oltre un tetto non parte e il lotto resta senza volumi. I log riportano status, codice
+ * di DataForSEO, id del task e costo, mai le credenziali né il messaggio del fornitore (CWE-532).
  */
 async function sendBatch(
   keywords: string[],
@@ -197,6 +208,7 @@ async function sendBatch(
     costUsd += attempt.costUsd;
     logger.info("dataforseo_request", {
       status: attempt.status,
+      code: attempt.code,
       taskId: attempt.taskId,
       costUsd: attempt.costUsd,
       keywords: keywords.length,
@@ -244,6 +256,7 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
     const target = { location_code: locationCode, language_code: languageCode };
     const run: RunLedger = { projectId: context.projectId, jobId: context.jobId, requestIds: [] };
     let notice: BudgetNotice | undefined;
+    let providerError: MetricsProviderError | undefined;
     let costUsd = 0;
     let requests = 0;
     let spellCorrected = 0;
@@ -269,12 +282,15 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
       }
 
       if (sent.attempt.status !== STATUS_OK) {
-        // Lotto non riuscito: nessuna metrica inventata, gli altri lotti proseguono.
+        // Lotto non riuscito: nessuna metrica inventata, gli altri lotti proseguono. L'esito della ricerca tiene status
+        // HTTP e codice dell'ultimo tentativo (T-3704).
         logger.warn("dataforseo_batch_failed", {
           status: sent.attempt.status,
+          code: sent.attempt.code,
           taskId: sent.attempt.taskId,
           attempts: sent.attempts,
         });
+        providerError = { httpStatus: sent.attempt.httpStatus, code: sent.attempt.code };
         for (const canonical of requested) {
           metrics.set(canonical, { keyword: canonical, metrics_status: "failed", metrics_provider: this.id });
         }
@@ -297,6 +313,7 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
     return {
       metrics,
       ...(notice ? { notice } : {}),
+      ...(providerError ? { providerError } : {}),
       costUsd: Math.round(costUsd * 10_000) / 10_000,
       requests,
       spellCorrected,

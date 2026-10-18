@@ -475,16 +475,18 @@ model BrandBlacklist {
 }
 
 model ExpansionPattern {
-  id         String   @id @default(cuid())
-  project_id String?
-  pattern    String
-  enabled    Boolean  @default(true)
-  created_at DateTime @default(now())
-  project    Project? @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  project_id    String?
+  pattern       String
+  /// Lingua della composizione (T-3702, D-44): la ricerca usa solo quelle della sua lingua effettiva.
+  language_code String   @default("en")
+  enabled       Boolean  @default(true)
+  created_at    DateTime @default(now())
+  project       Project? @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
   @@unique([project_id, pattern])
-  // Righe globali uniche: indice unico parziale expansion_patterns_global_pattern_key (pattern) WHERE
-  // project_id IS NULL (migrazione 0023, T-1103), non esprimibile in Prisma.
+  // Righe globali uniche: indice unico parziale expansion_patterns_global_language_pattern_key (language_code,
+  // pattern) WHERE project_id IS NULL (migrazioni 0023 e 0046, T-1103 e T-3702), non esprimibile in Prisma.
   @@map("expansion_patterns")
 }
 

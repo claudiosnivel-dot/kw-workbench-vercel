@@ -1363,10 +1363,12 @@
       "title": "What is your site about?",
       "intro": "Write a topic: Titan SEO finds what people search for on Google and turns it into a plan of pages to write.",
       "compactLabel": "New project: what is the site about?",
-      "placeholder": "e.g. running shoes",
+      "placeholder": "e.g. running shoes, trail shoes",
+      "help": "1-3 words per idea; separate more ideas with commas (up to {max})",
       "submit": "Find keywords",
       "submitting": "Starting the search…",
       "required": "Write what the site is about.",
+      "tooMany": "You can write at most {max} ideas separated by commas.",
       "targeting": "Searches in {language} · {country}",
       "change": "change",
       "languageLabel": "Search language",
@@ -1528,6 +1530,11 @@
       "saveAndSearch": "Save and search",
       "saving": "Saving…"
     },
+    "fewResults": {
+      "label": "Few suggestions",
+      "text": "Google has few suggestions for these words: try shorter or more general words.",
+      "change": "Change the starting words"
+    },
     "volumes": {
       "notice": "We don't know yet how many people search for these keywords.",
       "open": "Add the volumes",
@@ -1540,7 +1547,22 @@
       "step1": "Download the file with the keywords.",
       "step2": "In Google Ads open Keyword Planner, choose “Get search volume and forecasts” and upload the file.",
       "step3": "Download the result from Keyword Planner and upload it here.",
-      "close": "Close"
+      "close": "Close",
+      "reason": {
+        "credentials": "DataForSEO rejected the credentials: check the login and password configured for the app.",
+        "verifyAccount": "The DataForSEO account needs to be verified: complete the verification in the DataForSEO dashboard, then search again.",
+        "code": "DataForSEO answered with code {code}.",
+        "noResponse": "DataForSEO did not answer in time: try again later.",
+        "notice": {
+          "PROVIDER_NOT_CONFIGURED": "DataForSEO is not configured: the credentials are missing.",
+          "LOCATION_UNSUPPORTED": "DataForSEO has no volumes for the country of this topic.",
+          "LANGUAGE_UNSUPPORTED": "DataForSEO has no volumes for the language of this topic.",
+          "METRICS_BUDGET_EXCEEDED": "The monthly spending cap for volumes has been reached.",
+          "RUN_BUDGET_EXCEEDED": "The search reached the spending cap per extraction: some keywords did not get their volumes.",
+          "PLAN_NO_LICENSED_METRICS": "The workspace plan does not include DataForSEO volumes.",
+          "LICENSED_METRICS_QUOTA_EXCEEDED": "The monthly quota of keywords with DataForSEO volumes has run out."
+        }
+      }
     },
     "menuOverrides": "Settings different from the project…",
     "overrides": {
