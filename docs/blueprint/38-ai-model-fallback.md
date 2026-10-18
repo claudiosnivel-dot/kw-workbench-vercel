@@ -67,6 +67,7 @@ Il 2026-10-18 «Migliora i titoli con l'AI» rispondeva `AI_UNAVAILABLE`: il mod
     - "lib/ai/openrouter.ts: requestWithFallback(request, models, { apiKey, baseUrl, deadlineMs, attemptTimeoutMs, validate }) prova i modelli in ordine, saltando quelli segnati come assenti dal catalogo (T-3803); ogni tentativo ha come tempo massimo il minore fra attemptTimeoutMs e il tempo che resta alla scadenza (per i titoli 20 s e 25 s) e un esito: ok, provider_busy (429 con il fornitore nei metadati dell'errore), account_daily_limit (429 del limite giornaliero dei modelli gratuiti dell'account), account_rate_limit (429 del limite al minuto dell'account), unavailable (errore di rete, 403, 404, 5xx, risposta senza testo), timeout, invalid_response (validate rifiuta il testo), auth (401 o 402)."
     - "Si passa al modello successivo dopo provider_busy, unavailable, timeout e invalid_response; ci si ferma dopo account_daily_limit (429 AI_DAILY_LIMIT), account_rate_limit (503 AI_BUSY) e auth (502 AI_UNAVAILABLE). Finiti i modelli senza risposta valida: 503 AI_BUSY se almeno un tentativo era provider_busy, altrimenti 502 AI_UNAVAILABLE."
     - "suggestPageTitles usa requestWithFallback con parseTitlesResponse come validate; la proposta riporta il modello che ha risposto; il log ai_titles_suggest ha attempts [{ model, outcome, httpStatus }], mai messaggi del fornitore, chiave o keyword (CWE-532)."
+    - "H2 oltre il massimo (D-48): parseTitlesResponse restituisce anche droppedH2, il numero di H2 validi tenuti fuori; la proposta salvata ha droppedH2 (0 se nessuno) e la card «Proposta dell'AI» mostra «Altri N titoli proposti non sono stati tenuti.» quando è maggiore di 0 (testi plan.ai it ed en, con il plurale)."
     - "Errori AI_BUSY e AI_DAILY_LIMIT nell'elenco chiuso dei code con i testi del catalogo errors it ed en: «I modelli gratuiti sono tutti occupati: riprova tra qualche minuto.» e «Le richieste all'AI di oggi sono finite: riprova domani.»; docs/AI-TITLES.md aggiornato."
 
   acceptance_criteria:
@@ -86,10 +87,16 @@ Il 2026-10-18 «Migliora i titoli con l'AI» rispondeva `AI_UNAVAILABLE`: il mod
       given: "models [A, B, C] che rispondono tutti 429 con provider_name nei metadati"
       when: "un MEMBER chiede la proposta, poi il pannello mostra l'errore"
       then: "la risposta è 503 AI_BUSY dopo 3 chiamate al fetch e il pannello mostra «I modelli gratuiti sono tutti occupati: riprova tra qualche minuto.»"
+    - id: AC-3802-5
+      given: "uno spoke (massimo 12 H2) e un modello che risponde con H1 valido e 14 H2 diversi"
+      when: "un MEMBER chiede la proposta e il pannello la mostra"
+      then: "la proposta salvata ha 12 H2 e droppedH2 2; la card mostra «Altri 2 titoli proposti non sono stati tenuti.»"
 
   target_tests:
     - file: "tests/integration/ai-fallback.test.ts"
-      covers: [AC-3802-1, AC-3802-2, AC-3802-3, AC-3802-4]
+      covers: [AC-3802-1, AC-3802-2, AC-3802-3, AC-3802-4, AC-3802-5]
+    - file: "tests/component/plan-ai-titles.test.tsx"
+      covers: [AC-3802-5]
     - file: "tests/unit/openrouter-outcome.test.ts"
       covers: [AC-3802-1, AC-3802-3]
 
@@ -147,3 +154,4 @@ Il 2026-10-18 «Migliora i titoli con l'AI» rispondeva `AI_UNAVAILABLE`: il mod
 - Modulo nato dalla segnalazione dell'utente del 2026-10-18 (titoli con l'AI non raggiungibili, causa verificata: 429 upstream del modello Gemma gratuito) e dal brainstorming dello stesso giorno (D-46): elenco gestito dal root admin più controllo automatico sul catalogo che segnala e salta.
 - Gate umani: nessuno.
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): fino a 8 modelli; 25 s di tempo totale per i titoli; si salta al modello successivo anche per una risposta che non supera il controllo; 429 al minuto dell'account trattato come «modelli occupati» senza provare gli altri; cron del catalogo alle 04:30 e aggiornamento dalla card dopo un'ora.
+- Emendamento (2026-10-18, D-48): T-3802 aggiunge l'avviso degli H2 tenuti fuori nella card «Proposta dell'AI», scelta dell'utente al posto dei tagli senza avviso del modulo 36.
