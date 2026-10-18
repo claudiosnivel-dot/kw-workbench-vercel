@@ -15,14 +15,14 @@ Il piano dice quali pagine scrivere, con H1, H2 e keyword; dal modulo 36 un mode
 - id: T-4001
   title: "Scheda «Per gli articoli» e indirizzo del sito"
   macrotask: "article-data"
-  depends_on: [T-2602, T-809]
+  depends_on: [T-2602, T-809, T-5102]
 
   objective: >
     Dare al modello le informazioni dell'attività che rendono un articolo utile e non generico, e sapere dove vivranno
     le pagine per costruire i link interni.
 
   definition_of_done:
-    - "Migrazione additiva 0048_project_article_brief: projects con article_about (fino a 1000 caratteri), article_audience (fino a 300), article_tone (enum professional, friendly, technical, default professional), business_name (fino a 120), business_address (fino a 300) e site_url (fino a 300), tutti null tranne il tono."
+    - "Migrazione additiva 0049_project_article_brief: projects con article_about (fino a 1000 caratteri), article_audience (fino a 300), article_tone (enum professional, friendly, technical, default professional), business_name (fino a 120), business_address (fino a 300) e site_url (fino a 300), tutti null tranne il tono."
     - "PATCH del progetto (T-809) accetta i nuovi campi con gli spazi tolti ai lati e '' come null; site_url solo assoluto in https, senza credenziali, query o frammento, salvato senza barra finale; altrimenti 400 VALIDATION_ERROR."
     - "Impostazioni del progetto (T-2602): blocco «Per gli articoli» con i sei campi, il contatore dei caratteri e la riga «Questi testi vanno a OpenRouter insieme alle keyword quando generi un articolo.»; modificabile con project.update, in sola lettura senza; testi it ed en."
 
@@ -64,7 +64,7 @@ Il piano dice quali pagine scrivere, con H1, H2 e keyword; dal modulo 36 un mode
     si rigenera.
 
   definition_of_done:
-    - "Migrazione additiva 0049_articles con RLS abilitata senza policy su ogni tabella: articles (id, page_id unico verso strategy_pages con cascade, project_id, length SHORT/MEDIUM/LONG, notes fino a 1000 caratteri, status GENERATING/READY/FAILED, error_code, meta_title, meta_description, slug, outline jsonb, images jsonb, seo_report jsonb, version, created_by_user_id, timestamp); article_sections (id, article_id, position, kind INTRO/H2/FAQ, heading, body testo Markdown, checks jsonb, edited, model, updated_at; unico su article_id e position); article_runs (id, article_id, workspace_id, scope ARTICLE/SECTION, section_id null, instruction fino a 500 caratteri null, status pending/running/completed/failed/canceled, phase, cursor jsonb, progress_done, progress_total, attempts, heartbeat_at, locked_until, error_code, timestamp)."
+    - "Migrazione additiva 0050_articles con RLS abilitata senza policy su ogni tabella: articles (id, page_id unico verso strategy_pages con cascade, project_id, length SHORT/MEDIUM/LONG, notes fino a 1000 caratteri, status GENERATING/READY/FAILED, error_code, meta_title, meta_description, slug, outline jsonb, images jsonb, seo_report jsonb, version, created_by_user_id, timestamp); article_sections (id, article_id, position, kind INTRO/H2/FAQ, heading, body testo Markdown, checks jsonb, edited, model, updated_at; unico su article_id e position); article_runs (id, article_id, workspace_id, scope ARTICLE/SECTION, section_id null, instruction fino a 500 caratteri null, status pending/running/completed/failed/canceled, phase, cursor jsonb, progress_done, progress_total, attempts, heartbeat_at, locked_until, error_code, timestamp)."
     - "Impostazioni dell'AI (card del root admin): articlesEnabled (default false), articlesPerWorkspaceDaily (default 3) e sectionRewritesPerWorkspaceDaily (default 20), da 1 a 1000, con la riga ai.update del registro."
     - "POST /api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article con { length, notes? }: permesso strategy.write e pagina del piano corrente (404, 409 STRATEGY_READ_ONLY); funzione spenta o chiave assente → 503 AI_NOT_CONFIGURED; un lavoro attivo sull'articolo → 409 JOB_ALREADY_ACTIVE; poi il limite del workspace in articoli nelle ultime 24 ore e il tetto della piattaforma, che deve avere posto per la stima (numero di H2 + 3, più il 30%) → 429 RATE_LIMITED con Retry-After; root admin escluso dai limiti. In una transazione crea o sostituisce l'articolo (status GENERATING, blocchi cancellati), crea il lavoro pending e porta la pagina da TODO a WRITING; risposta 202 { articleId, runId }."
     - "GET della stessa rotta: articolo con blocchi in ordine e lavoro attivo con avanzamento, oppure 404 ARTICLE_NOT_FOUND; DELETE .../article/run annulla il lavoro attivo. Nella transazione di «Rigenera» (T-2502) l'articolo di una pagina iniziata passa alla sua copia nel nuovo piano."
@@ -108,3 +108,5 @@ Il piano dice quali pagine scrivere, con H1, H2 e keyword; dal modulo 36 un mode
 - Modulo dal brainstorming del 2026-10-18 (D-46): scheda del progetto più note per articolo; lunghezza Breve, Media o Lunga come tetto; generazione in background a sezioni; limiti in articoli per workspace e tetto unico in richieste.
 - Gate umani: nessuno. La funzione resta spenta (articlesEnabled false) finché l'editor (modulo 44) non è in produzione.
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): stima delle richieste di un articolo (H2 + 3, più il 30%); un nuovo avvio sostituisce l'articolo esistente (l'editor chiederà conferma); nome e indirizzo dell'attività facoltativi, usati solo per i dati strutturati della pagina locale.
+- Emendamento dichiarato (2026-10-18, D-47, prima della costruzione): lo spagnolo (moduli 47-51) si costruisce prima di questo modulo, quindi ogni testo nuovo va nei cataloghi it, en ed es-ES, con le differenze in es-419, e il controllo di parità di T-4702 vale anche per i namespace di questo modulo.
+- Emendamento dichiarato (2026-10-18, D-47): T-4001 dipende da T-5102 perché gli articoli si costruiscano dopo lo spagnolo; le migrazioni diventano 0049 e 0050 (la 0048 è del modulo 47).

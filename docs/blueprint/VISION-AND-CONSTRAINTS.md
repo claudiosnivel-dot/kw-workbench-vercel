@@ -78,6 +78,10 @@ Titan SEO diventa un SaaS vendibile:
     l'articolo di una pagina scritto a blocchi come da una persona, con i canoni
     SEO e i link interni del piano, riletto e modificato dall'utente, poi copiato,
     scaricato o inviato come bozza a WordPress (D-46).
+13. (aggiunto il 2026-10-18, macrotask 47-51) Titan SEO in spagnolo di Spagna e
+    d'America Latina: interfaccia, sito ed email localizzati come li scriverebbe un
+    prodotto nato in quei mercati, e ricerche, piano, titoli e articoli nello
+    spagnolo del paese del progetto (D-47).
 
 "Fatto" = `target_tests` verdi e checkpoint Trueline verde al confine di ogni
 macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).

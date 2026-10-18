@@ -22,7 +22,7 @@ Le istruzioni da sole non bastano: i modelli gratuiti ricadono nelle formule tip
     posizione nel testo.
 
   definition_of_done:
-    - "lib/articles/style-check.ts, puro: analyzeStyle(markdown, language) restituisce le corrispondenze { kind: 'ai_pattern' | 'to_verify', rule, start, end } e un punteggio; regole ai_pattern per 'it' ed 'en' da un elenco versionato nel codice (formule, aperture e chiusure tipiche), più per ogni lingua trattini lunghi, emoji, più di 2 domande retoriche di fila e più di 2 frasi di fila che iniziano con la stessa parola; regole to_verify: segnaposto '[da verificare: …]' e '[fonte da aggiungere]', importi con € o EUR o USD, percentuali, cifre di 3 o più caratteri, anni, e riferimenti normativi (legge, decreto, D.Lgs., art.)."
+    - "lib/articles/style-check.ts, puro: analyzeStyle(markdown, language) restituisce le corrispondenze { kind: 'ai_pattern' | 'to_verify', rule, start, end } e un punteggio; regole ai_pattern per 'it', 'en' ed 'es' da un elenco versionato nel codice (formule, aperture e chiusure tipiche), più per ogni lingua trattini lunghi, emoji, più di 2 domande retoriche di fila e più di 2 frasi di fila che iniziano con la stessa parola; regole to_verify: i segnaposto delle tre lingue di T-4201, importi con € o EUR o USD, percentuali, cifre di 3 o più caratteri, anni, e riferimenti normativi (legge, decreto, D.Lgs., art.)."
     - "Soglia: un blocco supera il limite dei tratti AI con almeno 2 ai_pattern ogni 300 parole (minimo 2); le corrispondenze to_verify non contano per la soglia."
 
   acceptance_criteria:
@@ -95,3 +95,5 @@ Le istruzioni da sole non bastano: i modelli gratuiti ricadono nelle formule tip
 - Modulo dal brainstorming del 2026-10-18 (D-46): istruzioni più controllo automatico più una riscrittura (scelta dell'utente), canoni SEO senza forzature (keyword naturali e densità naturale, aggiunta dell'utente).
 - Gate umani: nessuno.
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): soglia di 2 tratti AI ogni 300 parole; densità massima 2,5 occorrenze ogni 100 parole; forma vicina = stessi token canonici in qualunque ordine; i blocchi modificati dall'utente non si riscrivono da soli.
+- Emendamento dichiarato (2026-10-18, D-47, prima della costruzione): lo spagnolo (moduli 47-51) si costruisce prima di questo modulo, quindi ogni testo nuovo va nei cataloghi it, en ed es-ES, con le differenze in es-419, e il controllo di parità di T-4702 vale anche per i namespace di questo modulo.
+- Emendamento dichiarato (2026-10-18, D-47): regole dei tratti AI e segnaposto anche per lo spagnolo.

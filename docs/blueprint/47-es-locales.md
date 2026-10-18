@@ -1,0 +1,129 @@
+# 47-es-locales — Macrotask `es-locales`
+
+> Spagnolo (D-47), modulo 1 di 5: le lingue `es-ES` ed `es-419` nella piattaforma, con la guida di stile e il glossario per una localizzazione semantica, e il percorso di lavoro dell'app tradotto. Le due lingue restano nascoste nei selettori finché il modulo 49 non completa i cataloghi.
+
+## Obiettivo del macrotask
+Il 2026-10-18 l'utente ha chiesto lo spagnolo di Spagna e d'America Latina in tutta la piattaforma, con una localizzazione professionale «come si dice nel paese» e non una traduzione letterale. Dopo questo modulo:
+
+- **Lingue**: `es-ES` («Español (España)») ed `es-419` («Español (Latinoamérica)»); `es-419` contiene solo le differenze da `es-ES` e i cataloghi si uniscono come inglese ← es-ES ← es-419, così una chiave non ancora tradotta si legge in inglese.
+- **Riconoscimento e targeting**: dal browser `es` ed `es-ES` diventano `es-ES`, `es-419` e i paesi ispanofoni d'America Latina diventano `es-419`; il paese predefinito delle ricerche è ES con `es-ES` e, con `es-419`, il paese del browser se è d'America Latina, altrimenti MX.
+- **Guida di stile e glossario** in `docs/I18N-ES.md`, approvati con questo modulo (sotto).
+- **Percorso di lavoro in spagnolo**: dashboard, progetti, keyword, piano, ricerche, risultati, prossimo passo, navigazione ed errori nelle due varianti.
+
+### Guida di stile (approvata dall'utente il 2026-10-18)
+- Si traduce l'intento della frase come la scriverebbe un prodotto nato in quel mercato, non le parole dell'italiano: «Trova le keyword» → «Buscar palabras clave».
+- «tú» in entrambe le varianti; mai «vosotros» né voseo; «ustedes» quando ci si rivolge a più persone.
+- Pulsanti e voci di menu all'infinito («Guardar», «Exportar»); maiuscola solo sulla prima parola; punteggiatura spagnola («¿…?», «¡…!»); formati di data e numero della lingua.
+- Per un termine dubbio vale come lo scrivono Google Ads, Search Console e gli strumenti SEO localizzati in quella variante.
+
+### Glossario
+| Italiano | es-ES | es-419 |
+|---|---|---|
+| keyword | palabra clave | palabra clave |
+| parole di partenza | palabras clave semilla | palabras clave semilla |
+| ricerche al mese | volumen de búsqueda mensual | volumen de búsqueda mensual |
+| pagina principale (hub) | página pilar | página pilar |
+| approfondimento (spoke) | artículo satélite | artículo satélite |
+| argomento | tema | tema |
+| piano dei contenuti | plan de contenidos | plan de contenidos |
+| tieni / scarta | conservar / descartar | conservar / descartar |
+| caricare un file | subir un archivo | cargar un archivo |
+| costi | costes | costos |
+| impostazioni | Ajustes | Configuración |
+| computer / cellulare | ordenador / móvil | computadora / celular |
+| email | correo electrónico | correo electrónico |
+| workspace | espacio de trabajo | espacio de trabajo |
+| Da scrivere / In scrittura / Pubblicata | Por escribir / En redacción / Publicada | Por escribir / En redacción / Publicada |
+| Keyword Planner | Planificador de palabras clave | Planificador de palabras clave |
+
+## Task atomici
+
+```yaml
+- id: T-4701
+  title: "Lingue es-ES ed es-419 nella piattaforma"
+  macrotask: "es-locales"
+  depends_on: [T-1301, T-2301, T-3902]
+
+  objective: >
+    Preparare la piattaforma alle due varianti dello spagnolo, con cataloghi che si completano a vicenda e la lingua e il
+    paese giusti già dal primo accesso.
+
+  definition_of_done:
+    - "lib/i18n/locale.ts: SUPPORTED_LOCALES con 'es-ES' ed 'es-419'; OFFERED_LOCALES (lingue nei selettori e accettate da PATCH delle preferenze) resta ['it', 'en'] fino a T-4902. Migrazione additiva 0048_ui_locale_es: valori 'es-ES' ed 'es-419' dell'enum UiLocale (es_ES ed es_419 in Prisma con @map)."
+    - "lib/i18n/catalogs.ts e i18n/request.ts: messages/es-ES.json completo nel tempo e messages/es-419.json con le sole differenze; il catalogo di una lingua spagnola è l'unione profonda di en, es-ES e (per es-419) es-419, da una mappa statica (CWE-22)."
+    - "Riconoscimento: Accept-Language 'es' o 'es-ES' → es-ES; 'es-419', 'es-US' o 'es-' con un paese ispanofono d'America Latina (AR, BO, CL, CO, CR, CU, DO, EC, GT, HN, MX, NI, PA, PE, PR, PY, SV, UY, VE) → es-419; gli altri 'es-XX' → es-ES. resolveDefaultTargeting: es-ES → es/ES; es-419 → es e il paese della regione dell'Accept-Language se è nell'elenco, altrimenti MX."
+    - "Formati di data e numero con la lingua dell'utente (formatter di next-intl): 1.234,5 e date al modo spagnolo."
+
+  acceptance_criteria:
+    - id: AC-4701-1
+      given: "es-ES.json senza la chiave common.close ed es-419.json con la sola chiave nav.support"
+      when: "si costruiscono i cataloghi di es-ES ed es-419"
+      then: "common.close vale il testo inglese in entrambe; nav.support vale il testo di es-419 in es-419 e quello di es-ES in es-ES"
+    - id: AC-4701-2
+      given: "intestazioni Accept-Language 'es', 'es-AR,es;q=0.9', 'es-419', 'es-US' e 'it-IT'"
+      when: "si risolve la lingua di un visitatore senza cookie"
+      then: "le lingue sono es-ES, es-419, es-419, es-419 e it"
+    - id: AC-4701-3
+      given: "un utente senza progetti con lingua es-419 e Accept-Language 'es-CO', poi 'es-419'"
+      when: "si risolve il targeting predefinito"
+      then: "il primo è es/CO, il secondo es/MX; con lingua es-ES è es/ES"
+    - id: AC-4701-4
+      given: "un utente autenticato"
+      when: "invia PATCH delle preferenze con ui_locale 'es-ES' prima di T-4902"
+      then: "la risposta è 400 VALIDATION_ERROR e la lingua dell'utente non cambia"
+
+  target_tests:
+    - file: "tests/unit/i18n-es-locales.test.ts"
+      covers: [AC-4701-1, AC-4701-2, AC-4701-3]
+    - file: "tests/integration/preferences-es.test.ts"
+      covers: [AC-4701-4]
+
+  security_notes:
+    - "A01 / CWE-22: cataloghi da una mappa statica indicizzata dalla lingua già validata, mai da un percorso composto con l'input."
+    - "A04: una lingua non offerta non si può salvare finché i cataloghi non sono completi (T-4902)."
+
+  out_of_scope:
+    - "Altre varianti regionali (per esempio es-MX separata da es-419) e il voseo."
+
+- id: T-4702
+  title: "Guida di stile, glossario e percorso di lavoro in spagnolo"
+  macrotask: "es-locales"
+  depends_on: [T-4701]
+
+  objective: >
+    Tradurre in modo semantico, con la guida e il glossario approvati, le parti dell'app che un utente usa ogni giorno.
+
+  definition_of_done:
+    - "docs/I18N-ES.md con la guida di stile e il glossario di questo modulo, le fonti di terminologia e il registro delle scelte fatte durante la traduzione (termine, variante, motivo)."
+    - "messages/es-ES.json con i namespace common, metadata, nav, projects, jobs, results, project, nextStep, dashboard, keywords, plan, errors ed errorPages; messages/es-419.json con le sole differenze di quei namespace (per esempio subir/cargar, costes/costos, Ajustes/Configuración); esempi dell'avvio rapido scritti per ciascun mercato."
+    - "tests/unit/i18n-catalog-parity.test.ts: per i namespace tradotti es-ES ha tutte le chiavi dell'italiano, nessun valore vuoto e gli stessi argomenti ICU (anche plurali e select); ogni chiave di es-419 esiste in es-ES con gli stessi argomenti; nessun valore di es-ES o es-419 contiene «vosotros», «vuestro» o «keyword» fuori dalle parentesi."
+
+  acceptance_criteria:
+    - id: AC-4702-1
+      given: "i cataloghi es-ES ed es-419"
+      when: "si legge dashboard.quickStart.submit e keywords.volumes.step3"
+      then: "submit vale «Buscar palabras clave» in entrambe; step3 contiene «súbelo» in es-ES e «cárgalo» in es-419 e cita il «Planificador de palabras clave»"
+    - id: AC-4702-2
+      given: "i cataloghi it, es-ES ed es-419"
+      when: "si esegue il controllo di parità sui namespace tradotti"
+      then: "nessuna chiave mancante, nessun valore vuoto, argomenti ICU uguali a quelli italiani e nessuna occorrenza vietata"
+
+  target_tests:
+    - file: "tests/unit/i18n-es-strings.test.ts"
+      covers: [AC-4702-1]
+    - file: "tests/unit/i18n-catalog-parity.test.ts"
+      covers: [AC-4702-2]
+
+  security_notes:
+    - "A03 / CWE-79: i testi tradotti restano testo dei cataloghi, resi da React."
+
+  out_of_scope:
+    - "Namespace di strategia, export, impostazioni, account, workspace, amministrazione, email e sito pubblico (moduli 48 e 49)."
+```
+
+## Self-check
+- Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
+- Modulo dal brainstorming del 2026-10-18 (D-47): due varianti es-ES ed es-419 (scelta dell'utente), localizzazione semantica professionale e non letterale (richiesta dell'utente), traduzione dell'agente con guida, glossario e controlli; rilettura madrelingua facoltativa.
+- Emendamento dichiarato alla costruzione: i numeri delle migrazioni dei moduli 40, 45 e 46 salgono di uno (questo modulo prende la 0048, costruito prima del 40).
+- Gate umani: nessuno (guida e glossario approvati con il modulo).
+- Scelte dell'agente (approvate con il modulo): elenco dei paesi ispanofoni d'America Latina; MX come paese predefinito di es-419; 'es-US' riconosciuto come es-419 (il paese delle ricerche resta MX se il browser non indica un paese d'America Latina); chiavi non tradotte lette in inglese finché i cataloghi non sono completi.

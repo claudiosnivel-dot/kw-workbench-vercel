@@ -22,7 +22,7 @@ Dopo il modulo 44 l'articolo si legge e si modifica nell'app. Dopo questo modulo
     giuste e i dati strutturati pronti.
 
   definition_of_done:
-    - "Migrazione additiva 0050_page_published_url: strategy_pages.published_url (fino a 500 caratteri, null), copiato con la pagina da «Rigenera» (T-2502)."
+    - "Migrazione additiva 0051_page_published_url: strategy_pages.published_url (fino a 500 caratteri, null), copiato con la pagina da «Rigenera» (T-2502)."
     - "lib/articles/render.ts, puro: renderArticleHtml e renderArticleMarkdown con H1, blocchi nell'ordine (INTRO senza titolo, H2, FAQ), Markdown convertito in HTML senza attributi diversi da href e alt; link page:<id> risolti con published_url della pagina, altrimenti site_url del progetto più '/' più lo slug del suo articolo (o lo slug ricavato dalla keyword principale) più '/', altrimenti '/' più lo slug più '/'; segnaposto immagine come commento HTML con testo alternativo, nome file e prompt (in Markdown come citazione); i testi dentro i commenti senza '--'."
     - "JSON-LD in un solo script application/ld+json: Article (headline = H1, description = meta_description, inLanguage); FAQPage dalle coppie del blocco FAQ; BreadcrumbList dalla pagina pilastro allo spoke con gli URL risolti; LocalBusiness solo per content_type local con business_name e business_address della scheda. Ogni '<' dentro il JSON scritto come \\u003c."
     - "Editor: «Copia» mette negli appunti text/html (con lo script) e text/plain (il Markdown); «Scarica» offre .html e .md (Content-Disposition attachment, nome dallo slug) da GET .../article/export?format=html|md con i permessi di lettura del piano."
@@ -107,3 +107,5 @@ Dopo il modulo 44 l'articolo si legge e si modifica nell'app. Dopo questo modulo
 - Modulo dal brainstorming del 2026-10-18 (D-46): «Copia» e download .docx, .html e .md; dati strutturati Article, FAQPage, BreadcrumbList e LocalBusiness; link interni hub & spoke risolti (aggiunta dell'utente); segnaposto immagine nell'export.
 - Gate umani: nessuno.
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): URL di ripiego site_url più slug con la barra finale; segnaposto immagine come commenti HTML; conferma con il numero dei segnaposto aperti; libreria docx per il file Word.
+- Emendamento dichiarato (2026-10-18, D-47, prima della costruzione): lo spagnolo (moduli 47-51) si costruisce prima di questo modulo, quindi ogni testo nuovo va nei cataloghi it, en ed es-ES, con le differenze in es-419, e il controllo di parità di T-4702 vale anche per i namespace di questo modulo.
+- Emendamento dichiarato (2026-10-18, D-47): la migrazione diventa 0051.
