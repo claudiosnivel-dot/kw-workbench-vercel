@@ -99,4 +99,4 @@ Con i modelli di riserva (modulo 38) una proposta può costare più richieste, e
 - Modulo dal brainstorming del 2026-10-18 (D-46): contatore visibile solo al root admin con l'avviso in Panoramica; tetto unico in richieste condiviso da titoli e articoli; budget di 10 USD di crediti una tantum per circa 1000 richieste al giorno sui modelli gratuiti.
 - Gate umani: nessuno.
 - Nota per l'utente: dopo l'acquisto dei crediti, tetto della piattaforma e limiti per workspace vanno alzati dalla card (default 900 richieste).
-- Scelte dell'agente da confermare: conservazione di 30 giorni; tetto da 1 a 5000; avviso dei modelli sotto i 5 contando anche quelli «da verificare».
+- Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): conservazione di 30 giorni; tetto da 1 a 5000; avviso dei modelli sotto i 5 contando anche quelli «da verificare».

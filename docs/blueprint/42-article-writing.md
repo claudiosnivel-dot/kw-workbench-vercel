@@ -98,4 +98,4 @@ Dopo il modulo 41 un articolo ha la scaletta e i blocchi vuoti. Dopo questo modu
 - Modulo dal brainstorming del 2026-10-18 (D-46): scrittura da persona senza i tratti tipici dell'AI e senza riempitivi (richiesta dell'utente), niente dati inventati con segnaposto da verificare, link interni hub & spoke naturali e funzionali al piano, FAQ.
 - Gate umani: nessuno.
 - Nota onesta (D-46): dal 2023 Google mostra i risultati FAQ arricchiti quasi solo per siti istituzionali e sanitari; le FAQ restano utili per le ricerche a domanda.
-- Scelte dell'agente da confermare: elenco iniziale delle formule da evitare (si allunga col tempo); FAQ da 3 a 6 coppie con risposte da 20 a 120 parole; nessuna tabella nel testo.
+- Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): elenco iniziale delle formule da evitare (si allunga col tempo); FAQ da 3 a 6 coppie con risposte da 20 a 120 parole; nessuna tabella nel testo.

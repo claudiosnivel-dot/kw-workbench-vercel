@@ -107,4 +107,4 @@ Il piano dice quali pagine scrivere, con H1, H2 e keyword; dal modulo 36 un mode
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal brainstorming del 2026-10-18 (D-46): scheda del progetto più note per articolo; lunghezza Breve, Media o Lunga come tetto; generazione in background a sezioni; limiti in articoli per workspace e tetto unico in richieste.
 - Gate umani: nessuno. La funzione resta spenta (articlesEnabled false) finché l'editor (modulo 44) non è in produzione.
-- Scelte dell'agente da confermare: stima delle richieste di un articolo (H2 + 3, più il 30%); un nuovo avvio sostituisce l'articolo esistente (l'editor chiederà conferma); nome e indirizzo dell'attività facoltativi, usati solo per i dati strutturati della pagina locale.
+- Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): stima delle richieste di un articolo (H2 + 3, più il 30%); un nuovo avvio sostituisce l'articolo esistente (l'editor chiederà conferma); nome e indirizzo dell'attività facoltativi, usati solo per i dati strutturati della pagina locale.

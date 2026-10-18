@@ -106,4 +106,4 @@ Dopo i moduli 40-43 il lavoro scrive e controlla l'articolo, ma nessuno può ved
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal brainstorming del 2026-10-18 (D-46): pagina dedicata a blocchi con salvataggio automatico e «Riscrivi questa sezione»; lunghezza predefinita per tipo e modificabile; segnaposto immagine con «Copia prompt».
 - Gate umani: nessuno sulle baseline visive esistenti (pagina nuova). Dopo il merge il root admin accende gli articoli dalla card.
-- Scelte dell'agente da confermare: default LONG per la pagina pilastro, SHORT per le pagine locali, MEDIUM per le altre; polling ogni 3 s; salvataggio automatico dopo 1 s; un nuovo avvio dall'editor chiede conferma.
+- Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): default LONG per la pagina pilastro, SHORT per le pagine locali, MEDIUM per le altre; polling ogni 3 s; salvataggio automatico dopo 1 s; un nuovo avvio dall'editor chiede conferma.

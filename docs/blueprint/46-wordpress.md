@@ -95,4 +95,4 @@ Dopo il modulo 45 l'articolo esce con la copia o i file. L'utente vuole caricarl
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal brainstorming del 2026-10-18 (D-46): connettore WordPress senza plugin con le password per le applicazioni, articolo come bozza; plugin più avanti (scelta dell'utente).
 - Gate umani: nessuno; una prova con un sito WordPress reale resta all'utente (credenziali sue).
-- Scelte dell'agente da confermare: un sito WordPress per progetto; solo bozze; un secondo invio aggiorna la stessa bozza; nomi host che sono indirizzi IP rifiutati.
+- Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): un sito WordPress per progetto; solo bozze; un secondo invio aggiorna la stessa bozza; nomi host che sono indirizzi IP rifiutati.

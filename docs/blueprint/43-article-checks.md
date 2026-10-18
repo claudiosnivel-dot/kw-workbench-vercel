@@ -94,4 +94,4 @@ Le istruzioni da sole non bastano: i modelli gratuiti ricadono nelle formule tip
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal brainstorming del 2026-10-18 (D-46): istruzioni più controllo automatico più una riscrittura (scelta dell'utente), canoni SEO senza forzature (keyword naturali e densità naturale, aggiunta dell'utente).
 - Gate umani: nessuno.
-- Scelte dell'agente da confermare: soglia di 2 tratti AI ogni 300 parole; densità massima 2,5 occorrenze ogni 100 parole; forma vicina = stessi token canonici in qualunque ordine; i blocchi modificati dall'utente non si riscrivono da soli.
+- Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): soglia di 2 tratti AI ogni 300 parole; densità massima 2,5 occorrenze ogni 100 parole; forma vicina = stessi token canonici in qualunque ordine; i blocchi modificati dall'utente non si riscrivono da soli.

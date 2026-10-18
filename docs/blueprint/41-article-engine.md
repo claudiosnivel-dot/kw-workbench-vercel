@@ -103,4 +103,4 @@ Un articolo costa 10-25 richieste da circa 10 secondi: più del tempo di una ric
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal brainstorming del 2026-10-18 (D-46): approccio A, lavoro in background a sezioni con scaletta; segnaposto immagine con il prompt per un generatore (aggiunta dell'utente).
 - Gate umani: nessuno.
-- Scelte dell'agente da confermare: tetti SHORT 800, MEDIUM 1500, LONG 2500 parole; 45 s per tentativo e 120 s per richiesta nel lavoro; spoke collegabili agli altri spoke dello stesso hub; immagini da 1 a 6 in .webp.
+- Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): tetti SHORT 800, MEDIUM 1500, LONG 2500 parole; 45 s per tentativo e 120 s per richiesta nel lavoro; spoke collegabili agli altri spoke dello stesso hub; immagini da 1 a 6 in .webp.

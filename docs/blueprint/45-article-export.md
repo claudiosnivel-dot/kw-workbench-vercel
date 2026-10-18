@@ -106,4 +106,4 @@ Dopo il modulo 44 l'articolo si legge e si modifica nell'app. Dopo questo modulo
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal brainstorming del 2026-10-18 (D-46): «Copia» e download .docx, .html e .md; dati strutturati Article, FAQPage, BreadcrumbList e LocalBusiness; link interni hub & spoke risolti (aggiunta dell'utente); segnaposto immagine nell'export.
 - Gate umani: nessuno.
-- Scelte dell'agente da confermare: URL di ripiego site_url più slug con la barra finale; segnaposto immagine come commenti HTML; conferma con il numero dei segnaposto aperti; libreria docx per il file Word.
+- Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): URL di ripiego site_url più slug con la barra finale; segnaposto immagine come commenti HTML; conferma con il numero dei segnaposto aperti; libreria docx per il file Word.
