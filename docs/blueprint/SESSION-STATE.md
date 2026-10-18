@@ -63,6 +63,11 @@
 | `article-editor` (44) | da fare | — | T-4401…T-4402 (D-46): avvio dal pannello ed editor a blocchi; dopo il merge il root admin accende gli articoli |
 | `article-export` (45) | da fare | — | T-4501…T-4502 (D-46): copia, download .html, .md e .docx con JSON-LD e link risolti; «Segna come pubblicata» |
 | `wordpress` (46) | da fare | — | T-4601…T-4602 (D-46): collegamento con le password per le applicazioni e invio come bozza |
+| `es-locales` (47) | da fare | — | T-4701…T-4702 (D-47): lingue es-ES ed es-419, guida di stile e glossario, percorso di lavoro in spagnolo |
+| `es-catalog-work` (48) | da fare | — | T-4801…T-4802 (D-47): strategia, export, impostazioni, accesso, account e fatturazione in spagnolo |
+| `es-public` (49) | da fare | — | T-4901…T-4902 (D-47): workspace, admin, email, sito pubblico /es e /es-419, accensione delle lingue |
+| `es-search` (50) | da fare | — | T-5001…T-5002 (D-47): composizioni e classificazione in spagnolo, Keyword Planner in spagnolo |
+| `es-strategy-ai` (51) | da fare | — | T-5101…T-5102 (D-47): piano hub & spoke e titoli con l'AI in spagnolo per variante; prima del 40 |
 
 ## 2. Macrotask corrente
 
@@ -80,7 +85,7 @@
 - **Ultimo chiuso (2026-10-17, trentottesima sessione)**: `ai-titles-core` (35), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE (1065 s), nessuna migrazione: configurazione dei titoli con l'AI per il root admin (card «Titoli con l'AI» nelle Impostazioni con interruttore, modello gratuito, tetto della piattaforma, limite per workspace, stato della chiave e proposte delle ultime 24 ore; funzione spenta) e cuore della proposta (richiesta al modello, client OpenRouter, controllo della risposta), senza ancora un pulsante per gli utenti. PR #85 mergiata (`fc1aa82`), CI di `master` verde, in produzione senza migrazioni.
 - **Ultimo chiuso (2026-10-17, trentanovesima sessione)**: `ai-titles-panel` (36), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE (1231 s), migrazione additiva `0045_page_ai_proposal`: proposta dei titoli con l'AI per una pagina del piano dal pannello («Migliora i titoli con l'AI», card «Proposta dell'AI» con «Usa questi titoli» e «Scarta»), con i limiti per workspace e della piattaforma (root admin escluso), l'ultima proposta conservata nella pagina finché non si usa o si scarta e gli H2 in eccesso tenuti nei primi. PR #88 mergiata (`c7a6572`), CI di `master` verde, in produzione con la migrazione 0045. La funzione resta spenta finché la chiave non è su Vercel e il root admin non la accende.
 - **Ultimo chiuso (2026-10-18, quarantesima sessione)**: `quick-start-seeds` (37), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE (1186 s), migrazione additiva `0046_pattern_language`: fino a 5 voci separate da virgola nell'avvio rapido (ognuna una parola di partenza dello stesso argomento, nome dalla prima), composizioni nella lingua della ricerca (set italiano nuovo), avviso dei pochi suggerimenti sotto le 20 keyword e motivo dei volumi mancanti di DataForSEO nella pagina dell'argomento. Baseline visiva della dashboard approvata dall'utente; PR #92 mergiata (`cb6fe21`), CI di `master` verde, in produzione con la migrazione 0046 e il seed delle composizioni italiane.
-- **Prossimo**: `ai-model-fallback` (38), primo dei moduli 38-46 approvati dall'utente il 2026-10-18 (D-46), un modulo per sessione su comando dell'utente. Prima dei moduli degli articoli conviene comprare i 10 USD di crediti OpenRouter e alzare il tetto della piattaforma dalla card. Restano da confermare le scelte dell'agente di T-3704 e le note di costruzione del modulo 37. D-14 e D-15 restano in pausa.
+- **Prossimo**: `ai-model-fallback` (38), poi 39, poi lo spagnolo (47-51, D-47, da approvare dall'utente nella PR del blueprint), poi gli articoli (40-46, D-46): un modulo per sessione su comando dell'utente. Prima degli articoli conviene comprare i 10 USD di crediti OpenRouter e alzare il tetto della piattaforma dalla card. Restano da confermare le scelte dell'agente di T-3704 e le note di costruzione del modulo 37. D-14 e D-15 restano in pausa.
 - **Criteri/test di riferimento**: prossimo modulo da costruire `docs/blueprint/38-ai-model-fallback.md`; ultimo costruito `docs/blueprint/37-quick-start-seeds.md`.
 
 ## 3. Stato git
@@ -160,6 +165,12 @@
 - **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5, jsdom 30 e, da T-407, del progetto `24.x`: funziona con avviso; riferimento la CI su Node 24 da `.nvmrc`). E2E e Vitest su Linux con Node 24: container `mcr.microsoft.com/playwright:v1.63.0-noble` nella rete `kw-workbench-vercel_default`, copia del repo senza `node_modules`, `npm ci`, un proxy TCP in Node da `localhost:54329` a `postgres-test:5432` (la guardia ammette solo host locali), `CI=true`. Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
+
+### Sessione 2026-10-18 (quarantesima, dopo la chiusura del 37) — brainstorming dei moduli 47-51, spagnolo (D-47)
+
+- **Richiesta dell'utente**: spagnolo di Spagna e d'America Latina in interfaccia, autocomplete, piano hub & spoke, titoli con l'AI e articoli; poi «non voglio una traduzione letterale scolastica, voglio una traduzione semantica professionale».
+- **Risposte dell'utente** (AskUserQuestion): due varianti es-ES ed es-419; ambito completo; traduzione dell'agente con glossario e controlli; variante dei contenuti dal paese del progetto; ordine 38-39, poi spagnolo, poi articoli. Verifica della terminologia sul web (Semrush ES, Cyberclick, Ahrefs ES, Google Ads, guide di localizzazione SaaS): «palabra clave», «página pilar», «contenido satélite», differenze di vocabolario fra Spagna e America Latina.
+- **Design approvato per sezioni in chat**: 5 moduli da 2 task (`47-es-locales` … `51-es-strategy-ai`), D-47 nel ledger, obiettivo 13 nella visione, emendamenti dichiarati dei moduli 40-46 (ordine, istruzioni e segnaposto in spagnolo, cataloghi a quattro lingue, migrazioni rinumerate), indice, DAG e prompt aggiornati; 211 task. `validate_blueprint` e `ac_observability_check` OK; `ac_assertion_trace_check` sull'intero blueprint segnala AC-4702-2, AC-4801-2, AC-4802-2, AC-4901-2, AC-5001-1 e AC-5001-2, target test condivisi già esistenti (`i18n-catalog-parity.test.ts`, `expansion-language.test.ts`, `seed.test.ts`) che riceveranno i tag `covers` alla costruzione (limite noto dell'oracolo, come per il modulo 37). Da approvare dall'utente prima della costruzione.
 
 ### Sessione 2026-10-18 (quarantesima, dopo la chiusura del 37) — brainstorming dei moduli 38-46 (D-46)
 
@@ -941,6 +952,7 @@
 
 ## 6. Prossimi passi
 
+- **Moduli 47-51 (D-47) da approvare dall'utente**: spagnolo di Spagna e d'America Latina, scritti il 2026-10-18 dal brainstorming; si costruiscono dopo il 39 e prima del 40. Facoltativo per l'utente: un file di Keyword Planner scaricato con Google Ads in spagnolo (prova reale di T-5002) e una rilettura madrelingua dopo il lancio.
 - **Moduli 38-46 (D-46)**: approvati dall'utente il 2026-10-18 con le scelte dell'agente dei Self-check («approvo tutto»); si costruiscono dal 38, uno per sessione, su comando dell'utente.
 - **Utente, prima degli articoli**: comprare 10 USD di crediti su OpenRouter (circa 1000 richieste al giorno sui modelli `:free`), poi alzare dalla card il tetto della piattaforma; per WordPress (modulo 46) un sito con una password per le applicazioni per la prova reale.
 - **Titoli con l'AI, miglioramenti proposti all'utente il 2026-10-18 (da decidere)**: status e codice di OpenRouter nel log `ai_titles_suggest` (come T-3704 per DataForSEO); messaggio dedicato al 429 («modello gratuito sovraccarico»); modelli gratuiti di riserva con l'elenco `models` di OpenRouter; nuovo modello predefinito al posto di Gemma (in `lib/ai/settings.ts`); uno script da eseguire su Vercel per cambiare le impostazioni cifrate. Alternativa senza codice: una chiave di Google AI Studio collegata nelle integrazioni di OpenRouter.

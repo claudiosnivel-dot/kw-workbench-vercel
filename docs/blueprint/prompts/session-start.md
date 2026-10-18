@@ -38,10 +38,12 @@ ridiscute il design.
    35 ai-titles-core (09, 17, 19, 33) · 36 ai-titles-panel (15, 17, 19, 25, 35) ·
    37 quick-start-seeds (02, 07, 09, 11, 12, 16, 23, 24) ·
    38 ai-model-fallback (12, 35, 36) · 39 ai-usage-counter (33, 36, 38) ·
-   40 article-data (08, 25, 26, 39) · 41 article-engine (12, 19, 35, 38, 39, 40) ·
+   40 article-data (08, 25, 26, 39, 51) · 41 article-engine (12, 19, 35, 38, 39, 40) ·
    42 article-writing (41) · 43 article-checks (07, 42) ·
    44 article-editor (25, 36, 43) · 45 article-export (25, 40, 44) ·
-   46 wordpress (26, 40, 45)
+   46 wordpress (26, 40, 45) · 47 es-locales (13, 23, 39) ·
+   48 es-catalog-work (21, 47) · 49 es-public (14, 18, 48) ·
+   50 es-search (07, 09, 37, 49) · 51 es-strategy-ai (19, 38, 48, 50)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15
