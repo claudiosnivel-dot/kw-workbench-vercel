@@ -70,6 +70,9 @@ Titan SEO diventa un SaaS vendibile:
     pannello di una pagina del piano una proposta di H1 e H2 scritta da un modello
     gratuito via OpenRouter, che l'utente usa o scarta; alla generazione restano i
     modelli fissi (D-33 emendata, D-42).
+11. (aggiunto il 2026-10-18, macrotask 37) ricerche che trovano davvero le keyword:
+    più parole brevi nell'avvio rapido, composizioni nella lingua del progetto e un
+    invito a cambiare le parole quando Google trova poco (D-44).
 
 "Fatto" = `target_tests` verdi e checkpoint Trueline verde al confine di ogni
 macrotask, **non** una dichiarazione dell'agente (`L-COL-002`, `L-COL-006`).
