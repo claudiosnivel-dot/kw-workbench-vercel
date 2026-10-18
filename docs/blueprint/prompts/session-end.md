@@ -33,7 +33,10 @@ macrotask, senza chiedere conferme.
      24 ux-keywords · 25 ux-plan · 26 ux-settings · 27 ux-fixes ·
      28 ux-account-shell · 29 ux-account-polish · 30 ux-email-change ·
      31 ux-workspace · 32 ux-invites · 33 ux-admin · 34 ux-admin-users ·
-     35 ai-titles-core · 36 ai-titles-panel · 37 quick-start-seeds
+     35 ai-titles-core · 36 ai-titles-panel · 37 quick-start-seeds ·
+     38 ai-model-fallback · 39 ai-usage-counter · 40 article-data ·
+     41 article-engine · 42 article-writing · 43 article-checks ·
+     44 article-editor · 45 article-export · 46 wordpress
    • Baseline (.trueline/baseline.json, .trueline/hygiene-baseline.json) e budget
      consumato (MAX_RETRIES_PER_FINDING = 2, GLOBAL_WALL_CLOCK_MS = 242401).
    • Per ogni task chiuso: id, output prodotto, esito del gate (quale oracolo/test
