@@ -1,6 +1,6 @@
 # 37-quick-start-seeds — Macrotask `quick-start-seeds`
 
-> Parole di partenza più efficaci (D-44): più parole nell'avvio rapido, composizioni nella lingua del progetto e un avviso quando Google trova poche keyword.
+> Parole di partenza più efficaci (D-44): più parole nell'avvio rapido, composizioni nella lingua del progetto e un avviso quando Google trova poche keyword. Con D-45 anche il motivo visibile quando DataForSEO non restituisce i volumi.
 
 ## Obiettivo del macrotask
 Il campo «Di cosa parla il tuo sito?» dell'avvio rapido (T-2301) porta a scrivere una frase descrittiva, che diventa l'unica parola di partenza: per una frase lunga Google Autocomplete non ha suggerimenti (verificato il 2026-10-18: «letto elettronico ospedaliero» 0 suggerimenti su 45 query, «letto ospedaliero» 165, con il codice di oggi e con quello della prima versione). Le composizioni globali sono in inglese e si aggiungono anche ai progetti in italiano. Dopo questo modulo:
@@ -8,6 +8,7 @@ Il campo «Di cosa parla il tuo sito?» dell'avvio rapido (T-2301) porta a scriv
 - **Più parole**: l'avvio rapido accetta fino a 5 parole o frasi separate da virgola, ognuna una parola di partenza dello stesso argomento, con un testo d'aiuto che chiede 1-3 parole per idea.
 - **Composizioni per lingua**: le composizioni globali hanno una lingua; la ricerca usa solo quelle della lingua del progetto (inglesi per `en`, un set italiano per `it`, nessuna per le altre lingue).
 - **Pochi risultati**: a ricerca finita, un argomento con meno di 20 keyword mostra un invito a usare parole più brevi o più generali, con il pulsante per cambiare le parole di partenza.
+- **Volumi che non arrivano** (D-45): la password di DataForSEO si legge senza spazi ai lati come il login, e il motivo di una richiesta dei volumi non riuscita resta nell'esito della ricerca e si legge nella pagina dell'argomento, anche dopo la scadenza dei log di Vercel (un'ora sul piano Hobby). Il 2026-10-18 le richieste fallivano con 403 `40104` (account non verificato) senza che l'app lo mostrasse.
 
 ## Task atomici
 
@@ -129,10 +130,55 @@ Il campo «Di cosa parla il tuo sito?» dell'avvio rapido (T-2301) porta a scriv
 
   out_of_scope:
     - "Suggerire da soli parole più brevi o rilanciare la ricerca senza l'utente (D-44)."
+
+- id: T-3704
+  title: "Password di DataForSEO ripulita e motivo dei volumi mancanti"
+  macrotask: "quick-start-seeds"
+  depends_on: [T-902, T-903, T-1202, T-2405]
+
+  objective: >
+    Far capire all'utente perché i volumi non sono arrivati e togliere un errore di copia delle credenziali che
+    blocca l'accesso a DataForSEO.
+
+  definition_of_done:
+    - "lib/env.ts, getDataForSeoCredentials: anche la password senza spazi, tabulazioni e a capo ai lati, come il login; una password fatta solo di spazi vale assente (provider non configurato)."
+    - "lib/modules/providers/metrics/dataforseo.ts: per ogni tentativo il codice di DataForSEO (status_code del task, oppure quello della risposta quando lo status HTTP non è 2xx o il task manca) accanto allo status HTTP, che resta la base dei nuovi tentativi; il log dataforseo_request riporta anche code. Un lotto non riuscito porta nell'esito della ricerca metricsProviderError { httpStatus, code } dell'ultimo tentativo, nel result del job come gli altri campi delle metriche (toMetricsResult); mai credenziali, status_message del fornitore o keyword (CWE-532)."
+    - "Pagina delle keyword dell'argomento: il riquadro «Aggiungi i volumi» (T-2405) mostra, sotto il testo di oggi, il motivo dell'ultima ricerca completata dell'argomento se il suo result ha metricsProviderError o metricsNotice: per i codici 40100 (credenziali rifiutate) e 40104 (account da verificare nel pannello di DataForSEO), verificati il 2026-10-18, e per ogni metricsNotice un testo del catalogo; per gli altri codici «DataForSEO ha risposto con il codice <code>». Testi nei cataloghi keywords.volumes it ed en."
+
+  acceptance_criteria:
+    - id: AC-3704-1
+      given: "un ambiente con DATAFORSEO_LOGIN ' utente@example.test ' e DATAFORSEO_PASSWORD con un a capo di Windows finale, poi con DATAFORSEO_PASSWORD fatta solo di spazi"
+      when: "si chiama getDataForSeoCredentials"
+      then: "la prima volta login e password non hanno spazi né a capo ai lati; la seconda il risultato è null"
+    - id: AC-3704-2
+      given: "un argomento con DATAFORSEO come fornitore, il root admin e un fetch simulato che risponde HTTP 403 con status_code 40104 e status_message 'Please verify your account before using the API.'"
+      when: "si esegue la ricerca dell'argomento fino alla fine"
+      then: "il job è completed; le sue keyword hanno metrics_status failed; il result del job ha metricsProviderError con httpStatus 403 e code 40104; la riga di log dataforseo_request ha code 40104 e nessuna riga di log contiene 'Please verify'"
+    - id: AC-3704-3
+      given: "il riquadro «Aggiungi i volumi» reso con metricsProviderError code 40104, poi con code 40999, poi con metricsNotice RUN_BUDGET_EXCEEDED, poi senza motivo"
+      when: "si legge il riquadro in ciascun caso"
+      then: "il primo dice che l'account DataForSEO va verificato; il secondo contiene «DataForSEO ha risposto con il codice 40999»; il terzo il testo del tetto di spesa per estrazione; il quarto solo il testo di oggi"
+
+  target_tests:
+    - file: "tests/unit/dataforseo-credentials.test.ts"
+      covers: [AC-3704-1]
+    - file: "tests/integration/dataforseo-errors.test.ts"
+      covers: [AC-3704-2]
+    - file: "tests/component/add-volumes-reason.test.tsx"
+      covers: [AC-3704-3]
+
+  security_notes:
+    - "A09 / CWE-532: nei log e nel result solo status HTTP e codice numerico; credenziali e messaggi del fornitore restano fuori."
+    - "A05 / CWE-209: la pagina mostra testi del catalogo o il solo codice numerico, mai il testo restituito dal fornitore."
+
+  out_of_scope:
+    - "Recupero dei soli volumi senza rifare la ricerca dei suggerimenti (T-2405)."
+    - "Avvisi per email o nel pannello di amministrazione sugli errori del fornitore."
 ```
 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
-- Modulo nato dalla segnalazione dell'utente del 2026-10-18 («l'autocomplete non funziona») e dal brainstorming dello stesso giorno (D-44): quattro scelte dell'utente con AskUserQuestion, design approvato in chat.
+- Modulo nato dalla segnalazione dell'utente del 2026-10-18 («l'autocomplete non funziona») e dal brainstorming dello stesso giorno (D-44): quattro scelte dell'utente con AskUserQuestion, design approvato in chat. T-3704 aggiunto lo stesso giorno su richiesta dell'utente (D-45), dalla correzione proposta dopo la diagnosi di DataForSEO; il modulo passa a quattro task, uno in più della regola dei macrotask piccoli, per costruirlo nella stessa sessione come chiesto.
 - Gate umani: la baseline visiva della dashboard (`dashboard.png`) cambia, perché il campo compatto dell'avvio rapido riceve il testo d'aiuto e il placeholder nuovo (T-3701): va approvata dall'utente prima del merge, come per i macrotask 23 e 24.
 - Scelte dell'agente (rilievi, 2026-10-18), confermate dall'utente il 2026-10-18 insieme all'approvazione del modulo: soglia di 20 keyword per l'avviso; nome del modulo `quick-start-seeds`; set italiano delle composizioni (le 8 con più suggerimenti su 16 provate); 400 VALIDATION_ERROR anche per un topic fatto solo di virgole; nome del progetto dalla prima voce; le composizioni seguono la lingua effettiva della ricerca (anche l'eventuale lingua diversa dell'argomento).
+- Scelte dell'agente da confermare per T-3704 (2026-10-18): testi dedicati ai soli codici 40100 e 40104, gli unici verificati; il motivo nel riquadro «Aggiungi i volumi» e non altrove; il motivo è quello dell'ultima ricerca completata dell'argomento.
