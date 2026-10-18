@@ -152,6 +152,12 @@
 
 ## 5. Esiti dell'ultima sessione
 
+### Sessione 2026-10-18 (quarantesima, dopo la chiusura del 37) — «Il servizio dei titoli con l'AI non è raggiungibile»
+
+- **Segnalazione dell'utente**: «Migliora i titoli con l'AI» mostrava `AI_UNAVAILABLE`. Log di Vercel: `ai_titles_suggest` con il modello `google/gemma-4-31b-it:free`, 258 ms, esito `AI_UNAVAILABLE` (il log non riporta lo status di OpenRouter).
+- **Causa verificata** (riproduzione con la stessa chiave e lo stesso codice dell'app, `buildTitlesRequest`, `requestCompletion`, `parseTitlesResponse`): chiave valida (`/key` 200, uso 0, account free tier), modello presente nell'elenco, ma ogni richiesta riceve 429 «temporarily rate-limited upstream» dal pool gratuito condiviso di Google AI Studio; stesso esito per `google/gemma-4-26b-a4b-it:free`. Con il prompt reale `nvidia/nemotron-3-super-120b-a12b:free` e `nvidia/nemotron-3-ultra-550b-a55b:free` rispondono in circa 10 s con H1 e H2 validi.
+- **Correzione**: l'utente ha impostato `nvidia/nemotron-3-super-120b-a12b:free` nella card «Titoli con l'AI» e la funzione ora risponde. L'agente non poteva cambiarlo: le impostazioni sono cifrate con `APP_ENCRYPTION_KEY`, Sensitive su Vercel e quindi non leggibile con `vercel env pull`; un tentativo con `updateAiTitlesSettings` dal computer locale si è fermato sulla validazione dell'ambiente prima di scrivere (verificato: `app_settings` e il registro `ai.update` invariati). Nessun codice cambiato.
+
 ### Sessione 2026-10-18 (quarantesima) — approvazione della baseline visiva, merge e verifica in produzione del macrotask 37
 
 - L'utente ha approvato la baseline visiva della dashboard rigenerata e il merge («approvo immagine, approvo merge»); le scelte dell'agente di T-3704 e le note di costruzione del modulo 37 restano da confermare (§6).
@@ -920,6 +926,7 @@
 
 ## 6. Prossimi passi
 
+- **Titoli con l'AI, miglioramenti proposti all'utente il 2026-10-18 (da decidere)**: status e codice di OpenRouter nel log `ai_titles_suggest` (come T-3704 per DataForSEO); messaggio dedicato al 429 («modello gratuito sovraccarico»); modelli gratuiti di riserva con l'elenco `models` di OpenRouter; nuovo modello predefinito al posto di Gemma (in `lib/ai/settings.ts`); uno script da eseguire su Vercel per cambiare le impostazioni cifrate. Alternativa senza codice: una chiave di Google AI Studio collegata nelle integrazioni di OpenRouter.
 - **Gate umano del macrotask 37**: baseline visiva della dashboard approvata dall'utente il 2026-10-18 («approvo immagine, approvo merge»); PR #92 mergiata e in produzione.
 - **Scelte del macrotask 37 da confermare dall'utente**: le scelte dell'agente di T-3704 (testi dedicati ai soli codici 40100 e 40104, motivo nel riquadro «Aggiungi i volumi», motivo dell'ultima ricerca completata) e le note di costruzione del Self-check del modulo 37 (fra cui: errore «Puoi scrivere al massimo 5 idee separate da virgola.», avviso con i colori d'avviso, testo «DataForSEO non ha risposto in tempo: riprova più tardi.» per timeout ed errori di rete, motivo del fornitore prima del metricsNotice).
 - **Utente (facoltativo, dopo il merge)**: provare in produzione l'avvio rapido con due o tre parole separate da virgola, l'avviso dei pochi suggerimenti su un argomento con poche keyword e, con DataForSEO, il motivo nel riquadro «Aggiungi i volumi».
