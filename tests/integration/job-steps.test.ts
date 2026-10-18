@@ -109,7 +109,8 @@ beforeEach(async () => {
     data: DEFAULT_BRANDS.map((brand) => ({ project_id: null, brand, reason: "Global brand default" })),
   });
   await prisma.expansionPattern.createMany({
-    data: DEFAULT_PATTERNS.map((pattern) => ({ project_id: null, pattern, enabled: true })),
+    // impacted-by: T-3702 (composizioni nella lingua del progetto, it, come prima del filtro per lingua)
+    data: DEFAULT_PATTERNS.map((pattern) => ({ project_id: null, language_code: "it", pattern, enabled: true })),
   });
   ownerId = (await createUserWithSession({ displayName: "t1202-owner" })).user.id;
 });

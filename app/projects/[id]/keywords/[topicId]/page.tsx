@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AddVolumesNotice } from "@/components/add-volumes-dialog";
+import { FewKeywordsNotice } from "@/components/keywords/few-keywords-notice";
 import { KeywordsBoard } from "@/components/keywords/keywords-board";
 import { RememberTopic } from "@/components/keywords/remember-topic";
 import { TopicActions } from "@/components/keywords/topic-actions";
@@ -9,7 +10,7 @@ import { canPerform } from "@/lib/authz/permissions";
 import { canChooseLicensedMetrics } from "@/lib/billing/enforce";
 import type { SearchParams } from "@/lib/http/search-params";
 import { findActiveJobId } from "@/lib/modules/jobs/job-api";
-import { keywordsBoardProps, loadKeywordsView } from "@/lib/modules/keywords-page";
+import { keywordsBoardProps, loadKeywordsView, loadLastCompletedSearch } from "@/lib/modules/keywords-page";
 import { requireProjectPage } from "@/lib/modules/project-pages";
 
 export const dynamic = "force-dynamic";
@@ -36,8 +37,9 @@ type TopicKeywordsPageProps = {
 
 /**
  * Pagina delle keyword di un argomento (T-2403): l'argomento si risolve nel progetto del workspace dell'utente (un
- * argomento di un altro progetto → 404, CWE-639). Sopra l'elenco la ricerca in corso (T-2404) oppure, se le tenute non
- * hanno ancora le ricerche al mese, «Aggiungi i volumi» (T-2405).
+ * argomento di un altro progetto → 404, CWE-639). Sopra l'elenco la ricerca in corso (T-2404) oppure l'avviso dei pochi
+ * suggerimenti (T-3703) e, se le tenute non hanno ancora le ricerche al mese, «Aggiungi i volumi» con il motivo
+ * dell'ultima ricerca completata (T-2405, T-3704).
  */
 export default async function TopicKeywordsPage({ params, searchParams }: TopicKeywordsPageProps) {
   const user = await requirePageUser();
@@ -61,11 +63,13 @@ export default async function TopicKeywordsPage({ params, searchParams }: TopicK
   // Il resto della select: id, nome e le impostazioni diverse dal progetto.
   const { seeds, description, ...overrides } = topic;
 
-  const [view, activeJobId, canAuto] = await Promise.all([
+  const [view, activeJobId, canAuto, lastSearch] = await Promise.all([
     loadKeywordsView(project.id, topic.id, resolvedSearchParams),
     findActiveJobId(topic.id),
     canChooseLicensedMetrics(user, project.workspace_id),
+    loadLastCompletedSearch(project.id, topic.id),
   ]);
+  const seedKeywords = seeds.map((seed) => seed.keyword);
   const needsVolumes = !activeJobId && view.keptTotal > 0 && view.keptWithVolume === 0;
 
   return (
@@ -79,7 +83,7 @@ export default async function TopicKeywordsPage({ params, searchParams }: TopicK
         actions={
           <TopicActions
             projectId={project.id}
-            topic={{ id: topic.id, name: topic.name, description, seeds: seeds.map((seed) => seed.keyword), overrides }}
+            topic={{ id: topic.id, name: topic.name, description, seeds: seedKeywords, overrides }}
             canEdit={canPerform(project.role, "section.write")}
             canEditAutocompleteProvider={user.isRootAdmin}
           />
@@ -87,9 +91,21 @@ export default async function TopicKeywordsPage({ params, searchParams }: TopicK
         notices={
           activeJobId ? (
             <SearchProgress key={activeJobId} jobId={activeJobId} />
-          ) : needsVolumes ? (
-            <AddVolumesNotice projectId={project.id} topicId={topic.id} canAuto={canAuto} />
-          ) : null
+          ) : (
+            <>
+              <FewKeywordsNotice
+                projectId={project.id}
+                topicId={topic.id}
+                seeds={seedKeywords}
+                keywordCount={view.kept.scopeTotalCount}
+                searching={false}
+                hasCompletedSearch={lastSearch !== null}
+              />
+              {needsVolumes && (
+                <AddVolumesNotice projectId={project.id} topicId={topic.id} canAuto={canAuto} reason={lastSearch?.volumesReason} />
+              )}
+            </>
+          )
         }
       />
     </>

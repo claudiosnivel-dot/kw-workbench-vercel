@@ -7,6 +7,7 @@ import {
 } from "@/lib/constants/locale-options";
 import { AutocompleteProvider, MetricsProvider } from "@/lib/generated/prisma/enums";
 import { AppError, ValidationError } from "@/lib/http/errors";
+import { QUICK_START_MAX_TOPICS, splitQuickStartTopics } from "@/lib/modules/quick-start-topics";
 import { parseBooleanWord, splitLines } from "@/lib/utils";
 
 export type EffectiveProjectSettings = {
@@ -224,25 +225,32 @@ export function parseProjectCreate(payload: unknown, actor: Actor): ProjectCreat
   };
 }
 
-// Avvio rapido (T-2301): il topic diventa la seed dell'argomento, quindi ha il limite delle seed (D-24); gli spazi
-// ripetuti e gli a capo diventano uno spazio, così il campo resta una sola seed.
-const quickStartSchema = z.strictObject({
-  topic: z
-    .string()
-    .transform((value) => value.replace(/\s+/g, " ").trim())
-    .pipe(z.string().min(1, `da 1 a ${SEED_MAX_LENGTH} caratteri`).max(SEED_MAX_LENGTH, `da 1 a ${SEED_MAX_LENGTH} caratteri`)),
-  languageCode: languageField.optional(),
-  countryCode: countryField.optional(),
-});
+// Avvio rapido (T-2301, T-3701): il topic si divide sulle virgole in voci, ognuna una seed dell'argomento con il limite
+// delle seed (D-24); da 1 a 5 voci dopo aver tolto vuote e doppioni (splitQuickStartTopics).
+const quickStartSchema = z
+  .strictObject({
+    topic: z
+      .string()
+      .transform(splitQuickStartTopics)
+      .pipe(
+        z
+          .array(z.string().max(SEED_MAX_LENGTH, `ogni voce da 1 a ${SEED_MAX_LENGTH} caratteri`))
+          .min(1, `da 1 a ${QUICK_START_MAX_TOPICS} voci separate da virgola`)
+          .max(QUICK_START_MAX_TOPICS, `da 1 a ${QUICK_START_MAX_TOPICS} voci separate da virgola`)
+      ),
+    languageCode: languageField.optional(),
+    countryCode: countryField.optional(),
+  })
+  .transform(({ topic, ...rest }) => ({ ...rest, seeds: topic }));
 
 export type QuickStartInput = z.output<typeof quickStartSchema>;
 
-/** Corpo di POST /api/projects/quick-start: topic obbligatorio, lingua e paese facoltativi validati come nel progetto. */
+/** Corpo di POST /api/projects/quick-start: topic obbligatorio (le voci diventano seeds), lingua e paese facoltativi validati come nel progetto. */
 export function parseQuickStart(payload: unknown): QuickStartInput {
   return parseOrThrow(quickStartSchema, payload);
 }
 
-/** Nome del progetto e del primo argomento dall'avvio rapido: il topic con l'iniziale maiuscola, al massimo 120 caratteri. */
+/** Nome del progetto e del primo argomento dall'avvio rapido: la prima voce con l'iniziale maiuscola, al massimo 120 caratteri. */
 export function quickStartName(topic: string): string {
   return `${topic.slice(0, 1).toUpperCase()}${topic.slice(1)}`.slice(0, NAME_MAX_LENGTH).trim();
 }

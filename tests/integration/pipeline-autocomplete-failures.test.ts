@@ -44,7 +44,8 @@ async function createSectionWithPreviousRun() {
   const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
   await prisma.seed.create({ data: { project_id: project.id, subproject_id: section.id, keyword: SEED } });
   await prisma.expansionPattern.createMany({
-    data: PATTERNS.map((pattern) => ({ project_id: null, pattern, enabled: true })),
+    // impacted-by: T-3702 (composizioni nella lingua del progetto, it, come prima del filtro per lingua)
+    data: PATTERNS.map((pattern) => ({ project_id: null, language_code: "it", pattern, enabled: true })),
   });
   await prisma.keywordCandidate.createMany({
     data: PREVIOUS_KEYWORDS.map((keyword) => ({

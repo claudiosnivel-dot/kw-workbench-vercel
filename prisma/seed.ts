@@ -8,21 +8,38 @@ export const DEFAULT_BRANDS = [
   { brand: "instagram", reason: "Global brand default" },
 ];
 
-export const DEFAULT_PATTERNS = [
-  "{seed} for beginners",
-  "best {seed}",
-  "{seed} near me",
-  "how to {seed}",
-  "{seed} vs {seed} alternative",
-  "free {seed} tool",
-  "{seed} template",
-  "{seed} examples",
-];
+/**
+ * Composizioni globali per lingua (T-3702, D-44): la ricerca usa solo quelle della sua lingua. Il set italiano è stato
+ * scelto il 2026-10-18 contando i suggerimenti di Google su quattro parole di prova (le 8 con più suggerimenti su 16).
+ */
+export const DEFAULT_PATTERNS = {
+  en: [
+    "{seed} for beginners",
+    "best {seed}",
+    "{seed} near me",
+    "how to {seed}",
+    "{seed} vs {seed} alternative",
+    "free {seed} tool",
+    "{seed} template",
+    "{seed} examples",
+  ],
+  it: [
+    "{seed} per",
+    "{seed} vicino a me",
+    "{seed} recensioni",
+    "{seed} prezzo",
+    "{seed} online",
+    "migliori {seed}",
+    "{seed} offerte",
+    "{seed} opinioni",
+  ],
+} as const;
 
 /**
  * Inserisce i default globali (project_id null) mancanti in un'unica transazione, senza cancellare
- * nulla (T-204). Niente createMany con skipDuplicates né upsert sul vincolo unico: con project_id
- * NULL Postgres considera distinti i valori e il vincolo non impedisce i duplicati (schema: T-1103).
+ * nulla (T-204); una composizione manca se manca la coppia (lingua, pattern) (T-3702). Niente createMany
+ * con skipDuplicates né upsert sul vincolo unico: con project_id NULL Postgres considera distinti i
+ * valori e il vincolo non impedisce i duplicati (schema: T-1103).
  */
 export async function seedGlobalDefaults(client: Pick<PrismaClient, "$transaction">): Promise<void> {
   await client.$transaction(async (tx) => {
@@ -36,14 +53,21 @@ export async function seedGlobalDefaults(client: Pick<PrismaClient, "$transactio
       });
     }
 
-    const patternRows = await tx.expansionPattern.findMany({ where: { project_id: null }, select: { pattern: true } });
-    const existingPatterns = new Set(patternRows.map((row) => row.pattern));
-    const missingPatterns = DEFAULT_PATTERNS.filter((pattern) => !existingPatterns.has(pattern));
+    const patternRows = await tx.expansionPattern.findMany({
+      where: { project_id: null },
+      select: { language_code: true, pattern: true },
+    });
+    // Chiave (lingua, pattern) come l'indice unico delle righe globali (migrazione 0046).
+    const keyOf = (languageCode: string, pattern: string) => JSON.stringify([languageCode, pattern]);
+    const existingPatterns = new Set(patternRows.map((row) => keyOf(row.language_code, row.pattern)));
+    const missingPatterns = Object.entries(DEFAULT_PATTERNS).flatMap(([languageCode, patterns]) =>
+      patterns
+        .filter((pattern) => !existingPatterns.has(keyOf(languageCode, pattern)))
+        .map((pattern) => ({ project_id: null, language_code: languageCode, pattern, enabled: true }))
+    );
 
     if (missingPatterns.length > 0) {
-      await tx.expansionPattern.createMany({
-        data: missingPatterns.map((pattern) => ({ project_id: null, pattern, enabled: true })),
-      });
+      await tx.expansionPattern.createMany({ data: missingPatterns });
     }
   });
 }

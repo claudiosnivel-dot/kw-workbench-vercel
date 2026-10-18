@@ -7,6 +7,8 @@
 // covers: AC-403-4
 // impacted-by: T-2401 (colonna selected_for_export eliminata con D-39: tolta dalle righe fotografate, nessun altro valore
 // cambia; lo snapshot perde solo le sue 948 righe)
+// impacted-by: T-3702 (le composizioni hanno una lingua e la ricerca usa solo quelle della sua: le stesse 8 righe
+// registrate con language_code it, la lingua del progetto, lasciano lo snapshot invariato)
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NoSeedsError } from "@/lib/modules/pipeline/errors";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
@@ -37,7 +39,7 @@ async function insertGlobalDefaults(): Promise<void> {
     data: DEFAULT_BRANDS.map((brand) => ({ project_id: null, brand, reason: "Global brand default" })),
   });
   await prisma.expansionPattern.createMany({
-    data: DEFAULT_PATTERNS.map((pattern) => ({ project_id: null, pattern, enabled: true })),
+    data: DEFAULT_PATTERNS.map((pattern) => ({ project_id: null, language_code: "it", pattern, enabled: true })),
   });
 }
 

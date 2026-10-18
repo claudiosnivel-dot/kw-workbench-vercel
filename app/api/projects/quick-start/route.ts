@@ -10,7 +10,7 @@ import { resolveDefaultTargeting } from "@/lib/modules/targeting";
 export const runtime = "nodejs";
 
 /**
- * Avvio rapido (T-2301): da un solo campo crea progetto, primo argomento e parola di partenza nel workspace attivo
+ * Avvio rapido (T-2301, T-3701): da un solo campo crea progetto, primo argomento e parole di partenza nel workspace attivo
  * della sessione (mai un workspaceId dal corpo, CWE-639) e avvia la ricerca. 201 con extraction started oppure il code
  * che ha impedito l'avvio, con jobId null: progetto e argomento restano creati.
  */
