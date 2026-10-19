@@ -119,6 +119,9 @@ export const API_ERROR_CODES = [
   "AI_UNAVAILABLE",
   "AI_INVALID_RESPONSE",
   "AI_MODEL_NOT_FREE",
+  // Modelli di riserva (T-3802, D-46).
+  "AI_BUSY",
+  "AI_DAILY_LIMIT",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

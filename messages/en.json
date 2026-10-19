@@ -398,7 +398,9 @@
     "AI_TIMEOUT": "The model did not answer in time. Try again shortly.",
     "AI_UNAVAILABLE": "The AI titles service cannot be reached. Try again shortly.",
     "AI_INVALID_RESPONSE": "The model gave an answer that cannot be used. Try again.",
-    "AI_MODEL_NOT_FREE": "The model must be free: an ID like author/model:free."
+    "AI_MODEL_NOT_FREE": "The model must be free: an ID like author/model:free.",
+    "AI_BUSY": "All the free models are busy: try again in a few minutes.",
+    "AI_DAILY_LIMIT": "Today's AI requests have run out: try again tomorrow."
   },
   "errorPages": {
     "error": {
@@ -685,12 +687,29 @@
     },
     "aiTitles": {
       "title": "AI titles",
-      "intro": "H1 and H2 suggestions written by a free model through OpenRouter, one plan page at a time. The key lives only in the server environment (OPENROUTER_API_KEY): here you choose whether the feature is on, the model and the limits.",
+      "intro": "H1 and H2 suggestions written by a free model through OpenRouter, one plan page at a time. The key lives only in the server environment (OPENROUTER_API_KEY): here you choose whether the feature is on, the models and the limits.",
       "enabled": "Feature for users",
       "on": "On",
       "off": "Off",
-      "model": "Model",
-      "modelHint": "Free models only (ID ending in :free)",
+      "models": "Models, first to try at the top",
+      "modelsHint": "Free models only (ID ending in :free), 1 to 8. If a model is busy or answers badly, the next one is tried.",
+      "up": "Up",
+      "down": "Down",
+      "remove": "Remove",
+      "addModel": "Add model",
+      "add": "Add",
+      "notFree": "Free models only: an ID ending in :free.",
+      "duplicate": "The model is already in the list.",
+      "full": "The list already has 8 models: remove one to add another.",
+      "status": {
+        "ok": "available",
+        "missing": "no longer in the catalog",
+        "unknown": "to be checked"
+      },
+      "catalogChecked": "Last check of the OpenRouter catalog: {date}",
+      "catalogNever": "OpenRouter catalog not checked yet",
+      "catalogNew": "Free models in the catalog that are not in the list yet",
+      "catalogNoNew": "All the free models in the catalog are already in the list.",
       "platformLimit": "Platform cap (suggestions in 24 hours)",
       "workspaceLimit": "Limit per workspace (suggestions in 24 hours)",
       "keyConfigured": "Key configured: {configured, select, yes {yes} other {no}}",
@@ -1736,7 +1755,8 @@
       "model": "Model: {model}",
       "use": "Use these headings",
       "discard": "Discard",
-      "rateLimited": "You have reached the suggestion limit: you can ask for another one from {time}."
+      "rateLimited": "You have reached the suggestion limit: you can ask for another one from {time}.",
+      "droppedH2": "{count, plural, one {One more proposed heading was not kept.} other {# more proposed headings were not kept.}}"
     },
     "regenerateDialog": {
       "title": "Regenerate the plan",

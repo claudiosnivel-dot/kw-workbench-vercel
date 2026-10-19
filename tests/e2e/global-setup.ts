@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
+import { DEFAULT_AI_MODELS } from "@/lib/ai/settings";
 import { prisma } from "@/lib/prisma";
 import { assertLocalTestDatabase } from "../helpers/db-guard";
 import { resetDatabase } from "../helpers/db";
@@ -28,8 +29,18 @@ function answerCompletion(body: string): string {
 }
 
 /**
+ * Catalogo del finto OpenRouter (T-3803), nel formato di GET /models: i modelli dell'elenco predefinito, gratuiti, e un
+ * modello gratuito nuovo da aggiungere; la card del root admin lo rilegge all'apertura.
+ */
+function answerModels(): string {
+  const free = { prompt: "0", completion: "0" };
+  const ids = [...DEFAULT_AI_MODELS, "e2e/modello-nuovo:free"];
+  return JSON.stringify({ data: ids.map((id) => ({ id, name: id, context_length: 32_768, pricing: free })) });
+}
+
+/**
  * Finto autocomplete nel processo di Playwright (formato del client firefox: [query, [suggerimenti]]), che fa anche da
- * finto OpenRouter (OPENROUTER_BASE_URL in playwright.config.ts).
+ * finto OpenRouter (OPENROUTER_BASE_URL in playwright.config.ts) con i completamenti e il catalogo dei modelli.
  */
 function startAutocompleteStub(): Promise<() => Promise<void>> {
   const server = createServer((request, response) => {
@@ -40,6 +51,11 @@ function startAutocompleteStub(): Promise<() => Promise<void>> {
         response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         response.end(answerCompletion(Buffer.concat(chunks).toString("utf8")));
       });
+      return;
+    }
+    if (request.method === "GET" && request.url === "/models") {
+      response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      response.end(answerModels());
       return;
     }
     const query = new URL(request.url ?? "/", "http://localhost").searchParams.get("q") ?? "";

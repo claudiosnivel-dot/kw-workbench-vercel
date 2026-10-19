@@ -635,12 +635,17 @@ function keywordView({ pageId: _pageId, ...keyword }: EditorState["keywords"][nu
 
 const isStringList = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string");
 
-/** Proposta salvata nella pagina (T-3601) → vista; un valore senza la forma attesa non si mostra. */
+const isCount = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0;
+
+/**
+ * Proposta salvata nella pagina (T-3601) → vista; un valore senza la forma attesa non si mostra. Una proposta salvata
+ * prima di T-3802 non ha droppedH2: vale 0.
+ */
 function toAiProposal(value: Prisma.JsonValue): StrategyAiProposal | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const { h1, h2, model, createdAt } = value;
+  const { h1, h2, droppedH2, model, createdAt } = value;
   if (typeof h1 !== "string" || !isStringList(h2) || typeof model !== "string" || typeof createdAt !== "string") return null;
-  return { h1, h2, model, createdAt };
+  return { h1, h2, droppedH2: isCount(droppedH2) ? droppedH2 : 0, model, createdAt };
 }
 
 /**

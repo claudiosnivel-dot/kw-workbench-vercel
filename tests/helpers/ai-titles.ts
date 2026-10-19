@@ -16,9 +16,13 @@ import { insertStrategy } from "./strategy";
 export type Session = Awaited<ReturnType<typeof createUserWithSession>>;
 export type PlanPage = { projectId: string; strategyId: string; pageId: string };
 
-/** Impostazioni dei titoli con l'AI salvate in app_settings (cifrata): funzione accesa salvo indicazione contraria. */
+/**
+ * Impostazioni dei titoli con l'AI salvate in app_settings (cifrata): funzione accesa e un solo modello salvo
+ * indicazione contraria.
+ */
+// impacted-by: T-3801 (elenco ordinato dei modelli al posto del modello unico)
 export async function saveAiSettings(settings: Partial<AiTitlesSettings> = {}): Promise<void> {
-  const value: AiTitlesSettings = { enabled: true, model: "autore/modello-prova:free", platformDailyLimit: 45, workspaceDailyLimit: 10, ...settings };
+  const value: AiTitlesSettings = { enabled: true, models: ["autore/modello-prova:free"], platformDailyLimit: 45, workspaceDailyLimit: 10, ...settings };
   await upsertSettingValue({ key: "AI_TITLES_SETTINGS", value: JSON.stringify(value) });
 }
 

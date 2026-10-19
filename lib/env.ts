@@ -630,7 +630,15 @@ export function getOpenRouterSettings(source: EnvSource = process.env): { apiKey
   if (!apiKey) {
     return null;
   }
-  return { apiKey, baseUrl: (present(source.OPENROUTER_BASE_URL)?.trim() ?? "https://openrouter.ai/api/v1").replace(/\/+$/, "") };
+  return { apiKey, baseUrl: getOpenRouterBaseUrl(source) };
+}
+
+/**
+ * Base dell'API di OpenRouter, senza barra finale: quella fissa di OpenRouter, salvo OPENROUTER_BASE_URL degli E2E. Serve
+ * anche al catalogo pubblico dei modelli (T-3803), che si legge senza chiave; mai un indirizzo preso da una richiesta.
+ */
+export function getOpenRouterBaseUrl(source: EnvSource = process.env): string {
+  return (present(source.OPENROUTER_BASE_URL)?.trim() ?? "https://openrouter.ai/api/v1").replace(/\/+$/, "");
 }
 
 /** Segreto HMAC delle chiamate interne dei job (T-1203); assente fuori produzione se non configurato. */

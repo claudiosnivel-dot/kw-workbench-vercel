@@ -99,8 +99,11 @@ export type StrategyKeywordView = {
   isQuestion: boolean;
 };
 
-/** Proposta dei titoli con l'AI conservata nella pagina (T-3601, D-43): createdAt in ISO 8601. */
-export type StrategyAiProposal = { h1: string; h2: string[]; model: string; createdAt: string };
+/**
+ * Proposta dei titoli con l'AI conservata nella pagina (T-3601, D-43): createdAt in ISO 8601, droppedH2 gli H2 validi
+ * tenuti fuori oltre il massimo della pagina (T-3802, D-48), model il modello dell'elenco che ha risposto.
+ */
+export type StrategyAiProposal = { h1: string; h2: string[]; droppedH2: number; model: string; createdAt: string };
 
 /** Pagina di una strategia salvata con le sue keyword (principale per prima, poi le secondarie per priorità). */
 export type StrategyPageView = {

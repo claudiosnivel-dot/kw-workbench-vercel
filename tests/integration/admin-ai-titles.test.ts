@@ -13,7 +13,7 @@ import { callRoute } from "../helpers/http";
 type SettingsBody = {
   data: {
     enabled: boolean;
-    model: string;
+    models: string[];
     platformDailyLimit: number;
     workspaceDailyLimit: number;
     keyConfigured: boolean;
@@ -51,6 +51,7 @@ async function rootAdmin() {
 
 describe("impostazioni dei titoli con l'AI", () => {
   // covers: AC-3501-1
+  // impacted-by: T-3801 (elenco dei modelli al posto del modello unico: AC-3501-1 emendato)
   it("senza impostazioni salvate restituisce i default spenti, no-store, e la chiave solo come sì o no", async () => {
     const root = await rootAdmin();
 
@@ -67,17 +68,19 @@ describe("impostazioni dei titoli con l'AI", () => {
       keyConfigured: true,
       used24h: 0,
     });
-    expect(body.data.model.endsWith(":free")).toBe(true);
+    expect(body.data.models.length).toBeGreaterThanOrEqual(5);
+    expect(body.data.models.every((model) => model.endsWith(":free"))).toBe(true);
     expect(text).not.toContain("sk-or-test-3501");
   });
 
   // covers: AC-3501-2
+  // impacted-by: T-3801 (la PATCH riceve models, l'elenco ordinato: AC-3501-2 emendato)
   it("salva il modello gratuito e i limiti, rifiuta un modello a pagamento e un limite fuori intervallo, registra ai.update", async () => {
     const root = await rootAdmin();
     const before = ((await (await read(root.cookie)).json()) as SettingsBody).data;
 
-    const saved = await update(root.cookie, { enabled: true, model: "autore/modello-prova:free", platformDailyLimit: 40 });
-    const paid = await update(root.cookie, { model: "autore/modello-a-pagamento" });
+    const saved = await update(root.cookie, { enabled: true, models: ["autore/modello-prova:free"], platformDailyLimit: 40 });
+    const paid = await update(root.cookie, { models: ["autore/modello-a-pagamento"] });
     const outOfRange = await update(root.cookie, { workspaceDailyLimit: 0 });
 
     expect([saved.status, paid.status, outOfRange.status]).toEqual([200, 400, 400]);
@@ -85,14 +88,14 @@ describe("impostazioni dei titoli con l'AI", () => {
     expect(((await outOfRange.json()) as SettingsBody).code).toBe("VALIDATION_ERROR");
 
     const after = ((await (await read(root.cookie)).json()) as SettingsBody).data;
-    expect(after).toMatchObject({ enabled: true, model: "autore/modello-prova:free", platformDailyLimit: 40, workspaceDailyLimit: 10 });
+    expect(after).toMatchObject({ enabled: true, models: ["autore/modello-prova:free"], platformDailyLimit: 40, workspaceDailyLimit: 10 });
 
     const rows = await prisma.adminAuditLog.findMany({ where: { action: "ai.update" } });
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ actor_user_id: root.user.id, target_type: "ai" });
     expect(rows[0].metadata).toEqual({
       enabled: { before: false, after: true },
-      model: { before: before.model, after: "autore/modello-prova:free" },
+      models: { before: before.models, after: ["autore/modello-prova:free"] },
       platformDailyLimit: { before: 45, after: 40 },
     });
   });

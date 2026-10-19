@@ -63,6 +63,7 @@ describe("richiesta al modello", () => {
 
 describe("controllo della risposta", () => {
   // covers: AC-3502-2
+  // impacted-by: T-3802 (D-48: la risposta controllata dice anche quanti H2 validi oltre il massimo sono rimasti fuori)
   it("estrae il JSON dal blocco di codice, ripulisce i titoli e toglie i doppioni", () => {
     const content = [
       "Ecco i titoli:",
@@ -74,6 +75,7 @@ describe("controllo della risposta", () => {
     expect(parseTitlesResponse(content, spoke, "it")).toEqual({
       h1: "Scarpe running donna: come sceglierle",
       h2: ["Ammortizzazione", "Taglie"],
+      droppedH2: 0,
     });
   });
 

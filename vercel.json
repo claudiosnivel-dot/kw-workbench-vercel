@@ -3,5 +3,8 @@
   "framework": "nextjs",
   "buildCommand": "npm run vercel-build",
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
-  "crons": [{ "path": "/api/cron/reap-jobs", "schedule": "0 4 * * *" }]
+  "crons": [
+    { "path": "/api/cron/reap-jobs", "schedule": "0 4 * * *" },
+    { "path": "/api/cron/ai-catalog", "schedule": "30 4 * * *" }
+  ]
 }
