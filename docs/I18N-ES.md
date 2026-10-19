@@ -11,14 +11,21 @@ dell'italiano. Guida e glossario sono stati approvati dall'utente con il modulo 
   `es-419`. Una chiave non ancora tradotta si legge in inglese, mai come chiave del catalogo.
 - Namespace tradotti con il modulo 47: `common`, `metadata`, `nav`, `projects`, `jobs`, `results`, `project`,
   `nextStep`, `dashboard`, `keywords`, `plan`, `errors`, `errorPages`. Con il modulo 48: `strategy`, `export`,
-  `exportDialog`, `settings`, `integrations` (T-4801) e `auth`, `account`, `billing`, `footer` (T-4802). Gli altri
-  (`workspace`, `admin`, `emails`, `marketing`, `pricing`, `legal`, `contact`) arrivano con il modulo 49.
+  `exportDialog`, `settings`, `integrations` (T-4801) e `auth`, `account`, `billing`, `footer` (T-4802). Con il
+  modulo 49 (T-4901) gli ultimi: `workspace`, `admin`, `emails`, `marketing`, `pricing`, `legal`, `contact`. Ogni
+  namespace dell'italiano ha ora la sua versione spagnola; l'inglese resta il livello di ripiego per le chiavi future.
 - `tests/unit/i18n-catalog-parity.test.ts` controlla chiavi, valori vuoti, argomenti ICU (anche plural e select) e le
-  parole vietate, anche namespace per namespace sul catalogo es-419 letto a livelli; `tests/unit/i18n-es-strings.test.ts`
+  parole vietate su tutti i namespace, anche sul catalogo es-419 letto a livelli; `tests/unit/i18n-es-strings.test.ts`
   controlla alcuni testi del glossario nelle due varianti; `tests/integration/export-es.test.ts` scarica gli export dei
-  risultati e della strategia con un utente in es-ES ed es-419.
-- Le due lingue restano fuori dai selettori, dalle preferenze salvabili e dal riconoscimento del browser
-  (`OFFERED_LOCALES` in `lib/i18n/locale.ts`) finché il modulo 49 non completa i cataloghi (T-4902).
+  risultati e della strategia con un utente in es-ES ed es-419; `tests/integration/email-es.test.ts` legge l'email di
+  recupero della password di un utente es-419; `tests/e2e/i18n-es.spec.ts` apre home, keyword, piano e impostazioni del
+  progetto con utenti es-ES ed es-419 e cerca chiavi del catalogo e testi inglesi di ripiego tra le righe visibili.
+- Dal modulo 49 (T-4902) le due lingue sono offerte (`OFFERED_LOCALES` in `lib/i18n/locale.ts`): selettori della
+  lingua, preferenze dell'account, cookie, riconoscimento dal browser (es ed es-ES → es-ES; es-419, es-US e i paesi
+  d'America Latina → es-419) e sito pubblico su `/es` (es-ES) e `/es-419`, con gli hreflang fra le quattro lingue e
+  x-default verso la versione inglese, anche nella sitemap.
+- Testi legali: `content/legal/es/` (privacy, termini e cookie), comuni a es-ES ed es-419, sono segnaposto come quelli
+  italiani e inglesi finché D-15 non fornisce i testi definitivi; `npm run legal:check` li controlla come gli altri.
 
 ## Guida di stile
 
@@ -102,3 +109,33 @@ Termini approvati con il modulo 47; dove le varianti coincidono la forma vale pe
 | Supporto | entrambe | Soporte | come `nav.support` |
 | campi OAuth di Google | entrambe | ID de cliente, Secreto de cliente, URI de redirección | nomi della console di Google Cloud in spagnolo |
 | Free (piano) | entrambe | Free | nome del piano, come in italiano |
+| saluto delle email | entrambe | «Hola, {name}:» e testo in maiuscola | norma delle lettere in spagnolo (due punti dopo il saluto); in italiano il testo segue la virgola in minuscola |
+| workspace › ruoli | entrambe | Propietario, Administrador, Miembro; Rol | come Google Workspace e gli strumenti di progetto in spagnolo |
+| Sottoscrittore (ruolo della piattaforma) | entrambe | Suscriptor | ruolo di chi usa l'app senza amministrarla |
+| root admin | entrambe | administrador principal | come gli errori del modulo 47 (`FORBIDDEN_FIELD`, `ROOT_ADMIN`) |
+| Gestisci / Gestione utenti | es-ES / es-419 | Gestiona, Gestión de usuarios / Administra, Administración de usuarios | come «Gestionar / Administrar» della fatturazione |
+| controllo (catalogo dei modelli) | es-ES / es-419 | comprobación, por comprobar / verificación, por verificar | come la lista de comprobación / verificación |
+| subito | es-ES / es-419 | enseguida / de inmediato | uso di ciascun mercato |
+| Durata media | es-ES / es-419 | Duración media / Duración promedio | come «medio / promedio» degli export |
+| Fatto (fine di una finestra) | entrambe | Listo | parola dei pulsanti di chiusura in spagnolo |
+| job (indicatori dell'amministrazione) | entrambe | trabajo | «búsqueda» vale per la ricerca dell'utente; tra i job ci sono anche i volumi |
+| Titoli con l'AI | entrambe | Títulos con IA | come `plan.ai` («Mejorar los títulos con IA») |
+| pagine legali | entrambe | Política de privacidad, Términos del servicio, Política de cookies | titoli abituali dei siti in spagnolo; «Términos del servicio» come il footer |
+| percorsi del sito pubblico | es-ES / es-419 | /es / /es-419 | scelta approvata con il modulo 49; x-default verso /en |
+| og:locale | es-ES / es-419 | es_ES / es_LA | og:locale vuole lingua_TERRITORIO: es_LA è il codice dello spagnolo d'America Latina usato da Facebook |
+| titolo della landing | entrambe | «De unas pocas semillas a palabras clave listas para exportar» | evita «palabras clave semilla a palabras clave listas», ripetitivo |
+| Inizia dal tuo primo progetto | es-ES / es-419 | Empieza por / Empieza con | reggenza abituale in ciascun mercato, come «empiezan por / con» |
+| ninguno terminado (Job falliti, nessun job concluso) | entrambe | ninguno terminado | passata sulle schermate: «ningún trabajo terminado» andava su due righe nel riquadro grande della Panoramica |
+| occhiello della landing | entrambe | Investigación de palabras clave | passata sulle schermate: con «para SEO» a 390 px l'ultima parola andava da sola sulla seconda riga |
+
+## Passata sulle schermate (modulo 49)
+
+Fotografie del 2026-10-19 con utenti es-ES ed es-419, a 1280 px e a 390 px: home, keyword di un tema, piano, impostazioni
+del progetto, preferenze dell'account, membri del workspace, Panoramica, Utenti e Impostazioni dell'amministrazione,
+landing, prezzi, contatti e privacy. Correzioni di lunghezza nel registro qui sopra (occhiello della landing e
+indicatore dei job della Panoramica). Note senza correzione: nella barra laterale del progetto «Palabras clave» va su due
+righe accanto a «5 conservadas» (come «Plan de contenidos», si legge bene); i nomi delle lingue delle ricerche
+(«Búsquedas en Español (es)») vengono da Intl.DisplayNames con la maiuscola iniziale degli elenchi
+(`lib/client/use-locale-options.ts`), non dal catalogo: in spagnolo i nomi delle lingue vanno in minuscolo nel testo
+corrente, da decidere con l'utente se cambiarli. Nessuna rilettura
+madrelingua (facoltativa, D-47).

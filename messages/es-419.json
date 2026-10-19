@@ -85,6 +85,57 @@
       "lightRemoved": "Quitaste el logotipo claro. Haz clic en «Guardar la imagen de marca» para confirmarlo."
     }
   },
+  "workspace": {
+    "invites": {
+      "expires": "Vence",
+      "expired": "Vencida",
+      "emailSent": "También le enviamos un correo electrónico."
+    },
+    "accept": {
+      "missingToken": "El enlace de la invitación no está completo: vuelve a abrir el enlace que recibiste."
+    }
+  },
+  "admin": {
+    "sections": {
+      "intro": "Administra los usuarios y la plataforma. Los datos de los proyectos de los usuarios siempre son privados.",
+      "settings": "Configuración"
+    },
+    "manage": {
+      "title": "Administración de usuarios",
+      "empty": "No se encontró ningún usuario con los filtros actuales."
+    },
+    "alerts": {
+      "aiDailyLimit": "Las solicitudes gratuitas de la cuenta se agotaron al menos una vez en las últimas 24 horas",
+      "dataForSeo": "DataForSEO rechazó {count, plural, one {# solicitud} other {# solicitudes}} en las últimas 24 horas"
+    },
+    "launch": {
+      "intro": "Mientras el lanzamiento está en pausa, los usuarios no tienen límites, no se compra nada y el registro público está cerrado: tú creas las cuentas desde la administración de usuarios, ya verificadas, o nacen de las invitaciones. El lanzamiento solo se activa con la lista de verificación completa y se puede volver a poner en pausa.",
+      "checklist": "Lista de verificación"
+    },
+    "aiTitles": {
+      "addModel": "Agregar modelo",
+      "add": "Agregar",
+      "full": "La lista ya tiene 8 modelos: quita uno para agregar otro.",
+      "status": {
+        "unknown": "por verificar"
+      },
+      "catalogChecked": "Última verificación del catálogo de OpenRouter: {date}",
+      "catalogNever": "Catálogo de OpenRouter aún sin verificar",
+      "usage": {
+        "columns": {
+          "avgOkMs": "Duración promedio"
+        }
+      }
+    },
+    "user": {
+      "actions": {
+        "intro": "Los cambios se aplican de inmediato y quedan en el registro de las acciones de administración."
+      }
+    },
+    "workspaces": {
+      "empty": "No se encontró ningún espacio de trabajo."
+    }
+  },
   "integrations": {
     "sheetsConfig": {
       "overrideRemoved": "Se quitó el valor guardado de {field}: se usa la variable de entorno, si existe.",
@@ -102,6 +153,38 @@
       }
     }
   },
+  "emails": {
+    "footer": "Recibiste este correo electrónico por una acción en tu cuenta. Si no fuiste tú, puedes ignorarlo.",
+    "verify": {
+      "expiry": "El enlace vence en 24 horas."
+    },
+    "passwordReset": {
+      "intro": "Recibimos una solicitud para restablecer la contraseña de tu cuenta.",
+      "expiry": "El enlace vence en 1 hora y solo se puede usar una vez."
+    },
+    "emailChange": {
+      "intro": "Pediste usar esta dirección para tu cuenta. Confírmala para completar el cambio.",
+      "expiry": "El enlace vence en 24 horas y solo se puede usar una vez. Mientras no lo abras, la cuenta sigue con la dirección anterior."
+    },
+    "emailChanged": {
+      "subject": "El correo electrónico de tu cuenta cambió",
+      "intro": "La dirección con la que inicias sesión en tu cuenta cambió. A partir de ahora, los correos de la cuenta llegan a la nueva dirección.",
+      "notYou": "Si no pediste tú el cambio, escribe de inmediato al soporte desde la página Contacto del sitio.",
+      "footer": "Recibiste este correo electrónico porque la dirección de tu cuenta cambió."
+    },
+    "accountExists": {
+      "intro": "Alguien intentó registrarse con esta dirección de correo electrónico, que ya tiene una cuenta. Si fuiste tú, inicia sesión o recupera la contraseña."
+    },
+    "workspaceInvite": {
+      "intro": "{inviter} te invitó a colaborar en el espacio de trabajo {workspace}.",
+      "expiry": "La invitación vence en 7 días."
+    },
+    "adminPasswordReset": {
+      "subject": "Se restableció tu contraseña",
+      "intro": "Un administrador restableció la contraseña de tu cuenta. Se cerraron las sesiones abiertas: la próxima vez que inicies sesión con la contraseña recibida, tendrás que elegir una nueva.",
+      "notYou": "Si no esperabas este cambio, comunícate con el administrador."
+    }
+  },
   "billing": {
     "statuses": {
       "past_due": "pago vencido"
@@ -115,6 +198,14 @@
     "limit": {
       "owner": "Alcanzaste un límite del plan del espacio de trabajo.",
       "member": "Alcanzaste un límite del plan del espacio de trabajo: pídele al propietario que cambie a un plan superior."
+    }
+  },
+  "marketing": {
+    "landing": {
+      "steps": {
+        "seeds": "Agrega las palabras clave semilla en un tema e inicia la búsqueda."
+      },
+      "closing": "Empieza con tu primer proyecto."
     }
   },
   "account": {

@@ -16,4 +16,4 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
-console.log(`legal:check: 6 documenti legali pubblicabili in ${path.relative(process.cwd(), dir) || "."}`);
+console.log(`legal:check: documenti legali pubblicabili in ${path.relative(process.cwd(), dir) || "."}`);

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { SubscriptionStatus } from "@/lib/generated/prisma/enums";
+import { SUPPORTED_LOCALES } from "@/lib/i18n/locale";
 import { logger } from "@/lib/observability/logger";
 
 /**
@@ -51,7 +52,8 @@ const planSchema = z.strictObject({
   nameKey: z.string().min(1),
   public: z.boolean(),
   order: z.number().int(),
-  displayPrice: z.partialRecord(z.enum(["it", "en"]), intervalPrices),
+  // Prezzo visualizzato per lingua della pagina prezzi (T-1802), anche es-ES ed es-419 da T-4902.
+  displayPrice: z.partialRecord(z.enum(SUPPORTED_LOCALES), intervalPrices),
   priceEnv: z.partialRecord(z.enum(BILLING_INTERVALS), priceEnvName),
   limits: limitsSchema,
 });
