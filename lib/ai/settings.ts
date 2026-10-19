@@ -10,27 +10,29 @@ import {
   modelStatuses,
   sameModel,
 } from "@/lib/ai/models";
+import { countCountedRequests, readModelUsage } from "@/lib/ai/requests";
+import { AI_LIMIT_MAX, type AiUsage } from "@/lib/ai/usage";
 import { getOpenRouterSettings } from "@/lib/env";
 import { AppError, ValidationError } from "@/lib/http/errors";
 import { getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
-import { rateLimitRules } from "@/lib/security/rate-limit-config";
 
 /**
  * Impostazioni dei titoli con l'AI (T-3501, D-42), cifrate in app_settings come le altre: funzione accesa o spenta,
- * elenco ordinato dei modelli gratuiti di OpenRouter (T-3801, D-46), tetto della piattaforma e limite per workspace
- * nelle ultime 24 ore. Le cambia solo il root admin (verificato dalla rotta); la chiave resta nell'ambiente del server e
- * qui si dice solo se c'è.
+ * elenco ordinato dei modelli gratuiti di OpenRouter (T-3801, D-46), tetto della piattaforma in richieste (T-3901,
+ * condiviso con gli articoli) e limite per workspace in proposte, nelle ultime 24 ore. Le cambia solo il root admin
+ * (verificato dalla rotta); la chiave resta nell'ambiente del server e qui si dice solo se c'è.
  */
 
-export type AiTitlesSettings = { enabled: boolean; models: string[]; platformDailyLimit: number; workspaceDailyLimit: number };
+export type AiTitlesSettings = { enabled: boolean; models: string[]; platformDailyRequests: number; workspaceDailyLimit: number };
 type AiTitlesView = AiTitlesSettings & {
   keyConfigured: boolean;
-  used24h: number;
   /** Catalogo di OpenRouter all'ultimo controllo riuscito (T-3803); null se mai letto. */
   catalog: ModelCatalog | null;
   statuses: Record<string, ModelStatus>;
   addable: CatalogModel[];
+  /** Uso dei modelli e richieste delle ultime 24 ore contate dal tetto (T-3902). */
+  usage: AiUsage;
 };
 
 const SETTINGS_KEY = "AI_TITLES_SETTINGS";
@@ -49,24 +51,21 @@ export const DEFAULT_AI_MODELS: readonly string[] = [
 ];
 
 /**
- * Default: funzione spenta, l'elenco predefinito e i tetti scelti per l'account gratuito (D-42), gli stessi max delle
- * regole aiTitlesPlatform e aiTitlesWorkspace del rate limit.
+ * Default: funzione spenta, l'elenco predefinito, 900 richieste al giorno per la piattaforma (circa le 1000 dei modelli
+ * gratuiti di un account con 10 USD di crediti, T-3901) e 10 proposte per workspace (D-42), lo stesso max della regola
+ * aiTitlesWorkspace del rate limit.
  */
 const DEFAULTS: AiTitlesSettings = {
   enabled: false,
   models: [...DEFAULT_AI_MODELS],
-  platformDailyLimit: 45,
+  platformDailyRequests: 900,
   workspaceDailyLimit: 10,
 };
 
-const LIMIT_FIELDS = ["platformDailyLimit", "workspaceDailyLimit"] as const;
-const MAX_LIMIT = 1000;
+const LIMIT_FIELDS = Object.keys(AI_LIMIT_MAX) as (keyof typeof AI_LIMIT_MAX)[];
 
-/** Chiave del rate limit della piattaforma (T-3601): i suoi tentativi sono le proposte partite verso OpenRouter. */
-export const AI_TITLES_PLATFORM_KEY = "ai-titles:platform";
-
-function isLimit(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= MAX_LIMIT;
+function isLimit(value: unknown, max: number): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= max;
 }
 
 const hasDuplicates = (models: string[]) => models.some((id, index) => models.findIndex((other) => sameModel(other, id)) !== index);
@@ -82,7 +81,8 @@ const defaults = (): AiTitlesSettings => ({ ...DEFAULTS, models: [...DEFAULTS.mo
 
 /**
  * Valore salvato → impostazioni: assente o illeggibile → i default, un campo non valido → il suo default (CWE-1188). Un
- * valore salvato prima di T-3801, con il solo model, si legge come l'elenco [model].
+ * valore salvato prima di T-3801, con il solo model, si legge come l'elenco [model]; uno di prima di T-3901, con il solo
+ * platformDailyLimit in proposte, ha il tetto in richieste predefinito.
  */
 function parseSettings(raw: string | undefined): AiTitlesSettings {
   let value: Record<string, unknown> = {};
@@ -98,8 +98,12 @@ function parseSettings(raw: string | undefined): AiTitlesSettings {
   return {
     enabled: value.enabled === true,
     models: storedModels(value.models) ?? legacyModel ?? defaults().models,
-    platformDailyLimit: isLimit(value.platformDailyLimit) ? value.platformDailyLimit : DEFAULTS.platformDailyLimit,
-    workspaceDailyLimit: isLimit(value.workspaceDailyLimit) ? value.workspaceDailyLimit : DEFAULTS.workspaceDailyLimit,
+    platformDailyRequests: isLimit(value.platformDailyRequests, AI_LIMIT_MAX.platformDailyRequests)
+      ? value.platformDailyRequests
+      : DEFAULTS.platformDailyRequests,
+    workspaceDailyLimit: isLimit(value.workspaceDailyLimit, AI_LIMIT_MAX.workspaceDailyLimit)
+      ? value.workspaceDailyLimit
+      : DEFAULTS.workspaceDailyLimit,
   };
 }
 
@@ -113,25 +117,26 @@ export async function isAiTitlesAvailable(): Promise<boolean> {
   return getOpenRouterSettings() !== null && (await getAiTitlesSettings()).enabled;
 }
 
-/** Proposte delle ultime 24 ore: i tentativi della chiave della piattaforma ancora dentro la finestra della regola. */
-async function countUsedInWindow(now: Date): Promise<number> {
-  const since = new Date(now.getTime() - rateLimitRules().aiTitlesPlatform.windowSeconds * 1000);
-  return prisma.rateLimitHit.count({ where: { key: AI_TITLES_PLATFORM_KEY, created_at: { gt: since } } });
-}
-
 /**
  * Impostazioni per la card del root admin: la chiave solo come sì o no, mai il valore (CWE-312); stato di ogni modello
- * sul catalogo salvato e modelli gratuiti del catalogo non ancora nell'elenco (T-3803).
+ * sul catalogo salvato e modelli gratuiti del catalogo non ancora nell'elenco (T-3803); uso dei modelli e richieste
+ * delle ultime 24 ore contate dal tetto (T-3902).
  */
 export async function getAiTitlesView(): Promise<AiTitlesView> {
-  const [settings, used24h, catalog] = await Promise.all([getAiTitlesSettings(), countUsedInWindow(new Date()), readModelCatalog()]);
+  const now = new Date();
+  const [settings, catalog, models, requests24h] = await Promise.all([
+    getAiTitlesSettings(),
+    readModelCatalog(),
+    readModelUsage(now),
+    countCountedRequests(now),
+  ]);
   return {
     ...settings,
     keyConfigured: getOpenRouterSettings() !== null,
-    used24h,
     catalog,
     statuses: modelStatuses(settings.models, catalog),
     addable: addableModels(settings.models, catalog),
+    usage: { models, requests24h, limit: settings.platformDailyRequests },
   };
 }
 
@@ -156,7 +161,10 @@ function parseModels(value: unknown): string[] {
   return models;
 }
 
-/** Corpo della PATCH: solo i campi presenti, validati; model, il campo di prima di T-3801, non è più accettato. */
+/**
+ * Corpo della PATCH: solo i campi presenti, validati; model e platformDailyLimit, i campi di prima di T-3801 e di
+ * T-3901, non sono più accettati.
+ */
 function parsePatch(body: unknown): Partial<AiTitlesSettings> {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw new ValidationError("Il corpo deve essere un oggetto");
@@ -164,6 +172,9 @@ function parsePatch(body: unknown): Partial<AiTitlesSettings> {
   const input = body as Record<string, unknown>;
   if (input.model !== undefined) {
     throw new ValidationError("model non è più accettato: usa models, l'elenco ordinato dei modelli");
+  }
+  if (input.platformDailyLimit !== undefined) {
+    throw new ValidationError("platformDailyLimit non è più accettato: usa platformDailyRequests, il tetto in richieste");
   }
   const patch: Partial<AiTitlesSettings> = {};
   if (input.enabled !== undefined) {
@@ -178,8 +189,8 @@ function parsePatch(body: unknown): Partial<AiTitlesSettings> {
   for (const field of LIMIT_FIELDS) {
     const limit = input[field];
     if (limit !== undefined) {
-      if (!isLimit(limit)) {
-        throw new ValidationError(`${field} deve essere un intero tra 1 e ${MAX_LIMIT}`);
+      if (!isLimit(limit, AI_LIMIT_MAX[field])) {
+        throw new ValidationError(`${field} deve essere un intero tra 1 e ${AI_LIMIT_MAX[field]}`);
       }
       patch[field] = limit;
     }

@@ -79,7 +79,8 @@ prima e dopo (per l'elenco `models` anche quando cambia solo l'ordine).
   dei completamenti porta la lettura al finto OpenRouter.
 - **Quando**: ogni notte alle 04:30 UTC con il cron `/api/cron/ai-catalog` (`vercel.json`, `CRON_SECRET` come
   Authorization Bearer, come `/api/cron/reap-jobs`; sul piano Hobby l'ora può slittare fino a 59 minuti) e all'apertura
-  della card se il catalogo non è mai stato letto o ha più di un'ora.
+  della card se il catalogo non è mai stato letto o ha più di un'ora. Lo stesso cron, prima della lettura, elimina le
+  righe del registro delle richieste più vecchie di 30 giorni (`prunedRequests` nella risposta).
 - **Stato dei modelli**: nella card, accanto a ogni modello, «disponibile» (nel catalogo e gratuito), «non più nel
   catalogo» (assente o non più gratuito) o «da verificare» (catalogo mai letto), con la data dell'ultimo controllo e i
   modelli gratuiti del catalogo non ancora nell'elenco, ognuno con «Aggiungi». La proposta salta i modelli «non più nel
@@ -91,20 +92,40 @@ prima e dopo (per l'elenco `models` anche quando cambia solo l'ordine).
 - **OpenRouter, piano gratuito** (pagina <https://openrouter.ai/docs/api-reference/limits>, da ricontrollare: i
   valori cambiano): per i modelli `:free` circa 20 richieste al minuto e 50 richieste al giorno per l'account senza
   crediti comprati (1000 al giorno dopo un acquisto di almeno 10 USD di crediti).
-- **Tetto della piattaforma** (default 45, da 1 a 1000): proposte di tutta l'app nelle ultime 24 ore, sotto le 50
-  giornaliere dell'account gratuito. Con i crediti comprati si può alzare fino a 1000 dalla card, sempre con modelli
-  `:free`.
-- **Limite per workspace** (default 10, da 1 a 1000): proposte di un workspace nelle ultime 24 ore, così un solo
-  workspace non esaurisce il tetto della piattaforma.
-- **Root admin** (D-43): escluso da entrambi i limiti; le sue proposte non entrano nel conteggio della card. Può quindi
-  esaurire da solo le richieste giornaliere dell'account gratuito di OpenRouter: gli altri ricevono allora
-  `AI_DAILY_LIMIT` fino al giorno dopo (le richieste gratuite si azzerano alla mezzanotte UTC).
-- I modelli di riserva non consumano altre proposte: i limiti contano le proposte, non i modelli provati. Le richieste
-  giornaliere di OpenRouter contano invece ogni modello provato.
-- Le due finestre scorrono (le ultime 24 ore, non il giorno di calendario); ogni richiesta che parte verso OpenRouter
-  resta contata anche se poi fallisce. Si controlla prima il limite del workspace e poi il tetto della piattaforma: una
-  richiesta fermata dal tetto resta contata nel limite del suo workspace. La card mostra «Proposte nelle ultime 24 ore:
-  N su M».
+- **Tetto della piattaforma** (T-3901, default 900, da 1 a 5000): **richieste** a OpenRouter di tutta l'app nelle
+  ultime 24 ore, cioè le righe del registro `ai_requests` (sotto), una per ogni modello provato, per i titoli e, con i
+  moduli 40-46, per gli articoli. Il default sta sotto le circa 1000 richieste al giorno di un account con 10 USD di
+  crediti comprati; con l'account senza crediti (50 al giorno) va abbassato dalla card. Un valore salvato prima del
+  modulo 39, con il vecchio tetto in proposte (`platformDailyLimit`), vale il default; la PATCH non accetta più
+  `platformDailyLimit`.
+- **Limite per workspace** (default 10, da 1 a 1000): **proposte** di un workspace nelle ultime 24 ore, così un solo
+  workspace non esaurisce il tetto della piattaforma; una proposta conta una volta sola anche se prova più modelli.
+- **Root admin** (D-43): escluso da entrambi i limiti; le sue richieste stanno nel registro (segnate `by_root_admin`)
+  ma non contano per il tetto né per «Richieste nelle ultime 24 ore» della card. Può quindi esaurire da solo le
+  richieste giornaliere dell'account di OpenRouter: gli altri ricevono allora `AI_DAILY_LIMIT` fino al giorno dopo (le
+  richieste gratuite si azzerano alla mezzanotte UTC) e la Panoramica mostra l'avviso del limite giornaliero.
+- Le due finestre scorrono (le ultime 24 ore, non il giorno di calendario). Si controlla prima il limite del workspace
+  e poi il tetto della piattaforma: una proposta fermata dal tetto resta contata nel limite del suo workspace, e il
+  tetto risponde 429 `RATE_LIMITED` con i secondi finché escono dalla finestra abbastanza righe. Il controllo del
+  tetto non prenota: due proposte nello stesso istante possono superarlo di qualche richiesta. La card mostra
+  «Richieste nelle ultime 24 ore: N su M».
+
+## Registro delle richieste e uso dei modelli
+
+- **Registro** (T-3901, tabella `ai_requests`, migrazione `0047_ai_requests`): `requestWithFallback` scrive una riga
+  per ogni tentativo verso un modello appena chiuso, con funzione (`titles` o `article`), modello, esito (`ok`,
+  `provider_busy`, `account_daily_limit`, `account_rate_limit`, `unavailable`, `timeout`, `invalid_response`, `auth`),
+  status HTTP (null senza risposta), durata della chiamata, workspace del progetto e se è il root admin. Nessuna
+  colonna per testi, keyword o messaggi del fornitore. Una scrittura non riuscita non ferma la proposta e lascia nel log
+  `ai_request_record_failed`. RLS abilitata senza policy: la legge solo il server. Conservazione: 30 giorni (cron del
+  catalogo).
+- **Uso dei modelli** (T-3902): nella card la tabella «Uso dei modelli», una per le ultime 24 ore e una per gli ultimi
+  7 giorni, con ogni modello che ha righe nella settimana (anche del root admin e anche se tolto dall'elenco):
+  richieste, riuscite, fornitore occupato, limite giornaliero, altri esiti e durata media delle riuscite.
+- **Avvisi in Panoramica** (T-3902, solo per il root admin): «Le richieste gratuite dell'account sono finite almeno una
+  volta nelle ultime 24 ore» se c'è una riga `account_daily_limit` nelle ultime 24 ore, e «Meno di 5 modelli
+  disponibili per l'AI» se i modelli dell'elenco «disponibili» o «da verificare» sono meno di 5; ogni avviso porta alla
+  card. Nella stessa Panoramica l'avviso delle richieste rifiutate da DataForSEO (T-3903, `docs/METRICS-PROVIDERS.md`).
 
 ## Cosa parte verso il modello
 

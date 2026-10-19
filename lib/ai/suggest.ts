@@ -2,7 +2,8 @@ import { readModelCatalog } from "@/lib/ai/catalog";
 import { AiTitlesError } from "@/lib/ai/errors";
 import { modelStatus } from "@/lib/ai/models";
 import { type Attempt, requestWithFallback } from "@/lib/ai/openrouter";
-import { AI_TITLES_PLATFORM_KEY, type AiTitlesSettings, getAiTitlesSettings } from "@/lib/ai/settings";
+import { enforcePlatformRequestCap } from "@/lib/ai/requests";
+import { type AiTitlesSettings, getAiTitlesSettings } from "@/lib/ai/settings";
 import { buildTitlesRequest } from "@/lib/ai/titles-prompt";
 import { parseTitlesResponse } from "@/lib/ai/titles-response";
 import { requireProjectAccess } from "@/lib/authz/workspace";
@@ -20,30 +21,30 @@ const DEADLINE_MS = 25_000;
 type Actor = { id: string; isRootAdmin: boolean };
 
 /**
- * Limite del workspace, poi tetto della piattaforma, entrambi nelle ultime 24 ore con il max delle impostazioni del root
- * admin (T-3601): il primo che blocca risponde 429 RATE_LIMITED con Retry-After. Ogni tentativo ammesso resta contato
- * anche se la chiamata poi fallisce. Il root admin è escluso da entrambi e non entra nelle proposte contate (D-43).
+ * Limite del workspace in proposte (T-3601), poi tetto della piattaforma in richieste a OpenRouter (T-3901), entrambi
+ * nelle ultime 24 ore con il max delle impostazioni del root admin: il primo che blocca risponde 429 RATE_LIMITED con
+ * Retry-After. Ogni proposta ammessa resta contata nel workspace anche se la chiamata poi fallisce; il tetto conta le
+ * righe di ai_requests, una per tentativo. Il root admin è escluso da entrambi e le sue righe non contano (D-43).
  */
 async function consumeLimits(actor: Actor, workspaceId: string, settings: AiTitlesSettings): Promise<void> {
   if (actor.isRootAdmin) return;
-  const rules = rateLimitRules();
   await enforceRateLimits([
     {
       key: `ai-titles:workspace:${workspaceId}`,
-      rule: { max: settings.workspaceDailyLimit, windowSeconds: rules.aiTitlesWorkspace.windowSeconds },
+      rule: { max: settings.workspaceDailyLimit, windowSeconds: rateLimitRules().aiTitlesWorkspace.windowSeconds },
     },
-    { key: AI_TITLES_PLATFORM_KEY, rule: { max: settings.platformDailyLimit, windowSeconds: rules.aiTitlesPlatform.windowSeconds } },
   ]);
+  await enforcePlatformRequestCap(settings.platformDailyRequests);
 }
 
 /**
  * Proposta di H1 e H2 per una pagina del piano corrente (T-3601, D-42 emendata da D-43): permessi di modifica del
  * piano e pagina (404, 409 STRATEGY_READ_ONLY), poi funzione accesa e chiave presente (503 AI_NOT_CONFIGURED senza
  * consumare i limiti), poi i limiti e la richiesta con i modelli di riserva (T-3802), saltando quelli assenti dal
- * catalogo (T-3803), con parseTitlesResponse come controllo della risposta. La proposta riuscita riporta il modello che
- * ha risposto e sostituisce quella salvata nella pagina; titoli e version del piano non cambiano. Nel log solo id,
- * modello, durata, esito e per ogni tentativo modello, esito e status HTTP; mai keyword o messaggi del fornitore
- * (CWE-532).
+ * catalogo (T-3803), con parseTitlesResponse come controllo della risposta; ogni tentativo scrive la sua riga di
+ * ai_requests con il workspace del progetto (T-3901). La proposta riuscita riporta il modello che ha risposto e
+ * sostituisce quella salvata nella pagina; titoli e version del piano non cambiano. Nel log solo id, modello, durata,
+ * esito e per ogni tentativo modello, esito e status HTTP; mai keyword o messaggi del fornitore (CWE-532).
  */
 export async function suggestPageTitles(actor: Actor, projectId: string, strategyId: string, pageId: string): Promise<StrategyAiProposal> {
   const project = await requireProjectAccess(actor, projectId, "strategy.write", {});
@@ -65,6 +66,7 @@ export async function suggestPageTitles(actor: Actor, projectId: string, strateg
     attemptTimeoutMs: ATTEMPT_TIMEOUT_MS,
     validate: (content) => parseTitlesResponse(content, page, language),
     skip: (model) => modelStatus(model, catalog) === "missing",
+    record: { feature: "titles", workspaceId: project.workspace_id, byRootAdmin: actor.isRootAdmin },
   }).catch((error: unknown) => {
     log({ model: null, outcome: "INTERNAL_ERROR", attempts: [] });
     throw error;

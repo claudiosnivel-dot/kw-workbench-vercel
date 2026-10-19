@@ -84,11 +84,14 @@ export async function reserveProviderRequest(input: {
   });
 }
 
-/** Chiude la prenotazione con il costo restituito dal fornitore (0 se assente), anche per le richieste fallite. */
-export async function settleProviderRequest(id: string, costUsd: number, succeeded: boolean): Promise<void> {
+/**
+ * Chiude la prenotazione con il costo restituito dal fornitore (0 se assente), anche per le richieste fallite, e con il
+ * codice del fornitore dell'esito (T-3903): null per un timeout o un errore di rete, mai il messaggio (CWE-532).
+ */
+export async function settleProviderRequest(id: string, costUsd: number, succeeded: boolean, providerCode: number | null): Promise<void> {
   await prisma.metricsProviderRequest.update({
     where: { id },
-    data: { cost_usd: costUsd, status: succeeded ? "completed" : "failed" },
+    data: { cost_usd: costUsd, status: succeeded ? "completed" : "failed", provider_code: providerCode },
   });
 }
 
@@ -100,6 +103,19 @@ export async function recentProviderRequestTimes(provider: MetricsProvider, sinc
     orderBy: { created_at: "asc" },
   });
   return rows.map((row: { created_at: Date }) => row.created_at.getTime());
+}
+
+/**
+ * Richieste non riuscite del fornitore nelle ultime 24 ore e codice dell'ultima (null per un timeout, un errore di rete
+ * o una riga di prima di T-3903), per l'avviso del root admin nella Panoramica.
+ */
+export async function readFailedProviderRequests(provider: MetricsProvider, now: Date = new Date()): Promise<{ failed: number; lastCode: number | null }> {
+  const where = { provider, status: "failed" as const, created_at: { gt: new Date(now.getTime() - 86_400_000) } };
+  const [failed, last] = await Promise.all([
+    prisma.metricsProviderRequest.count({ where }),
+    prisma.metricsProviderRequest.findFirst({ where, orderBy: { created_at: "desc" }, select: { provider_code: true } }),
+  ]);
+  return { failed, lastCode: last?.provider_code ?? null };
 }
 
 /** Spesa del mese UTC corrente per il root admin. */

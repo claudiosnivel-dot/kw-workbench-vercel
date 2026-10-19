@@ -40,3 +40,9 @@ modulo Google Ads nel sorgente).
   metriche» in `/admin` e `GET /api/admin/metrics-spend` (solo root admin).
 - Nel result del job: `metricsCostUsd`, `metricsRequests`, `metricsSpellCorrected`, `metricsSkipped`
   (keyword escluse prima della chiamata, per motivo).
+- Richieste rifiutate (T-3903): ogni riga di `metrics_provider_requests` chiusa ha in `provider_code` il codice di
+  DataForSEO dell'esito (null per un timeout o un errore di rete, e per le righe di prima della migrazione 0047; mai
+  il messaggio del fornitore). Se nelle ultime 24 ore ci sono richieste DataForSEO non riuscite, la Panoramica di
+  `/admin` mostra al root admin «DataForSEO ha rifiutato N richieste nelle ultime 24 ore» con il motivo dell'ultima,
+  gli stessi testi del riquadro «Aggiungi i volumi» (credenziali 40100, account da verificare 40104, il codice per gli
+  altri, nessuna risposta senza codice).

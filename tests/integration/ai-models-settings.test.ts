@@ -11,7 +11,7 @@ import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
-type SettingsBody = { data: { enabled: boolean; models: string[]; platformDailyLimit: number }; code?: string };
+type SettingsBody = { data: { enabled: boolean; models: string[]; platformDailyRequests: number }; code?: string };
 
 beforeAll(() => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");

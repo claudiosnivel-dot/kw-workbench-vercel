@@ -210,6 +210,7 @@ model Workspace {
   invites              WorkspaceInvite[]
   subscription         WorkspaceSubscription?
   usage_counters       UsageCounter[]
+  ai_requests          AiRequest[]
 
   @@index([created_by_user_id])
   @@map("workspaces")
@@ -524,10 +525,49 @@ model MetricsProviderRequest {
   cost_usd           Decimal?             @db.Decimal(10, 4)
   estimated_cost_usd Decimal              @db.Decimal(10, 4)
   status             MetricsRequestStatus @default(pending)
+  /// Codice di DataForSEO dell'esito (T-3903, T-3704): null per un timeout o un errore di rete; mai il messaggio.
+  provider_code      Int?
   project            Project?             @relation(fields: [project_id], references: [id], onDelete: SetNull)
 
   @@index([created_at])
   @@map("metrics_provider_requests")
+}
+
+// Funzione dell'app che chiama OpenRouter (T-3901, D-46): i titoli con l'AI e gli articoli.
+enum AiFeature {
+  titles
+  article
+}
+
+// Esito di un tentativo verso un modello, con i valori di T-3802.
+enum AiRequestOutcome {
+  ok
+  provider_busy
+  account_daily_limit
+  account_rate_limit
+  unavailable
+  timeout
+  invalid_response
+  auth
+}
+
+/// Registro delle richieste a OpenRouter (T-3901, D-46): una riga per tentativo, con i soli metadati (mai testi,
+/// keyword o messaggi del fornitore, CWE-532), conservata 30 giorni. Base del tetto della piattaforma in richieste e
+/// del contatore per modello del root admin (T-3902).
+model AiRequest {
+  id            String           @id @default(cuid())
+  created_at    DateTime         @default(now())
+  feature       AiFeature
+  model         String
+  outcome       AiRequestOutcome
+  http_status   Int?
+  duration_ms   Int
+  workspace_id  String?
+  by_root_admin Boolean          @default(false)
+  workspace     Workspace?       @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+
+  @@index([created_at])
+  @@map("ai_requests")
 }
 
 model AppSetting {

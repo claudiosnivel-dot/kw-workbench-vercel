@@ -35,6 +35,14 @@ export function modelStatuses(models: string[], catalog: ModelCatalog | null): R
   return Object.fromEntries(models.map((id) => [id, modelStatus(id, catalog)]));
 }
 
+/** Sotto questo numero di modelli dell'elenco disponibili o da verificare la Panoramica avvisa il root admin (T-3902). */
+export const MIN_AVAILABLE_MODELS = 5;
+
+/** Modelli dell'elenco disponibili o da verificare: tutti tranne quelli non più nel catalogo. */
+export function countAvailableModels(statuses: ModelStatus[]): number {
+  return statuses.filter((status) => status !== "missing").length;
+}
+
 /** Modelli ':free' del catalogo non ancora nell'elenco, nell'ordine del catalogo. */
 export function addableModels(models: string[], catalog: ModelCatalog | null): CatalogModel[] {
   return (catalog?.free ?? []).filter((entry) => !models.some((id) => sameModel(id, entry.id)));
