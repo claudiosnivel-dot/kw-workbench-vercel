@@ -13,6 +13,7 @@ import {
   modelStatus,
   sameModel,
 } from "@/lib/ai/models";
+import { AI_LIMIT_MAX, type AiUsage, type UsageCounts } from "@/lib/ai/usage";
 import { type ErrorTranslator, readApiResponse, readJsonSafe, sendJson } from "@/lib/client/http";
 import { useSaveAction } from "@/lib/client/use-save-action";
 import { formatDate } from "@/lib/view/format";
@@ -20,16 +21,16 @@ import { formatDate } from "@/lib/view/format";
 type AiTitlesView = {
   enabled: boolean;
   models: string[];
-  platformDailyLimit: number;
+  platformDailyRequests: number;
   workspaceDailyLimit: number;
   keyConfigured: boolean;
-  used24h: number;
   catalog: ModelCatalog | null;
   statuses: Record<string, ModelStatus>;
   addable: CatalogModel[];
+  usage: AiUsage;
 };
 
-type AiTitlesInput = Pick<AiTitlesView, "enabled" | "models" | "platformDailyLimit" | "workspaceDailyLimit">;
+type AiTitlesInput = Pick<AiTitlesView, "enabled" | "models" | "platformDailyRequests" | "workspaceDailyLimit">;
 
 /** PATCH delle impostazioni (T-3501): una risposta non riuscita lancia l'errore del catalogo. */
 async function saveAiTitles(body: AiTitlesInput, tErrors: ErrorTranslator): Promise<{ data?: AiTitlesView } | null> {
@@ -46,9 +47,11 @@ async function refreshCatalog(): Promise<AiTitlesView | null> {
   }
 }
 
-type LimitField = "platformDailyLimit" | "workspaceDailyLimit";
-const LIMIT_FIELDS: LimitField[] = ["platformDailyLimit", "workspaceDailyLimit"];
-const LIMIT_LABELS = { platformDailyLimit: "platformLimit", workspaceDailyLimit: "workspaceLimit" } as const;
+type LimitField = keyof typeof AI_LIMIT_MAX;
+const LIMIT_FIELDS: LimitField[] = ["platformDailyRequests", "workspaceDailyLimit"];
+const LIMIT_LABELS = { platformDailyRequests: "platformLimit", workspaceDailyLimit: "workspaceLimit" } as const;
+const USAGE_WINDOWS = ["last24h", "last7d"] as const;
+const USAGE_COLUMNS = ["requests", "ok", "providerBusy", "accountDailyLimit", "other"] as const satisfies readonly (keyof UsageCounts)[];
 const STATUS_CLASS: Record<ModelStatus, string> = { ok: "text-green-700", missing: "text-red-700", unknown: "text-slate-600" };
 const FREE_SUFFIX = /:free$/i;
 
@@ -60,10 +63,62 @@ function moved(models: string[], index: number, delta: number): string[] {
 }
 
 /**
+ * Uso dei modelli in una finestra (T-3902): una riga per modello con richieste, riuscite, fornitore occupato, limite
+ * giornaliero dell'account, altri esiti e durata media delle riuscite.
+ */
+function UsageTable({ usage, window }: { usage: AiUsage; window: (typeof USAGE_WINDOWS)[number] }) {
+  const t = useTranslations("admin.aiTitles.usage");
+  const format = useFormatter();
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm tabular-nums">
+        <caption className="pb-1 text-left text-xs font-medium text-slate-600">{t(`window.${window}`)}</caption>
+        <thead>
+          <tr className="border-b border-[var(--surface-border)] text-xs text-slate-600">
+            <th scope="col" className="py-1 pr-3 font-medium">
+              {t("model")}
+            </th>
+            {USAGE_COLUMNS.map((column) => (
+              <th key={column} scope="col" className="py-1 pr-3 text-right font-medium">
+                {t(`columns.${column}`)}
+              </th>
+            ))}
+            <th scope="col" className="py-1 text-right font-medium">
+              {t("columns.avgOkMs")}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {usage.models.map((entry) => {
+            const counts = entry[window];
+            return (
+              <tr key={entry.model} className="border-b border-[var(--surface-border)] last:border-0">
+                <th scope="row" className="break-all py-1 pr-3 font-normal">
+                  {entry.model}
+                </th>
+                {USAGE_COLUMNS.map((column) => (
+                  <td key={column} className="py-1 pr-3 text-right">
+                    {format.number(counts[column])}
+                  </td>
+                ))}
+                <td className="py-1 text-right">
+                  {counts.avgOkMs === null ? "—" : t("seconds", { seconds: format.number(counts.avgOkMs / 1000, { maximumFractionDigits: 1 }) })}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/**
  * Titoli con l'AI nelle Impostazioni del root admin (T-3501, D-42): interruttore, elenco ordinato dei modelli gratuiti
  * (T-3801) con «Su», «Giù», «Togli» e «Aggiungi modello», stato di ogni modello sul catalogo di OpenRouter con la data
- * dell'ultimo controllo e i modelli gratuiti nuovi da aggiungere (T-3803), tetto della piattaforma e limite per
- * workspace, con lo stato della chiave (solo sì o no) e le proposte delle ultime 24 ore. All'apertura il catalogo si
+ * dell'ultimo controllo e i modelli gratuiti nuovi da aggiungere (T-3803), tetto della piattaforma in richieste e limite
+ * per workspace in proposte, con lo stato della chiave (solo sì o no), le richieste delle ultime 24 ore contate dal tetto
+ * e la tabella «Uso dei modelli» sulle ultime 24 ore e sugli ultimi 7 giorni (T-3902). All'apertura il catalogo si
  * rilegge se ha più di un'ora. Il salvataggio manda interruttore, elenco e limiti; la rotta riverifica ruolo, modelli e
  * limiti.
  */
@@ -77,7 +132,7 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
   const [candidate, setCandidate] = useState("");
   const [candidateError, setCandidateError] = useState<string | null>(null);
   const [limits, setLimits] = useState<Record<LimitField, string>>({
-    platformDailyLimit: String(initial.platformDailyLimit),
+    platformDailyRequests: String(initial.platformDailyRequests),
     workspaceDailyLimit: String(initial.workspaceDailyLimit),
   });
   const { saving, error, success, save } = useSaveAction();
@@ -121,7 +176,7 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
         {
           enabled,
           models,
-          platformDailyLimit: Number(limits.platformDailyLimit),
+          platformDailyRequests: Number(limits.platformDailyRequests),
           workspaceDailyLimit: Number(limits.workspaceDailyLimit),
         },
         tErrors
@@ -134,6 +189,7 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
 
   return (
     <SettingsCard
+      id="ai-titles"
       title={t("title")}
       intro={t("intro")}
       error={error}
@@ -287,7 +343,7 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
               className="input"
               type="number"
               min={1}
-              max={1000}
+              max={AI_LIMIT_MAX[field]}
               value={limits[field]}
               onChange={(event) => setLimits((current) => ({ ...current, [field]: event.target.value }))}
             />
@@ -297,8 +353,17 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
 
       <ul className="space-y-1 text-sm text-slate-600">
         <li>{t("keyConfigured", { configured: view.keyConfigured ? "yes" : "no" })}</li>
-        <li>{t("used", { used: view.used24h, limit: view.platformDailyLimit })}</li>
+        <li>{t("used", { used: view.usage.requests24h, limit: view.usage.limit })}</li>
       </ul>
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">{t("usage.title")}</h3>
+        {view.usage.models.length === 0 ? (
+          <p className="text-sm text-slate-600">{t("usage.empty")}</p>
+        ) : (
+          USAGE_WINDOWS.map((window) => <UsageTable key={window} usage={view.usage} window={window} />)
+        )}
+      </div>
     </SettingsCard>
   );
 }

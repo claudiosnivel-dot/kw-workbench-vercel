@@ -1,6 +1,7 @@
 // Gate di T-3501 (AC-3501-4): card «Titoli con l'AI» delle Impostazioni con lo stato della chiave, le proposte delle
 // ultime 24 ore e il salvataggio dell'interruttore e dei modelli.
 // impacted-by: T-3801 (elenco dei modelli con «Aggiungi modello» al posto del campo Modello: AC-3501-4 emendato)
+// impacted-by: T-3902 («Richieste nelle ultime 24 ore» del tetto in richieste al posto delle proposte: AC-3501-4 emendato)
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AiTitlesSettingsCard } from "@/components/admin-ai-titles-card";
@@ -11,14 +12,14 @@ const fetchMock = vi.fn<typeof fetch>();
 const initial = {
   enabled: false,
   models: ["google/gemma-prova:free"],
-  platformDailyLimit: 45,
+  platformDailyRequests: 900,
   workspaceDailyLimit: 10,
   keyConfigured: false,
-  used24h: 3,
   // Catalogo appena controllato: la card non lo rilegge all'apertura.
   catalog: { checkedAt: new Date().toISOString(), free: [{ id: "google/gemma-prova:free", name: "Gemma prova", contextLength: 8192 }] },
   statuses: { "google/gemma-prova:free": "ok" as const },
   addable: [],
+  usage: { models: [], requests24h: 3, limit: 900 },
 };
 
 beforeEach(() => {
@@ -32,13 +33,13 @@ afterEach(() => {
 
 describe("card dei titoli con l'AI", () => {
   // covers: AC-3501-4
-  it("mostra chiave e proposte, poi salva l'interruttore acceso e il modello aggiunto con «Salvato»", async () => {
+  it("mostra chiave e richieste, poi salva l'interruttore acceso e il modello aggiunto con «Salvato»", async () => {
     const models = ["google/gemma-prova:free", "autore/altro:free"];
     fetchMock.mockResolvedValue(Response.json({ data: { ...initial, enabled: true, models } }));
     renderWithIntl(<AiTitlesSettingsCard initial={initial} />);
 
     expect(screen.getByText("Chiave configurata: no")).toBeVisible();
-    expect(screen.getByText("Proposte nelle ultime 24 ore: 3 su 45")).toBeVisible();
+    expect(screen.getByText("Richieste nelle ultime 24 ore: 3 su 900")).toBeVisible();
 
     const toggle = screen.getByRole("switch", { name: "Funzione per gli utenti" });
     expect(toggle).toHaveAttribute("aria-checked", "false");

@@ -8,6 +8,10 @@ import { buildTitlesRequest } from "@/lib/ai/titles-prompt";
 import { parseTitlesResponse } from "@/lib/ai/titles-response";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 
+// impacted-by: T-3901 (ogni tentativo scrive una riga di ai_requests): qui il registro è simulato, il test unitario non
+// ha il DB; la scrittura vera la provano tests/integration/ai-requests.test.ts.
+vi.mock("@/lib/ai/requests", () => ({ recordAiRequest: vi.fn(async () => {}) }));
+
 const NOW = Date.parse("2026-10-19T10:00:00.000Z");
 
 const spoke = {
@@ -63,6 +67,7 @@ describe("richiesta con i modelli di riserva", () => {
     deadlineMs: 25_000,
     attemptTimeoutMs: 20_000,
     validate: (content: string) => parseTitlesResponse(content, spoke, "it"),
+    record: { feature: "titles" as const, workspaceId: null, byRootAdmin: false },
   };
   const request = buildTitlesRequest(spoke, { language: "it", model: "a/uno:free" });
   const sentModels = () => fetchMock.mock.calls.map(([, init]) => (JSON.parse(String(init?.body)) as { model: string }).model);

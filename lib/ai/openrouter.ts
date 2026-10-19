@@ -1,4 +1,5 @@
 import { AiTitlesError } from "@/lib/ai/errors";
+import { type AiRequestContext, recordAiRequest } from "@/lib/ai/requests";
 import type { TitlesRequest } from "@/lib/ai/titles-prompt";
 import { getPublicAppUrl } from "@/lib/env";
 import { AppError } from "@/lib/http/errors";
@@ -133,6 +134,8 @@ type FallbackOptions<T> = {
   validate: (content: string) => T;
   /** Modelli segnati come assenti dal catalogo (T-3803): si saltano senza richiesta. */
   skip?: (model: string) => boolean;
+  /** Funzione, workspace e root admin delle righe di ai_requests, una per tentativo (T-3901). */
+  record: AiRequestContext;
 };
 
 export type FallbackResult<T> = { attempts: Attempt[] } & ({ ok: true; value: T; model: string } | { ok: false; error: AiTitlesError });
@@ -149,15 +152,21 @@ const STOP_ERRORS: Partial<Record<AttemptOutcome, () => AiTitlesError>> = {
  * ogni tentativo ha come tempo massimo il minore fra attemptTimeoutMs e il tempo che resta alla scadenza. Dopo
  * provider_busy, unavailable, timeout e invalid_response si passa al successivo; dopo un limite dell'account o un errore
  * di autenticazione ci si ferma. Senza una risposta valida: AI_BUSY se almeno un fornitore era occupato, altrimenti
- * AI_UNAVAILABLE. Nessun nuovo tentativo sullo stesso modello e nessuna attesa fra un tentativo e l'altro.
+ * AI_UNAVAILABLE. Nessun nuovo tentativo sullo stesso modello e nessuna attesa fra un tentativo e l'altro. Ogni
+ * tentativo scrive appena chiuso la sua riga di ai_requests con la durata della chiamata (T-3901).
  */
 export async function requestWithFallback<T>(request: TitlesRequest, models: string[], options: FallbackOptions<T>): Promise<FallbackResult<T>> {
   const startedAt = Date.now();
   const attempts: Attempt[] = [];
+  const settle = async (attempt: Attempt, durationMs: number) => {
+    attempts.push(attempt);
+    await recordAiRequest(options.record, { ...attempt, durationMs });
+  };
   for (const model of models) {
     if (options.skip?.(model)) continue;
     const remainingMs = options.deadlineMs - (Date.now() - startedAt);
     if (remainingMs <= 0) break;
+    const attemptStartedAt = Date.now();
     let completion: Awaited<ReturnType<typeof attemptCompletion>>;
     try {
       completion = await attemptCompletion(
@@ -166,19 +175,22 @@ export async function requestWithFallback<T>(request: TitlesRequest, models: str
       );
     } catch (error) {
       if (!(error instanceof AttemptError)) throw error;
-      attempts.push({ model, outcome: error.outcome, httpStatus: error.httpStatus });
+      await settle({ model, outcome: error.outcome, httpStatus: error.httpStatus }, Date.now() - attemptStartedAt);
       const stop = STOP_ERRORS[error.outcome];
       if (stop) return { ok: false, error: stop(), attempts };
       continue;
     }
+    const durationMs = Date.now() - attemptStartedAt;
+    let value: T;
     try {
-      const value = options.validate(completion.content);
-      attempts.push({ model, outcome: "ok", httpStatus: completion.status });
-      return { ok: true, value, model, attempts };
+      value = options.validate(completion.content);
     } catch (error) {
       if (!(error instanceof AppError)) throw error;
-      attempts.push({ model, outcome: "invalid_response", httpStatus: completion.status });
+      await settle({ model, outcome: "invalid_response", httpStatus: completion.status }, durationMs);
+      continue;
     }
+    await settle({ model, outcome: "ok", httpStatus: completion.status }, durationMs);
+    return { ok: true, value, model, attempts };
   }
   const error = attempts.some((attempt) => attempt.outcome === "provider_busy")
     ? new AiTitlesError("AI_BUSY", "I modelli gratuiti dell'elenco sono occupati")

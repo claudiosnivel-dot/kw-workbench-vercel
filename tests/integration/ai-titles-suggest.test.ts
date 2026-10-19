@@ -57,11 +57,14 @@ async function statuses(responses: Response[]): Promise<(number | string)[]> {
 const rootAdmin = () =>
   createUserWithSession({ displayName: `t3601-root-${randomUUID().slice(0, 8)}`, role: UserRole.ADMIN, isRootAdmin: true });
 
-/** «Proposte nelle ultime 24 ore» della card, letta dal root admin (uno solo per installazione). */
-async function used24h(root?: Session): Promise<number> {
+/**
+ * «Richieste nelle ultime 24 ore» della card, letta dal root admin (uno solo per installazione).
+ * impacted-by: T-3901 e T-3902 (richieste di ai_requests contate dal tetto al posto delle proposte di used24h)
+ */
+async function requests24h(root?: Session): Promise<number> {
   root ??= await rootAdmin();
   const response = await callRoute(readAiTitles, { url: "/api/admin/ai-titles", cookie: root.cookie });
-  return ((await response.json()) as { data: { used24h: number } }).data.used24h;
+  return ((await response.json()) as { data: { usage: { requests24h: number } } }).data.usage.requests24h;
 }
 
 describe("proposta dei titoli con l'AI", () => {
@@ -102,8 +105,9 @@ describe("proposta dei titoli con l'AI", () => {
   });
 
   // covers: AC-3601-2
+  // impacted-by: T-3901 (il tetto della piattaforma conta le richieste a OpenRouter: platformDailyRequests 3)
   it("conta il limite per workspace e il tetto della piattaforma, anche per una chiamata fallita", async () => {
-    await saveAiSettings({ workspaceDailyLimit: 2, platformDailyLimit: 3 });
+    await saveAiSettings({ workspaceDailyLimit: 2, platformDailyRequests: 3 });
     const first = await memberWithPlan("t3601-w1");
     const second = await memberWithPlan("t3601-w2");
     fetchMock.mockResolvedValueOnce(failure()).mockImplementation(async () => completion({ h1: H1, h2: ["Ammortizzazione"] }));
@@ -142,7 +146,7 @@ describe("proposta dei titoli con l'AI", () => {
       "502 AI_UNAVAILABLE",
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(await used24h()).toBe(1);
+    expect(await requests24h()).toBe(1);
   });
 
   // covers: AC-3601-4
@@ -163,8 +167,9 @@ describe("proposta dei titoli con l'AI", () => {
   });
 
   // covers: AC-3601-5
-  it("il root admin non consuma i limiti e non entra nelle proposte contate", async () => {
-    await saveAiSettings({ workspaceDailyLimit: 1, platformDailyLimit: 1 });
+  // impacted-by: T-3901 (tetto in richieste: le righe del root admin in ai_requests non contano)
+  it("il root admin non consuma i limiti e non entra nelle richieste contate", async () => {
+    await saveAiSettings({ workspaceDailyLimit: 1, platformDailyRequests: 1 });
     const root = await rootAdmin();
     const rootPlan = await insertPlan(root);
     const rootSpoke = { projectId: rootPlan.projectId, strategyId: rootPlan.strategyId, pageId: rootPlan.pageIds.spoke };
@@ -178,7 +183,7 @@ describe("proposta dei titoli con l'AI", () => {
 
     expect(await statuses(rootResponses)).toEqual([200, 200, 200]);
     expect(await statuses(memberResponses)).toEqual([200, "429 RATE_LIMITED"]);
-    expect(await used24h(root)).toBe(1);
+    expect(await requests24h(root)).toBe(1);
   });
 
   // covers: AC-3601-6

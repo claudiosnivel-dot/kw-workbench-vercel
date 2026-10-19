@@ -4,7 +4,6 @@ import { randomBytes } from "node:crypto";
 import { UserRole } from "@/lib/generated/prisma/enums";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as readAiTitles, PATCH as updateAiTitles } from "@/app/api/admin/ai-titles/route";
-import { AI_TITLES_PLATFORM_KEY } from "@/lib/ai/settings";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
@@ -14,10 +13,10 @@ type SettingsBody = {
   data: {
     enabled: boolean;
     models: string[];
-    platformDailyLimit: number;
+    platformDailyRequests: number;
     workspaceDailyLimit: number;
     keyConfigured: boolean;
-    used24h: number;
+    usage: { requests24h: number; limit: number };
   };
   code?: string;
 };
@@ -52,6 +51,7 @@ async function rootAdmin() {
 describe("impostazioni dei titoli con l'AI", () => {
   // covers: AC-3501-1
   // impacted-by: T-3801 (elenco dei modelli al posto del modello unico: AC-3501-1 emendato)
+  // impacted-by: T-3901 e T-3902 (tetto in richieste platformDailyRequests 900 e usage.requests24h al posto di used24h)
   it("senza impostazioni salvate restituisce i default spenti, no-store, e la chiave solo come sì o no", async () => {
     const root = await rootAdmin();
 
@@ -63,10 +63,10 @@ describe("impostazioni dei titoli con l'AI", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(body.data).toMatchObject({
       enabled: false,
-      platformDailyLimit: 45,
+      platformDailyRequests: 900,
       workspaceDailyLimit: 10,
       keyConfigured: true,
-      used24h: 0,
+      usage: { requests24h: 0, limit: 900 },
     });
     expect(body.data.models.length).toBeGreaterThanOrEqual(5);
     expect(body.data.models.every((model) => model.endsWith(":free"))).toBe(true);
@@ -75,11 +75,12 @@ describe("impostazioni dei titoli con l'AI", () => {
 
   // covers: AC-3501-2
   // impacted-by: T-3801 (la PATCH riceve models, l'elenco ordinato: AC-3501-2 emendato)
+  // impacted-by: T-3901 (platformDailyRequests al posto di platformDailyLimit)
   it("salva il modello gratuito e i limiti, rifiuta un modello a pagamento e un limite fuori intervallo, registra ai.update", async () => {
     const root = await rootAdmin();
     const before = ((await (await read(root.cookie)).json()) as SettingsBody).data;
 
-    const saved = await update(root.cookie, { enabled: true, models: ["autore/modello-prova:free"], platformDailyLimit: 40 });
+    const saved = await update(root.cookie, { enabled: true, models: ["autore/modello-prova:free"], platformDailyRequests: 40 });
     const paid = await update(root.cookie, { models: ["autore/modello-a-pagamento"] });
     const outOfRange = await update(root.cookie, { workspaceDailyLimit: 0 });
 
@@ -88,7 +89,7 @@ describe("impostazioni dei titoli con l'AI", () => {
     expect(((await outOfRange.json()) as SettingsBody).code).toBe("VALIDATION_ERROR");
 
     const after = ((await (await read(root.cookie)).json()) as SettingsBody).data;
-    expect(after).toMatchObject({ enabled: true, models: ["autore/modello-prova:free"], platformDailyLimit: 40, workspaceDailyLimit: 10 });
+    expect(after).toMatchObject({ enabled: true, models: ["autore/modello-prova:free"], platformDailyRequests: 40, workspaceDailyLimit: 10 });
 
     const rows = await prisma.adminAuditLog.findMany({ where: { action: "ai.update" } });
     expect(rows).toHaveLength(1);
@@ -96,24 +97,40 @@ describe("impostazioni dei titoli con l'AI", () => {
     expect(rows[0].metadata).toEqual({
       enabled: { before: false, after: true },
       models: { before: before.models, after: ["autore/modello-prova:free"] },
-      platformDailyLimit: { before: 45, after: 40 },
+      platformDailyRequests: { before: 900, after: 40 },
     });
   });
 
-  it("conta nelle ultime 24 ore solo i tentativi della chiave della piattaforma", async () => {
+  // impacted-by: T-3901 (il tetto conta le righe di ai_requests, non i tentativi del rate limit)
+  it("conta nelle ultime 24 ore solo le richieste di ai_requests degli utenti, senza quelle del root admin", async () => {
     const root = await rootAdmin();
     const now = Date.now();
-    await prisma.rateLimitHit.createMany({
-      data: [
-        { key: AI_TITLES_PLATFORM_KEY, created_at: new Date(now - 60_000) },
-        { key: AI_TITLES_PLATFORM_KEY, created_at: new Date(now - 25 * 3_600_000) },
-        { key: "ai-titles:workspace:altro", created_at: new Date(now - 60_000) },
-      ],
+    const row = (minutesAgo: number, byRootAdmin = false) => ({
+      feature: "titles" as const,
+      model: "autore/modello-prova:free",
+      outcome: "ok" as const,
+      http_status: 200,
+      duration_ms: 1000,
+      by_root_admin: byRootAdmin,
+      created_at: new Date(now - minutesAgo * 60_000),
     });
+    await prisma.aiRequest.createMany({ data: [row(1), row(2, true), row(25 * 60)] });
 
     const body = (await (await read(root.cookie)).json()) as SettingsBody;
 
-    expect(body.data.used24h).toBe(1);
+    expect(body.data.usage).toMatchObject({ requests24h: 1, limit: 900 });
+  });
+
+  it("rifiuta platformDailyLimit, il campo di prima del tetto in richieste, e un tetto oltre 5000", async () => {
+    const root = await rootAdmin();
+
+    const legacy = await update(root.cookie, { platformDailyLimit: 40 });
+    const tooHigh = await update(root.cookie, { platformDailyRequests: 5001 });
+    const highest = await update(root.cookie, { platformDailyRequests: 5000 });
+
+    expect([legacy.status, tooHigh.status, highest.status]).toEqual([400, 400, 200]);
+    expect(((await legacy.json()) as SettingsBody).code).toBe("VALIDATION_ERROR");
+    expect(((await highest.json()) as SettingsBody).data.platformDailyRequests).toBe(5000);
   });
 });
 

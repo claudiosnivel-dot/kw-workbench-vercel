@@ -21,8 +21,9 @@ export type PlanPage = { projectId: string; strategyId: string; pageId: string }
  * indicazione contraria.
  */
 // impacted-by: T-3801 (elenco ordinato dei modelli al posto del modello unico)
+// impacted-by: T-3901 (tetto della piattaforma in richieste, platformDailyRequests al posto di platformDailyLimit)
 export async function saveAiSettings(settings: Partial<AiTitlesSettings> = {}): Promise<void> {
-  const value: AiTitlesSettings = { enabled: true, models: ["autore/modello-prova:free"], platformDailyLimit: 45, workspaceDailyLimit: 10, ...settings };
+  const value: AiTitlesSettings = { enabled: true, models: ["autore/modello-prova:free"], platformDailyRequests: 900, workspaceDailyLimit: 10, ...settings };
   await upsertSettingValue({ key: "AI_TITLES_SETTINGS", value: JSON.stringify(value) });
 }
 

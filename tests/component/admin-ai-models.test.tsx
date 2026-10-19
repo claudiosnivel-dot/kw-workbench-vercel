@@ -9,14 +9,15 @@ import { renderWithIntl } from "./intl";
 const fetchMock = vi.fn<typeof fetch>();
 const MODELS = ["a/uno:free", "a/due:free", "a/tre:free"];
 
+// impacted-by: T-3901 e T-3902 (tetto in richieste e usage nella vista della card)
 function view(overrides: Record<string, unknown> = {}) {
   return {
     enabled: true,
     models: MODELS,
-    platformDailyLimit: 45,
+    platformDailyRequests: 900,
     workspaceDailyLimit: 10,
     keyConfigured: true,
-    used24h: 0,
+    usage: { models: [], requests24h: 0, limit: 900 },
     catalog: {
       checkedAt: new Date().toISOString(),
       free: [

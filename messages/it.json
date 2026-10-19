@@ -657,6 +657,13 @@
       "usage": "{requests} richieste per {keywords} keyword",
       "caps": "Tetti in METRICS_MONTHLY_BUDGET_USD e METRICS_RUN_BUDGET_USD."
     },
+    "alerts": {
+      "title": "Avvisi",
+      "aiDailyLimit": "Le richieste gratuite dell'account sono finite almeno una volta nelle ultime 24 ore",
+      "aiFewModels": "Meno di {min} modelli disponibili per l'AI",
+      "openCard": "Apri «Titoli con l'AI»",
+      "dataForSeo": "DataForSEO ha rifiutato {count, plural, one {# richiesta} other {# richieste}} nelle ultime 24 ore"
+    },
     "launch": {
       "title": "Lancio commerciale",
       "intro": "Finché il lancio è in pausa gli utenti non hanno limiti, non si compra nulla e la registrazione pubblica è chiusa: gli account li crei dalla gestione utenti, già verificati, o nascono dagli inviti. Il lancio si attiva solo con la checklist completa e si può rimettere in pausa.",
@@ -710,10 +717,28 @@
       "catalogNever": "Catalogo di OpenRouter non ancora controllato",
       "catalogNew": "Modelli gratuiti del catalogo non ancora nell'elenco",
       "catalogNoNew": "Tutti i modelli gratuiti del catalogo sono già nell'elenco.",
-      "platformLimit": "Tetto della piattaforma (proposte in 24 ore)",
+      "platformLimit": "Tetto della piattaforma (richieste in 24 ore)",
       "workspaceLimit": "Limite per workspace (proposte in 24 ore)",
       "keyConfigured": "Chiave configurata: {configured, select, yes {sì} other {no}}",
-      "used": "Proposte nelle ultime 24 ore: {used} su {limit}",
+      "used": "Richieste nelle ultime 24 ore: {used} su {limit}",
+      "usage": {
+        "title": "Uso dei modelli",
+        "empty": "Nessuna richiesta ai modelli negli ultimi 7 giorni.",
+        "window": {
+          "last24h": "Ultime 24 ore",
+          "last7d": "Ultimi 7 giorni"
+        },
+        "model": "Modello",
+        "columns": {
+          "requests": "Richieste",
+          "ok": "Riuscite",
+          "providerBusy": "Fornitore occupato",
+          "accountDailyLimit": "Limite giornaliero",
+          "other": "Altri esiti",
+          "avgOkMs": "Durata media"
+        },
+        "seconds": "{seconds} s"
+      },
       "save": "Salva",
       "saving": "Salvataggio...",
       "saved": "Salvato"

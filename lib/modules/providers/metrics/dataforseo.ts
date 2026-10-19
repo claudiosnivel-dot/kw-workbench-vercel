@@ -204,7 +204,7 @@ async function sendBatch(
     }
     run.requestIds.push(reservation.id);
     const attempt = await postOnce(keywords, target, authorization);
-    await settleProviderRequest(reservation.id, attempt.costUsd, attempt.status === STATUS_OK);
+    await settleProviderRequest(reservation.id, attempt.costUsd, attempt.status === STATUS_OK, attempt.code);
     costUsd += attempt.costUsd;
     logger.info("dataforseo_request", {
       status: attempt.status,

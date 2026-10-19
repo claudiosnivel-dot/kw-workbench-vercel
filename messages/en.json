@@ -657,6 +657,13 @@
       "usage": "{requests} requests for {keywords} keywords",
       "caps": "Caps in METRICS_MONTHLY_BUDGET_USD and METRICS_RUN_BUDGET_USD."
     },
+    "alerts": {
+      "title": "Alerts",
+      "aiDailyLimit": "The account's free requests ran out at least once in the last 24 hours",
+      "aiFewModels": "Fewer than {min} models available for AI",
+      "openCard": "Open “AI titles”",
+      "dataForSeo": "DataForSEO rejected {count, plural, one {# request} other {# requests}} in the last 24 hours"
+    },
     "launch": {
       "title": "Commercial launch",
       "intro": "While the launch is paused users have no limits, nothing can be bought and public sign-up is closed: you create accounts from user management, already verified, or they come from invitations. The launch can be turned on only with the checklist complete and can be paused again.",
@@ -710,10 +717,28 @@
       "catalogNever": "OpenRouter catalog not checked yet",
       "catalogNew": "Free models in the catalog that are not in the list yet",
       "catalogNoNew": "All the free models in the catalog are already in the list.",
-      "platformLimit": "Platform cap (suggestions in 24 hours)",
+      "platformLimit": "Platform cap (requests in 24 hours)",
       "workspaceLimit": "Limit per workspace (suggestions in 24 hours)",
       "keyConfigured": "Key configured: {configured, select, yes {yes} other {no}}",
-      "used": "Suggestions in the last 24 hours: {used} of {limit}",
+      "used": "Requests in the last 24 hours: {used} of {limit}",
+      "usage": {
+        "title": "Model usage",
+        "empty": "No requests to the models in the last 7 days.",
+        "window": {
+          "last24h": "Last 24 hours",
+          "last7d": "Last 7 days"
+        },
+        "model": "Model",
+        "columns": {
+          "requests": "Requests",
+          "ok": "Succeeded",
+          "providerBusy": "Provider busy",
+          "accountDailyLimit": "Daily limit",
+          "other": "Other outcomes",
+          "avgOkMs": "Average time"
+        },
+        "seconds": "{seconds} s"
+      },
       "save": "Save",
       "saving": "Saving...",
       "saved": "Saved"
