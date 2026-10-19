@@ -8,7 +8,7 @@ import { MenuChevron } from "@/components/menu-chevron";
 import { NewWorkspaceDialog } from "@/components/new-workspace-dialog";
 import { useMenuButton } from "@/lib/client/use-menu-button";
 import { usePreferencePost } from "@/lib/client/use-preference-post";
-import { SUPPORTED_LOCALES } from "@/lib/i18n/locale";
+import { OFFERED_LOCALES } from "@/lib/i18n/locale";
 import { marketingPath } from "@/lib/marketing/routes";
 
 export type WorkspaceOption = { id: string; name: string; isPersonal: boolean };
@@ -123,7 +123,7 @@ export function UserMenu({ user, showAdminLink, workspaces, activeWorkspaceId }:
               )}
 
               <div role="group" aria-label={tLocale("label")} className="user-menu-group">
-                {SUPPORTED_LOCALES.map((option) => (
+                {OFFERED_LOCALES.map((option) => (
                   <button
                     key={option}
                     type="button"

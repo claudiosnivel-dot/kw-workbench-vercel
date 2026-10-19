@@ -1,0 +1,127 @@
+{
+  "projects": {
+    "settings": {
+      "title": "Configuración",
+      "save": "Guardar la configuración",
+      "saved": "Configuración guardada."
+    },
+    "brands": {
+      "addLabel": "Agregar una marca",
+      "add": "+ agregar"
+    }
+  },
+  "jobs": {
+    "run": {
+      "failed": "La búsqueda no se completó"
+    }
+  },
+  "errors": {
+    "AUTH_REQUIRED": "Tu sesión no es válida o venció. Vuelve a iniciar sesión.",
+    "ACCOUNT_SUSPENDED": "Cuenta suspendida. Comunícate con el administrador.",
+    "VERIFICATION_TOKEN_INVALID": "Enlace de verificación no válido o vencido: solicita uno nuevo.",
+    "EMAIL_CHANGE_INVALID": "Enlace no válido o vencido: vuelve a solicitar el cambio desde tu perfil.",
+    "RESET_TOKEN_INVALID": "Enlace de restablecimiento no válido o vencido: solicita uno nuevo.",
+    "TERMS_VERSION_CHANGED": "Los términos cambiaron: recarga la página y acepta la nueva versión.",
+    "CAPTCHA_INVALID": "No se superó la verificación antibots: vuelve a intentarlo.",
+    "NO_SECTIONS": "El proyecto no tiene temas: agrega uno primero.",
+    "INVITE_INVALID": "La invitación no es válida: puede que haya vencido, que se haya revocado o que ya se haya usado.",
+    "WORKSPACE_LIMIT": "Alcanzaste el número máximo de espacios de trabajo que puedes crear.",
+    "JOB_NOT_CANCELABLE": "La búsqueda ya terminó.",
+    "SHEETS_OAUTH_CONFIG_MISSING": "Falta la configuración OAuth de Google Sheets. Comunícate con el administrador principal.",
+    "SHEETS_TIMEOUT": "Google no respondió en 30 segundos o no está disponible.",
+    "GOOGLE_SHEETS_EXPORT_ERROR": "No se pudo exportar a Google Sheets: Google devolvió un error. Vuelve a intentarlo.",
+    "PLANNER_FILE_TYPE_INVALID": "Formato no admitido: carga un archivo .csv o .tsv.",
+    "INVALID_PLAN": "Plan o período de facturación no válido.",
+    "PLAN_LIMIT": "Alcanzaste un límite del plan del espacio de trabajo.",
+    "LAUNCH_NOT_READY": "La lista de verificación del lanzamiento no está completa.",
+    "QUOTA_EXCEEDED": "Agotaste la cuota de uso del espacio de trabajo para este período.",
+    "STRATEGY_CONFLICT": "La estrategia se modificó mientras tanto: recarga el plan y vuelve a intentarlo.",
+    "AI_TIMEOUT": "El modelo no respondió a tiempo. Vuelve a intentarlo en un momento.",
+    "AI_INVALID_RESPONSE": "El modelo dio una respuesta que no se puede usar. Vuelve a intentarlo.",
+    "AI_DAILY_LIMIT": "Se agotaron las solicitudes a la IA de hoy: vuelve a intentarlo mañana."
+  },
+  "errorPages": {
+    "error": {
+      "title": "Ocurrió un error",
+      "body": "No se pudo cargar la página. Vuelve a intentarlo en unos momentos."
+    }
+  },
+  "project": {
+    "shell": {
+      "newTopic": {
+        "placeholder": "p. ej., tenis para trail",
+        "hint": "Titan SEO busca en Google las búsquedas que empiezan con estas palabras.",
+        "more": "Agregar más palabras clave semilla"
+      },
+      "settings": "Configuración",
+      "moveFailed": "No se pudo mover el tema: vuelve a intentarlo."
+    }
+  },
+  "nextStep": {
+    "text": {
+      "add_topic": "agrega un tema y Titan SEO buscará las palabras clave a partir de sus palabras."
+    },
+    "actions": {
+      "add_topic": "Agregar un tema",
+      "plan_done": "Agregar un tema"
+    },
+    "notStarted": "La búsqueda no empezó: {reason}"
+  },
+  "dashboard": {
+    "quickStart": {
+      "placeholder": "p. ej., tenis para correr, tenis para trail",
+      "examples": {
+        "one": "hotel boutique en cartagena",
+        "two": "dentista en monterrey",
+        "three": "clases de yoga en línea"
+      }
+    },
+    "card": {
+      "settings": "Configuración"
+    }
+  },
+  "keywords": {
+    "noTopics": "Agrega el primer tema",
+    "saveFailed": "No se guardó tu elección: {reason}",
+    "searchProgress": {
+      "failed": "No se pudo completar la búsqueda."
+    },
+    "seeds": {
+      "intro": "Titan SEO busca en Google las búsquedas que empiezan con estas palabras.",
+      "addLabel": "Agrega palabras clave semilla, una por línea"
+    },
+    "volumes": {
+      "open": "Agregar el volumen de búsqueda",
+      "title": "Agregar el volumen de búsqueda",
+      "step2": "En Google Ads, abre el Planificador de palabras clave, elige «Consultar el volumen de búsqueda y las previsiones» y carga el archivo.",
+      "step3": "Descarga el resultado del Planificador de palabras clave y cárgalo aquí.",
+      "reason": {
+        "credentials": "DataForSEO rechazó las credenciales: revisa el usuario y la contraseña configurados para la aplicación.",
+        "code": "DataForSEO respondió con el código {code}.",
+        "noResponse": "DataForSEO no respondió a tiempo: inténtalo más tarde.",
+        "notice": {
+          "METRICS_BUDGET_EXCEEDED": "Se alcanzó el límite de gasto mensual del volumen de búsqueda.",
+          "RUN_BUDGET_EXCEEDED": "La búsqueda alcanzó el límite de gasto por búsqueda: algunas palabras clave se quedaron sin volumen.",
+          "LICENSED_METRICS_QUOTA_EXCEEDED": "Se agotó la cuota mensual de palabras clave con volumen de búsqueda de DataForSEO."
+        }
+      }
+    },
+    "menuOverrides": "Configuración distinta de la del proyecto…",
+    "overrides": {
+      "title": "Configuración distinta de la del proyecto"
+    }
+  },
+  "plan": {
+    "conflict": "Otro miembro modificó el plan: cargué la última versión.",
+    "ai": {
+      "rateLimited": "Alcanzaste el límite de propuestas: podrás pedir otra a partir de las {time}.",
+      "droppedH2": "{count, plural, one {No se conservó otro título propuesto.} other {No se conservaron otros # títulos propuestos.}}"
+    },
+    "regenerateDialog": {
+      "text": "Reorganizo las páginas que todavía no se empezaron con las palabras clave conservadas de hoy. Las páginas en redacción o publicadas se quedan como están."
+    },
+    "versionsPage": {
+      "empty": "No hay versiones anteriores: el plan todavía no se regeneró."
+    }
+  }
+}

@@ -5,7 +5,7 @@ import { parseCredentials, registrationClosed } from "@/lib/auth/credentials-inp
 import { issueVerificationToken, notifyExistingAccount } from "@/lib/auth/email-verification";
 import { runAfterResponse } from "@/lib/http/after-response";
 import { errorResponse, withApiErrors } from "@/lib/http/errors";
-import { isSupportedLocale, LOCALE_COOKIE } from "@/lib/i18n/locale";
+import { isOfferedLocale, LOCALE_COOKIE } from "@/lib/i18n/locale";
 import { LEGAL_TERMS_VERSION } from "@/lib/legal/version";
 import { guardPublicForm } from "@/lib/security/captcha";
 
@@ -50,7 +50,7 @@ export const POST = withApiErrors(async (request: NextRequest) => {
     const user = await registerUser({
       ...credentials,
       role: UserRole.SUBSCRIBER,
-      uiLocale: isSupportedLocale(cookieLocale) ? cookieLocale : null,
+      uiLocale: isOfferedLocale(cookieLocale) ? cookieLocale : null,
       // Sempre la costante del server, mai il valore inviato dal client (CWE-602).
       acceptedTermsVersion: LEGAL_TERMS_VERSION,
     });

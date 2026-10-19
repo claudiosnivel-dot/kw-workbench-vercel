@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { type AppLocale, SUPPORTED_LOCALES } from "@/lib/i18n/locale";
+import { OFFERED_LOCALES, type OfferedLocale } from "@/lib/i18n/locale";
 import { LEGAL_TERMS_VERSION } from "@/lib/legal/version";
 
 /**
@@ -40,12 +40,12 @@ export function parseLegalMarkdown(raw: string): ParsedLegalDocument {
 }
 
 /** Percorso del file di un documento: lingua e documento da elenchi chiusi, mai dall'input libero (CWE-22). */
-function documentFile(dir: string, locale: AppLocale, doc: LegalDocument): string {
+function documentFile(dir: string, locale: OfferedLocale, doc: LegalDocument): string {
   return path.join(dir, locale, `${doc}.md`);
 }
 
 /** Documento letto dal disco, null se il file manca. */
-export function readLegalDocument(locale: AppLocale, doc: LegalDocument, dir: string = LEGAL_CONTENT_DIR): ParsedLegalDocument | null {
+export function readLegalDocument(locale: OfferedLocale, doc: LegalDocument, dir: string = LEGAL_CONTENT_DIR): ParsedLegalDocument | null {
   try {
     return parseLegalMarkdown(readFileSync(documentFile(dir, locale, doc), "utf8"));
   } catch (error) {
@@ -62,7 +62,7 @@ export function readLegalDocument(locale: AppLocale, doc: LegalDocument, dir: st
  */
 export function checkLegalDocuments(dir: string = LEGAL_CONTENT_DIR, termsVersion: string = LEGAL_TERMS_VERSION): string[] {
   const problems: string[] = [];
-  for (const locale of SUPPORTED_LOCALES) {
+  for (const locale of OFFERED_LOCALES) {
     for (const doc of LEGAL_DOCUMENTS) {
       const file = path.relative(process.cwd(), documentFile(dir, locale, doc));
       const document = readLegalDocument(locale, doc, dir);

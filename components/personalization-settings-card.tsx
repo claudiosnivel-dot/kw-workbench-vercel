@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { SettingsCard } from "@/components/settings-card";
 import { readApiResponse, sendJson } from "@/lib/client/http";
 import { useSaveAction } from "@/lib/client/use-save-action";
-import { isSupportedLocale, SUPPORTED_LOCALES } from "@/lib/i18n/locale";
+import { isOfferedLocale, OFFERED_LOCALES } from "@/lib/i18n/locale";
 
 type ThemeMode = "DARK" | "LIGHT";
 type FontScaleMode = "NORMAL" | "LARGE";
@@ -64,7 +64,7 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
   }
 
   function chooseLocale(next: string) {
-    if (!isSupportedLocale(next) || next === locale) return;
+    if (!isOfferedLocale(next) || next === locale) return;
     const previous = locale;
     setLocale(next);
     void persist(() => sendJson("POST", "/api/locale", { locale: next }), () => setLocale(previous));
@@ -83,7 +83,7 @@ export function PersonalizationSettingsCard({ initial }: { initial: PreferencesS
           disabled={saving}
           onChange={(event) => chooseLocale(event.target.value)}
         >
-          {SUPPORTED_LOCALES.map((option) => (
+          {OFFERED_LOCALES.map((option) => (
             <option key={option} value={option}>
               {tLocale(option)}
             </option>

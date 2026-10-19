@@ -3,7 +3,9 @@
     "locale": {
       "label": "Lingua",
       "it": "Italiano",
-      "en": "English"
+      "en": "English",
+      "es-ES": "Español (España)",
+      "es-419": "Español (Latinoamérica)"
     },
     "unexpectedError": "Errore imprevisto",
     "saving": "Salvataggio...",
