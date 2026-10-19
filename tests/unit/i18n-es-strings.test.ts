@@ -41,3 +41,15 @@ describe("testi spagnoli dell'avvio rapido e dei volumi", () => {
     expect(spain("dashboard.quickStart.examples.two")).not.toBe(latam("dashboard.quickStart.examples.two"));
   });
 });
+
+// Gate di T-4802 (AC-4802-1): accesso con i testi dei prodotti in spagnolo, uguali nelle due varianti.
+describe("testi spagnoli dell'accesso", () => {
+  // covers: AC-4802-1
+  it("auth.login.submit è «Iniciar sesión» e auth.login.forgotPassword «¿Olvidaste tu contraseña?» in entrambe", () => {
+    for (const locale of ["es-ES", "es-419"] as const) {
+      const t = translator(locale);
+      expect(t("auth.login.submit")).toBe("Iniciar sesión");
+      expect(t("auth.login.forgotPassword")).toBe("¿Olvidaste tu contraseña?");
+    }
+  });
+});

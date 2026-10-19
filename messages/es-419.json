@@ -1,4 +1,22 @@
 {
+  "auth": {
+    "login": {
+      "notices": {
+        "session_ended": "La sesión terminó. Vuelve a iniciar sesión."
+      }
+    },
+    "register": {
+      "subtitle": "Completa los campos para activar tu espacio de trabajo.",
+      "checkEmail": "Revisa tu correo electrónico: te escribimos para completar el registro. Después, inicia sesión con tu correo y tu contraseña."
+    },
+    "emailChange": {
+      "invalid": "El enlace no es válido o venció: si todavía lo necesitas, vuelve a solicitar el cambio desde tu perfil.",
+      "taken": "Esta dirección ya la usa otra cuenta: el correo electrónico no cambió."
+    },
+    "verifyBanner": {
+      "text": "Tu dirección de correo electrónico todavía no está verificada: abre el enlace que te enviamos para poder iniciar búsquedas."
+    }
+  },
   "projects": {
     "settings": {
       "title": "Configuración",
@@ -13,6 +31,11 @@
   "jobs": {
     "run": {
       "failed": "La búsqueda no se completó"
+    }
+  },
+  "export": {
+    "columns": {
+      "avg_monthly_searches": "Volumen de búsqueda mensual promedio"
     }
   },
   "errors": {
@@ -44,6 +67,67 @@
     "error": {
       "title": "Ocurrió un error",
       "body": "No se pudo cargar la página. Vuelve a intentarlo en unos momentos."
+    }
+  },
+  "settings": {
+    "passwordChange": {
+      "intro": "Un administrador restableció tu contraseña. Antes de continuar, elige una nueva: como contraseña actual, escribe la que recibiste."
+    },
+    "branding": {
+      "darkPlaceholder": "https://misitio.com/logo-dark.svg",
+      "uploadDark": "Cargar el logotipo oscuro",
+      "lightPlaceholder": "https://misitio.com/logo-light.svg",
+      "uploadLight": "Cargar el logotipo claro",
+      "fileUnsupported": "Archivo no admitido. Carga una imagen PNG, JPG, SVG o WEBP.",
+      "darkLoaded": "Logotipo oscuro preparado. Haz clic en «Guardar la imagen de marca» para aplicarlo.",
+      "lightLoaded": "Logotipo claro preparado. Haz clic en «Guardar la imagen de marca» para aplicarlo.",
+      "darkRemoved": "Quitaste el logotipo oscuro. Haz clic en «Guardar la imagen de marca» para confirmarlo.",
+      "lightRemoved": "Quitaste el logotipo claro. Haz clic en «Guardar la imagen de marca» para confirmarlo."
+    }
+  },
+  "integrations": {
+    "sheetsConfig": {
+      "overrideRemoved": "Se quitó el valor guardado de {field}: se usa la variable de entorno, si existe.",
+      "saveFailed": "No se pudo guardar la configuración de Google Sheets."
+    },
+    "sheetsPersonal": {
+      "failed": "No se pudo conectar Google Sheets: {reason}",
+      "reasons": {
+        "accesso_negato": "se denegó o se canceló el acceso a Google.",
+        "stato_non_valido": "la solicitud de conexión venció o no es válida. Vuelve a intentarlo.",
+        "config_oauth_mancante": "falta la configuración OAuth de Google Sheets. Comunícate con el administrador principal.",
+        "scope_mancante": "no concediste el permiso para Google Sheets. Vuelve a conectar y acepta todos los permisos solicitados.",
+        "scambio_token_fallito": "Google no completó la conexión. Vuelve a intentarlo.",
+        "sessione_scaduta": "la sesión venció. Vuelve a iniciar sesión y conecta de nuevo."
+      }
+    }
+  },
+  "billing": {
+    "statuses": {
+      "past_due": "pago vencido"
+    },
+    "manageTitle": "Administrar",
+    "cancel": "Cancelar al final del período",
+    "cancelConfirm": "¿Cancelar la suscripción? El plan sigue activo hasta el final del período pagado.",
+    "pastDue": {
+      "banner": "No se pudo cobrar la suscripción del espacio de trabajo: el plan sigue activo hasta el {date}."
+    },
+    "limit": {
+      "owner": "Alcanzaste un límite del plan del espacio de trabajo.",
+      "member": "Alcanzaste un límite del plan del espacio de trabajo: pídele al propietario que cambie a un plan superior."
+    }
+  },
+  "account": {
+    "email": {
+      "expires": "Abre el enlace que te enviamos antes del {date}. Hasta entonces, el correo electrónico sigue siendo el anterior."
+    },
+    "devices": {
+      "intro": "Cierra la sesión en todos los dispositivos en los que la iniciaste, incluido este."
+    }
+  },
+  "strategy": {
+    "reasons": {
+      "SPOKE_WORD": "Artículo satélite para las búsquedas que agregan «{word}» al tema de la página pilar."
     }
   },
   "project": {

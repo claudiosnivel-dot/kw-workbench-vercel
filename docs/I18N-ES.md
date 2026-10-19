@@ -10,9 +10,13 @@ dell'italiano. Guida e glossario sono stati approvati dall'utente con il modulo 
 - `lib/i18n/catalogs.ts` unisce i cataloghi a livelli: inglese ← es-ES per `es-ES`, inglese ← es-ES ← es-419 per
   `es-419`. Una chiave non ancora tradotta si legge in inglese, mai come chiave del catalogo.
 - Namespace tradotti con il modulo 47: `common`, `metadata`, `nav`, `projects`, `jobs`, `results`, `project`,
-  `nextStep`, `dashboard`, `keywords`, `plan`, `errors`, `errorPages`. Gli altri arrivano con i moduli 48 e 49.
+  `nextStep`, `dashboard`, `keywords`, `plan`, `errors`, `errorPages`. Con il modulo 48: `strategy`, `export`,
+  `exportDialog`, `settings`, `integrations` (T-4801) e `auth`, `account`, `billing`, `footer` (T-4802). Gli altri
+  (`workspace`, `admin`, `emails`, `marketing`, `pricing`, `legal`, `contact`) arrivano con il modulo 49.
 - `tests/unit/i18n-catalog-parity.test.ts` controlla chiavi, valori vuoti, argomenti ICU (anche plural e select) e le
-  parole vietate; `tests/unit/i18n-es-strings.test.ts` controlla alcuni testi del glossario nelle due varianti.
+  parole vietate, anche namespace per namespace sul catalogo es-419 letto a livelli; `tests/unit/i18n-es-strings.test.ts`
+  controlla alcuni testi del glossario nelle due varianti; `tests/integration/export-es.test.ts` scarica gli export dei
+  risultati e della strategia con un utente in es-ES ed es-419.
 - Le due lingue restano fuori dai selettori, dalle preferenze salvabili e dal riconoscimento del browser
   (`OFFERED_LOCALES` in `lib/i18n/locale.ts`) finché il modulo 49 non completa i cataloghi (T-4902).
 
@@ -80,3 +84,21 @@ Termini approvati con il modulo 47; dove le varianti coincidono la forma vale pe
 | scaletta | entrambe | esquema | testo dei titoli H2 della pagina |
 | AI | entrambe | IA | sigla spagnola |
 | verifica anti-bot | entrambe | verificación antibots | prefisso «anti» unito alla parola, norma RAE |
+| Accedi / Esci | entrambe | Iniciar sesión / Cerrar sesión | forma dei prodotti in spagnolo (Google, Microsoft); «Acceder» suona formale |
+| Password dimenticata? | entrambe | ¿Olvidaste tu contraseña? | fissata da AC-4802-1 per le due varianti; in Spagna è comune anche «¿Has olvidado tu contraseña?» |
+| email (indirizzo) / password | entrambe | correo electrónico / contraseña | glossario; «correo» da solo quando il contesto è chiaro |
+| Il tuo account | entrambe | Tu cuenta | come `nav.yourAccount` e il registro del modulo 47 (il modulo 48 diceva «Mi cuenta») |
+| Branding / logo | entrambe | Imagen de marca / logotipo | parole comuni dei pannelli in spagnolo |
+| Ricerche mensili medie (export) | es-ES / es-419 | Volumen de búsqueda mensual medio / promedio | glossario; «promedio» è la forma abituale in America Latina |
+| Offerta minima e massima inizio pagina | entrambe | Puja por la parte superior de la página, intervalo bajo / alto | nomi delle colonne del Planificador di Google Ads in spagnolo |
+| Score / Origine score | entrambe | Puntuación / Origen de la puntuación | come la colonna della pagina delle keyword |
+| Strategia hub and spoke (PDF) | entrambe | Estrategia de páginas pilar y artículos satélite | glossario (hub e spoke); niente termini inglesi nel documento per il cliente |
+| modelli dei titoli (strategy.templates) | entrambe | ranking, comparación, en línea, «Nuestro criterio de selección» | forme valide nei due mercati: «comparativa» e «online» sono soprattutto di Spagna; il codice che li usa arriva con T-5101 |
+| Excel italiano (punto e virgola) | entrambe | Excel (punto y coma) | il separatore conta, non la lingua di Excel (in Messico Excel usa la virgola) |
+| Gestisci (fatturazione) | es-ES / es-419 | Gestionar / Administrar | uso di ciascun mercato |
+| pagamento scaduto | es-ES / es-419 | pago pendiente / pago vencido | uso di ciascun mercato |
+| Disdici / disdetta | entrambe | Cancelar / cancelación | parola dei portali di pagamento in spagnolo |
+| Premi (un pulsante) | es-ES / es-419 | Pulsa / Haz clic en | uso di ciascun mercato |
+| Supporto | entrambe | Soporte | come `nav.support` |
+| campi OAuth di Google | entrambe | ID de cliente, Secreto de cliente, URI de redirección | nomi della console di Google Cloud in spagnolo |
+| Free (piano) | entrambe | Free | nome del piano, come in italiano |
