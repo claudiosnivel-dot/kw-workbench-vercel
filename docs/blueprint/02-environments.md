@@ -198,7 +198,7 @@ Il risultato è un raggio d'azione ridotto per qualunque errore di configurazion
     - id: AC-204-1
       given: "brand_blacklist ed expansion_patterns vuote"
       when: "si esegue seedGlobalDefaults due volte di seguito"
-      then: "dopo ciascuna esecuzione le righe con project_id null sono 5 in brand_blacklist e 16 in expansion_patterns (emendato da T-3702 il 2026-10-18, D-44: 8 composizioni inglesi e 8 italiane, prima 8)"
+      then: "dopo ciascuna esecuzione le righe con project_id null sono 5 in brand_blacklist e 24 in expansion_patterns (emendato da T-5001 il 2026-10-19, D-47: 8 composizioni inglesi, 8 italiane e 8 spagnole, prima 16; emendato da T-3702 il 2026-10-18, D-44: prima 8)"
     - id: AC-204-2
       given: "i default globali già presenti"
       when: "si esegue di nuovo seedGlobalDefaults"
@@ -278,3 +278,4 @@ Il risultato è un raggio d'azione ridotto per qualunque errore di configurazion
 - Osservabilità: `ac_observability_check.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
 - Emendamento dichiarato (2026-10-18, costruzione del macrotask 37, T-3702, D-44): le composizioni globali hanno una lingua e il seed ne inserisce 8 inglesi e 8 italiane, quindi in AC-204-1 le righe globali di expansion_patterns sono 16; il resto del criterio e AC-204-2…4 sono invariati.
+- Emendamento dichiarato (2026-10-19, costruzione del macrotask 50, T-5001, D-47): il seed inserisce anche 8 composizioni spagnole, quindi in AC-204-1 le righe globali di expansion_patterns sono 24; il resto del criterio e AC-204-2…4 sono invariati.
