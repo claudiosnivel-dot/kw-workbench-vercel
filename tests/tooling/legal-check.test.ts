@@ -28,12 +28,15 @@ describe("npm run legal:check", () => {
       expect(mismatch.status).toBe(1);
       expect(mismatch.stderr).toMatch(/mismatch[\\/]it[\\/]terms\.md: version versione-discordante diversa da LEGAL_TERMS_VERSION segnaposto-2026-10-07/);
       expect(mismatch.stderr).toMatch(/mismatch[\\/]en[\\/]terms\.md/);
+      // impacted-by: T-4901 (i testi spagnoli di content/legal/es, comuni a es-ES ed es-419, si controllano come gli altri)
+      expect(mismatch.stderr).toMatch(/mismatch[\\/]es[\\/]terms\.md/);
       expect(mismatch.stderr).not.toMatch(/privacy\.md|cookies\.md/);
 
       // I file reali restano segnaposto finché D-15 non fornisce i testi: il rilascio commerciale resta bloccato.
       const real = legalCheck();
       expect(real.status).toBe(1);
       expect(real.stderr).toMatch(/content[\\/]legal[\\/]it[\\/]terms\.md: segnaposto/);
+      expect(real.stderr).toMatch(/content[\\/]legal[\\/]es[\\/]terms\.md: segnaposto/);
     },
     3 * COMMAND_TIMEOUT_MS
   );

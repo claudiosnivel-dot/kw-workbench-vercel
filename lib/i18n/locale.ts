@@ -1,7 +1,7 @@
 /**
  * Lingua dell'interfaccia (T-1301, D-07; T-4701, D-47): italiano, inglese e le due varianti dello spagnolo, default
- * italiano, nessun prefisso negli URL dell'app (le pagine pubbliche di T-1801 hanno /it e /en, D-28 emendata).
- * Modulo puro, senza import: lo usano i18n/request.ts, la rotta /api/locale e il selettore lato client.
+ * italiano, nessun prefisso negli URL dell'app (le pagine pubbliche di T-1801 hanno /it ed /en, D-28 emendata, e da
+ * T-4902 /es ed /es-419). Modulo puro, senza import: lo usano i18n/request.ts, la rotta /api/locale e il selettore.
  */
 
 export const SUPPORTED_LOCALES = ["it", "en", "es-ES", "es-419"] as const;
@@ -9,9 +9,9 @@ export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 
 /**
  * Lingue offerte (T-4701): selettori, preferenze salvabili (PATCH e POST /api/locale), riconoscimento dal browser e sito
- * pubblico. Lo spagnolo resta fuori finché i cataloghi non sono completi (T-4902): lo legge solo chi ha la lingua salvata.
+ * pubblico. Lo spagnolo è offerto da T-4902, a cataloghi completi; una lingua nuova entra qui solo quando è pronta.
  */
-export const OFFERED_LOCALES = ["it", "en"] as const satisfies readonly AppLocale[];
+export const OFFERED_LOCALES = ["it", "en", "es-ES", "es-419"] as const satisfies readonly AppLocale[];
 export type OfferedLocale = (typeof OFFERED_LOCALES)[number];
 
 export const DEFAULT_LOCALE: AppLocale = "it";
@@ -39,7 +39,7 @@ export function isSupportedLocale(value: unknown): value is AppLocale {
   return typeof value === "string" && (SUPPORTED_LOCALES as readonly string[]).includes(value);
 }
 
-/** Lingua offerta nei selettori e salvabile (T-4701): fino a T-4902 solo it ed en. */
+/** Lingua offerta nei selettori e salvabile (T-4701, T-4902). */
 export function isOfferedLocale(value: unknown): value is OfferedLocale {
   return typeof value === "string" && (OFFERED_LOCALES as readonly string[]).includes(value);
 }
@@ -108,7 +108,7 @@ export type LocaleSources = {
 /**
  * Priorità: preferenza dell'utente (qualunque lingua supportata, salvata solo dalle rotte che accettano le offerte), poi
  * cookie, poi Accept-Language per peso (en-US → en, es-AR → es-419), poi it. Cookie e browser valgono solo per le lingue
- * di offered: OFFERED_LOCALES di default, SUPPORTED_LOCALES per provare il riconoscimento dello spagnolo prima di T-4902.
+ * di offered: OFFERED_LOCALES di default.
  */
 export function resolveLocale(
   { userLocale, cookieLocale, acceptLanguage }: LocaleSources,

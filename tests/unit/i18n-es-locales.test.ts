@@ -74,9 +74,10 @@ describe("lingua di un visitatore senza cookie", () => {
   });
 
   // covers: AC-4701-2
-  it("prima di T-4902 il browser e il cookie non portano allo spagnolo, la lingua salvata sì", () => {
-    expect(resolveLocale({ userLocale: null, cookieLocale: null, acceptLanguage: "es-AR,es;q=0.9,en;q=0.5" })).toBe("en");
-    expect(resolveLocale({ userLocale: null, cookieLocale: "es-ES", acceptLanguage: "es" })).toBe("it");
+  // impacted-by: T-4902 (lo spagnolo è una lingua offerta: browser e cookie portano allo spagnolo senza secondo argomento)
+  it("da T-4902 anche il browser e il cookie portano allo spagnolo, e la lingua salvata vince", () => {
+    expect(resolveLocale({ userLocale: null, cookieLocale: null, acceptLanguage: "es-AR,es;q=0.9,en;q=0.5" })).toBe("es-419");
+    expect(resolveLocale({ userLocale: null, cookieLocale: "es-ES", acceptLanguage: "en" })).toBe("es-ES");
     expect(resolveLocale({ userLocale: "es-419", cookieLocale: "en", acceptLanguage: "it" })).toBe("es-419");
   });
 });

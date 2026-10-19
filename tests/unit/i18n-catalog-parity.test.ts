@@ -64,7 +64,7 @@ const english = flatten(en as Catalog);
 const UNACCENTED_WORDS = /(?<!\p{L})(puo|piu|verra|restera|agira|gia)(?!\p{L})/giu;
 
 // Namespace tradotti in spagnolo: percorso di lavoro (T-4702), strategia, export, impostazioni e integrazioni (T-4801),
-// accesso, account e fatturazione (T-4802); il modulo 49 aggiunge gli altri.
+// accesso, account e fatturazione (T-4802); il modulo 49 aggiunge gli altri (T-4901).
 const WORK_NAMESPACES = [
   "common", "metadata", "nav", "projects", "jobs", "results", "project", "nextStep", "dashboard", "keywords", "plan", "errors", "errorPages",
 ];
@@ -184,6 +184,16 @@ describe("cataloghi es-ES ed es-419", () => {
     const result = parityProblems(ACCOUNT_NAMESPACES);
 
     expect(result.keys).toBeGreaterThan(150);
+    expect(result.spain).toEqual(NO_PROBLEMS);
+    expect(result.latam).toEqual(NO_PROBLEMS);
+  });
+
+  // covers: AC-4901-2
+  it("tutti i namespace dell'italiano sono completi in es-ES ed es-419, con gli argomenti italiani e senza parole vietate", () => {
+    const result = parityProblems(Object.keys(it_));
+
+    expect(result.keys).toBe(italian.size);
+    expect(result.keys).toBeGreaterThan(1300);
     expect(result.spain).toEqual(NO_PROBLEMS);
     expect(result.latam).toEqual(NO_PROBLEMS);
   });

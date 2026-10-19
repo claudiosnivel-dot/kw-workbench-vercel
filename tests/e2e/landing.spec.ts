@@ -39,7 +39,10 @@ test.describe("landing pubblica per l'anonimo con il browser in inglese", () => 
       expect.arrayContaining([
         ["it", "/it"],
         ["en", "/en"],
-        ["x-default", "/"],
+        // impacted-by: T-4902 (AC-1801-3 emendato: x-default verso la versione inglese, con es-ES ed es-419)
+        ["es-ES", "/es"],
+        ["es-419", "/es-419"],
+        ["x-default", "/en"],
       ])
     );
     const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");

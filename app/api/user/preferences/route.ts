@@ -56,7 +56,7 @@ function parseColorVisionMode(raw: unknown): ColorVisionMode | null {
   return value;
 }
 
-/** Lingua dell'interfaccia (T-4701): solo le lingue offerte; es-ES ed es-419 si salvano da T-4902, a cataloghi completi. */
+/** Lingua dell'interfaccia (T-4701): solo le lingue offerte, es-ES ed es-419 comprese da T-4902. */
 function parseUiLocale(raw: unknown): UiLocale | null {
   if (raw === undefined) {
     return null;

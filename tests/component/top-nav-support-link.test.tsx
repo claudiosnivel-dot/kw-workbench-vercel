@@ -3,16 +3,17 @@
 // Gate di T-2005 (AC-2005-1): voce Fatturazione verso /billing per chi ha billing.manage nel workspace attivo.
 // impacted-by: T-2304 (AC-1805-4 e AC-2005-1 emendati: Supporto e Fatturazione sono voci del menu dell'utente)
 // impacted-by: T-3103 (AC-2005-1 superato: la fatturazione è la sezione Piano del workspace e nessun menu ha /billing)
+// impacted-by: T-4902 (quattro lingue: sulle pagine pubbliche la lingua è un selettore che porta alla stessa pagina)
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TopNav } from "@/components/top-nav";
 import { renderWithIntl } from "./intl";
 
-const navigation = vi.hoisted(() => ({ pathname: "/" }));
+const navigation = vi.hoisted(() => ({ pathname: "/", push: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => navigation.pathname,
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push: navigation.push, refresh: vi.fn() }),
 }));
 
 /** Voci del menu dell'utente con il loro href, dopo averlo aperto dal pulsante con il nome. */
@@ -32,7 +33,7 @@ describe("barra di navigazione", () => {
     expect(menuLinks("Utente")).toContainEqual(["Supporto", "/it/contact"]);
   });
 
-  it("per l'anonimo su una pagina pubblica mostra prezzi, accesso, registrazione e la lingua alternativa", () => {
+  it("per l'anonimo su una pagina pubblica mostra prezzi, accesso, registrazione e il selettore delle quattro lingue", () => {
     navigation.pathname = "/it/pricing";
     renderWithIntl(<TopNav brandName="Titan SEO" themeMode="DARK" user={null} />);
 
@@ -40,8 +41,13 @@ describe("barra di navigazione", () => {
     const hrefs = within(desktop)
       .getAllByRole("link")
       .map((link) => link.getAttribute("href"));
-    expect(hrefs).toEqual(["/it/pricing", "/login", "/register", "/en/pricing"]);
+    expect(hrefs).toEqual(["/it/pricing", "/login", "/register"]);
     expect(within(desktop).queryByRole("button", { name: /esci/i })).toBeNull();
+
+    const languages = within(desktop).getByRole("combobox", { name: "Lingua" });
+    expect(within(languages).getAllByRole("option").map((option) => option.getAttribute("value"))).toEqual(["it", "en", "es-ES", "es-419"]);
+    fireEvent.change(languages, { target: { value: "es-419" } });
+    expect(navigation.push).toHaveBeenCalledWith("/es-419/pricing");
   });
 
   // covers: AC-2005-1

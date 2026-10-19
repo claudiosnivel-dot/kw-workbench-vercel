@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { UserMenu, type WorkspaceOption } from "@/components/user-menu";
-import type { AppLocale } from "@/lib/i18n/locale";
 import { findMarketingRoute, marketingPath } from "@/lib/marketing/routes";
 
 // Pagine di accesso e dei link delle email (T-1403…T-1405): la navbar mostra solo il marchio.
@@ -32,15 +31,13 @@ export const PROJECT_NAV_SLOT_ID = "project-nav-slot";
 
 /**
  * Voci della barra per gli anonimi (T-1801): prezzi, accesso, registrazione e lingua; nessun link dell'app né logout.
- * Sulle pagine pubbliche la lingua è un link alla stessa pagina nell'altra lingua (URL per lingua, D-28 emendata),
- * altrove il selettore a cookie di T-1301.
+ * Sulle pagine pubbliche il selettore della lingua porta alla stessa pagina nella lingua scelta (URL per lingua, D-28
+ * emendata; quattro lingue da T-4902), altrove salva la lingua nel cookie di T-1301.
  */
 function AnonymousNavItems({ pathname, linkClassName, mobile = false }: { pathname: string; linkClassName: string; mobile?: boolean }) {
   const t = useTranslations("nav");
-  const tLocale = useTranslations("common.locale");
   const locale = useLocale();
-  const alternate = findMarketingRoute(pathname)?.alternate;
-  const otherLocale: AppLocale = locale === "it" ? "en" : "it";
+  const alternates = findMarketingRoute(pathname)?.alternates;
 
   return (
     <>
@@ -53,13 +50,7 @@ function AnonymousNavItems({ pathname, linkClassName, mobile = false }: { pathna
       <Link href="/register" className={`btn-primary ${mobile ? "w-full text-center" : ""}`}>
         {t("register")}
       </Link>
-      {alternate ? (
-        <Link href={alternate} hrefLang={otherLocale} lang={otherLocale} aria-label={tLocale("label")} className={linkClassName}>
-          {tLocale(otherLocale)}
-        </Link>
-      ) : (
-        <LocaleSwitcher className={mobile ? "w-full" : undefined} />
-      )}
+      <LocaleSwitcher className={mobile ? "w-full" : undefined} alternates={alternates} />
     </>
   );
 }

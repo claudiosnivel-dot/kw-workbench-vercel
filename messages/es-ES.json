@@ -472,6 +472,353 @@
       "saved": "Imagen de marca guardada."
     }
   },
+  "workspace": {
+    "switcher": {
+      "label": "Tus espacios de trabajo",
+      "personal": "{name} (personal)",
+      "create": "Nuevo espacio de trabajo…"
+    },
+    "roles": {
+      "OWNER": "Propietario",
+      "ADMIN": "Administrador",
+      "MEMBER": "Miembro"
+    },
+    "page": {
+      "nav": "Menú del espacio de trabajo",
+      "general": "General",
+      "members": "Miembros",
+      "plan": "Plan",
+      "summary": "Tu rol: {role} · {kind}",
+      "personal": "Espacio de trabajo personal",
+      "team": "Espacio de trabajo de equipo"
+    },
+    "name": {
+      "title": "Nombre del espacio de trabajo",
+      "label": "Nombre",
+      "save": "Guardar el nombre",
+      "saving": "Guardando...",
+      "saved": "Nombre actualizado."
+    },
+    "members": {
+      "title": "Miembros",
+      "name": "Nombre",
+      "role": "Rol",
+      "joined": "Incorporación",
+      "actions": "Acciones",
+      "you": "{name} (tú)",
+      "changeRole": "Rol de {name}",
+      "roleChanged": "Rol actualizado.",
+      "remove": "Quitar",
+      "removing": "Quitando...",
+      "removeConfirm": "¿Quitar a {name} del espacio de trabajo?"
+    },
+    "invites": {
+      "title": "Invitaciones",
+      "empty": "No hay invitaciones pendientes.",
+      "email": "Correo electrónico",
+      "role": "Rol",
+      "expires": "Caduca",
+      "revoke": "Revocar",
+      "revoking": "Revocando...",
+      "revokeConfirm": "¿Revocar la invitación para {email}?",
+      "formTitle": "Invitar a una persona",
+      "formIntro": "La invitación es válida durante 7 días y solo se acepta con la cuenta que tiene este correo electrónico, ya verificado.",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "nombre@ejemplo.com",
+      "roleLabel": "Rol",
+      "send": "Crear la invitación",
+      "sending": "Creando...",
+      "expired": "Caducada",
+      "cancel": "Cancelar",
+      "linkLabel": "Enlace de la invitación para {email}",
+      "copy": "Copiar",
+      "copied": "Enlace copiado.",
+      "onlyNow": "Solo lo ves ahora: cópialo y envíaselo a la persona que invitas.",
+      "validUntil": "El enlace es válido hasta el {date}.",
+      "emailSent": "También le hemos enviado un correo electrónico.",
+      "done": "Listo",
+      "renew": "Nuevo enlace",
+      "renewing": "Creando el enlace...",
+      "renewTitle": "Nuevo enlace para {email}"
+    },
+    "transfer": {
+      "title": "Transferir la propiedad",
+      "intro": "El miembro elegido pasa a ser el propietario y tú pasas a ser administrador.",
+      "label": "Nuevo propietario",
+      "submit": "Transferir",
+      "submitting": "Transfiriendo...",
+      "confirm": "¿Transferir la propiedad del espacio de trabajo a {name}?"
+    },
+    "create": {
+      "title": "Nuevo espacio de trabajo",
+      "label": "Nombre",
+      "submit": "Crear",
+      "submitting": "Creando...",
+      "cancel": "Cancelar"
+    },
+    "leave": {
+      "title": "Salir del espacio de trabajo",
+      "intro": "Perderás el acceso a los proyectos de este espacio de trabajo hasta que alguien te vuelva a invitar.",
+      "personalIntro": "El espacio de trabajo se queda para los demás miembros con sus proyectos y recibirás un nuevo espacio de trabajo personal vacío.",
+      "submit": "Salir",
+      "submitting": "Saliendo...",
+      "confirm": "¿Salir del espacio de trabajo {name}?"
+    },
+    "danger": {
+      "title": "Acciones irreversibles",
+      "warning": "La transferencia de la propiedad y la salida del espacio de trabajo no se pueden deshacer desde aquí."
+    },
+    "accept": {
+      "title": "Invitación a un espacio de trabajo",
+      "intro": "Acepta la invitación para entrar en el espacio de trabajo con la cuenta de la dirección invitada.",
+      "submit": "Aceptar la invitación",
+      "submitting": "Aceptando...",
+      "success": "Invitación aceptada: ahora este es el espacio de trabajo activo.",
+      "missingToken": "El enlace de la invitación no está completo: vuelve a abrir el enlace que has recibido.",
+      "goToApp": "Ir al panel"
+    }
+  },
+  "admin": {
+    "sections": {
+      "title": "Administración",
+      "intro": "Gestiona los usuarios y la plataforma. Los datos de los proyectos de los usuarios siempre son privados.",
+      "nav": "Menú de la administración",
+      "overview": "Resumen",
+      "users": "Usuarios",
+      "workspaces": "Espacios de trabajo",
+      "settings": "Ajustes",
+      "log": "Registro"
+    },
+    "roles": {
+      "ADMIN": "Administrador",
+      "SUBSCRIBER": "Suscriptor"
+    },
+    "statuses": {
+      "ACTIVE": "Activo",
+      "SUSPENDED": "Suspendido"
+    },
+    "filters": {
+      "search": "Buscar por correo electrónico o nombre",
+      "searchPlaceholder": "p. ej., lucía",
+      "label": "Filtrar los usuarios",
+      "all": "Todos",
+      "active": "Activos",
+      "suspended": "Suspendidos",
+      "admins": "Administradores"
+    },
+    "create": {
+      "open": "Crear usuario",
+      "title": "Crear usuario",
+      "nonRootHint": "Como administrador no principal, solo puedes crear usuarios suscriptores.",
+      "role": "Rol",
+      "cancel": "Cancelar",
+      "creating": "Creando...",
+      "submit": "Crear",
+      "created": "Usuario creado correctamente."
+    },
+    "manage": {
+      "title": "Gestión de usuarios",
+      "columns": {
+        "user": "Usuario",
+        "role": "Rol",
+        "status": "Estado",
+        "lastLogin": "Último inicio de sesión"
+      },
+      "rootBadge": "Administrador principal",
+      "noEmail": "sin correo electrónico (cuenta antigua)",
+      "empty": "No se ha encontrado ningún usuario con los filtros actuales.",
+      "pageInfo": "Página {page} de {totalPages} · {total} usuarios",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    },
+    "audit": {
+      "title": "Registro de las acciones de administración",
+      "intro": "Cada acción sobre usuarios, imagen de marca y lanzamiento comercial, con autor, destinatario y fecha. Las filas no se modifican ni se eliminan.",
+      "empty": "No hay acciones registradas.",
+      "system": "Sistema",
+      "loadMore": "Cargar más",
+      "loading": "Cargando..."
+    },
+    "kpi": {
+      "title": "Indicadores de la plataforma",
+      "intro": "Solo valores agregados: ningún dato de los proyectos de los usuarios.",
+      "users": "Usuarios",
+      "usersDetail": "{active, plural, one {# activo} other {# activos}}, {suspended, plural, one {# suspendido} other {# suspendidos}}",
+      "workspaces": "Espacios de trabajo",
+      "extractions": "Búsquedas en los últimos 30 días",
+      "failedRate": "Trabajos con error en los últimos 7 días",
+      "failedRateNone": "ninguno terminado",
+      "subscriptions": "Suscripciones activas",
+      "revenue": "Ingresos mensuales estimados"
+    },
+    "spend": {
+      "title": "Gasto en el proveedor de métricas",
+      "month": "Mes {month} (UTC)",
+      "amount": "{spent} de un límite de {budget}",
+      "bar": "Parte del límite del mes ya gastada",
+      "usage": "{requests} solicitudes para {keywords} palabras clave",
+      "caps": "Límites en METRICS_MONTHLY_BUDGET_USD y METRICS_RUN_BUDGET_USD."
+    },
+    "alerts": {
+      "title": "Avisos",
+      "aiDailyLimit": "Las solicitudes gratuitas de la cuenta se han agotado al menos una vez en las últimas 24 horas",
+      "aiFewModels": "Menos de {min} modelos disponibles para la IA",
+      "openCard": "Abrir «Títulos con IA»",
+      "dataForSeo": "DataForSEO ha rechazado {count, plural, one {# solicitud} other {# solicitudes}} en las últimas 24 horas"
+    },
+    "launch": {
+      "title": "Lanzamiento comercial",
+      "intro": "Mientras el lanzamiento está en pausa, los usuarios no tienen límites, no se compra nada y el registro público está cerrado: tú creas las cuentas desde la gestión de usuarios, ya verificadas, o nacen de las invitaciones. El lanzamiento solo se activa con la lista de comprobación completa y se puede volver a poner en pausa.",
+      "status": "Estado: {status}",
+      "statuses": {
+        "paused": "en pausa",
+        "live": "activo"
+      },
+      "changed": "Último cambio: {date}, por {by}",
+      "checklist": "Lista de comprobación",
+      "items": {
+        "plans": "Planes y precios (D-14)",
+        "paddle": "Pagos con Paddle",
+        "email": "Correos electrónicos transaccionales (Resend)",
+        "legal": "Textos legales (D-15)",
+        "captcha": "CAPTCHA del registro (Turnstile)"
+      },
+      "ok": "listo",
+      "missing": "falta",
+      "requires": "Requiere: {requires}",
+      "activate": "Activar el lanzamiento",
+      "activating": "Activando...",
+      "activateConfirm": "¿Activar el lanzamiento comercial? Se aplican planes, límites y cuotas y se abre el registro público.",
+      "pause": "Volver a poner en pausa",
+      "pausing": "Poniendo en pausa...",
+      "pauseConfirm": "¿Volver a poner en pausa el lanzamiento comercial? Los usuarios vuelven a no tener límites y el registro público se cierra.",
+      "updated": "Estado del lanzamiento actualizado."
+    },
+    "aiTitles": {
+      "title": "Títulos con IA",
+      "intro": "Propuestas de H1 y H2 escritas por un modelo gratuito a través de OpenRouter, una página del plan cada vez. La clave solo está en el entorno del servidor (OPENROUTER_API_KEY): aquí eliges si la función está activa, los modelos y los límites.",
+      "enabled": "Función para los usuarios",
+      "on": "Activa",
+      "off": "Desactivada",
+      "models": "Modelos, por orden de prueba",
+      "modelsHint": "Solo modelos gratuitos (ID que termina en :free), de 1 a 8. Si un modelo está ocupado o responde mal, se prueba el siguiente.",
+      "up": "Subir",
+      "down": "Bajar",
+      "remove": "Quitar",
+      "addModel": "Añadir modelo",
+      "add": "Añadir",
+      "notFree": "Solo modelos gratuitos: un ID que termine en :free.",
+      "duplicate": "El modelo ya está en la lista.",
+      "full": "La lista ya tiene 8 modelos: quita uno para añadir otro.",
+      "status": {
+        "ok": "disponible",
+        "missing": "ya no está en el catálogo",
+        "unknown": "por comprobar"
+      },
+      "catalogChecked": "Última comprobación del catálogo de OpenRouter: {date}",
+      "catalogNever": "Catálogo de OpenRouter aún sin comprobar",
+      "catalogNew": "Modelos gratuitos del catálogo que aún no están en la lista",
+      "catalogNoNew": "Todos los modelos gratuitos del catálogo ya están en la lista.",
+      "platformLimit": "Límite de la plataforma (solicitudes en 24 horas)",
+      "workspaceLimit": "Límite por espacio de trabajo (propuestas en 24 horas)",
+      "keyConfigured": "Clave configurada: {configured, select, yes {sí} other {no}}",
+      "used": "Solicitudes en las últimas 24 horas: {used} de {limit}",
+      "usage": {
+        "title": "Uso de los modelos",
+        "empty": "Ninguna solicitud a los modelos en los últimos 7 días.",
+        "window": {
+          "last24h": "Últimas 24 horas",
+          "last7d": "Últimos 7 días"
+        },
+        "model": "Modelo",
+        "columns": {
+          "requests": "Solicitudes",
+          "ok": "Correctas",
+          "providerBusy": "Proveedor ocupado",
+          "accountDailyLimit": "Límite diario",
+          "other": "Otros resultados",
+          "avgOkMs": "Duración media"
+        },
+        "seconds": "{seconds} s"
+      },
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "saved": "Guardado"
+    },
+    "user": {
+      "back": "← Usuarios",
+      "emailVerified": "verificado",
+      "emailNotVerified": "sin verificar",
+      "summary": {
+        "title": "Resumen",
+        "created": "Creado el",
+        "lastLogin": "Último inicio de sesión",
+        "terms": "Términos aceptados",
+        "termsValue": "versión {version}, {date}",
+        "termsMissing": "aún no aceptados"
+      },
+      "workspaces": {
+        "title": "Espacios de trabajo",
+        "intro": "Los espacios de trabajo del usuario con su rol. De los proyectos solo se ve el número.",
+        "name": "Nombre",
+        "role": "Rol",
+        "projects": "Proyectos",
+        "keywords": "Palabras clave del mes",
+        "personal": "personal",
+        "empty": "El usuario no está en ningún espacio de trabajo."
+      },
+      "actions": {
+        "title": "Acciones",
+        "intro": "Los cambios se aplican enseguida y quedan en el registro de las acciones de administración.",
+        "role": "Rol",
+        "saveRole": "Guardar el rol",
+        "suspend": "Suspender",
+        "reactivate": "Reactivar",
+        "newPassword": "Nueva contraseña",
+        "resetPassword": "Restablecer la contraseña",
+        "changeEmail": "Cambiar el correo electrónico",
+        "updated": "Usuario actualizado."
+      },
+      "email": {
+        "title": "Cambiar el correo electrónico de {name}",
+        "label": "Nuevo correo electrónico",
+        "hint": "Con el lanzamiento en pausa, el nuevo correo electrónico ya cuenta como verificado; con el lanzamiento activo, el usuario recibe el enlace de verificación. Si el envío de correos está activo, la dirección anterior recibe un aviso.",
+        "cancel": "Cancelar",
+        "submit": "Guardar el correo electrónico",
+        "saving": "Guardando...",
+        "changed": "Correo electrónico actualizado."
+      },
+      "audit": {
+        "title": "Registro",
+        "intro": "Las últimas 20 acciones de administración sobre este usuario."
+      },
+      "danger": {
+        "warning": "La eliminación es definitiva: se eliminan la cuenta y sus datos personales. Su espacio de trabajo personal con otros miembros pasa al miembro con el rol más alto.",
+        "delete": "Eliminar el usuario",
+        "confirm": "¿Eliminar definitivamente al usuario «{name}»?"
+      }
+    },
+    "workspaces": {
+      "title": "Espacios de trabajo de la plataforma",
+      "intro": "Nombre, propietario, miembros, proyectos y plan de cada espacio de trabajo. Los datos de los proyectos siguen siendo privados.",
+      "search": "Buscar un espacio de trabajo o un propietario",
+      "searchPlaceholder": "p. ej., agencia",
+      "searchSubmit": "Buscar",
+      "columns": {
+        "name": "Espacio de trabajo",
+        "owner": "Propietario",
+        "members": "Miembros",
+        "projects": "Proyectos",
+        "plan": "Plan"
+      },
+      "personal": "personal",
+      "noOwner": "sin propietario",
+      "empty": "No se ha encontrado ningún espacio de trabajo.",
+      "pageInfo": "Página {page} de {totalPages} · {total} espacios de trabajo",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    }
+  },
   "integrations": {
     "sheetsConfig": {
       "title": "OAuth de Google Sheets (global de la aplicación)",
@@ -520,6 +867,72 @@
       "disconnecting": "Desconectando...",
       "disconnect": "Desconectar",
       "disconnectConfirm": "¿Desconectar Google Sheets de esta cuenta?"
+    }
+  },
+  "emails": {
+    "greeting": "Hola, {name}:",
+    "linkHint": "Si el botón no funciona, copia esta dirección en el navegador:",
+    "footer": "Has recibido este correo electrónico por una acción en tu cuenta. Si no has sido tú, puedes ignorarlo.",
+    "verify": {
+      "subject": "Confirma tu dirección de correo electrónico",
+      "intro": "Confirma tu dirección de correo electrónico para completar el registro.",
+      "action": "Confirmar el correo electrónico",
+      "expiry": "El enlace caduca en 24 horas."
+    },
+    "passwordReset": {
+      "subject": "Restablece tu contraseña",
+      "intro": "Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.",
+      "action": "Elegir una nueva contraseña",
+      "expiry": "El enlace caduca en 1 hora y solo se puede usar una vez."
+    },
+    "emailChange": {
+      "subject": "Confirma la nueva dirección de correo electrónico",
+      "intro": "Has pedido usar esta dirección para tu cuenta. Confírmala para completar el cambio.",
+      "action": "Confirmar la nueva dirección",
+      "expiry": "El enlace caduca en 24 horas y solo se puede usar una vez. Mientras no lo abras, la cuenta sigue con la dirección anterior."
+    },
+    "emailChanged": {
+      "subject": "El correo electrónico de tu cuenta ha cambiado",
+      "intro": "La dirección con la que inicias sesión en tu cuenta ha cambiado. A partir de ahora, los correos de la cuenta llegan a la nueva dirección.",
+      "notYou": "Si no has pedido tú el cambio, escribe enseguida al soporte desde la página Contacto del sitio.",
+      "footer": "Has recibido este correo electrónico porque la dirección de tu cuenta ha cambiado."
+    },
+    "accountExists": {
+      "subject": "Ya tienes una cuenta",
+      "intro": "Alguien ha intentado registrarse con esta dirección de correo electrónico, que ya tiene una cuenta. Si has sido tú, inicia sesión o recupera la contraseña.",
+      "action": "Iniciar sesión",
+      "reset": "Si no recuerdas la contraseña, puedes restablecerla desde aquí:"
+    },
+    "workspaceInvite": {
+      "subject": "Invitación al espacio de trabajo {workspace}",
+      "intro": "{inviter} te ha invitado a colaborar en el espacio de trabajo {workspace}.",
+      "action": "Aceptar la invitación",
+      "expiry": "La invitación caduca en 7 días."
+    },
+    "billingNotice": {
+      "subject": "Aviso sobre tu suscripción",
+      "intro": "Hay novedades sobre tu suscripción {plan}, con fecha de referencia {date}.",
+      "action": "Abrir la aplicación"
+    },
+    "adminPasswordReset": {
+      "subject": "Se ha restablecido tu contraseña",
+      "intro": "Un administrador ha restablecido la contraseña de tu cuenta. Se han cerrado las sesiones abiertas: la próxima vez que inicies sesión con la contraseña recibida, tendrás que elegir una nueva.",
+      "action": "Iniciar sesión",
+      "notYou": "Si no esperabas este cambio, ponte en contacto con el administrador."
+    },
+    "contactMessage": {
+      "subject": "Formulario de contacto: {category}",
+      "name": "Nombre",
+      "email": "Correo electrónico",
+      "category": "Categoría",
+      "userId": "ID de usuario",
+      "workspaceId": "ID del espacio de trabajo",
+      "categories": {
+        "support": "Soporte",
+        "billing": "Facturación",
+        "privacy": "Privacidad",
+        "other": "Otro"
+      }
     }
   },
   "billing": {
@@ -585,6 +998,108 @@
     "cookies": "Cookies",
     "support": "Soporte"
   },
+  "marketing": {
+    "meta": {
+      "home": {
+        "title": "Investigación de palabras clave, de la semilla a la exportación",
+        "description": "Amplía tus palabras clave semilla con las sugerencias de búsqueda, clasifícalas por intención y tipo y expórtalas a CSV, Excel o Google Sheets."
+      },
+      "pricing": {
+        "title": "Precios",
+        "description": "Planes y límites de Titan SEO."
+      },
+      "privacy": {
+        "title": "Política de privacidad",
+        "description": "Cómo trata Titan SEO los datos personales."
+      },
+      "terms": {
+        "title": "Términos del servicio",
+        "description": "Condiciones de uso de Titan SEO."
+      },
+      "cookies": {
+        "title": "Política de cookies",
+        "description": "Cookies que usa Titan SEO."
+      },
+      "contact": {
+        "title": "Contacto",
+        "description": "Escribe al soporte de Titan SEO."
+      }
+    },
+    "landing": {
+      "eyebrow": "Investigación de palabras clave",
+      "title": "De unas pocas semillas a palabras clave listas para exportar",
+      "intro": "Amplía tus palabras clave semilla con las sugerencias de búsqueda, clasifícalas por intención y tipo y organízalas en proyectos y temas, listas para exportar.",
+      "register": "Crear una cuenta",
+      "pricing": "Ver los precios",
+      "login": "Iniciar sesión",
+      "features": {
+        "title": "Qué hace",
+        "expansion": {
+          "title": "Ampliación de las semillas",
+          "body": "Cada palabra clave semilla se amplía con las sugerencias de búsqueda, con variantes alfabéticas, numéricas y por patrones."
+        },
+        "classification": {
+          "title": "Clasificación automática",
+          "body": "La intención de búsqueda, el tipo de palabra clave y el filtro de marcas separan las palabras clave útiles de las que hay que descartar."
+        },
+        "metrics": {
+          "title": "Volumen de búsqueda",
+          "body": "Importa el volumen de búsqueda desde el CSV de tu Planificador de palabras clave de Google o usa un proveedor de métricas con licencia si tu plan lo incluye."
+        },
+        "export": {
+          "title": "Exportación y trabajo en equipo",
+          "body": "Exporta a CSV, Excel o Google Sheets y trabaja con tu equipo en espacios de trabajo compartidos."
+        }
+      },
+      "steps": {
+        "title": "Cómo funciona",
+        "project": "Crea un proyecto con el idioma y el país de referencia.",
+        "seeds": "Añade las palabras clave semilla en un tema e inicia la búsqueda.",
+        "review": "Revisa, filtra y exporta las palabras clave."
+      },
+      "closing": "Empieza por tu primer proyecto."
+    }
+  },
+  "pricing": {
+    "title": "Precios",
+    "intro": "Planes y límites, a partir de la misma configuración que aplica la aplicación.",
+    "comingSoon": "Los precios se publicarán en breve.",
+    "intervals": {
+      "month": "al mes",
+      "year": "al año"
+    },
+    "limits": {
+      "maxProjects": "Proyectos",
+      "maxSectionsPerProject": "Temas por proyecto",
+      "maxSeedsPerSection": "Palabras clave semilla por tema",
+      "runsPerDay": "Búsquedas al día",
+      "maxKeywordsPerRun": "Palabras clave por búsqueda",
+      "keywordsPerMonth": "Palabras clave al mes",
+      "licensedMetricsKeywordsPerMonth": "Palabras clave al mes con el volumen de búsqueda del proveedor",
+      "seats": "Miembros del espacio de trabajo"
+    },
+    "features": {
+      "sheetsExport": "Exportación a Google Sheets",
+      "plannerImport": "Importación desde el Planificador de palabras clave",
+      "licensedMetrics": "Volumen de búsqueda del proveedor de métricas"
+    },
+    "included": "Incluido",
+    "notIncluded": "No incluido",
+    "cta": {
+      "register": "Registrarse",
+      "subscribe": "Elegir el plan",
+      "dashboard": "Ir al panel"
+    }
+  },
+  "legal": {
+    "titles": {
+      "privacy": "Política de privacidad",
+      "terms": "Términos del servicio",
+      "cookies": "Política de cookies"
+    },
+    "version": "Versión {version}",
+    "lastUpdated": "Última actualización: {date}"
+  },
   "account": {
     "sections": {
       "title": "Tu cuenta",
@@ -649,6 +1164,23 @@
       "confirm": "¿Eliminar la cuenta definitivamente?",
       "done": "Cuenta eliminada."
     }
+  },
+  "contact": {
+    "title": "Contacto",
+    "intro": "Escribe al soporte: te responderemos en la dirección de correo electrónico que indiques.",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "category": "Categoría",
+    "message": "Mensaje",
+    "categories": {
+      "support": "Soporte",
+      "billing": "Facturación",
+      "privacy": "Privacidad",
+      "other": "Otro"
+    },
+    "submit": "Enviar",
+    "submitting": "Enviando...",
+    "sent": "Mensaje enviado."
   },
   "strategy": {
     "templates": {

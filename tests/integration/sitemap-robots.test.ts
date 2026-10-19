@@ -22,7 +22,14 @@ describe("sitemap.xml e robots.txt", () => {
     expect(urls).toContain("https://example.test/en");
 
     const landing = sitemap().find((entry) => entry.url === "https://example.test/en");
-    expect(landing?.alternates?.languages).toEqual({ en: "https://example.test/en", it: "https://example.test/it" });
+    // impacted-by: T-4902 (hreflang verso le quattro lingue e x-default verso la versione inglese)
+    expect(landing?.alternates?.languages).toEqual({
+      it: "https://example.test/it",
+      en: "https://example.test/en",
+      "es-ES": "https://example.test/es",
+      "es-419": "https://example.test/es-419",
+      "x-default": "https://example.test/en",
+    });
 
     const rules = robots();
     const disallow = [rules.rules].flat().flatMap((rule) => [rule.disallow ?? []].flat());
