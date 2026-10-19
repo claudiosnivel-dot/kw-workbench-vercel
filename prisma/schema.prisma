@@ -188,6 +188,8 @@ model User {
   email_change_tokens       EmailChangeToken[]
   /// Strategie hub and spoke generate dall'utente (T-1903): alla sua eliminazione restano, senza autore.
   created_strategies        Strategy[]               @relation("StrategyCreator")
+  /// Articoli avviati dall'utente (T-4002): alla sua eliminazione restano, senza autore.
+  created_articles          Article[]                @relation("ArticleCreator")
 
   // Indice unico parziale users_single_root_admin_idx (migrazione 0005): un solo root admin. Prisma non esprime
   // gli indici parziali: c'è solo nella migrazione e tests/integration/schema-indexes.test.ts ne verifica la presenza.
@@ -213,6 +215,7 @@ model Workspace {
   subscription         WorkspaceSubscription?
   usage_counters       UsageCounter[]
   ai_requests          AiRequest[]
+  article_runs         ArticleRun[]
 
   @@index([created_by_user_id])
   @@map("workspaces")
@@ -254,6 +257,13 @@ model WorkspaceInvite {
   @@map("workspace_invites")
 }
 
+/// Tono degli articoli del progetto (T-4001): professionale, amichevole, tecnico.
+enum ArticleTone {
+  professional
+  friendly
+  technical
+}
+
 model Project {
   id                        String                   @id @default(cuid())
   workspace_id              String
@@ -279,6 +289,16 @@ model Project {
   /// Primo progetto del workspace, creato dall'onboarding (T-2004) o dall'avvio rapido (T-2301): non conta nel limite
   /// maxProjects del piano.
   created_via_onboarding    Boolean                  @default(false)
+  /// Scheda «Per gli articoli» (T-4001, D-46): chi siete e cosa offrite, a chi vi rivolgete e il tono vanno al modello
+  /// con le keyword; nome e indirizzo dell'attività, facoltativi, servono ai dati strutturati della pagina locale.
+  article_about             String?                  @db.VarChar(1000)
+  article_audience          String?                  @db.VarChar(300)
+  article_tone              ArticleTone              @default(professional)
+  business_name             String?                  @db.VarChar(120)
+  business_address          String?                  @db.VarChar(300)
+  /// Indirizzo del sito per i link interni degli articoli (T-4001): https assoluto senza barra finale; l'app non lo
+  /// chiama mai (CWE-918).
+  site_url                  String?                  @db.VarChar(300)
   workspace                 Workspace                @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
   created_by                User?                    @relation("ProjectCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
   subprojects               Subproject[]             @relation("ProjectSubprojects")
@@ -290,6 +310,7 @@ model Project {
   expansion_patterns        ExpansionPattern[]
   metrics_provider_requests MetricsProviderRequest[]
   strategies                Strategy[]
+  articles                  Article[]
 
   @@index([workspace_id])
   @@index([default_subproject_id])
@@ -844,6 +865,7 @@ model StrategyPage {
   hub               StrategyPage?       @relation("HubSpokes", fields: [hub_page_id], references: [id], onDelete: SetNull)
   spokes            StrategyPage[]      @relation("HubSpokes")
   keywords          StrategyKeyword[]
+  article           Article?
 
   @@index([strategy_id, position])
   @@index([hub_page_id])
@@ -875,4 +897,113 @@ model StrategyKeyword {
   @@unique([strategy_id, canonical_keyword])
   @@index([page_id])
   @@map("strategy_keywords")
+}
+
+/// Lunghezza chiesta per un articolo (T-4002, D-46): tetto di parole, non un obiettivo da riempire.
+enum ArticleLength {
+  SHORT
+  MEDIUM
+  LONG
+}
+
+/// Stato di un articolo (T-4002): in generazione, pronto da rileggere, non riuscito (error_code dice perché).
+enum ArticleStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
+/// Blocco di un articolo (T-4002): introduzione, una sezione per H2, domande frequenti.
+enum ArticleSectionKind {
+  INTRO
+  H2
+  FAQ
+}
+
+/// Ambito di un lavoro di generazione (T-4002): l'articolo intero o la riscrittura di un blocco (modulo 44).
+enum ArticleRunScope {
+  ARTICLE
+  SECTION
+}
+
+/// Articolo di una pagina del piano (T-4002, D-46): uno per pagina; «Rigenera» lo porta sulla copia della pagina nel
+/// nuovo piano (T-2502). version cresce a ogni nuovo avvio e servirà alle modifiche dell'editor (modulo 44).
+model Article {
+  id                 String           @id @default(cuid())
+  page_id            String           @unique
+  project_id         String
+  length             ArticleLength
+  notes              String?          @db.VarChar(1000)
+  status             ArticleStatus    @default(GENERATING)
+  error_code         String?
+  meta_title         String?
+  meta_description   String?
+  slug               String?
+  outline            Json?
+  images             Json?
+  seo_report         Json?
+  version            Int              @default(0)
+  created_by_user_id String?
+  created_at         DateTime         @default(now())
+  updated_at         DateTime         @updatedAt
+  page               StrategyPage     @relation(fields: [page_id], references: [id], onDelete: Cascade)
+  project            Project          @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  created_by         User?            @relation("ArticleCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
+  sections           ArticleSection[]
+  runs               ArticleRun[]
+
+  @@index([project_id])
+  @@map("articles")
+}
+
+/// Blocco dell'articolo (T-4002): heading null per l'introduzione, body in Markdown; edited se l'utente lo ha cambiato.
+model ArticleSection {
+  id         String             @id @default(cuid())
+  article_id String
+  position   Int
+  kind       ArticleSectionKind
+  heading    String?
+  body       String             @default("")
+  checks     Json?
+  edited     Boolean            @default(false)
+  model      String?
+  updated_at DateTime           @updatedAt
+  article    Article            @relation(fields: [article_id], references: [id], onDelete: Cascade)
+  runs       ArticleRun[]
+
+  @@unique([article_id, position])
+  @@map("article_sections")
+}
+
+/// Lavoro di generazione di un articolo o di un blocco (T-4002): avanza a passi come i job delle ricerche (modulo 41),
+/// con fase, cursore, avanzamento, battito e lease; workspace_id serve al registro delle richieste e ai limiti.
+model ArticleRun {
+  id             String          @id @default(cuid())
+  article_id     String
+  workspace_id   String
+  scope          ArticleRunScope
+  section_id     String?
+  instruction    String?         @db.VarChar(500)
+  status         JobStatus       @default(pending)
+  phase          String          @default("outline")
+  cursor         Json            @default("{}")
+  progress_done  Int             @default(0)
+  progress_total Int             @default(0)
+  attempts       Int             @default(0)
+  heartbeat_at   DateTime?
+  locked_until   DateTime?
+  error_code     String?
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+  article        Article         @relation(fields: [article_id], references: [id], onDelete: Cascade)
+  workspace      Workspace       @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  section        ArticleSection? @relation(fields: [section_id], references: [id], onDelete: SetNull)
+
+  // Indice unico parziale article_runs_one_active_per_article (migrazione 0050): al massimo un lavoro pending o running
+  // per articolo. Prisma non esprime gli indici parziali: c'è solo nella migrazione e
+  // tests/integration/article-start.test.ts ne prova l'effetto.
+  @@index([article_id, status])
+  @@index([status, locked_until])
+  @@index([workspace_id])
+  @@map("article_runs")
 }

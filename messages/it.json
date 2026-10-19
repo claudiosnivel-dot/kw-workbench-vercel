@@ -179,6 +179,26 @@
       "expandPatternsHint": "Cerca anche frasi tipiche come «best keyword» o «how to keyword».",
       "autoClassification": "Classificazione automatica",
       "autoClassificationHint": "Riconosce l'intento e il tipo di ogni keyword."
+    },
+    "articleBrief": {
+      "title": "Per gli articoli",
+      "intro": "Il modello usa questi dati per scrivere articoli utili a chi vi legge, non testi generici.",
+      "about": "Chi siete e cosa offrite",
+      "audience": "A chi vi rivolgete",
+      "tone": "Tono",
+      "tones": {
+        "professional": "Professionale",
+        "friendly": "Amichevole",
+        "technical": "Tecnico"
+      },
+      "businessName": "Nome dell'attività (facoltativo)",
+      "businessAddress": "Indirizzo dell'attività (facoltativo)",
+      "businessHint": "Nome e indirizzo servono solo ai dati strutturati di una pagina locale.",
+      "siteUrl": "Indirizzo del sito",
+      "siteUrlHint": "Per esempio https://www.esempio.it: serve a scrivere negli articoli i link alle altre pagine.",
+      "counter": "{count} su {max} caratteri",
+      "openRouter": "Questi testi vanno a OpenRouter insieme alle keyword quando generi un articolo.",
+      "readOnly": "Solo chi può modificare il progetto cambia questi testi."
     }
   },
   "jobs": {
@@ -402,7 +422,8 @@
     "AI_INVALID_RESPONSE": "Il modello ha dato una risposta non utilizzabile. Riprova.",
     "AI_MODEL_NOT_FREE": "Il modello deve essere gratuito: un ID come autore/modello:free.",
     "AI_BUSY": "I modelli gratuiti sono tutti occupati: riprova tra qualche minuto.",
-    "AI_DAILY_LIMIT": "Le richieste all'AI di oggi sono finite: riprova domani."
+    "AI_DAILY_LIMIT": "Le richieste all'AI di oggi sono finite: riprova domani.",
+    "ARTICLE_NOT_FOUND": "Articolo non trovato."
   },
   "errorPages": {
     "error": {
@@ -743,7 +764,12 @@
       },
       "save": "Salva",
       "saving": "Salvataggio...",
-      "saved": "Salvato"
+      "saved": "Salvato",
+      "articlesTitle": "Articoli con l'AI",
+      "articlesIntro": "Testo completo di una pagina del piano, scritto in background un blocco alla volta con gli stessi modelli. Il tetto della piattaforma vale anche per gli articoli.",
+      "articlesEnabled": "Articoli per gli utenti",
+      "articlesLimit": "Limite per workspace (articoli in 24 ore)",
+      "rewritesLimit": "Limite per workspace (sezioni riscritte in 24 ore)"
     },
     "user": {
       "back": "← Utenti",

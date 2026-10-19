@@ -179,6 +179,26 @@
       "expandPatternsHint": "Busca también frases típicas como «mejor palabra clave» o «cómo palabra clave».",
       "autoClassification": "Clasificación automática",
       "autoClassificationHint": "Reconoce la intención y el tipo de cada palabra clave."
+    },
+    "articleBrief": {
+      "title": "Para los artículos",
+      "intro": "El modelo usa estos datos para escribir artículos útiles para quien te lee, no textos genéricos.",
+      "about": "Quién eres y qué ofreces",
+      "audience": "A quién te diriges",
+      "tone": "Tono",
+      "tones": {
+        "professional": "Profesional",
+        "friendly": "Cercano",
+        "technical": "Técnico"
+      },
+      "businessName": "Nombre del negocio (opcional)",
+      "businessAddress": "Dirección del negocio (opcional)",
+      "businessHint": "El nombre y la dirección solo se usan en los datos estructurados de una página local.",
+      "siteUrl": "Dirección del sitio web",
+      "siteUrlHint": "Por ejemplo https://www.ejemplo.es: sirve para escribir en los artículos los enlaces a tus otras páginas.",
+      "counter": "{count} de {max} caracteres",
+      "openRouter": "Estos textos se envían a OpenRouter junto con las palabras clave cuando generas un artículo.",
+      "readOnly": "Solo quien puede modificar el proyecto puede cambiar estos textos."
     }
   },
   "jobs": {
@@ -402,7 +422,8 @@
     "AI_INVALID_RESPONSE": "El modelo ha dado una respuesta que no se puede usar. Vuelve a intentarlo.",
     "AI_MODEL_NOT_FREE": "El modelo tiene que ser gratuito: un ID como autor/modelo:free.",
     "AI_BUSY": "Todos los modelos gratuitos están ocupados: vuelve a intentarlo dentro de unos minutos.",
-    "AI_DAILY_LIMIT": "Se han agotado las solicitudes a la IA de hoy: vuelve a intentarlo mañana."
+    "AI_DAILY_LIMIT": "Se han agotado las solicitudes a la IA de hoy: vuelve a intentarlo mañana.",
+    "ARTICLE_NOT_FOUND": "No se ha encontrado el artículo."
   },
   "errorPages": {
     "error": {
@@ -743,7 +764,12 @@
       },
       "save": "Guardar",
       "saving": "Guardando...",
-      "saved": "Guardado"
+      "saved": "Guardado",
+      "articlesTitle": "Artículos con IA",
+      "articlesIntro": "Texto completo de una página del plan, escrito en segundo plano un bloque cada vez con los mismos modelos. El límite de la plataforma también vale para los artículos.",
+      "articlesEnabled": "Artículos para los usuarios",
+      "articlesLimit": "Límite por espacio de trabajo (artículos en 24 horas)",
+      "rewritesLimit": "Límite por espacio de trabajo (secciones reescritas en 24 horas)"
     },
     "user": {
       "back": "← Usuarios",

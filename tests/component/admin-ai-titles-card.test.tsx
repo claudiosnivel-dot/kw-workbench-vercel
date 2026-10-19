@@ -9,11 +9,15 @@ import { renderWithIntl } from "./intl";
 
 const fetchMock = vi.fn<typeof fetch>();
 
+// impacted-by: T-4002 (interruttore e limiti degli articoli nella vista della card)
 const initial = {
   enabled: false,
   models: ["google/gemma-prova:free"],
   platformDailyRequests: 900,
   workspaceDailyLimit: 10,
+  articlesEnabled: false,
+  articlesPerWorkspaceDaily: 3,
+  sectionRewritesPerWorkspaceDaily: 20,
   keyConfigured: false,
   // Catalogo appena controllato: la card non lo rilegge all'apertura.
   catalog: { checkedAt: new Date().toISOString(), free: [{ id: "google/gemma-prova:free", name: "Gemma prova", contextLength: 8192 }] },

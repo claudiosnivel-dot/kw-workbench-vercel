@@ -353,8 +353,9 @@ async function pruneOldestVersions(tx: Prisma.TransactionClient, project: Author
  * Genera e salva una strategia (T-1903): perimetro, piano (T-1901), titoli (T-1902) e salvataggio in una transazione,
  * sotto il lock del workspace perché due generazioni contemporanee non superino il limite di 20 (CWE-362).
  * Con regenerate (T-2502) la strategia nuova diventa il piano senza perdere il lavoro iniziato: copia le pagine
- * bloccate del piano corrente (in scrittura, pubblicate e i loro hub) con titoli, tipo, stato e keyword, ricostruisce le
- * altre dalle keyword tenute meno quelle già copiate e, oltre 20 strategie, elimina la versione più vecchia.
+ * bloccate del piano corrente (in scrittura, pubblicate e i loro hub) con titoli, tipo, stato e keyword, porta i loro
+ * articoli sulle copie con blocchi e lavori (T-4002), ricostruisce le altre dalle keyword tenute meno quelle già
+ * copiate e, oltre 20 strategie, elimina la versione più vecchia.
  */
 export async function generateStrategy(
   user: { id: string },
@@ -518,6 +519,14 @@ export async function generateStrategy(
       await tx.strategyPage.createMany({ data: pageRows.filter((page) => page.kind === "SPOKE") });
       for (let start = 0; start < keywordRows.length; start += KEYWORD_INSERT_BATCH) {
         await tx.strategyKeyword.createMany({ data: keywordRows.slice(start, start + KEYWORD_INSERT_BATCH) });
+      }
+      // Gli articoli delle pagine copiate passano alle copie (T-4002): stessi blocchi e lavori, page_id resta unico.
+      const articles = await tx.article.findMany({
+        where: { page_id: { in: locked.pages.map((page) => page.id) }, project_id: project.id },
+        select: { id: true, page_id: true },
+      });
+      for (const article of articles) {
+        await tx.article.updateMany({ where: { id: article.id, project_id: project.id }, data: { page_id: idOf.get(article.page_id)! } });
       }
     },
     { timeout: TRANSACTION_TIMEOUT_MS }
@@ -702,20 +711,23 @@ export async function readStrategy(projectId: string, strategyId: string): Promi
 }
 
 /**
- * Pagina del piano corrente per le proposte dell'AI (T-3601, T-3602): 404 STRATEGY_NOT_FOUND se la strategia o la
- * pagina non sono del progetto, 409 STRATEGY_READ_ONLY per una pagina di una versione precedente.
+ * Pagina del piano corrente per le proposte dell'AI (T-3601, T-3602) e per gli articoli (T-4002): 404
+ * STRATEGY_NOT_FOUND se la strategia o la pagina non sono del progetto, 409 STRATEGY_READ_ONLY per una pagina di una
+ * versione precedente. Restituisce gli H2 della pagina, da cui si stimano le richieste di un articolo.
  */
-export async function requirePlanPage(project: AuthorizedProject, strategyId: string, pageId: string): Promise<void> {
-  const [pages, planId] = await Promise.all([
-    prisma.strategyPage.count({
+export async function requirePlanPage(project: AuthorizedProject, strategyId: string, pageId: string): Promise<{ h2: string[] }> {
+  const [page, planId] = await Promise.all([
+    prisma.strategyPage.findFirst({
       where: { id: pageId, strategy_id: strategyId, strategy: { project_id: project.id, project: project.perimeter } },
+      select: { h2: true },
     }),
     findPlanId(project.id),
   ]);
-  if (pages === 0) throw new StrategyNotFoundError();
+  if (!page) throw new StrategyNotFoundError();
   if (planId !== strategyId) {
     throw new ConflictError("Le versioni precedenti del piano sono in sola lettura", "STRATEGY_READ_ONLY");
   }
+  return page;
 }
 
 /**

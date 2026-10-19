@@ -18,14 +18,18 @@ import { getManySettingValues, upsertSettingValue } from "@/lib/integrations/app
 import { prisma } from "@/lib/prisma";
 
 /**
- * Impostazioni dei titoli con l'AI (T-3501, D-42), cifrate in app_settings come le altre: funzione accesa o spenta,
- * elenco ordinato dei modelli gratuiti di OpenRouter (T-3801, D-46), tetto della piattaforma in richieste (T-3901,
- * condiviso con gli articoli) e limite per workspace in proposte, nelle ultime 24 ore. Le cambia solo il root admin
+ * Impostazioni dell'AI (T-3501, D-42), cifrate in app_settings come le altre: titoli accesi o spenti, elenco ordinato
+ * dei modelli gratuiti di OpenRouter (T-3801, D-46), tetto della piattaforma in richieste (T-3901, condiviso con gli
+ * articoli) e limite per workspace in proposte, nelle ultime 24 ore; per gli articoli (T-4002) funzione accesa o spenta
+ * e limiti per workspace in articoli e in sezioni riscritte, nelle ultime 24 ore. Le cambia solo il root admin
  * (verificato dalla rotta); la chiave resta nell'ambiente del server e qui si dice solo se c'è.
  */
 
 export type AiTitlesSettings = { enabled: boolean; models: string[]; platformDailyRequests: number; workspaceDailyLimit: number };
-type AiTitlesView = AiTitlesSettings & {
+/** Articoli con l'AI (T-4002): spenti finché l'editor (modulo 44) non è in produzione. */
+type AiArticlesSettings = { articlesEnabled: boolean; articlesPerWorkspaceDaily: number; sectionRewritesPerWorkspaceDaily: number };
+export type AiSettings = AiTitlesSettings & AiArticlesSettings;
+type AiTitlesView = AiSettings & {
   keyConfigured: boolean;
   /** Catalogo di OpenRouter all'ultimo controllo riuscito (T-3803); null se mai letto. */
   catalog: ModelCatalog | null;
@@ -53,16 +57,20 @@ export const DEFAULT_AI_MODELS: readonly string[] = [
 /**
  * Default: funzione spenta, l'elenco predefinito, 900 richieste al giorno per la piattaforma (circa le 1000 dei modelli
  * gratuiti di un account con 10 USD di crediti, T-3901) e 10 proposte per workspace (D-42), lo stesso max della regola
- * aiTitlesWorkspace del rate limit.
+ * aiTitlesWorkspace del rate limit; articoli spenti, 3 articoli e 20 sezioni riscritte per workspace (D-46).
  */
-const DEFAULTS: AiTitlesSettings = {
+const DEFAULTS: AiSettings = {
   enabled: false,
   models: [...DEFAULT_AI_MODELS],
   platformDailyRequests: 900,
   workspaceDailyLimit: 10,
+  articlesEnabled: false,
+  articlesPerWorkspaceDaily: 3,
+  sectionRewritesPerWorkspaceDaily: 20,
 };
 
-const LIMIT_FIELDS = Object.keys(AI_LIMIT_MAX) as (keyof typeof AI_LIMIT_MAX)[];
+type LimitField = keyof typeof AI_LIMIT_MAX;
+const LIMIT_FIELDS = Object.keys(AI_LIMIT_MAX) as LimitField[];
 
 function isLimit(value: unknown, max: number): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= max;
@@ -77,14 +85,15 @@ function storedModels(value: unknown): string[] | null {
   return hasDuplicates(value) ? null : [...value];
 }
 
-const defaults = (): AiTitlesSettings => ({ ...DEFAULTS, models: [...DEFAULTS.models] });
+const defaults = (): AiSettings => ({ ...DEFAULTS, models: [...DEFAULTS.models] });
 
 /**
  * Valore salvato → impostazioni: assente o illeggibile → i default, un campo non valido → il suo default (CWE-1188). Un
  * valore salvato prima di T-3801, con il solo model, si legge come l'elenco [model]; uno di prima di T-3901, con il solo
- * platformDailyLimit in proposte, ha il tetto in richieste predefinito.
+ * platformDailyLimit in proposte, ha il tetto in richieste predefinito; uno di prima di T-4002 ha gli articoli spenti
+ * e i loro limiti predefiniti.
  */
-function parseSettings(raw: string | undefined): AiTitlesSettings {
+function parseSettings(raw: string | undefined): AiSettings {
   let value: Record<string, unknown> = {};
   try {
     const parsed: unknown = raw === undefined ? null : JSON.parse(raw);
@@ -95,19 +104,19 @@ function parseSettings(raw: string | undefined): AiTitlesSettings {
     return defaults();
   }
   const legacyModel = typeof value.model === "string" && FREE_MODEL_ID.test(value.model) ? [value.model] : null;
+  const limits = Object.fromEntries(
+    LIMIT_FIELDS.map((field) => [field, isLimit(value[field], AI_LIMIT_MAX[field]) ? value[field] : DEFAULTS[field]])
+  ) as Pick<AiSettings, LimitField>;
   return {
     enabled: value.enabled === true,
     models: storedModels(value.models) ?? legacyModel ?? defaults().models,
-    platformDailyRequests: isLimit(value.platformDailyRequests, AI_LIMIT_MAX.platformDailyRequests)
-      ? value.platformDailyRequests
-      : DEFAULTS.platformDailyRequests,
-    workspaceDailyLimit: isLimit(value.workspaceDailyLimit, AI_LIMIT_MAX.workspaceDailyLimit)
-      ? value.workspaceDailyLimit
-      : DEFAULTS.workspaceDailyLimit,
+    articlesEnabled: value.articlesEnabled === true,
+    ...limits,
   };
 }
 
-export async function getAiTitlesSettings(): Promise<AiTitlesSettings> {
+/** Impostazioni dell'AI salvate: titoli, articoli e limiti (T-3501, T-4002). */
+export async function getAiTitlesSettings(): Promise<AiSettings> {
   const values = await getManySettingValues([SETTINGS_KEY]);
   return parseSettings(values[SETTINGS_KEY]);
 }
@@ -165,7 +174,7 @@ function parseModels(value: unknown): string[] {
  * Corpo della PATCH: solo i campi presenti, validati; model e platformDailyLimit, i campi di prima di T-3801 e di
  * T-3901, non sono più accettati.
  */
-function parsePatch(body: unknown): Partial<AiTitlesSettings> {
+function parsePatch(body: unknown): Partial<AiSettings> {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw new ValidationError("Il corpo deve essere un oggetto");
   }
@@ -176,12 +185,15 @@ function parsePatch(body: unknown): Partial<AiTitlesSettings> {
   if (input.platformDailyLimit !== undefined) {
     throw new ValidationError("platformDailyLimit non è più accettato: usa platformDailyRequests, il tetto in richieste");
   }
-  const patch: Partial<AiTitlesSettings> = {};
-  if (input.enabled !== undefined) {
-    if (typeof input.enabled !== "boolean") {
-      throw new ValidationError("enabled deve essere true o false");
+  const patch: Partial<AiSettings> = {};
+  for (const field of ["enabled", "articlesEnabled"] as const) {
+    const flag = input[field];
+    if (flag !== undefined) {
+      if (typeof flag !== "boolean") {
+        throw new ValidationError(`${field} deve essere true o false`);
+      }
+      patch[field] = flag;
     }
-    patch.enabled = input.enabled;
   }
   if (input.models !== undefined) {
     patch.models = parseModels(input.models);
@@ -211,8 +223,8 @@ const sameValue = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringi
 export async function updateAiTitlesSettings(actor: { id: string }, body: unknown, ip: string | null = null): Promise<AiTitlesView> {
   const patch = parsePatch(body);
   const previous = await getAiTitlesSettings();
-  const next: AiTitlesSettings = { ...previous, ...patch };
-  const changed = (Object.keys(patch) as (keyof AiTitlesSettings)[]).filter((field) => !sameValue(previous[field], next[field]));
+  const next: AiSettings = { ...previous, ...patch };
+  const changed = (Object.keys(patch) as (keyof AiSettings)[]).filter((field) => !sameValue(previous[field], next[field]));
   if (changed.length > 0) {
     await prisma.$transaction([
       upsertSettingValue({ key: SETTINGS_KEY, value: JSON.stringify(next) }),

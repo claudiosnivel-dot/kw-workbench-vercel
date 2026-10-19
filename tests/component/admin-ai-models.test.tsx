@@ -10,12 +10,16 @@ const fetchMock = vi.fn<typeof fetch>();
 const MODELS = ["a/uno:free", "a/due:free", "a/tre:free"];
 
 // impacted-by: T-3901 e T-3902 (tetto in richieste e usage nella vista della card)
+// impacted-by: T-4002 (interruttore e limiti degli articoli nella vista della card)
 function view(overrides: Record<string, unknown> = {}) {
   return {
     enabled: true,
     models: MODELS,
     platformDailyRequests: 900,
     workspaceDailyLimit: 10,
+    articlesEnabled: false,
+    articlesPerWorkspaceDaily: 3,
+    sectionRewritesPerWorkspaceDaily: 20,
     keyConfigured: true,
     usage: { models: [], requests24h: 0, limit: 900 },
     catalog: {

@@ -127,6 +127,8 @@ Termini approvati con il modulo 47; dove le varianti coincidono la forma vale pe
 | Inizia dal tuo primo progetto | es-ES / es-419 | Empieza por / Empieza con | reggenza abituale in ciascun mercato, come «empiezan por / con» |
 | ninguno terminado (Job falliti, nessun job concluso) | entrambe | ninguno terminado | passata sulle schermate: «ningún trabajo terminado» andava su due righe nel riquadro grande della Panoramica |
 | occhiello della landing | entrambe | Investigación de palabras clave | passata sulle schermate: con «para SEO» a 390 px l'ultima parola andava da sola sulla seconda riga |
+| tono amichevole (scheda «Per gli articoli», modulo 40) | es-ES / es-419 | Cercano / Amigable | «cercano» è il tono di marca abituale in Spagna, «amigable» in America Latina |
+| Chi siete e cosa offrite / A chi vi rivolgete | entrambe | Quién eres y qué ofreces / A quién te diriges | tú come nel resto dell'app, mai vosotros |
 
 ## Passata sulle schermate (modulo 49)
 
