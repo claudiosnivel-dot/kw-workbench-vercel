@@ -1,7 +1,7 @@
 import { createTranslator } from "next-intl";
 import { MESSAGES } from "@/lib/i18n/catalogs";
 import { APP_TIME_ZONE, type AppLocale, DEFAULT_LOCALE, isSupportedLocale } from "@/lib/i18n/locale";
-import type { TitleTranslator } from "@/lib/modules/strategy/titles";
+import { titleCatalogLocale, type TitleTranslator } from "@/lib/modules/strategy/titles";
 
 export type CatalogTranslator = (key: string, values?: Record<string, string | number | Date>) => string;
 
@@ -16,7 +16,10 @@ export function catalogTranslator(language: string, namespace?: "strategy"): Cat
   return (key, values) => t(key as never, values as never);
 }
 
-/** Traduttore del namespace strategy per i titoli suggeriti (T-1902). */
-export function strategyTranslator(language: string): TitleTranslator {
-  return catalogTranslator(language, "strategy");
+/**
+ * Traduttore del namespace strategy per i titoli suggeriti (T-1902), nel catalogo della lingua del perimetro e, per lo
+ * spagnolo, della variante del paese della strategia (T-5101).
+ */
+export function strategyTranslator(language: string, country: string | null): TitleTranslator {
+  return catalogTranslator(titleCatalogLocale(language, country), "strategy");
 }

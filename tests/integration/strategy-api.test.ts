@@ -230,4 +230,38 @@ describe("API delle strategie", () => {
     expect(deleted.status).toBe(200);
     expect(await prisma.strategy.count({ where: { project_id: projectId } })).toBe(0);
   });
+
+  // Piano in spagnolo generato dal database (T-5101): modificatori spagnoli, domanda con «¿…?» e modelli del catalogo
+  // spagnolo con il paese del progetto; il gate di AC-5101-1 e AC-5101-2 è tests/unit/strategy-es.test.ts.
+  it("in spagnolo raggruppa con i modificatori spagnoli e scrive i titoli in spagnolo", async () => {
+    const { member, projectId, sectionId } = await teamProject();
+    await prisma.project.update({ where: { id: projectId }, data: { language_code: "es", country_code: "MX" } });
+    await insertKeywords(projectId, sectionId, [
+      { keyword: "cama de hospital", avg_monthly_searches: 2400 },
+      { keyword: "cama de hospital precio", avg_monthly_searches: 880, search_intent: "commercial" },
+      { keyword: "cama de hospital barata", avg_monthly_searches: 390, search_intent: "commercial" },
+      {
+        keyword: "cuánto cuesta una cama de hospital",
+        canonical_keyword: "cuanto cuesta una cama de hospital",
+        avg_monthly_searches: 260,
+        is_question: true,
+        keyword_type: "question",
+        search_intent: "informational",
+      },
+    ]);
+    await prisma.seed.create({ data: { project_id: projectId, subproject_id: sectionId, keyword: "cama de hospital" } });
+
+    const response = await generate(member, projectId, { mode: "AUTO" });
+
+    expect(response.status).toBe(201);
+    const { data } = (await response.json()) as { data: { id: string } };
+    const keywords = await prisma.strategyKeyword.findMany({ where: { strategy_id: data.id }, select: { canonical_keyword: true, page_id: true } });
+    const pageOf = (canonical: string) => keywords.find((row) => row.canonical_keyword === canonical)?.page_id;
+    const pages = await prisma.strategyPage.findMany({ where: { strategy_id: data.id }, select: { id: true, kind: true, h1: true } });
+    expect((await prisma.strategy.findUniqueOrThrow({ where: { id: data.id } })).language).toBe("es");
+    expect(pageOf("cama de hospital precio")).toBeDefined();
+    expect(pageOf("cama de hospital barata")).toBe(pageOf("cama de hospital precio"));
+    expect(pages.find((page) => page.id === pageOf("cuanto cuesta una cama de hospital"))?.h1).toBe("¿Cuánto cuesta una cama de hospital?");
+    expect(pages.find((page) => page.kind === "HUB")?.h1).toMatch(/^Cama de hospital: /);
+  });
 });

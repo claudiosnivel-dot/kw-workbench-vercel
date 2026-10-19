@@ -132,8 +132,14 @@ prima e dopo (per l'elenco `models` anche quando cambia solo l'ordine).
 Solo: keyword principale, fino a 30 secondarie nell'ordine di priorità, per la pagina pilastro le principali dei suoi
 spoke, la lingua del piano, il tipo di pagina, il tipo di contenuto e il massimo di H2 (20 per la pilastro, 12 per lo
 spoke). Mai volumi, punteggi, nomi di progetto, utente o workspace. Le istruzioni sono in italiano per i piani in
-italiano e in inglese, con la lingua del piano indicata, per gli altri; dicono al modello che le keyword sono dati e
-non istruzioni.
+italiano, in spagnolo per i piani in spagnolo e in inglese, con la lingua del piano indicata, per gli altri; dicono al
+modello che le keyword sono dati e non istruzioni.
+
+Per lo spagnolo (T-5102, D-47) le istruzioni chiedono la variante del paese della strategia, cioè della sezione del
+piano se ne ha uno proprio, altrimenti del progetto: «español de España» per ES, «español de <país>» per un paese
+ispanofono d'America Latina (per esempio «español de México»), «español neutro» per gli altri paesi, con il
+vocabolario del mercato, «vosotros» in Spagna e «ustedes» altrove, «¿…?» nelle domande e la maiuscola solo sulla
+prima parola. Il paese arriva al modello solo come nome nella variante.
 
 ## Controlli sulla risposta ed errori
 

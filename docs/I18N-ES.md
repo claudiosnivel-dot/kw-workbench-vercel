@@ -100,7 +100,7 @@ Termini approvati con il modulo 47; dove le varianti coincidono la forma vale pe
 | Offerta minima e massima inizio pagina | entrambe | Puja por la parte superior de la página, intervalo bajo / alto | nomi delle colonne del Planificador di Google Ads in spagnolo |
 | Score / Origine score | entrambe | Puntuación / Origen de la puntuación | come la colonna della pagina delle keyword |
 | Strategia hub and spoke (PDF) | entrambe | Estrategia de páginas pilar y artículos satélite | glossario (hub e spoke); niente termini inglesi nel documento per il cliente |
-| modelli dei titoli (strategy.templates) | entrambe | ranking, comparación, en línea, «Nuestro criterio de selección» | forme valide nei due mercati: «comparativa» e «online» sono soprattutto di Spagna; il codice che li usa arriva con T-5101 |
+| modelli dei titoli (strategy.templates) | entrambe | ranking, comparación, en línea, «Nuestro criterio de selección» | forme valide nei due mercati: «comparativa» e «online» sono soprattutto di Spagna; usati per i piani in spagnolo da T-5101, con il catalogo del paese |
 | Excel italiano (punto e virgola) | entrambe | Excel (punto y coma) | il separatore conta, non la lingua di Excel (in Messico Excel usa la virgola) |
 | Gestisci (fatturazione) | es-ES / es-419 | Gestionar / Administrar | uso di ciascun mercato |
 | pagamento scaduto | es-ES / es-419 | pago pendiente / pago vencido | uso di ciascun mercato |
@@ -193,3 +193,25 @@ Ads in spagnolo (`docs/METRICS-PROVIDERS.md`): la guida chiama la colonna della 
 di Metricool e Ahrefs «Competencia»: il parser accetta le due, con e senza «(valor indexado)», e il livello «Baja».
 Intervalli «10 mil - 100 mil» (mil = migliaia) e «1000 - 10.000». La fixture `tests/fixtures/planner/keyword-planner-es.csv`
 è costruita da queste intestazioni: un file reale scaricato in spagnolo la sostituirebbe.
+
+## Piano e titoli in spagnolo (modulo 51)
+
+**Raggruppamento (T-5101).** Lessico `es` in `lib/modules/strategy/modifiers.ts`, nella forma canonica (senza accenti):
+parole vuote (el, la, los, las, lo, un, una, unos, unas, de, del, en, para, por, con, a, al, y, e, o, u) e modificatori
+nelle cinque categorie del motore: prezzo e acquisto (transactional: precio, barato, económico, oferta, comprar, venta,
+alquiler, descuento, rebajas...), qualità e confronto (comparison: mejor, opiniones, reseñas, vs, comparativa,
+ranking...), luogo (local: cerca de mí, cerca, cercano, zona), uso e domande (informational: cómo, qué, cuál, cuándo,
+dónde, quién, cuánto, guía, consejos...), strumenti (tool: calculadora, generador, simulador, online, en línea, gratis,
+gratuito, app, plantilla). «online» e «gratis» stanno fra gli strumenti come in italiano e in inglese: la categoria
+sceglie il tipo di contenuto e il modello del titolo. «para» è solo una parola vuota, come «per». Singolare e plurale:
+senza la s finale e poi senza la vocale finale se restano almeno 4 lettere (camas e cama, hospitales e hospital,
+baratas e barato coincidono; ojos e ojo pure).
+
+**Titoli fissi (T-5101).** I modelli di `strategy.templates` valgono per lo spagnolo dal catalogo del paese della
+strategia (della sezione del piano se ne ha uno proprio, altrimenti del progetto): es-419 per i paesi d'America Latina
+di `LATIN_AMERICA_COUNTRIES`, es-ES per la Spagna e ogni altro paese. Oggi es-419 non ha modelli propri e usa quelli di
+es-ES (riga dei modelli nel registro). Le keyword-domanda diventano titoli con «¿» all'inizio e «?» alla fine, mai
+raddoppiati; maiuscola solo sulla prima lettera, il resto della keyword com'è.
+
+**Titoli con l'AI (T-5102).** Istruzioni in spagnolo con la variante del paese: «español de España», «español de
+México» (nome spagnolo del paese) o «español neutro»; «vosotros» in Spagna, «ustedes» altrove (`docs/AI-TITLES.md`).

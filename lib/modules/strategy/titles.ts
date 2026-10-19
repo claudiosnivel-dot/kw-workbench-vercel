@@ -1,11 +1,13 @@
+import { LATIN_AMERICA_COUNTRIES } from "@/lib/i18n/locale";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import { keywordWords, variantKey } from "@/lib/modules/strategy/cluster";
-import type { StrategyContentType, StrategyPageKind } from "@/lib/modules/strategy/types";
+import type { PlanPage, StrategyContentType, StrategyPageKind, StrategyPlan } from "@/lib/modules/strategy/types";
 
 /*
  * H1 e H2 suggeriti a modelli fissi (T-1902, D-33): gratuiti, deterministici e non validati sui contenuti dei
  * competitor. I modelli stanno nei cataloghi (strategy.templates) nella lingua dei titoli, che è quella del perimetro,
- * non quella dell'interfaccia. Funzione pura: il traduttore arriva dal chiamante.
+ * non quella dell'interfaccia; per lo spagnolo il catalogo è quello della variante del paese (T-5101). Funzione pura: il
+ * traduttore arriva dal chiamante.
  */
 
 export type TitleKeyword = { keyword: string; canonical: string; isQuestion: boolean };
@@ -24,8 +26,18 @@ export type TitleTranslator = (key: string, values?: Record<string, string>) => 
 
 export type TitleContext = { language: string; year: number; translate: TitleTranslator };
 
-/** Lingue con i modelli: per le altre H1 e H2 sono le keyword con l'iniziale maiuscola. */
-export const TITLE_LANGUAGES = ["it", "en"] as const;
+/** Lingue con i modelli (spagnolo da T-5101): per le altre H1 e H2 sono le keyword con l'iniziale maiuscola. */
+export const TITLE_LANGUAGES = ["it", "en", "es"] as const;
+
+/**
+ * Catalogo dei modelli dei titoli (T-5101, D-47): per lo spagnolo quello della variante del paese della strategia,
+ * es-419 per un paese ispanofono d'America Latina, es-ES per la Spagna e per ogni altro paese; per le altre lingue il
+ * catalogo della lingua.
+ */
+export function titleCatalogLocale(language: string, country: string | null): string {
+  if (language !== "es") return language;
+  return country && LATIN_AMERICA_COUNTRIES.includes(country.toUpperCase()) ? "es-419" : "es-ES";
+}
 
 /** Varianti dei modelli di H1 per tipo di contenuto (chiavi strategy.templates.<tipo>.<variante>). */
 export const TEMPLATE_VARIANTS: Record<StrategyContentType, readonly string[]> = {
@@ -47,7 +59,11 @@ function capitalize(text: string): string {
   return first.toLocaleUpperCase() + rest.join("");
 }
 
-function asQuestion(text: string): string {
+/** Titolo di una keyword-domanda: con «?» in fondo e, in spagnolo, «¿» all'inizio (T-5101), mai raddoppiati. */
+function asQuestion(text: string, language: string): string {
+  if (language === "es") {
+    return `¿${capitalize(text.trim().replace(/^¿+/, "").replace(/\?+$/, ""))}?`;
+  }
   const capitalized = capitalize(text);
   return capitalized.endsWith("?") ? capitalized : `${capitalized}?`;
 }
@@ -76,7 +92,7 @@ function h1Of(page: TitlePage, context: TitleContext): string {
     return clip(capitalize(main.keyword));
   }
   if (main.isQuestion) {
-    return clip(asQuestion(main.keyword));
+    return clip(asQuestion(main.keyword, context.language));
   }
   // Un modello che contiene già una parola della keyword (guida, migliori, online...) la ripeterebbe: si salta.
   const mainWords = keywordWords(main.canonical, context.language);
@@ -107,7 +123,8 @@ function groupLeads(page: TitlePage, keywords: TitleKeyword[], language: string)
 
 function h2Of(page: TitlePage, context: TitleContext): string[] {
   const templated = supportsTemplates(context.language);
-  const heading = (keyword: TitleKeyword) => clip(templated && keyword.isQuestion ? asQuestion(keyword.keyword) : capitalize(keyword.keyword));
+  const heading = (keyword: TitleKeyword) =>
+    clip(templated && keyword.isQuestion ? asQuestion(keyword.keyword, context.language) : capitalize(keyword.keyword));
 
   // Pilastro: uno per spoke in ordine di priorità, poi i gruppi confluiti; le domande vanno nella FAQ di chiusura.
   // Spoke: uno per gruppo di secondarie, domande comprese.
@@ -126,6 +143,17 @@ function h2Of(page: TitlePage, context: TitleContext): string[] {
       ]
     : [];
   return [...entries.slice(0, MAX_H2[page.kind] - closings.length), ...closings];
+}
+
+/** Pagina del piano del motore (T-1901) da titolare: per la pilastro anche le principali dei suoi spoke. */
+export function planTitlePage(plan: StrategyPlan, page: PlanPage, keywordOf: (canonical: string) => TitleKeyword): TitlePage {
+  return {
+    kind: page.kind,
+    contentType: page.contentType,
+    main: keywordOf(page.main),
+    secondary: page.secondary.map(keywordOf),
+    spokeMains: page.kind === "HUB" ? plan.pages.filter((spoke) => spoke.hubRef === page.ref).map((spoke) => keywordOf(spoke.main)) : undefined,
+  };
 }
 
 /** H1 e H2 suggeriti per una pagina del piano (T-1902): stessa pagina, stessi titoli. */

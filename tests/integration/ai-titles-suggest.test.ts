@@ -5,6 +5,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { UserRole } from "@/lib/generated/prisma/enums";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as readAiTitles } from "@/app/api/admin/ai-titles/route";
+import { prisma } from "@/lib/prisma";
 import {
   completion,
   failure,
@@ -198,5 +199,27 @@ describe("proposta dei titoli con l'AI", () => {
 
     expect(response.status).toBe(200);
     expect(body.data?.h2).toEqual(thirteen.slice(0, 12));
+  });
+
+  // Paese della variante dello spagnolo letto dal database (T-5102): quello del progetto o, per un piano di una sezione,
+  // quello della sezione; il gate di AC-5102-1 con il resto simulato è tests/unit/ai-titles-es.test.ts.
+  it("per un piano in spagnolo chiede lo spagnolo del paese del progetto o della sezione del piano", async () => {
+    await saveAiSettings();
+    const { member, plan, spoke } = await memberWithPlan("t5102");
+    await prisma.project.update({ where: { id: plan.projectId }, data: { language_code: "es", country_code: "MX" } });
+    await prisma.strategy.update({ where: { id: plan.strategyId }, data: { language: "es" } });
+    fetchMock.mockImplementation(async () => completion({ h1: "Scarpe running donna: cómo elegirlas", h2: ["Amortiguación"] }));
+    const systemMessage = () => (JSON.parse(String(fetchMock.mock.calls.at(-1)?.[1]?.body)) as { messages: { content: string }[] }).messages[0].content;
+
+    expect((await suggest(member.cookie, spoke)).status).toBe(200);
+    const fromProject = systemMessage();
+    const section = await prisma.subproject.create({ data: { project_id: plan.projectId, name: "Argentina", country_code_override: "AR" } });
+    await prisma.strategy.update({ where: { id: plan.strategyId }, data: { settings: { sectionId: section.id } } });
+    expect((await suggest(member.cookie, spoke)).status).toBe(200);
+    const fromSection = systemMessage();
+
+    expect(fromProject).toContain("español de México");
+    expect(fromSection).toContain("español de Argentina");
+    expect(fromSection).not.toContain("México");
   });
 });
