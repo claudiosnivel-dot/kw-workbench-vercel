@@ -139,3 +139,57 @@ righe accanto a «5 conservadas» (come «Plan de contenidos», si legge bene); 
 (`lib/client/use-locale-options.ts`), non dal catalogo: in spagnolo i nomi delle lingue vanno in minuscolo nel testo
 corrente, da decidere con l'utente se cambiarli. Nessuna rilettura
 madrelingua (facoltativa, D-47).
+
+## Ricerche in spagnolo (modulo 50)
+
+**Composizioni (T-5001).** Scelte il 2026-10-19 con Google Autocomplete chiamato come fa la ricerca
+(`client=firefox`, `hl=es`, `gl=ES` e `gl=MX`) su quattro parole di prova: «cama de hospital», «cafetera», «abogado» e
+«curso de inglés». Per ogni candidata si contano i suggerimenti (la query stessa esclusa) e quelli **nuovi**, cioè non
+già trovati dalla ricerca di base della stessa parola (parola, parola + a…z, parola + 0…9), che la ricerca fa comunque.
+Colonne: totale ES + MX, nuovi ES + MX, poi i conteggi per parola nell'ordine sopra (uguali in ES e in MX: con le
+composizioni Google dà gli stessi numeri nei due mercati, mentre le liste cambiano; sulle ricerche di base le due liste
+hanno in comune da 188 a 348 suggerimenti su circa 300-390).
+
+| Candidata | Totale | Nuovi | Per parola (ES = MX) | Nuovi ES / MX |
+|---|---|---|---|---|
+| **qué es {seed}** | 76 | 76 | 10/9/9/10 | 10/9/9/10 · 10/9/9/10 |
+| {seed} precios | 66 | 66 | 4/9/10/10 | 4/9/10/10 · 4/9/10/10 |
+| **{seed} precio** | 72 | 65 | 9/9/9/9 | 5/9/9/9 · 6/9/9/9 |
+| **comprar {seed}** | 64 | 64 | 9/9/10/4 | 9/9/10/4 · 9/9/10/4 |
+| **{seed} con** | 78 | 60 | 10/10/10/9 | 5/9/8/8 · 5/8/10/7 |
+| **mejor {seed}** | 60 | 60 | 2/9/10/9 | 2/9/10/9 · 2/9/10/9 |
+| **tipos de {seed}** | 60 | 60 | 9/10/10/1 | 9/10/10/1 · 9/10/10/1 |
+| **{seed} opiniones** | 58 | 58 | 0/9/10/10 | 0/9/10/10 · 0/9/10/10 |
+| **{seed} cerca de mí** | 56 | 55 | 1/9/9/9 | 1/8/9/9 · 1/9/9/9 |
+| mejores {seed} | 52 | 52 | 0/10/10/6 | 0/10/10/6 · 0/10/10/6 |
+| {seed} barato | 52 | 52 | 0/8/9/9 | 0/8/9/9 · 0/8/9/9 |
+| {seed} para | 80 | 51 | 10/10/10/10 | 5/10/9/3 · 6/7/9/2 |
+| alquiler {seed} | 50 | 50 | 9/7/9/0 | 9/7/9/0 · 9/7/9/0 |
+| {seed} oferta | 46 | 46 | 2/9/9/3 | 2/9/9/3 · 2/9/9/3 |
+| {seed} en | 80 | 42 | 10/10/10/10 | 6/10/7/0 · 6/9/4/0 |
+| {seed} gratis | 56 | 39 | 1/9/9/9 | 1/9/7/2 · 1/9/9/1 |
+| {seed} segunda mano | 40 | 39 | 9/9/2/0 | 8/9/2/0 · 9/9/2/0 |
+| {seed} reseñas | 38 | 38 | 0/9/9/1 | 0/9/9/1 · 0/9/9/1 |
+| {seed} ofertas | 36 | 36 | 0/9/9/0 | 0/9/9/0 · 0/9/9/0 |
+| {seed} online | 54 | 35 | 0/9/9/9 | 0/9/8/0 · 0/9/9/0 |
+| cómo elegir {seed} | 32 | 32 | 0/10/6/0 | 0/10/6/0 · 0/10/6/0 |
+| {seed} vs | 40 | 1 | 0/10/10/0 | 0/0/0/0 · 0/0/1/0 |
+
+Scelta (in grassetto, in `DEFAULT_PATTERNS.es` di `prisma/seed.ts`): le 8 con più suggerimenti nuovi, tutte con
+suggerimenti in entrambi i mercati; di due forme della stessa parola resta quella con più suggerimenti in totale
+(«precio» e non «precios», «mejor» e non «mejores»). Contare i suggerimenti nuovi invece del totale toglie le
+composizioni che ripetono la ricerca di base: «{seed} para» ed «{seed} en» hanno il totale più alto ma da un terzo
+a metà dei loro suggerimenti è già nella ricerca di base; «{seed} vs» ne aggiunge uno su 40. Con il solo totale il
+set avrebbe «{seed} para» ed «{seed} en» al posto di «{seed} opiniones» e «{seed} cerca de mí».
+
+**Classificazione (T-5001).** Lessico `es` in `lib/modules/classification.ts`: domande all'inizio della keyword (anche
+«por qué», di due parole), commerciale, transazionale, locale e strumenti come nel modulo; per ogni parola con
+l'accento anche la forma senza («cómo» e «como», «cerca de mí» e «cerca de mi», «reseñas» e «resenas»), come
+«perché» e «perche» in italiano. Navigazionale, prodotto, servizio e contenuti seguono l'italiano («iniciar sesión»,
+«sitio oficial», «producto», «servicio», «consultoría», «guía», «consejos», «ejemplos»).
+
+**Keyword Planner (T-5002).** Colonne spagnole nel parser (`lib/modules/planner/csv-parser.ts`) dalla guida di Google
+Ads in spagnolo (`docs/METRICS-PROVIDERS.md`): la guida chiama la colonna della concorrenza «Competitividad», le guide
+di Metricool e Ahrefs «Competencia»: il parser accetta le due, con e senza «(valor indexado)», e il livello «Baja».
+Intervalli «10 mil - 100 mil» (mil = migliaia) e «1000 - 10.000». La fixture `tests/fixtures/planner/keyword-planner-es.csv`
+è costruita da queste intestazioni: un file reale scaricato in spagnolo la sostituirebbe.

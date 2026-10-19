@@ -1,5 +1,6 @@
 // Gate di T-204: seed dei default globali idempotente e transazionale (AC-204-1…4); T-403: AC-403-4.
 // Gate di T-3702 (AC-3702-2, D-44): composizioni globali per lingua, 8 inglesi e 8 italiane.
+// Gate di T-5001 (AC-5001-2, D-47): 8 composizioni anche per lo spagnolo, 24 righe globali.
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import type { PrismaClient } from "@/lib/generated/prisma/client";
@@ -79,22 +80,25 @@ beforeEach(async () => {
 describe("seed dei default globali", () => {
   // covers: AC-204-1
   // impacted-by: T-3702 (composizioni per lingua: 8 inglesi e 8 italiane, 16 pattern globali)
-  it("due esecuzioni di seguito lasciano 5 brand e 16 pattern globali", async () => {
+  // impacted-by: T-5001 (8 composizioni spagnole: 24 pattern globali)
+  it("due esecuzioni di seguito lasciano 5 brand e 24 pattern globali", async () => {
     await seedGlobalDefaults(prisma);
-    expect(await globalCounts()).toEqual({ brands: 5, patterns: 16 });
+    expect(await globalCounts()).toEqual({ brands: 5, patterns: 24 });
 
     await seedGlobalDefaults(prisma);
-    expect(await globalCounts()).toEqual({ brands: 5, patterns: 16 });
+    expect(await globalCounts()).toEqual({ brands: 5, patterns: 24 });
   });
 
   // covers: AC-3702-2
-  it("su expansion_patterns vuota due esecuzioni lasciano 16 composizioni globali, 8 en e 8 it", async () => {
+  // covers: AC-5001-2
+  // impacted-by: T-5001 (AC-3702-2 emendato: 24 righe globali, 8 per lingua)
+  it("su expansion_patterns vuota due esecuzioni lasciano 24 composizioni globali, 8 en, 8 it e 8 es", async () => {
     expect(await prisma.expansionPattern.count()).toBe(0);
 
     for (let run = 0; run < 2; run += 1) {
       await seedGlobalDefaults(prisma);
-      expect(await prisma.expansionPattern.count({ where: { project_id: null } })).toBe(16);
-      expect(await globalPatternsByLanguage()).toEqual({ en: 8, it: 8 });
+      expect(await prisma.expansionPattern.count({ where: { project_id: null } })).toBe(24);
+      expect(await globalPatternsByLanguage()).toEqual({ en: 8, es: 8, it: 8 });
     }
   });
 
@@ -140,7 +144,8 @@ describe("seed dei default globali", () => {
 
   // covers: AC-403-4
   // impacted-by: T-3702 (16 pattern globali, 8 per lingua)
-  it("prisma db seed lanciato due volte dalla CLI lascia 5 brand e 16 pattern globali", async () => {
+  // impacted-by: T-5001 (24 pattern globali, 8 per lingua)
+  it("prisma db seed lanciato due volte dalla CLI lascia 5 brand e 24 pattern globali", async () => {
     // DATABASE_URL e DIRECT_URL sono già quelle del DB di test (setup d'integrazione).
     for (let run = 0; run < 2; run += 1) {
       const seed = spawnSync(process.execPath, [PRISMA_CLI, "db", "seed"], {
@@ -151,6 +156,6 @@ describe("seed dei default globali", () => {
       expect(seed.status, seed.stdout + seed.stderr).toBe(0);
     }
 
-    expect(await globalCounts()).toEqual({ brands: 5, patterns: 16 });
+    expect(await globalCounts()).toEqual({ brands: 5, patterns: 24 });
   }, 400_000);
 });
