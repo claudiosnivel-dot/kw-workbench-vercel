@@ -51,15 +51,21 @@ export async function countCountedRequests(now: Date = new Date()): Promise<numb
 }
 
 /**
- * Tetto della piattaforma in richieste (T-3901): con le righe contate delle ultime 24 ore arrivate a max, 429
- * RATE_LIMITED con Retry-After, i secondi finché ne esce dalla finestra quanto basta per tornare sotto il tetto
- * (arrotondati per eccesso, almeno 1). Il controllo non prenota: le righe le scrive requestWithFallback a ogni tentativo.
+ * Tetto della piattaforma in richieste (T-3901): se le righe contate delle ultime 24 ore non lasciano posto per needed
+ * richieste (una per i titoli, la stima di un articolo per gli articoli, T-4002), 429 RATE_LIMITED con Retry-After, i
+ * secondi finché ne esce dalla finestra quanto basta per fare posto (arrotondati per eccesso, almeno 1). Il controllo
+ * non prenota: le righe le scrive requestWithFallback a ogni tentativo.
  */
-export async function enforcePlatformRequestCap(max: number, now: Date = new Date()): Promise<void> {
+export async function enforcePlatformRequestCap(max: number, needed = 1, now: Date = new Date()): Promise<void> {
   const where = countedSince(now);
   const count = await prisma.aiRequest.count({ where });
-  if (count < max) return;
-  const freeing = await prisma.aiRequest.findFirst({ where, orderBy: { created_at: "asc" }, skip: count - max, select: { created_at: true } });
+  if (count + needed <= max) return;
+  const freeing = await prisma.aiRequest.findFirst({
+    where,
+    orderBy: { created_at: "asc" },
+    skip: Math.max(0, count + needed - max - 1),
+    select: { created_at: true },
+  });
   const exitsAt = (freeing?.created_at.getTime() ?? now.getTime()) + DAY_MS;
   throw new RateLimitedError(Math.max(1, Math.ceil((exitsAt - now.getTime()) / 1000)));
 }

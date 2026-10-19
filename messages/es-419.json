@@ -26,6 +26,12 @@
     "brands": {
       "addLabel": "Agregar una marca",
       "add": "+ agregar"
+    },
+    "articleBrief": {
+      "tones": {
+        "friendly": "Amigable"
+      },
+      "siteUrlHint": "Por ejemplo https://www.ejemplo.com: sirve para escribir en los artículos los enlaces a tus otras páginas."
     }
   },
   "jobs": {
@@ -61,7 +67,8 @@
     "STRATEGY_CONFLICT": "La estrategia se modificó mientras tanto: recarga el plan y vuelve a intentarlo.",
     "AI_TIMEOUT": "El modelo no respondió a tiempo. Vuelve a intentarlo en un momento.",
     "AI_INVALID_RESPONSE": "El modelo dio una respuesta que no se puede usar. Vuelve a intentarlo.",
-    "AI_DAILY_LIMIT": "Se agotaron las solicitudes a la IA de hoy: vuelve a intentarlo mañana."
+    "AI_DAILY_LIMIT": "Se agotaron las solicitudes a la IA de hoy: vuelve a intentarlo mañana.",
+    "ARTICLE_NOT_FOUND": "No se encontró el artículo."
   },
   "errorPages": {
     "error": {

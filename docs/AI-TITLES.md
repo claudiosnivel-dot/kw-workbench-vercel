@@ -180,3 +180,36 @@ modello successivo dell'elenco.
   ha risposto (null se nessuno), durata, esito e `attempts`: per ogni modello provato `model`, `outcome` (ok,
   provider_busy, account_daily_limit, account_rate_limit, unavailable, timeout, invalid_response, auth) e
   `httpStatus`. Mai keyword, istruzioni, risposta o messaggi del fornitore, chiave.
+
+## Articoli con l'AI: dati e avvio (modulo 40)
+
+Gli articoli (D-46) usano la stessa chiave, gli stessi modelli e lo stesso tetto della piattaforma dei titoli. Il
+modulo 40 prepara i dati e l'avvio; il lavoro che scrive l'articolo arriva con i moduli 41-43 e l'editor con il 44.
+
+- **Scheda «Per gli articoli»** (T-4001): nelle impostazioni del progetto, fra i marchi dei concorrenti e le Avanzate,
+  «Chi siete e cosa offrite» (fino a 1000 caratteri), «A chi vi rivolgete» (300), tono (professionale, amichevole,
+  tecnico), nome (120) e indirizzo (300) dell'attività, facoltativi, e indirizzo del sito (300, solo `https`
+  assoluto, senza credenziali, query o frammento, salvato senza barra finale). Si salva con la PATCH del progetto e
+  con il suo Salva; senza il permesso di modificare il progetto i campi sono in sola lettura. Una riga dice che i
+  testi vanno a OpenRouter con le keyword: la privacy policy (D-15) dovrà dirlo. L'app non chiama mai l'indirizzo del
+  sito: serve solo a scrivere i link degli articoli.
+- **Impostazioni del root admin** (T-4002): nella card, sezione «Articoli con l'AI», l'interruttore «Articoli per gli
+  utenti» (spento di default: va acceso solo quando l'editor del modulo 44 è in produzione) e i limiti per workspace
+  in articoli (default 3) e in sezioni riscritte (default 20) nelle ultime 24 ore, da 1 a 1000, con la riga
+  `ai.update` del registro.
+- **Avvio**: `POST /api/projects/{id}/strategies/{strategyId}/pages/{pageId}/article` con `{ length: SHORT | MEDIUM |
+  LONG, notes? }` (note fino a 1000 caratteri). Controlli in ordine: permesso di modificare il piano e pagina del piano
+  corrente (404, 409 `STRATEGY_READ_ONLY`); articoli spenti o chiave assente → 503 `AI_NOT_CONFIGURED`; lavoro già
+  attivo sull'articolo → 409 `JOB_ALREADY_ACTIVE` con `runId`; tetto della piattaforma con posto per la stima
+  dell'articolo (H2 della pagina più 3, più il 30%, per eccesso) e limite del workspace → 429 `RATE_LIMITED` con
+  Retry-After. Il root admin è escluso dai limiti. Poi, in una transazione, l'articolo nasce o si sostituisce
+  (`GENERATING`, blocchi e meta cancellati, version più 1), nasce il lavoro `pending` e la pagina passa da «Da
+  scrivere» a «In scrittura»; risposta 202 `{ data: { articleId, runId } }`.
+- **Lettura e annullamento**: `GET` sulla stessa rotta restituisce l'articolo con i blocchi in ordine e il lavoro
+  attivo con l'avanzamento (404 `ARTICLE_NOT_FOUND` senza articolo); `DELETE .../article/run` annulla il lavoro attivo
+  (200; 409 `JOB_NOT_CANCELABLE` senza lavoro attivo) e un articolo ancora in generazione diventa `FAILED` con
+  `error_code` `CANCELED`.
+- **«Rigenera»** (T-2502): gli articoli delle pagine copiate nel nuovo piano passano alle copie, con blocchi e lavori.
+- **Tabelle**: `articles` (una per pagina), `article_sections` (blocchi con il testo in Markdown) e `article_runs`
+  (lavori a passi con un solo lavoro attivo per articolo), con la RLS abilitata senza policy (migrazione 0050); la
+  scheda sta in `projects` (migrazione 0049).

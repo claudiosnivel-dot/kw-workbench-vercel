@@ -5,9 +5,14 @@
 
 /**
  * Massimo di ogni limite delle impostazioni (minimo 1): il tetto della piattaforma in richieste delle ultime 24 ore
- * (T-3901), il limite per workspace in proposte (T-3501).
+ * (T-3901), il limite per workspace in proposte (T-3501), in articoli e in sezioni riscritte (T-4002).
  */
-export const AI_LIMIT_MAX = { platformDailyRequests: 5000, workspaceDailyLimit: 1000 } as const;
+export const AI_LIMIT_MAX = {
+  platformDailyRequests: 5000,
+  workspaceDailyLimit: 1000,
+  articlesPerWorkspaceDaily: 1000,
+  sectionRewritesPerWorkspaceDaily: 1000,
+} as const;
 
 /** Tentativi di un modello in una finestra: riusciti, fornitore occupato, limite giornaliero dell'account e il resto. */
 export type UsageCounts = {

@@ -85,11 +85,15 @@ describe("uso dei modelli nella card", () => {
     other: requests - ok - providerBusy,
     avgOkMs,
   });
+  // impacted-by: T-4002 (interruttore e limiti degli articoli nella vista della card)
   const view = {
     enabled: true,
     models: ["a/uno:free"],
     platformDailyRequests: 900,
     workspaceDailyLimit: 10,
+    articlesEnabled: false,
+    articlesPerWorkspaceDaily: 3,
+    sectionRewritesPerWorkspaceDaily: 20,
     keyConfigured: true,
     catalog: { checkedAt: new Date().toISOString(), free: [{ id: "a/uno:free", name: "A: Uno", contextLength: 8192 }] },
     statuses: { "a/uno:free": "ok" as const },

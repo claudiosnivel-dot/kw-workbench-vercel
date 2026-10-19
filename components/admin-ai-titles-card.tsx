@@ -23,6 +23,9 @@ type AiTitlesView = {
   models: string[];
   platformDailyRequests: number;
   workspaceDailyLimit: number;
+  articlesEnabled: boolean;
+  articlesPerWorkspaceDaily: number;
+  sectionRewritesPerWorkspaceDaily: number;
   keyConfigured: boolean;
   catalog: ModelCatalog | null;
   statuses: Record<string, ModelStatus>;
@@ -30,7 +33,8 @@ type AiTitlesView = {
   usage: AiUsage;
 };
 
-type AiTitlesInput = Pick<AiTitlesView, "enabled" | "models" | "platformDailyRequests" | "workspaceDailyLimit">;
+type LimitField = keyof typeof AI_LIMIT_MAX;
+type AiTitlesInput = Pick<AiTitlesView, "enabled" | "models" | "articlesEnabled" | LimitField>;
 
 /** PATCH delle impostazioni (T-3501): una risposta non riuscita lancia l'errore del catalogo. */
 async function saveAiTitles(body: AiTitlesInput, tErrors: ErrorTranslator): Promise<{ data?: AiTitlesView } | null> {
@@ -47,9 +51,14 @@ async function refreshCatalog(): Promise<AiTitlesView | null> {
   }
 }
 
-type LimitField = keyof typeof AI_LIMIT_MAX;
-const LIMIT_FIELDS: LimitField[] = ["platformDailyRequests", "workspaceDailyLimit"];
-const LIMIT_LABELS = { platformDailyRequests: "platformLimit", workspaceDailyLimit: "workspaceLimit" } as const;
+const TITLE_LIMITS: LimitField[] = ["platformDailyRequests", "workspaceDailyLimit"];
+const ARTICLE_LIMITS: LimitField[] = ["articlesPerWorkspaceDaily", "sectionRewritesPerWorkspaceDaily"];
+const LIMIT_LABELS = {
+  platformDailyRequests: "platformLimit",
+  workspaceDailyLimit: "workspaceLimit",
+  articlesPerWorkspaceDaily: "articlesLimit",
+  sectionRewritesPerWorkspaceDaily: "rewritesLimit",
+} as const;
 const USAGE_WINDOWS = ["last24h", "last7d"] as const;
 const USAGE_COLUMNS = ["requests", "ok", "providerBusy", "accountDailyLimit", "other"] as const satisfies readonly (keyof UsageCounts)[];
 const STATUS_CLASS: Record<ModelStatus, string> = { ok: "text-green-700", missing: "text-red-700", unknown: "text-slate-600" };
@@ -113,14 +122,30 @@ function UsageTable({ usage, window }: { usage: AiUsage; window: (typeof USAGE_W
   );
 }
 
+/** Interruttore acceso/spento con la sua etichetta (titoli e articoli). */
+function SwitchRow({ id, label, on, disabled, onToggle }: { id: string; label: string; on: boolean; disabled: boolean; onToggle: () => void }) {
+  const t = useTranslations("admin.aiTitles");
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <span id={id} className="text-sm font-medium">
+        {label}
+      </span>
+      <button type="button" role="switch" aria-checked={on} aria-labelledby={id} className={on ? "btn-primary" : "btn-secondary"} disabled={disabled} onClick={onToggle}>
+        {on ? t("on") : t("off")}
+      </button>
+    </div>
+  );
+}
+
 /**
  * Titoli con l'AI nelle Impostazioni del root admin (T-3501, D-42): interruttore, elenco ordinato dei modelli gratuiti
  * (T-3801) con «Su», «Giù», «Togli» e «Aggiungi modello», stato di ogni modello sul catalogo di OpenRouter con la data
  * dell'ultimo controllo e i modelli gratuiti nuovi da aggiungere (T-3803), tetto della piattaforma in richieste e limite
  * per workspace in proposte, con lo stato della chiave (solo sì o no), le richieste delle ultime 24 ore contate dal tetto
- * e la tabella «Uso dei modelli» sulle ultime 24 ore e sugli ultimi 7 giorni (T-3902). All'apertura il catalogo si
- * rilegge se ha più di un'ora. Il salvataggio manda interruttore, elenco e limiti; la rotta riverifica ruolo, modelli e
- * limiti.
+ * e la tabella «Uso dei modelli» sulle ultime 24 ore e sugli ultimi 7 giorni (T-3902); in fondo gli articoli con
+ * l'AI (T-4002) con il loro interruttore e i limiti per workspace in articoli e in sezioni riscritte. All'apertura il
+ * catalogo si rilegge se ha più di un'ora. Il salvataggio manda interruttori, elenco e limiti; la rotta riverifica
+ * ruolo, modelli e limiti.
  */
 export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
   const t = useTranslations("admin.aiTitles");
@@ -128,13 +153,13 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
   const listId = useId();
   const [view, setView] = useState(initial);
   const [enabled, setEnabled] = useState(initial.enabled);
+  const [articlesEnabled, setArticlesEnabled] = useState(initial.articlesEnabled);
   const [models, setModels] = useState(initial.models);
   const [candidate, setCandidate] = useState("");
   const [candidateError, setCandidateError] = useState<string | null>(null);
-  const [limits, setLimits] = useState<Record<LimitField, string>>({
-    platformDailyRequests: String(initial.platformDailyRequests),
-    workspaceDailyLimit: String(initial.workspaceDailyLimit),
-  });
+  const [limits, setLimits] = useState(
+    () => Object.fromEntries([...TITLE_LIMITS, ...ARTICLE_LIMITS].map((field) => [field, String(initial[field])])) as Record<LimitField, string>
+  );
   const { saving, error, success, save } = useSaveAction();
 
   useEffect(() => {
@@ -149,6 +174,27 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
   }, [initial.catalog]);
 
   const full = models.length >= MAX_MODELS;
+
+  const limitInputs = (fields: LimitField[]) => (
+    <div className="grid gap-3 md:grid-cols-2">
+      {fields.map((field) => (
+        <div key={field}>
+          <label className="label" htmlFor={`ai-titles-${field}`}>
+            {t(LIMIT_LABELS[field])}
+          </label>
+          <input
+            id={`ai-titles-${field}`}
+            className="input"
+            type="number"
+            min={1}
+            max={AI_LIMIT_MAX[field]}
+            value={limits[field]}
+            onChange={(event) => setLimits((current) => ({ ...current, [field]: event.target.value }))}
+          />
+        </div>
+      ))}
+    </div>
+  );
   const addable = addableModels(models, view.catalog);
 
   const add = (id: string): boolean => {
@@ -176,8 +222,8 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
         {
           enabled,
           models,
-          platformDailyRequests: Number(limits.platformDailyRequests),
-          workspaceDailyLimit: Number(limits.workspaceDailyLimit),
+          articlesEnabled,
+          ...(Object.fromEntries(Object.entries(limits).map(([field, value]) => [field, Number(value)])) as Record<LimitField, number>),
         },
         tErrors
       );
@@ -196,22 +242,7 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
       success={success}
       save={{ onClick: submit, pending: saving, label: t("save"), pendingLabel: t("saving") }}
     >
-      <div className="flex flex-wrap items-center gap-3">
-        <span id="ai-titles-enabled" className="text-sm font-medium">
-          {t("enabled")}
-        </span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
-          aria-labelledby="ai-titles-enabled"
-          className={enabled ? "btn-primary" : "btn-secondary"}
-          disabled={saving}
-          onClick={() => setEnabled((value) => !value)}
-        >
-          {enabled ? t("on") : t("off")}
-        </button>
-      </div>
+      <SwitchRow id="ai-titles-enabled" label={t("enabled")} on={enabled} disabled={saving} onToggle={() => setEnabled((value) => !value)} />
 
       <div className="space-y-2">
         <p id={`${listId}-label`} className="label">
@@ -332,24 +363,7 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
         )}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {LIMIT_FIELDS.map((field) => (
-          <div key={field}>
-            <label className="label" htmlFor={`ai-titles-${field}`}>
-              {t(LIMIT_LABELS[field])}
-            </label>
-            <input
-              id={`ai-titles-${field}`}
-              className="input"
-              type="number"
-              min={1}
-              max={AI_LIMIT_MAX[field]}
-              value={limits[field]}
-              onChange={(event) => setLimits((current) => ({ ...current, [field]: event.target.value }))}
-            />
-          </div>
-        ))}
-      </div>
+      {limitInputs(TITLE_LIMITS)}
 
       <ul className="space-y-1 text-sm text-slate-600">
         <li>{t("keyConfigured", { configured: view.keyConfigured ? "yes" : "no" })}</li>
@@ -363,6 +377,19 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
         ) : (
           USAGE_WINDOWS.map((window) => <UsageTable key={window} usage={view.usage} window={window} />)
         )}
+      </div>
+
+      <div className="space-y-3 border-t border-[var(--surface-border)] pt-4">
+        <h3 className="text-sm font-medium">{t("articlesTitle")}</h3>
+        <p className="text-sm text-slate-600">{t("articlesIntro")}</p>
+        <SwitchRow
+          id="ai-articles-enabled"
+          label={t("articlesEnabled")}
+          on={articlesEnabled}
+          disabled={saving}
+          onToggle={() => setArticlesEnabled((value) => !value)}
+        />
+        {limitInputs(ARTICLE_LIMITS)}
       </div>
     </SettingsCard>
   );

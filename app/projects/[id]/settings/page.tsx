@@ -11,8 +11,9 @@ import { requireProjectPage } from "@/lib/modules/project-pages";
 export const dynamic = "force-dynamic";
 
 /**
- * Impostazioni del progetto (T-2602): «Il progetto», i marchi dei concorrenti (T-2601), le Avanzate chiuse e, in fondo,
- * «Elimina il progetto» solo con project.delete (ADMIN e OWNER, D-08); la rotta lo riverifica.
+ * Impostazioni del progetto (T-2602): «Il progetto», i marchi dei concorrenti (T-2601), la scheda «Per gli articoli»
+ * modificabile con project.update (T-4001), le Avanzate chiuse e, in fondo, «Elimina il progetto» solo con
+ * project.delete (ADMIN e OWNER, D-08); le rotte lo riverificano.
  */
 export default async function ProjectSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageUser();
@@ -27,6 +28,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
       <ProjectSettingsForm
         projectId={project.id}
         canEditAutocompleteProvider={user.isRootAdmin}
+        canEditArticleBrief={canPerform(project.role, "project.update")}
         initialValues={{
           name: project.name,
           language_code: project.language_code,
@@ -40,6 +42,14 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
           expand_patterns: project.expand_patterns,
           auto_classification: project.auto_classification,
           scoring_profile: project.scoring_profile,
+        }}
+        initialArticleBrief={{
+          article_about: project.article_about ?? "",
+          article_audience: project.article_audience ?? "",
+          article_tone: project.article_tone,
+          business_name: project.business_name ?? "",
+          business_address: project.business_address ?? "",
+          site_url: project.site_url ?? "",
         }}
         brands={<ProjectBrands projectId={project.id} brands={brands} />}
       />

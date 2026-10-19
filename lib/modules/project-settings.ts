@@ -5,7 +5,7 @@ import {
   normalizeCountryCode,
   normalizeLanguageCode,
 } from "@/lib/constants/locale-options";
-import { AutocompleteProvider, MetricsProvider } from "@/lib/generated/prisma/enums";
+import { ArticleTone, AutocompleteProvider, MetricsProvider } from "@/lib/generated/prisma/enums";
 import { AppError, ValidationError } from "@/lib/http/errors";
 import { QUICK_START_MAX_TOPICS, splitQuickStartTopics } from "@/lib/modules/quick-start-topics";
 import { parseBooleanWord, splitLines } from "@/lib/utils";
@@ -29,6 +29,7 @@ const NAME_MAX_LENGTH = 120;
 const DESCRIPTION_MAX_LENGTH = 1000;
 const SEED_MAX_LENGTH = 200;
 const SEEDS_PER_REQUEST_MAX = 500;
+const SITE_URL_MAX_LENGTH = 300;
 // Massimo della colonna Int di Postgres: oltre, la query fallirebbe con un 500 (CWE-190).
 const INT4_MAX = 2_147_483_647;
 
@@ -113,7 +114,46 @@ const projectCreateSchema = z
     createInitialSection: z.boolean(),
   })
   .partial();
-const projectPatchSchema = z.strictObject(projectFields).partial();
+/** Testo facoltativo della scheda: spazi ai lati tolti, '' e null diventano null, al massimo max caratteri. */
+function optionalText(max: number) {
+  return z
+    .union([z.null(), z.string().trim().max(max, `al massimo ${max} caratteri`)])
+    .transform((value) => (value === "" ? null : value));
+}
+
+/**
+ * Indirizzo del sito (T-4001): assoluto in https, senza credenziali, query o frammento, salvato senza barra finale.
+ * Serve solo a scrivere i link degli articoli: l'app non lo chiama mai (CWE-918).
+ */
+function parseSiteUrl(value: string, ctx: z.RefinementCtx): string {
+  const invalid = () => {
+    ctx.addIssue({ code: "custom", message: "indirizzo https assoluto, senza credenziali, query o frammento" });
+    return z.NEVER;
+  };
+  if (!URL.canParse(value) || /[?#]/.test(value)) return invalid();
+  const url = new URL(value);
+  if (url.protocol !== "https:" || !url.hostname || url.username || url.password) return invalid();
+  const normalized = `${url.origin}${url.pathname}`.replace(/\/+$/, "");
+  if (normalized.length > SITE_URL_MAX_LENGTH) {
+    ctx.addIssue({ code: "custom", message: `al massimo ${SITE_URL_MAX_LENGTH} caratteri` });
+    return z.NEVER;
+  }
+  return normalized;
+}
+
+// Scheda «Per gli articoli» (T-4001, D-46): solo nella PATCH, con i limiti delle colonne della migrazione 0049.
+const articleBriefFields = {
+  article_about: optionalText(1000),
+  article_audience: optionalText(300),
+  article_tone: z.enum(ArticleTone),
+  business_name: optionalText(120),
+  business_address: optionalText(300),
+  site_url: z
+    .union([z.null(), z.string().trim()])
+    .transform((value, ctx) => (value === null || value === "" ? null : parseSiteUrl(value, ctx))),
+};
+
+const projectPatchSchema = z.strictObject({ ...projectFields, ...articleBriefFields }).partial();
 
 const subprojectFields = {
   name: nameField,

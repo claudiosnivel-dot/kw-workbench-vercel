@@ -179,6 +179,26 @@
       "expandPatternsHint": "Also searches typical phrases such as \"best keyword\" or \"how to keyword\".",
       "autoClassification": "Automatic classification",
       "autoClassificationHint": "Detects each keyword's intent and type."
+    },
+    "articleBrief": {
+      "title": "For articles",
+      "intro": "The model uses this to write articles that help your readers, not generic text.",
+      "about": "Who you are and what you offer",
+      "audience": "Who you are writing for",
+      "tone": "Tone",
+      "tones": {
+        "professional": "Professional",
+        "friendly": "Friendly",
+        "technical": "Technical"
+      },
+      "businessName": "Business name (optional)",
+      "businessAddress": "Business address (optional)",
+      "businessHint": "Name and address are only used for the structured data of a local page.",
+      "siteUrl": "Website address",
+      "siteUrlHint": "For example https://www.example.com: used to write the links to your other pages in articles.",
+      "counter": "{count} of {max} characters",
+      "openRouter": "These texts are sent to OpenRouter together with the keywords when you generate an article.",
+      "readOnly": "Only people who can edit the project can change these texts."
     }
   },
   "jobs": {
@@ -402,7 +422,8 @@
     "AI_INVALID_RESPONSE": "The model gave an answer that cannot be used. Try again.",
     "AI_MODEL_NOT_FREE": "The model must be free: an ID like author/model:free.",
     "AI_BUSY": "All the free models are busy: try again in a few minutes.",
-    "AI_DAILY_LIMIT": "Today's AI requests have run out: try again tomorrow."
+    "AI_DAILY_LIMIT": "Today's AI requests have run out: try again tomorrow.",
+    "ARTICLE_NOT_FOUND": "Article not found."
   },
   "errorPages": {
     "error": {
@@ -743,7 +764,12 @@
       },
       "save": "Save",
       "saving": "Saving...",
-      "saved": "Saved"
+      "saved": "Saved",
+      "articlesTitle": "AI articles",
+      "articlesIntro": "Full text for a plan page, written in the background one block at a time with the same models. The platform cap applies to articles too.",
+      "articlesEnabled": "Articles for users",
+      "articlesLimit": "Limit per workspace (articles in 24 hours)",
+      "rewritesLimit": "Limit per workspace (rewritten sections in 24 hours)"
     },
     "user": {
       "back": "← Users",
