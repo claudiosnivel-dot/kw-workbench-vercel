@@ -2,9 +2,9 @@ import { containsTokenSequence } from "@/lib/modules/normalization";
 import type { ModifierCategory } from "@/lib/modules/strategy/types";
 
 /*
- * Parole vuote e modificatori per italiano e inglese (T-1901). Modulo puro. Le parole sono nella forma canonica di
- * T-702 (minuscole, senza accenti); il confronto con le keyword avviene sulle radici di wordStem, quindi singolare e
- * plurale coincidono. Un modificatore di più parole si cerca come sequenza contigua nei token della keyword. Le lingue
+ * Parole vuote e modificatori per italiano e inglese (T-1901) e spagnolo (T-5101, D-47). Modulo puro. Le parole sono
+ * nella forma canonica di T-702 (minuscole, senza accenti); il confronto con le keyword avviene sulle radici di
+ * wordStem, quindi singolare e plurale coincidono. Un modificatore di più parole si cerca come sequenza contigua nei token della keyword. Le lingue
  * senza dizionario non hanno parole vuote né modificatori: il raggruppamento usa solo le parole condivise.
  */
 
@@ -49,23 +49,59 @@ const LEXICONS: Record<string, LanguageLexicon> = {
       informational: ["how", "what", "why", "which", "when", "where", "who", "guide", "meaning", "tutorial", "tips", "ideas"],
     },
   },
+  // «para» resta solo una parola vuota, come «per» in italiano: le parole vuote si tolgono prima dei modificatori.
+  es: {
+    stopwords: [
+      "el", "la", "los", "las", "lo", "un", "una", "unos", "unas", "de", "del", "en", "para", "por", "con", "a", "al", "y",
+      "e", "o", "u",
+    ],
+    modifiers: {
+      local: ["cerca de mi", "cerca", "cercano", "zona"],
+      tool: [
+        "calculadora", "calcular", "generador", "simulador", "conversor", "convertidor", "online", "en linea", "gratis",
+        "gratuito", "app", "plantilla",
+      ],
+      comparison: [
+        "mejor", "mejores", "opiniones", "opinion", "resenas", "resena", "vs", "versus", "comparativa", "comparacion", "ranking",
+        "top", "alternativas", "alternativa",
+      ],
+      transactional: [
+        "precio", "precios", "costo", "coste", "barato", "economico", "oferta", "ofertas", "comprar", "compra", "venta",
+        "alquiler", "alquilar", "descuento", "descuentos", "rebajas", "outlet",
+      ],
+      informational: [
+        "como", "que", "cual", "cuales", "cuando", "donde", "quien", "cuanto", "cuantos", "guia", "significado", "tutorial",
+        "consejos", "ejemplos", "ideas",
+      ],
+    },
+  },
 };
 
 const MIN_STEM_LENGTH = 4;
-const ITALIAN_FINAL_VOWEL = /[aeiou]$/;
+const FINAL_VOWEL = /[aeiou]$/;
 const ENGLISH_ES_PLURAL = /(?:s|x|z|ch|sh)es$/;
+
+/** Spagnolo: senza la s finale, poi senza la vocale finale se restano almeno 4 lettere (ojos → ojo come ojo). */
+function spanishStem(word: string): string {
+  const singular = word.endsWith("s") ? word.slice(0, -1) : word;
+  return [...singular].length >= MIN_STEM_LENGTH ? singular.replace(FINAL_VOWEL, "") : singular;
+}
 
 /**
  * Radice di una parola per l'equivalenza di singolare e plurale, solo per parole di almeno 4 lettere: in italiano
  * senza la vocale finale (scarpa, scarpe → scarp), in inglese senza la s o la es finale (shoes → shoe, boxes → box,
- * glass resta glass). Per le altre lingue la parola resta com'è.
+ * glass resta glass), in spagnolo senza la s e poi la vocale finale (camas, cama → cam; hospitales → hospital;
+ * barato, baratas → barat). Per le altre lingue la parola resta com'è.
  */
 export function wordStem(word: string, language: string): string {
   if ([...word].length < MIN_STEM_LENGTH) {
     return word;
   }
   if (language === "it") {
-    return word.replace(ITALIAN_FINAL_VOWEL, "");
+    return word.replace(FINAL_VOWEL, "");
+  }
+  if (language === "es") {
+    return spanishStem(word);
   }
   if (language === "en") {
     if (word.endsWith("ss")) return word;
@@ -113,8 +149,8 @@ export function modifierCategoryOfStem(stem: string, language: string): Modifier
 }
 
 /**
- * Categorie dei modificatori di più parole (vicino a me, near me) presenti come sequenza contigua nei token della
- * keyword. Vuoto per le lingue senza dizionario.
+ * Categorie dei modificatori di più parole (vicino a me, near me, cerca de mi) presenti come sequenza contigua nei token
+ * della keyword. Vuoto per le lingue senza dizionario.
  */
 export function sequenceModifierCategories(tokens: string[], language: string): Set<ModifierCategory> {
   const found = new Set<ModifierCategory>();

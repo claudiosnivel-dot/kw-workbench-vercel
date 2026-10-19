@@ -17,7 +17,14 @@ import {
   UnknownStrategyItemError,
 } from "@/lib/modules/strategy/editor";
 import { AUTO_SETTINGS, expertSettingsSchema, resolveExpertSettings, type StrategySettings } from "@/lib/modules/strategy/rules";
-import { buildPageTitles, MAX_TITLE_LENGTH, type TitleContext, type TitleKeyword, type TitlePage } from "@/lib/modules/strategy/titles";
+import {
+  buildPageTitles,
+  MAX_TITLE_LENGTH,
+  planTitlePage,
+  type TitleContext,
+  type TitleKeyword,
+  type TitlePage,
+} from "@/lib/modules/strategy/titles";
 import { strategyTranslator } from "@/lib/modules/strategy/translator";
 import {
   STRATEGY_CONTENT_TYPES,
@@ -305,8 +312,22 @@ function refreshAnchoredHubs(locked: LockedPage[], pages: PageRow[], keywords: K
   }
 }
 
-function titleContext(language: string): TitleContext {
-  return { language, year: new Date().getUTCFullYear(), translate: strategyTranslator(language) };
+function titleContext(language: string, country: string | null): TitleContext {
+  return { language, year: new Date().getUTCFullYear(), translate: strategyTranslator(language, country) };
+}
+
+/**
+ * Paese di una strategia salvata (T-5101, T-5102): quello della sezione del perimetro se lo sovrascrive, altrimenti
+ * quello del progetto, come alla generazione; sceglie il catalogo dei titoli e la variante dello spagnolo.
+ */
+async function strategyCountry(client: Prisma.TransactionClient, record: StrategyRecord): Promise<string> {
+  const { sectionId } = (record.settings ?? {}) as { sectionId?: string | null };
+  const section = sectionId
+    ? await client.subproject.findFirst({ where: { id: sectionId, project_id: record.project_id }, select: { country_code_override: true } })
+    : null;
+  if (section?.country_code_override) return section.country_code_override;
+  const project = await client.project.findUniqueOrThrow({ where: { id: record.project_id }, select: { country_code: true } });
+  return project.country_code;
 }
 
 const strategyLimitError = () => new ConflictError("Limite di strategie del progetto raggiunto", "STRATEGY_LIMIT");
@@ -341,20 +362,22 @@ export async function generateStrategy(
   request: GenerateRequest,
   defaultName: string
 ): Promise<string> {
-  const project = await requireProjectAccess(user, projectId, "strategy.write", { language_code: true });
+  const project = await requireProjectAccess(user, projectId, "strategy.write", { language_code: true, country_code: true });
   if (!request.regenerate && (await prisma.strategy.count({ where: { project_id: project.id } })) >= STRATEGY_LIMIT_PER_PROJECT) {
     throw strategyLimitError();
   }
 
   const { settings } = request;
   let language = project.language_code;
+  let country = project.country_code;
   if (settings.sectionId) {
     const section = await prisma.subproject.findFirst({
       where: { id: settings.sectionId, project_id: project.id },
-      select: { language_code_override: true },
+      select: { language_code_override: true, country_code_override: true },
     });
     if (!section) throw new SectionNotFoundError();
     language = section.language_code_override ?? language;
+    country = section.country_code_override ?? country;
   }
 
   const locked: LockedPlan = request.regenerate ? await loadLockedPages(project.id) : { planId: null, pages: [], keywords: [] };
@@ -385,7 +408,7 @@ export async function generateStrategy(
     const keyword = byCanonical.get(canonical)!;
     return { keyword: keyword.keyword, canonical, isQuestion: keyword.isQuestion };
   };
-  const context = titleContext(language);
+  const context = titleContext(language, country);
 
   const strategyId = randomUUID();
   // Id delle pagine nuove: le copie delle pagine bloccate per id di origine, le pagine del motore per ref.
@@ -412,17 +435,7 @@ export async function generateStrategy(
       status_changed_at: page.status_changed_at,
     })),
     ...plan.pages.map((page) => {
-      const titles = buildPageTitles(
-        {
-          kind: page.kind,
-          contentType: page.contentType,
-          main: asTitle(page.main),
-          secondary: page.secondary.map(asTitle),
-          spokeMains:
-            page.kind === "HUB" ? plan.pages.filter((spoke) => spoke.hubRef === page.ref).map((spoke) => asTitle(spoke.main)) : undefined,
-        },
-        context
-      );
+      const titles = buildPageTitles(planTitlePage(plan, page, asTitle), context);
       return {
         id: idOf.get(page.ref)!,
         strategy_id: strategyId,
@@ -705,17 +718,20 @@ export async function requirePlanPage(project: AuthorizedProject, strategyId: st
   }
 }
 
-/** Pagina da titolare e lingua del piano (T-3601), letti dopo requirePlanPage; 404 se nel frattempo è sparita. */
+/**
+ * Pagina da titolare, lingua e paese del piano (T-3601, T-5102), letti dopo requirePlanPage; 404 se nel frattempo è
+ * sparita.
+ */
 export async function readPlanTitlePage(
   project: AuthorizedProject,
   strategyId: string,
   pageId: string
-): Promise<{ language: string; page: TitlePage }> {
+): Promise<{ language: string; country: string; page: TitlePage }> {
   const record = await findRecord(prisma, project.id, strategyId);
   const state = toEditorState(record);
   const page = state.pages.find((item) => item.id === pageId);
   if (!page) throw new StrategyNotFoundError();
-  return { language: record.language, page: titlePageOf(state, page) };
+  return { language: record.language, country: await strategyCountry(prisma, record), page: titlePageOf(state, page) };
 }
 
 /**
@@ -847,9 +863,10 @@ async function mutatePlan(
       await claimVersion(tx, project, strategyId, version);
       const record = await findRecord(tx, project.id, strategyId);
       const before = toEditorState(record);
+      const context = titleContext(record.language, await strategyCountry(tx, record));
       let after: EditorState;
       try {
-        after = mutate(before, titleContext(record.language));
+        after = mutate(before, context);
       } catch (error) {
         throw error instanceof UnknownStrategyItemError ? new StrategyNotFoundError() : error;
       }

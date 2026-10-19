@@ -41,7 +41,7 @@ async function consumeLimits(actor: Actor, workspaceId: string, settings: AiTitl
  * Proposta di H1 e H2 per una pagina del piano corrente (T-3601, D-42 emendata da D-43): permessi di modifica del
  * piano e pagina (404, 409 STRATEGY_READ_ONLY), poi funzione accesa e chiave presente (503 AI_NOT_CONFIGURED senza
  * consumare i limiti), poi i limiti e la richiesta con i modelli di riserva (T-3802), saltando quelli assenti dal
- * catalogo (T-3803), con parseTitlesResponse come controllo della risposta; ogni tentativo scrive la sua riga di
+ * catalogo (T-3803), con la lingua e il paese del piano (T-5102) e parseTitlesResponse come controllo della risposta; ogni tentativo scrive la sua riga di
  * ai_requests con il workspace del progetto (T-3901). La proposta riuscita riporta il modello che ha risposto e
  * sostituisce quella salvata nella pagina; titoli e version del piano non cambiano. Nel log solo id, modello, durata,
  * esito e per ogni tentativo modello, esito e status HTTP; mai keyword o messaggi del fornitore (CWE-532).
@@ -54,13 +54,13 @@ export async function suggestPageTitles(actor: Actor, projectId: string, strateg
   if (!settings.enabled || !openRouter) {
     throw new AiTitlesError("AI_NOT_CONFIGURED", "I titoli con l'AI non sono attivi");
   }
-  const [{ language, page }, catalog] = await Promise.all([readPlanTitlePage(project, strategyId, pageId), readModelCatalog()]);
+  const [{ language, country, page }, catalog] = await Promise.all([readPlanTitlePage(project, strategyId, pageId), readModelCatalog()]);
   await consumeLimits(actor, project.workspace_id, settings);
 
   const startedAt = Date.now();
   const log = (fields: { model: string | null; outcome: string; attempts: Attempt[] }) =>
     logger.info("ai_titles_suggest", { workspaceId: project.workspace_id, pageId, durationMs: Date.now() - startedAt, ...fields });
-  const result = await requestWithFallback(buildTitlesRequest(page, { language, model: settings.models[0] }), settings.models, {
+  const result = await requestWithFallback(buildTitlesRequest(page, { language, country, model: settings.models[0] }), settings.models, {
     ...openRouter,
     deadlineMs: DEADLINE_MS,
     attemptTimeoutMs: ATTEMPT_TIMEOUT_MS,
