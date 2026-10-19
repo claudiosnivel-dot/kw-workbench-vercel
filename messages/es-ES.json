@@ -20,6 +20,90 @@
   "metadata": {
     "description": "Espacio de trabajo web para la investigación de palabras clave"
   },
+  "auth": {
+    "email": "Correo electrónico",
+    "displayName": "Nombre (opcional)",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar la contraseña",
+    "acceptTerms": "Acepto los <terms>términos del servicio</terms> y la <privacy>política de privacidad</privacy>.",
+    "login": {
+      "title": "Iniciar sesión",
+      "subtitle": "Inicia sesión para acceder a tu espacio de trabajo.",
+      "submit": "Iniciar sesión",
+      "submitting": "Iniciando sesión...",
+      "noAccount": "¿No tienes una cuenta?",
+      "registerLink": "Regístrate",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "notices": {
+        "session_ended": "La sesión ha terminado. Vuelve a iniciar sesión."
+      }
+    },
+    "register": {
+      "title": "Crear una cuenta",
+      "subtitle": "Rellena los campos para activar tu espacio de trabajo.",
+      "disabled": "El registro público está desactivado en este momento.",
+      "goToLogin": "Ir a iniciar sesión",
+      "submit": "Crear la cuenta",
+      "submitting": "Registrando...",
+      "haveAccount": "¿Ya tienes una cuenta?",
+      "loginLink": "Inicia sesión",
+      "checkEmail": "Revisa tu correo electrónico: te hemos escrito para completar el registro. Después, inicia sesión con tu correo y tu contraseña."
+    },
+    "verify": {
+      "title": "Verificar el correo electrónico",
+      "intro": "Confirma tu dirección de correo electrónico para completar el registro.",
+      "submit": "Confirmar el correo electrónico",
+      "submitting": "Verificando...",
+      "success": "Correo electrónico verificado: ya puedes iniciar búsquedas.",
+      "missingToken": "El enlace de verificación no está completo: vuelve a abrirlo desde el correo o pide que te lo enviemos de nuevo.",
+      "goToApp": "Ir a la aplicación"
+    },
+    "emailChange": {
+      "title": "Cambio de correo electrónico",
+      "intro": "Confirmación de la nueva dirección de correo electrónico de tu cuenta.",
+      "confirming": "Confirmando...",
+      "success": "Correo electrónico cambiado: a partir de ahora, inicia sesión con la nueva dirección.",
+      "invalid": "El enlace no es válido o ha caducado: si todavía lo necesitas, vuelve a solicitar el cambio desde tu perfil.",
+      "taken": "Esta dirección ya la usa otra cuenta: el correo electrónico no ha cambiado.",
+      "missingToken": "El enlace no está completo: vuelve a abrirlo desde el correo.",
+      "goToLogin": "Ir a iniciar sesión"
+    },
+    "forgot": {
+      "title": "Recuperar la contraseña",
+      "intro": "Escribe el correo electrónico de tu cuenta: si está registrado, recibirás un enlace para elegir una nueva contraseña.",
+      "submit": "Enviar el enlace",
+      "submitting": "Enviando...",
+      "sent": "Si el correo electrónico está registrado, en breve recibirás un enlace válido durante 1 hora.",
+      "backToLogin": "Volver a iniciar sesión"
+    },
+    "reset": {
+      "title": "Nueva contraseña",
+      "intro": "Elige la nueva contraseña de tu cuenta: se cerrarán las sesiones abiertas en todos los dispositivos.",
+      "password": "Nueva contraseña",
+      "confirmPassword": "Confirmar la nueva contraseña",
+      "submit": "Establecer la contraseña",
+      "submitting": "Guardando...",
+      "done": "Contraseña actualizada: inicia sesión con la nueva contraseña.",
+      "missingToken": "El enlace no está completo: vuelve a abrirlo desde el correo o solicita uno nuevo.",
+      "goToLogin": "Ir a iniciar sesión"
+    },
+    "terms": {
+      "title": "Términos actualizados",
+      "intro": "Para seguir usando la aplicación, acepta la versión actual de los términos del servicio y de la política de privacidad.",
+      "submit": "Aceptar y continuar",
+      "submitting": "Guardando..."
+    },
+    "verifyBanner": {
+      "text": "Tu dirección de correo electrónico todavía no está verificada: abre el enlace que te hemos enviado para poder iniciar búsquedas.",
+      "resend": "Volver a enviar el correo",
+      "resending": "Enviando...",
+      "sent": "Correo enviado: revisa tu bandeja de entrada."
+    },
+    "logout": {
+      "submit": "Cerrar sesión",
+      "submitting": "Cerrando sesión..."
+    }
+  },
   "nav": {
     "yourAccount": "Tu cuenta",
     "admin": "Administración",
@@ -148,6 +232,77 @@
       "content_topic": "tema por tratar"
     }
   },
+  "export": {
+    "planner": {
+      "preparing": "Preparando...",
+      "exportButton": "Exportar para el Planificador de palabras clave",
+      "summary": "{canonicals, plural, one {# palabra clave} other {# palabras clave}} en {parts, plural, one {# archivo} other {# archivos}}.",
+      "summaryWithSkipped": "{canonicals, plural, one {# palabra clave} other {# palabras clave}} en {parts, plural, one {# archivo} other {# archivos}}; {skipped, plural, one {# omitida} other {# omitidas}} (más de 80 caracteres o 10 palabras, o con un prefijo de fórmula).",
+      "fileN": "Archivo {n}"
+    },
+    "plannerImport": {
+      "label": "Archivo descargado del Planificador de palabras clave ({extensions}, máximo {max} MB)",
+      "tooLarge": "El archivo es demasiado grande: el máximo es {max} MB.",
+      "importing": "Importando...",
+      "submit": "Importar el volumen de búsqueda",
+      "summary": "Filas emparejadas: {matched} ({rangeRows} con el volumen por intervalos). Palabras clave actualizadas: {updated}. Filas sin una palabra clave correspondiente: {unmatched}. Filas sin volumen: {withoutVolume}. Filas omitidas por no tener palabra clave o por tener valores ilegibles: {skippedRows}."
+    },
+    "columns": {
+      "subproject_name": "Tema",
+      "keyword": "Palabra clave",
+      "normalized_keyword": "Palabra clave normalizada",
+      "canonical_keyword": "Palabra clave canónica",
+      "source": "Fuente",
+      "source_query": "Búsqueda de origen",
+      "brand_status": "Estado de marca",
+      "review_status": "Estado de revisión",
+      "keyword_type": "Tipo de palabra clave",
+      "search_intent": "Intención de búsqueda",
+      "is_question": "Pregunta",
+      "is_local_intent": "Intención local",
+      "is_tool_intent": "Intención de herramienta",
+      "is_commercial_intent": "Intención comercial",
+      "metrics_status": "Estado de las métricas",
+      "metrics_provider": "Fuente del volumen",
+      "avg_monthly_searches": "Volumen de búsqueda mensual medio",
+      "competition": "Competencia",
+      "low_top_of_page_bid_micros": "Puja por la parte superior de la página, intervalo bajo (micros)",
+      "high_top_of_page_bid_micros": "Puja por la parte superior de la página, intervalo alto (micros)",
+      "score": "Puntuación",
+      "score_source": "Origen de la puntuación"
+    },
+    "sheet": "Palabras clave",
+    "values": {
+      "yes": "Sí",
+      "no": "No",
+      "source": {
+        "seed": "Palabra clave semilla",
+        "google-direct": "Sugerencias de Google",
+        "mock-autocomplete": "Sugerencias de prueba"
+      },
+      "metricsStatus": {
+        "missing": "no disponibles",
+        "mock": "de prueba",
+        "fetched": "obtenidas",
+        "imported": "importadas",
+        "failed": "fallidas"
+      },
+      "metricsProvider": {
+        "NONE": "Ninguna",
+        "MOCK": "De prueba",
+        "DATAFORSEO": "DataForSEO",
+        "PLANNER_CSV": "Planificador de palabras clave (archivo)"
+      },
+      "scoreSource": {
+        "metrics": "métricas",
+        "heuristic": "heurística"
+      },
+      "review": {
+        "kept": "Conservada",
+        "discarded": "Descartada"
+      }
+    }
+  },
   "errors": {
     "VALIDATION_ERROR": "Datos no válidos: revisa los campos y vuelve a intentarlo.",
     "INVALID_JSON": "Solicitud no válida: el cuerpo no es un JSON legible.",
@@ -260,6 +415,399 @@
       "title": "Página no encontrada",
       "body": "La página que buscas no existe o no está disponible con tu cuenta.",
       "back": "Volver al panel"
+    }
+  },
+  "settings": {
+    "passwordChange": {
+      "title": "Cambiar la contraseña",
+      "intro": "Un administrador ha restablecido tu contraseña. Antes de continuar, elige una nueva: como contraseña actual, escribe la que has recibido."
+    },
+    "preferences": {
+      "title": "Accesibilidad y tema",
+      "intro": "Elige el idioma, el tema, la legibilidad del texto y el modo para daltonismo: cada opción se guarda al momento.",
+      "theme": "Tema",
+      "dark": "Oscuro",
+      "light": "Claro",
+      "largeText": "Texto más legible (+14 %)",
+      "largeTextHint": "Aumenta el tamaño y el interlineado de los elementos principales para facilitar la lectura.",
+      "colorVision": "Modo para daltonismo",
+      "colorVisionOptions": {
+        "NONE": "Desactivado",
+        "PROTANOPIA": "Protanopia",
+        "DEUTERANOPIA": "Deuteranopia",
+        "TRITANOPIA": "Tritanopia"
+      },
+      "saved": "Guardado"
+    },
+    "branding": {
+      "title": "Imagen de marca",
+      "intro": "Configura logotipos distintos para el tema oscuro y el claro. La barra de navegación usa el logotipo del tema actual, con una alternativa automática.",
+      "appName": "Nombre de la aplicación",
+      "appNamePlaceholder": "Titan SEO",
+      "darkLogo": "Logotipo del tema oscuro",
+      "darkPlaceholder": "https://misitio.es/logo-dark.svg",
+      "uploadDark": "Subir el logotipo oscuro",
+      "removeDark": "Quitar el logotipo oscuro",
+      "lightLogo": "Logotipo del tema claro",
+      "lightPlaceholder": "https://misitio.es/logo-light.svg",
+      "uploadLight": "Subir el logotipo claro",
+      "removeLight": "Quitar el logotipo claro",
+      "formats": "Formatos admitidos: URL https://, ruta /logo.svg o imagen PNG, JPG, SVG o WEBP de hasta 100 KB. Logotipo técnico antiguo: {legacy, select, present {presente} other {ausente}}.",
+      "saving": "Guardando la imagen de marca...",
+      "save": "Guardar la imagen de marca",
+      "preview": "Vista previa de la barra de navegación",
+      "darkTheme": "Tema oscuro",
+      "lightTheme": "Tema claro",
+      "noLogo": "No hay ningún logotipo disponible",
+      "previewAltDark": "{name} oscuro",
+      "previewAltLight": "{name} claro",
+      "fallbackHint": "Alternativa automática: logotipo del tema actual -> el otro logotipo -> logotipo antiguo.",
+      "fileUnsupported": "Archivo no admitido. Sube una imagen PNG, JPG, SVG o WEBP.",
+      "tooLarge": "El logotipo es demasiado grande. Usa un archivo de 100 KB como máximo.",
+      "readFailed": "No se puede leer el archivo seleccionado.",
+      "darkLoaded": "Logotipo oscuro preparado. Pulsa «Guardar la imagen de marca» para aplicarlo.",
+      "lightLoaded": "Logotipo claro preparado. Pulsa «Guardar la imagen de marca» para aplicarlo.",
+      "darkRemoved": "Has quitado el logotipo oscuro. Pulsa «Guardar la imagen de marca» para confirmarlo.",
+      "lightRemoved": "Has quitado el logotipo claro. Pulsa «Guardar la imagen de marca» para confirmarlo.",
+      "saved": "Imagen de marca guardada."
+    }
+  },
+  "integrations": {
+    "sheetsConfig": {
+      "title": "OAuth de Google Sheets (global de la aplicación)",
+      "intro": "Configuración técnica que permite a los usuarios conectar su cuenta de Google Sheets.",
+      "clientIdLabel": "ID de cliente de OAuth",
+      "redirectUriLabel": "URI de redirección de OAuth",
+      "clientSecretLabel": "Secreto de cliente de OAuth",
+      "clientIdPlaceholder": "xxxxxxxx.apps.googleusercontent.com",
+      "redirectUriPlaceholder": "https://tudominio.com/api/integrations/google-sheets/callback",
+      "secretConfigured": "Configurado (escribe uno nuevo para sustituirlo)",
+      "secretPlaceholder": "Escribe el secreto de cliente",
+      "fields": {
+        "clientId": "ID de cliente",
+        "clientSecret": "Secreto de cliente",
+        "redirectUri": "URI de redirección"
+      },
+      "source": "Fuente: {source, select, db {guardado aquí} env {variable de entorno} other {sin configurar}}",
+      "removeOverride": "Quitar el valor guardado",
+      "removeOverrideAria": "Quitar el valor guardado de {field}",
+      "overrideRemoved": "Se ha quitado el valor guardado de {field}: se usa la variable de entorno, si existe.",
+      "save": "Guardar la configuración de Google Sheets",
+      "saved": "Configuración OAuth de Google Sheets guardada.",
+      "saveFailed": "No se ha podido guardar la configuración de Google Sheets."
+    },
+    "sheetsPersonal": {
+      "title": "Google Sheets personal",
+      "intro": "Conecta tu cuenta de Google para exportar las palabras clave a archivos de Sheets en tu Drive. La exportación usa la conexión personal de quien exporta: cada miembro del espacio de trabajo conecta su propia cuenta.",
+      "connected": "Cuenta de Google Sheets conectada.",
+      "failed": "No se ha podido conectar Google Sheets: {reason}",
+      "reasons": {
+        "accesso_negato": "se ha denegado o cancelado el acceso a Google.",
+        "stato_non_valido": "la solicitud de conexión ha caducado o no es válida. Vuelve a intentarlo.",
+        "config_oauth_mancante": "falta la configuración OAuth de Google Sheets. Ponte en contacto con el administrador principal.",
+        "scope_mancante": "no has concedido el permiso para Google Sheets. Vuelve a conectar y acepta todos los permisos solicitados.",
+        "scambio_token_fallito": "Google no ha completado la conexión. Vuelve a intentarlo.",
+        "sessione_scaduta": "la sesión ha caducado. Vuelve a iniciar sesión y conecta de nuevo.",
+        "unknown": "error desconocido."
+      },
+      "connectedAs": "Conectado como {email}",
+      "connectedPlain": "Conectado",
+      "needsReconnect": "Reconexión necesaria",
+      "reauthReason": "Google ya no acepta esta conexión: vuelve a conectarla para seguir exportando.",
+      "broaderScope": "La conexión usa un permiso más amplio del necesario: vuelve a conectarla para dar acceso solo a los archivos creados por esta aplicación.",
+      "reconnect": "Volver a conectar",
+      "connect": "Conectar Google Sheets",
+      "disconnecting": "Desconectando...",
+      "disconnect": "Desconectar",
+      "disconnectConfirm": "¿Desconectar Google Sheets de esta cuenta?"
+    }
+  },
+  "billing": {
+    "paused": "En esta fase, el espacio de trabajo no tiene límites y no se compra ningún plan.",
+    "summaryTitle": "Tu plan",
+    "plans": {
+      "free": "Free"
+    },
+    "plan": "Plan: {plan}",
+    "status": "Estado: {status}",
+    "statuses": {
+      "trialing": "en prueba",
+      "active": "activo",
+      "past_due": "pago pendiente",
+      "paused": "en pausa",
+      "canceled": "cancelado",
+      "none": "sin suscripción"
+    },
+    "renewal": "Próxima renovación: {date}",
+    "cancelAt": "Cancelación programada: el plan sigue activo hasta el {date}.",
+    "ownerOnly": "Solo el propietario del espacio de trabajo gestiona la facturación.",
+    "checkoutTitle": "Elige un plan",
+    "noPaidPlans": "No hay planes de pago disponibles.",
+    "manageTitle": "Gestionar",
+    "usage": {
+      "title": "Uso del mes",
+      "runs": "Búsquedas de hoy: {used} de {limit}",
+      "keywords": "Palabras clave guardadas este mes: {used} de {limit}",
+      "unlimited": "ilimitadas",
+      "resetAt": "Se reinicia el {date}"
+    },
+    "intervals": {
+      "month": "mensual",
+      "year": "anual"
+    },
+    "subscribe": "Suscribirse a {plan} ({interval})",
+    "planOption": "{plan} ({interval})",
+    "opening": "Abriendo...",
+    "portal": "Facturas y método de pago",
+    "changePlanTitle": "Cambiar de plan",
+    "changePlanLabel": "Nuevo plan",
+    "changePlan": "Cambiar de plan",
+    "changing": "Cambiando...",
+    "changeRequested": "Cambio solicitado: el nuevo plan aparecerá cuando Paddle lo confirme.",
+    "cancel": "Cancelar al final del periodo",
+    "canceling": "Cancelando...",
+    "cancelConfirm": "¿Cancelar la suscripción? El plan sigue activo hasta el final del periodo pagado.",
+    "cancelRequested": "Cancelación solicitada: la fecha aparecerá cuando Paddle la confirme.",
+    "pastDue": {
+      "banner": "No se ha podido cobrar la suscripción del espacio de trabajo: el plan sigue activo hasta el {date}.",
+      "update": "Actualizar el método de pago"
+    },
+    "limit": {
+      "owner": "Has alcanzado un límite del plan del espacio de trabajo.",
+      "ownerLink": "Abrir el plan del espacio de trabajo",
+      "member": "Has alcanzado un límite del plan del espacio de trabajo: pide al propietario que cambie a un plan superior."
+    }
+  },
+  "footer": {
+    "label": "Información legal y soporte",
+    "privacy": "Privacidad",
+    "terms": "Términos del servicio",
+    "cookies": "Cookies",
+    "support": "Soporte"
+  },
+  "account": {
+    "sections": {
+      "title": "Tu cuenta",
+      "intro": "Tu perfil, el acceso, las preferencias, las conexiones y tus datos.",
+      "nav": "Menú de tu cuenta",
+      "profile": "Perfil",
+      "security": "Acceso",
+      "preferences": "Preferencias",
+      "connections": "Conexiones",
+      "data": "Tus datos"
+    },
+    "profile": {
+      "title": "Perfil",
+      "intro": "El nombre con el que te ven los demás miembros de los espacios de trabajo.",
+      "displayName": "Nombre visible",
+      "displayNamePlaceholder": "Tu nombre",
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "saved": "Nombre guardado."
+    },
+    "email": {
+      "title": "Correo electrónico",
+      "intro": "La dirección con la que inicias sesión y recibes los correos de la cuenta.",
+      "current": "Correo electrónico:",
+      "change": "Cambiar el correo electrónico",
+      "unavailable": "El envío de correos todavía no está activo: para cambiar tu correo electrónico, pídeselo al administrador.",
+      "pending": "Pendiente de confirmación: {email}",
+      "expires": "Abre el enlace que te hemos enviado antes del {date}. Hasta entonces, el correo electrónico sigue siendo el anterior.",
+      "cancel": "Cancelar",
+      "dialogIntro": "Te enviamos un enlace a la nueva dirección: el correo electrónico cambia cuando lo abres.",
+      "newEmail": "Nuevo correo electrónico",
+      "currentPassword": "Contraseña actual",
+      "submit": "Enviar el enlace de confirmación",
+      "submitting": "Enviando...",
+      "close": "Cancelar"
+    },
+    "password": {
+      "title": "Contraseña",
+      "intro": "Para cambiar la contraseña necesitas la actual. Después del cambio, se cierra la sesión en los demás dispositivos.",
+      "current": "Contraseña actual",
+      "new": "Nueva contraseña",
+      "confirm": "Repite la nueva contraseña",
+      "save": "Cambiar la contraseña",
+      "saving": "Guardando...",
+      "saved": "Contraseña cambiada."
+    },
+    "devices": {
+      "title": "Dispositivos",
+      "intro": "Cierra la sesión en todos los dispositivos en los que la has iniciado, incluido este.",
+      "action": "Cerrar sesión en todos los dispositivos"
+    },
+    "export": {
+      "title": "Descargar tus datos",
+      "body": "Un archivo JSON con tu perfil, tus espacios de trabajo y los proyectos de los espacios de trabajo de los que eres el único propietario.",
+      "action": "Descargar mis datos"
+    },
+    "delete": {
+      "warning": "Al eliminar la cuenta se eliminan también los espacios de trabajo en los que eres el único miembro, con sus proyectos. No se puede deshacer.",
+      "password": "Contraseña actual",
+      "action": "Eliminar la cuenta",
+      "pending": "Eliminando...",
+      "confirm": "¿Eliminar la cuenta definitivamente?",
+      "done": "Cuenta eliminada."
+    }
+  },
+  "strategy": {
+    "templates": {
+      "guide": {
+        "v1": "{keyword}: guía completa {year}",
+        "v2": "{keyword}: todo lo que hay que saber",
+        "v3": "{keyword}: guía práctica"
+      },
+      "list": {
+        "v1": "{keyword}: ranking {year}",
+        "v2": "{keyword}: nuestra selección de {year}"
+      },
+      "comparison": {
+        "v1": "{keyword}: comparación y diferencias",
+        "v2": "{keyword}: cuál elegir en {year}"
+      },
+      "product_category": {
+        "v1": "{keyword}: modelos y precios {year}",
+        "v2": "{keyword}: catálogo y ofertas {year}"
+      },
+      "faq": {
+        "v1": "{keyword}: preguntas y respuestas",
+        "v2": "{keyword}: respuestas a las preguntas más frecuentes"
+      },
+      "local": {
+        "v1": "{keyword}: direcciones y consejos en la zona",
+        "v2": "{keyword}: adónde ir y qué hay que saber"
+      },
+      "tool": {
+        "v1": "{keyword}: herramienta gratuita en línea",
+        "v2": "{keyword}: calcula en línea al instante",
+        "v3": "{keyword}: instrucciones de uso"
+      }
+    },
+    "fixedH2": {
+      "faq": "Preguntas frecuentes",
+      "methodology": "Nuestro criterio de selección"
+    },
+    "reasons": {
+      "HUB_SEED": "Página pilar de la palabra clave semilla «{seed}»: reúne las búsquedas que contienen todas sus palabras.",
+      "HUB_TERM": "Página pilar sobre el tema «{term}», el más buscado entre las palabras clave que no corresponden a ninguna palabra clave semilla.",
+      "SPOKE_MODIFIER": "Artículo satélite para las búsquedas {category, select, comparison {de comparación y reseñas} transactional {de precio y compra} informational {informativas} tool {de herramientas en línea} local {locales} other {con el mismo modificador}} sobre el tema de la página pilar.",
+      "SPOKE_WORD": "Artículo satélite para las búsquedas que añaden «{word}» al tema de la página pilar.",
+      "SPOKE_QUESTION": "Pregunta con {volume, number} búsquedas al mes: merece un artículo propio.",
+      "MERGED_INTO_PILLAR": "{count, plural, one {# palabra clave con muy pocas búsquedas para un artículo satélite está en la página pilar.} other {# palabras clave con muy pocas búsquedas para un artículo satélite están en la página pilar.}}",
+      "UNASSIGNED": "Estas palabras clave no contienen entera ninguna palabra clave semilla y no comparten términos con otras palabras clave: ninguna página pilar las reúne."
+    },
+    "ui": {
+      "defaultName": "Estrategia {mode, select, AUTO {automática} other {experta}} del {date, date, short}",
+      "generate": "Crear el plan",
+      "generating": "Creando el plan…",
+      "nameLabel": "Nombre del plan (opcional)",
+      "advanced": "Opciones avanzadas",
+      "advancedHint": "Con las opciones avanzadas eliges el alcance y las reglas (modo experto). Sin ellas, el plan usa las palabras clave conservadas de todo el proyecto y las reglas predeterminadas.",
+      "scope": "Alcance",
+      "scopeProject": "Todo el proyecto",
+      "reviewStatus": "Palabras clave que incluir",
+      "reviewApprovedPending": "Aprobadas y por revisar",
+      "reviewApproved": "Solo aprobadas",
+      "minVolume": "Volumen mínimo",
+      "intent": "Intención",
+      "intentAny": "Cualquier intención",
+      "keywordType": "Tipo de palabra clave",
+      "keywordTypeAny": "Cualquier tipo",
+      "rules": "Reglas de agrupación",
+      "minKeywordsPerSpoke": "Mínimo de palabras clave por artículo satélite",
+      "minSpokeVolume": "Mínimo de búsquedas por artículo satélite",
+      "maxSpokesPerHub": "Máximo de artículos satélite por página pilar",
+      "questionSpokeVolume": "Mínimo de búsquedas para que una pregunta sea un artículo satélite",
+      "questionsAs": "Preguntas por debajo del umbral",
+      "questionsAsFaq": "En las preguntas frecuentes de la página más cercana",
+      "questionsAsSpokes": "Siempre como artículos satélite",
+      "mode": {
+        "AUTO": "Automática",
+        "EXPERT": "Experta"
+      },
+      "truncated": "El alcance superaba las 5000 palabras clave: la estrategia usa las 5000 de mayor prioridad.",
+      "kind": {
+        "HUB": "Página pilar",
+        "SPOKE": "Artículo satélite"
+      },
+      "contentTypes": {
+        "guide": "Guía",
+        "list": "Lista",
+        "comparison": "Comparación",
+        "product_category": "Categoría de producto",
+        "faq": "Preguntas frecuentes",
+        "local": "Página local",
+        "tool": "Herramienta"
+      },
+      "noH2": "Sin H2",
+      "reasonTitle": "Por qué esta página",
+      "faqCount": "{count, plural, one {# pregunta está en las preguntas frecuentes de la página.} other {# preguntas están en las preguntas frecuentes de la página.}}",
+      "linksTitle": "Enlaces internos previstos",
+      "noLinks": "No hay enlaces internos previstos.",
+      "unassignedTitle": "Sin asignar",
+      "h2Title": "H2",
+      "regenerate": "Regenerar el plan",
+      "regenerating": "Regenerando…"
+    },
+    "pdf": {
+      "coverTitle": "Estrategia de páginas pilar y artículos satélite",
+      "coverProject": "Proyecto: {name}",
+      "coverStrategy": "Estrategia: {name}",
+      "coverDate": "Fecha: {date}",
+      "coverWorkspace": "Espacio de trabajo: {name}",
+      "explainTitle": "Qué es una estrategia de páginas pilar y artículos satélite",
+      "explainP1": "Una estrategia de páginas pilar y artículos satélite organiza los contenidos de un sitio web en torno a unos pocos temas principales. Cada tema tiene una página pilar que lo trata de forma completa y una serie de artículos satélite que profundizan en un aspecto: una comparación, los precios, una pregunta frecuente, una variante.",
+      "explainP2": "Los artículos satélite enlazan a su página pilar y la página pilar enlaza a sus artículos satélite. Esta red de enlaces internos ayuda a los buscadores a entender que el sitio cubre el tema en profundidad y ayuda a los lectores a encontrar la respuesta que buscan.",
+      "explainP3": "El plan de este documento nace de las palabras clave del proyecto: las búsquedas parecidas se agrupan en la misma página y cada página tiene un H1 y un esquema de H2 sugeridos. Los títulos y las agrupaciones son un punto de partida que hay que adaptar al tono y a la oferta del sitio.",
+      "summaryTitle": "Resumen",
+      "summaryHubs": "Páginas pilar: {count, number}",
+      "summaryPages": "Páginas por escribir: {count, number}",
+      "summaryKeywords": "Palabras clave cubiertas: {count, number}",
+      "summaryVolume": "Búsquedas mensuales cubiertas: {count, number}",
+      "summaryUnassigned": "Palabras clave sin asignar: {count, number}",
+      "summaryTruncated": "El alcance superaba las 5000 palabras clave: el plan usa las 5000 de mayor prioridad.",
+      "workOrderTitle": "Orden de trabajo",
+      "workOrderIntro": "Las páginas en el orden recomendado: cada página pilar y después sus artículos satélite, del más importante al menos importante.",
+      "workOrderItem": "{number}. {kind}: {title}",
+      "hubTitle": "Página pilar {number}: {title}",
+      "mainKeyword": "Palabra clave principal: {keyword}",
+      "secondaryKeywords": "Palabras clave secundarias: {keywords}",
+      "contentType": "Tipo de contenido: {type}",
+      "appendixTitle": "Apéndice",
+      "noUnassigned": "No hay palabras clave sin asignar.",
+      "criteriaTitle": "Criterios de la estrategia",
+      "criteriaMode": "Modo: {mode}",
+      "criteriaScope": "Alcance: {scope}",
+      "criteriaReview": "Palabras clave incluidas: {value}",
+      "criteriaMinVolume": "Volumen mínimo: {value}",
+      "criteriaIntent": "Intención: {value}",
+      "criteriaKeywordType": "Tipo de palabra clave: {value}",
+      "criteriaNone": "sin filtro",
+      "criteriaRules": "Reglas: un artículo satélite nace con al menos {minKeywords} palabras clave o {minVolume} búsquedas al mes; como máximo {maxSpokes} artículos satélite por página pilar; una pregunta se convierte en artículo satélite a partir de {questionVolume} búsquedas al mes ({questionsAs, select, spokes {todas las preguntas son artículos satélite} other {las demás van a las preguntas frecuentes de la página más cercana}}).",
+      "criteriaLanguage": "Idioma de los títulos: {language}",
+      "footer": "{app} · página {page} de {pages}",
+      "status": "Estado: {status}"
+    },
+    "export": {
+      "columns": {
+        "hub": "Página pilar",
+        "page_type": "Tipo de página",
+        "h1": "H1",
+        "h2": "H2",
+        "main_keyword": "Palabra clave principal",
+        "secondary_keywords": "Palabras clave secundarias",
+        "content_type": "Tipo de contenido",
+        "volume": "Volumen",
+        "priority": "Prioridad",
+        "internal_links": "Enlaces internos",
+        "status": "Estado"
+      },
+      "sheet": "Estrategia"
+    },
+    "status": {
+      "TODO": "Por escribir",
+      "WRITING": "En redacción",
+      "PUBLISHED": "Publicada"
     }
   },
   "project": {
@@ -541,6 +1089,49 @@
       "save": "Guardar",
       "saving": "Guardando…"
     }
+  },
+  "exportDialog": {
+    "open": "Exportar",
+    "title": "Exportar",
+    "what": "¿Qué quieres exportar?",
+    "plan": "El plan de contenidos ({count, plural, one {# página} other {# páginas}})",
+    "planDisabled": "Crea primero el plan",
+    "keywords": "Las palabras clave ({count, plural, one {# conservada} other {# conservadas}})",
+    "which": "¿Qué palabras clave?",
+    "keptTopic": "Las conservadas de «{topic}» ({count})",
+    "keptProject": "Las conservadas de todo el proyecto ({count})",
+    "filtered": "Solo las que ves ahora ({count})",
+    "all": "Todas, incluidas las descartadas ({count})",
+    "format": "¿En qué formato?",
+    "formats": {
+      "pdf": "PDF para el cliente",
+      "sheets": "Google Sheets",
+      "xlsx": "Excel",
+      "csv": "CSV",
+      "json": "JSON"
+    },
+    "sheetsNotConnected": "Google todavía no está conectado: conéctalo y vuelve aquí para crear la hoja.",
+    "connect": "Conectar Google",
+    "logo": "Con tu logotipo en la portada",
+    "advanced": "Opciones avanzadas",
+    "csvDialect": "Separador del CSV",
+    "csvExcel": "Excel (punto y coma)",
+    "csvStandard": "Estándar (coma)",
+    "sheetName": "Nombre del archivo de Google Sheets",
+    "sheetNameRequired": "Escribe el nombre del archivo.",
+    "actions": {
+      "pdf": "Descargar el PDF",
+      "xlsx": "Descargar el Excel",
+      "csv": "Descargar el CSV",
+      "json": "Descargar el JSON",
+      "sheets": "Crear la hoja de Google"
+    },
+    "creating": "Creando la hoja…",
+    "created": "Hoja creada con {rows, plural, one {# fila} other {# filas}}.",
+    "openSheet": "Abrir la hoja",
+    "close": "Cerrar",
+    "planNone": "El plan de contenidos",
+    "status": "Incluir el estado de redacción"
   },
   "plan": {
     "title": "Plan de contenidos",
