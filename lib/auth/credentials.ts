@@ -4,12 +4,13 @@ import {
   FontScaleMode,
   Prisma,
   ThemeMode,
-  UiLocale,
   UserRole,
   UserStatus,
 } from "@/lib/generated/prisma/client";
 import { getRootAdminEmail } from "@/lib/auth/config";
 import { normalizeEmail } from "@/lib/auth/email-address";
+import { appLocaleOf, uiLocaleOf } from "@/lib/i18n/db-locale";
+import type { AppLocale } from "@/lib/i18n/locale";
 import { getAdminEmail } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { AppError, ConflictError, ValidationError } from "@/lib/http/errors";
@@ -54,7 +55,7 @@ export type AuthUser = {
   themeMode: ThemeMode;
   fontScaleMode: FontScaleMode;
   colorVisionMode: ColorVisionMode;
-  uiLocale: UiLocale | null;
+  uiLocale: AppLocale | null;
   sessionVersion: number;
   acceptedTermsVersion: string | null;
   mustChangePassword: boolean;
@@ -102,7 +103,7 @@ function mapAuthUser(row: AuthUserRow): AuthUser {
     themeMode: row.theme_mode,
     fontScaleMode: row.font_scale_mode,
     colorVisionMode: row.color_vision_mode,
-    uiLocale: row.ui_locale,
+    uiLocale: appLocaleOf(row.ui_locale),
     sessionVersion: row.session_version,
     acceptedTermsVersion: row.accepted_terms_version,
     mustChangePassword: row.must_change_password,
@@ -310,7 +311,7 @@ export async function registerUser(input: {
   displayName?: string;
   password: string;
   role?: UserRole;
-  uiLocale?: UiLocale | null;
+  uiLocale?: AppLocale | null;
   acceptedTermsVersion?: string;
   /** Email già garantita (utente creato dal root admin con il lancio in pausa, T-1606): nasce verificata. */
   emailVerified?: boolean;
@@ -335,7 +336,7 @@ export async function registerUser(input: {
         theme_mode: ThemeMode.DARK,
         font_scale_mode: FontScaleMode.NORMAL,
         color_vision_mode: ColorVisionMode.NONE,
-        ui_locale: input.uiLocale ?? null,
+        ui_locale: input.uiLocale ? uiLocaleOf(input.uiLocale) : null,
         ...(input.emailVerified ? { email_verified_at: new Date() } : {}),
         ...(input.acceptedTermsVersion
           ? { accepted_terms_version: input.acceptedTermsVersion, accepted_terms_at: new Date() }

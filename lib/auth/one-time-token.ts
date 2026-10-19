@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { Prisma, UiLocale } from "@/lib/generated/prisma/client";
 import { sendTemplateEmail } from "@/lib/email";
-import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
+import { emailLocaleOf } from "@/lib/i18n/db-locale";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -60,7 +60,7 @@ export async function sendOneTimeTokenEmail(input: {
   await sendTemplateEmail({
     to: user.email,
     template: input.template,
-    locale: user.ui_locale ?? DEFAULT_LOCALE,
+    locale: emailLocaleOf(user.ui_locale),
     vars: { displayName: user.display_name, token },
   });
 }

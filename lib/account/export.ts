@@ -1,4 +1,5 @@
 import { textStream } from "@/lib/http/text-stream";
+import { appLocaleOf } from "@/lib/i18n/db-locale";
 import { EXPORT_FIELD_SELECT } from "@/lib/modules/export";
 import { prisma } from "@/lib/prisma";
 
@@ -102,7 +103,7 @@ async function* accountExportChunks(userId: string): AsyncGenerator<string> {
     soleOwnedWorkspaceIds(userId),
   ]);
   const { theme_mode, font_scale_mode, color_vision_mode, ui_locale, ...identity } = user;
-  const profile = { ...identity, preferences: { theme_mode, font_scale_mode, color_vision_mode, ui_locale } };
+  const profile = { ...identity, preferences: { theme_mode, font_scale_mode, color_vision_mode, ui_locale: appLocaleOf(ui_locale) } };
   const membershipRows = memberships.map((row) => ({ workspace_id: row.workspace.id, workspace_name: row.workspace.name, role: row.role }));
 
   yield `{"exported_at":${json(new Date())},"profile":${json(profile)},"memberships":${json(membershipRows)},"owned_workspaces":[`;

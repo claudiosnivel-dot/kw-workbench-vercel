@@ -3,9 +3,10 @@ import { normalizeEmail } from "@/lib/auth/email-address";
 import { generateOneTimeToken, hashOneTimeToken } from "@/lib/auth/one-time-token";
 import { isUniqueViolation } from "@/lib/db/unique-violation";
 import { isEmailDeliveryAvailable, sendTemplateEmail } from "@/lib/email";
-import type { Prisma, UiLocale } from "@/lib/generated/prisma/client";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import { AppError } from "@/lib/http/errors";
-import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
+import { appLocaleOf } from "@/lib/i18n/db-locale";
+import { type AppLocale, DEFAULT_LOCALE } from "@/lib/i18n/locale";
 import { prisma } from "@/lib/prisma";
 import { enforceRateLimits } from "@/lib/security/rate-limit";
 import { rateLimitRules } from "@/lib/security/rate-limit-config";
@@ -16,7 +17,7 @@ const EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
 export type PendingEmailChange = { newEmail: string; expiresAt: Date };
 
 /** Indirizzo, nome e lingua dell'utente prima del cambio: servono all'avviso al vecchio indirizzo. */
-export type PreviousIdentity = { email: string | null; displayName: string; uiLocale: UiLocale | null };
+export type PreviousIdentity = { email: string | null; displayName: string; uiLocale: AppLocale | null };
 
 /** Esito della conferma (T-3001): con changed anche l'identità di prima, per l'avviso. */
 export type EmailChangeConfirmation =
@@ -159,7 +160,7 @@ export async function confirmEmailChange(token: string): Promise<EmailChangeConf
         select: { id: true },
       });
       await closeOldAddressLinks(tx, request.user_id, now);
-      return { email: before.email, displayName: before.display_name, uiLocale: before.ui_locale };
+      return { email: before.email, displayName: before.display_name, uiLocale: appLocaleOf(before.ui_locale) };
     });
     return previous ? { outcome: "changed", previous } : { outcome: "invalid" };
   } catch (error) {

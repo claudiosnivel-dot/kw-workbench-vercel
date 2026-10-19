@@ -19,7 +19,7 @@ export const POST = withApiErrors(async (request: NextRequest) => {
   const input = parseQuickStart(await request.json());
   const workspace = await requireRequestWorkspace(user, request, "project.create");
 
-  const targeting = await resolveDefaultTargeting(workspace.id, routeLocale(request, user));
+  const targeting = await resolveDefaultTargeting(workspace.id, routeLocale(request, user), request.headers.get("accept-language"));
   const creation = await createQuickStartProject(user, workspace.id, input, targeting);
   const { jobId, extraction } = await startQuickStartExtraction(user, creation, workspace);
 

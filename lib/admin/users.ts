@@ -9,7 +9,7 @@ import { isUniqueViolation } from "@/lib/db/unique-violation";
 import { sendTemplateEmail } from "@/lib/email";
 import { runAfterResponse } from "@/lib/http/after-response";
 import { AppError } from "@/lib/http/errors";
-import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
+import { appLocaleOf, emailLocaleOf } from "@/lib/i18n/db-locale";
 import { prisma } from "@/lib/prisma";
 import { handOverPersonalWorkspace } from "@/lib/workspaces/personal";
 
@@ -360,7 +360,7 @@ function notifyAdminPasswordReset(target: { email: string | null; display_name: 
     await sendTemplateEmail({
       to: email,
       template: "admin-password-reset",
-      locale: target.ui_locale ?? DEFAULT_LOCALE,
+      locale: emailLocaleOf(target.ui_locale),
       vars: { displayName: target.display_name },
     });
   });
@@ -464,7 +464,7 @@ export async function changeUserEmailFromAdmin(
     runAfterResponse("admin_email_change_verification_failed", () => issueVerificationToken(target.id));
   }
   runAfterResponse("admin_email_change_notice_failed", () =>
-    notifyEmailChanged({ email: target.email, displayName: target.display_name, uiLocale: target.ui_locale })
+    notifyEmailChanged({ email: target.email, displayName: target.display_name, uiLocale: appLocaleOf(target.ui_locale) })
   );
 
   return readAdminUserRecord(target.id, "Utente aggiornato ma non trovato");

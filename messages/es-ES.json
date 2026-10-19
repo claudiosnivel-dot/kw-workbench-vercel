@@ -1,0 +1,690 @@
+{
+  "common": {
+    "locale": {
+      "label": "Idioma",
+      "it": "Italiano",
+      "en": "English",
+      "es-ES": "Español (España)",
+      "es-419": "Español (Latinoamérica)"
+    },
+    "unexpectedError": "Error inesperado",
+    "saving": "Guardando...",
+    "delete": "Eliminar",
+    "deleting": "Eliminando...",
+    "close": "Cerrar",
+    "dangerZone": "Zona de peligro",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "pageOf": "Página {page} de {total}"
+  },
+  "metadata": {
+    "description": "Espacio de trabajo web para la investigación de palabras clave"
+  },
+  "nav": {
+    "yourAccount": "Tu cuenta",
+    "admin": "Administración",
+    "openMenu": "Abrir menú",
+    "pricing": "Precios",
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "support": "Soporte",
+    "workspace": "Espacio de trabajo",
+    "userMenu": "Menú de {name}",
+    "projectMenu": "Proyecto {name}: cambiar de proyecto",
+    "recentProjects": "Proyectos recientes",
+    "allProjects": "Todos los proyectos",
+    "projectNav": "Menú del proyecto"
+  },
+  "projects": {
+    "delete": {
+      "confirm": "¿Eliminar el proyecto «{name}»? Se borrarán para siempre sus temas, las palabras clave semilla, las palabras clave encontradas, el plan y las búsquedas."
+    },
+    "settings": {
+      "title": "Ajustes",
+      "intro": "Estas opciones valen para todos los temas del proyecto; un tema puede tener otras desde su menú ⋯.",
+      "projectBlock": "El proyecto",
+      "name": "Nombre",
+      "advancedTitle": "Avanzado",
+      "advancedIntro": "Parámetros de la búsqueda: normalmente funcionan bien tal como están.",
+      "save": "Guardar los ajustes",
+      "saved": "Ajustes guardados.",
+      "deleteTitle": "Eliminar el proyecto",
+      "deleteWarning": "Si eliminas el proyecto, se borran para siempre los temas, las palabras clave encontradas, el plan y las búsquedas.",
+      "deleteConfirm": "Eliminar",
+      "cancel": "Cancelar"
+    },
+    "brands": {
+      "title": "Marcas de la competencia",
+      "intro": "Las palabras clave con estos nombres ya empiezan descartadas.",
+      "empty": "Todavía no hay marcas.",
+      "addLabel": "Añadir una marca",
+      "addPlaceholder": "Nombre de la marca",
+      "add": "+ añadir",
+      "remove": "Quitar {brand}"
+    },
+    "fields": {
+      "language": "Idioma de las búsquedas",
+      "country": "País de las búsquedas",
+      "customCode": "Código actual no estándar ({code})",
+      "autocompleteProvider": "Fuente de las sugerencias",
+      "autocompleteProviderHint": "De dónde salen las palabras clave sugeridas.",
+      "autocompleteGoogle": "Google (predeterminada)",
+      "autocompleteMock": "Sugerencias de prueba",
+      "metricsProvider": "Volumen de búsqueda",
+      "metricsProviderHint": "De dónde sale el volumen de búsqueda mensual de cada palabra clave.",
+      "metricsNone": "Sin volumen",
+      "metricsMock": "Volumen de prueba",
+      "dataForSeo": "DataForSEO (de pago)",
+      "minVolume": "Volumen mínimo",
+      "minVolumeHint": "Las palabras clave con menos búsquedas al mes se quedan fuera (0 = sin límite).",
+      "scoringProfile": "Perfil de la puntuación",
+      "scoringProfileHint": "Cuánto pesan el volumen y la competencia en la puntuación de cada palabra clave.",
+      "scoring": {
+        "balanced": "equilibrado",
+        "aggressive": "agresivo",
+        "conservative": "prudente"
+      },
+      "excludeBrands": "Descartar las palabras clave con una marca",
+      "excludeBrandsHint": "Activado, las palabras clave con el nombre de un competidor empiezan descartadas; desactivado, se conservan y se marcan para revisar.",
+      "searchDepth": "Profundidad de la búsqueda",
+      "expandAlpha": "Con letras (a-z)",
+      "expandAlphaHint": "Busca también «palabra clave a», «palabra clave b», etc.",
+      "expandNumeric": "Con números (0-9)",
+      "expandNumericHint": "Busca también «palabra clave 1», «palabra clave 2», etc.",
+      "expandPatterns": "Con modelos de frase",
+      "expandPatternsHint": "Busca también frases típicas como «mejor palabra clave» o «cómo palabra clave».",
+      "autoClassification": "Clasificación automática",
+      "autoClassificationHint": "Reconoce la intención y el tipo de cada palabra clave."
+    }
+  },
+  "jobs": {
+    "status": {
+      "pending": "en espera",
+      "running": "en curso",
+      "completed": "completada",
+      "failed": "con error",
+      "canceled": "cancelada"
+    },
+    "run": {
+      "failed": "La búsqueda no se ha completado"
+    },
+    "progress": {
+      "ariaLabel": "Progreso de la búsqueda",
+      "phase": {
+        "expand": "Ampliación de consultas",
+        "autocomplete": "Sugerencias",
+        "metrics": "Métricas",
+        "store": "Guardado",
+        "done": "Completada"
+      },
+      "viewResults": "Ver resultados",
+      "canceled": "Búsqueda cancelada",
+      "canceling": "Cancelando...",
+      "cancel": "Cancelar"
+    }
+  },
+  "results": {
+    "brand": {
+      "allowed": "sin marcas",
+      "excluded": "marca descartada",
+      "review": "marca por revisar"
+    },
+    "intent": {
+      "informational": "para informarse",
+      "commercial": "para comparar",
+      "transactional": "para comprar",
+      "navigational": "para encontrar un sitio",
+      "mixed": "mixta"
+    },
+    "type": {
+      "generic": "genérica",
+      "question": "pregunta",
+      "comparison": "comparación",
+      "branded": "con una marca",
+      "local": "local",
+      "tool": "herramienta",
+      "service": "servicio",
+      "product": "producto",
+      "content_topic": "tema por tratar"
+    }
+  },
+  "errors": {
+    "VALIDATION_ERROR": "Datos no válidos: revisa los campos y vuelve a intentarlo.",
+    "INVALID_JSON": "Solicitud no válida: el cuerpo no es un JSON legible.",
+    "AUTH_REQUIRED": "Tu sesión no es válida o ha caducado. Vuelve a iniciar sesión.",
+    "FORBIDDEN": "No tienes permiso para realizar esta operación.",
+    "NOT_FOUND": "Recurso no encontrado.",
+    "CONFLICT": "Ya existe un elemento con estos datos.",
+    "INTERNAL_ERROR": "Error interno del servidor. Vuelve a intentarlo dentro de unos instantes.",
+    "INVALID_CREDENTIALS": "Credenciales no válidas",
+    "ACCOUNT_SUSPENDED": "Cuenta suspendida. Ponte en contacto con el administrador.",
+    "REGISTRATION_UNAVAILABLE": "El registro no está disponible con la autenticación desactivada.",
+    "SIGNUP_DISABLED": "El registro público está desactivado.",
+    "CREDENTIALS_REQUIRED": "El correo electrónico y la contraseña son obligatorios.",
+    "PASSWORD_MISMATCH": "La contraseña y la confirmación no coinciden.",
+    "CURRENT_PASSWORD_REQUIRED": "La contraseña actual es obligatoria.",
+    "CURRENT_PASSWORD_INVALID": "La contraseña actual no es válida.",
+    "NO_CHANGES": "No hay cambios que guardar.",
+    "USER_NOT_FOUND": "Usuario no encontrado.",
+    "SELF_ACTION_FORBIDDEN": "No puedes modificar ni eliminar tu propia cuenta desde la gestión de usuarios.",
+    "EMAIL_INVALID": "Correo electrónico no válido.",
+    "EMAIL_TAKEN": "Este correo electrónico ya está registrado.",
+    "EMAIL_NOT_VERIFIED": "Verifica tu correo electrónico antes de iniciar una búsqueda.",
+    "EMAIL_ALREADY_VERIFIED": "Tu correo electrónico ya está verificado.",
+    "EMAIL_UNAVAILABLE": "El envío de correos no está disponible en este momento: inténtalo más tarde.",
+    "VERIFICATION_TOKEN_INVALID": "Enlace de verificación no válido o caducado: solicita uno nuevo.",
+    "EMAIL_UNCHANGED": "Ya es el correo electrónico de tu cuenta: escribe otro.",
+    "EMAIL_CHANGE_INVALID": "Enlace no válido o caducado: vuelve a solicitar el cambio desde tu perfil.",
+    "RESET_TOKEN_INVALID": "Enlace de restablecimiento no válido o caducado: solicita uno nuevo.",
+    "TERMS_NOT_ACCEPTED": "Para continuar, acepta los términos del servicio y la política de privacidad.",
+    "TERMS_VERSION_CHANGED": "Los términos han cambiado: recarga la página y acepta la nueva versión.",
+    "RATE_LIMITED": "Demasiadas solicitudes: vuelve a intentarlo en un momento.",
+    "CAPTCHA_REQUIRED": "Completa la verificación antibots.",
+    "CAPTCHA_INVALID": "No se ha superado la verificación antibots: vuelve a intentarlo.",
+    "CAPTCHA_UNAVAILABLE": "La verificación antibots no está disponible: inténtalo más tarde.",
+    "PASSWORD_CHANGE_REQUIRED": "Tienes que cambiar la contraseña antes de continuar.",
+    "LOCALE_UNSUPPORTED": "Idioma no compatible.",
+    "PROJECT_NOT_FOUND": "Proyecto no encontrado.",
+    "SECTION_NOT_FOUND": "Tema no encontrado.",
+    "SECTION_NAME_TAKEN": "Ya existe un tema con este nombre.",
+    "LAST_SECTION": "No puedes eliminar el último tema: cada proyecto tiene al menos uno.",
+    "NO_SECTIONS": "El proyecto no tiene temas: añade uno primero.",
+    "FORBIDDEN_FIELD": "Este valor está reservado al administrador principal.",
+    "BRAND_EXISTS": "Esta marca ya está en la lista.",
+    "WORKSPACE_NOT_FOUND": "Espacio de trabajo no encontrado.",
+    "MEMBER_NOT_FOUND": "Miembro no encontrado.",
+    "INVITE_NOT_FOUND": "Invitación no encontrada.",
+    "INVITE_PENDING": "Ya hay una invitación pendiente para este correo electrónico.",
+    "ALREADY_MEMBER": "Esta persona ya forma parte del espacio de trabajo.",
+    "INVITE_INVALID": "La invitación no es válida: puede que haya caducado, que se haya revocado o que ya se haya usado.",
+    "INVITE_EMAIL_MISMATCH": "La invitación es para otra dirección: cierra sesión y entra con la cuenta de la dirección invitada.",
+    "LAST_OWNER": "El espacio de trabajo tiene que tener un propietario: transfiere antes la propiedad.",
+    "WORKSPACE_LIMIT": "Has alcanzado el número máximo de espacios de trabajo que puedes crear.",
+    "JOB_SIGNATURE_INVALID": "Firma de la continuación no válida.",
+    "CRON_UNAUTHORIZED": "Llamada del cron no autorizada.",
+    "JOB_ALREADY_ACTIVE": "Ya hay una búsqueda en curso para este tema.",
+    "JOB_NOT_FOUND": "Búsqueda no encontrada.",
+    "JOB_NOT_CANCELABLE": "La búsqueda ya ha terminado.",
+    "EXPORT_FORMAT_INVALID": "Formato de exportación no válido.",
+    "EXPORT_DIALECT_INVALID": "Dialecto CSV no válido: usa excel-it o rfc4180.",
+    "SHEETS_FILE_NAME_REQUIRED": "El nombre del archivo es obligatorio.",
+    "SHEETS_NOT_CONNECTED": "Conecta Google Sheets desde Tu cuenta › Conexiones antes de exportar.",
+    "SHEETS_OAUTH_CONFIG_MISSING": "Falta la configuración OAuth de Google Sheets. Ponte en contacto con el administrador principal.",
+    "SHEETS_TIMEOUT": "Google no ha respondido en 30 segundos o no está disponible.",
+    "SHEETS_NO_ROWS": "No hay palabras clave que exportar con los filtros y el alcance seleccionados.",
+    "GOOGLE_SHEETS_EXPORT_ERROR": "No se ha podido exportar a Google Sheets: Google ha devuelto un error. Vuelve a intentarlo.",
+    "GOOGLE_REAUTH_REQUIRED": "Hay que volver a conectar Google Sheets: abre Tu cuenta › Conexiones y conecta de nuevo la cuenta.",
+    "FILE_TOO_LARGE": "Archivo demasiado grande: el máximo es 5 MB.",
+    "PLANNER_FILE_REQUIRED": "Adjunta el archivo descargado del Planificador de palabras clave.",
+    "PLANNER_FILE_TYPE_INVALID": "Formato no admitido: sube un archivo .csv o .tsv.",
+    "PLANNER_KEYWORD_COLUMN_MISSING": "Archivo no reconocido: falta la columna de palabras clave (Keyword).",
+    "PLANNER_TOO_MANY_ROWS": "El archivo tiene demasiadas filas para una sola importación.",
+    "PLANNER_PART_NOT_FOUND": "Parte de la exportación no encontrada.",
+    "UNKNOWN": "Error inesperado (HTTP {status}).",
+    "BILLING_PAUSED": "La facturación todavía no está activa.",
+    "PLANS_NOT_CONFIGURED": "Los planes todavía no están configurados.",
+    "INVALID_PLAN": "Plan o periodo de facturación no válido.",
+    "SUBSCRIPTION_EXISTS": "El espacio de trabajo ya tiene una suscripción: cambia de plan desde la página Facturación.",
+    "SUBSCRIPTION_NOT_FOUND": "El espacio de trabajo no tiene ninguna suscripción que gestionar.",
+    "BILLING_PROVIDER_ERROR": "El servicio de pago no responde. Inténtalo más tarde.",
+    "INVALID_SIGNATURE": "Firma no válida.",
+    "PLAN_LIMIT": "Has alcanzado un límite del plan del espacio de trabajo.",
+    "LAUNCH_NOT_READY": "La lista de comprobación del lanzamiento no está completa.",
+    "QUOTA_EXCEEDED": "Has agotado la cuota de uso del espacio de trabajo para este periodo.",
+    "INVALID_PASSWORD": "La contraseña no es correcta.",
+    "ROOT_ADMIN": "El administrador principal no puede eliminar su propia cuenta.",
+    "ACTIVE_SUBSCRIPTION": "Cancela primero, desde la página Facturación, las suscripciones de los espacios de trabajo de los que eres el único propietario.",
+    "OWNERSHIP_TRANSFER_REQUIRED": "Transfiere primero la propiedad de los espacios de trabajo que compartes con otros miembros.",
+    "CONTACT_UNAVAILABLE": "El formulario de contacto no está disponible en este momento.",
+    "STRATEGY_NO_KEYWORDS": "No hay palabras clave en el alcance elegido: amplía el alcance o inicia una búsqueda.",
+    "STRATEGY_LIMIT": "El proyecto ya tiene 20 estrategias: elimina una antes de generar otra.",
+    "STRATEGY_NOT_FOUND": "Estrategia no encontrada.",
+    "STRATEGY_CONFLICT": "La estrategia se ha modificado mientras tanto: recarga el plan y vuelve a intentarlo.",
+    "STRATEGY_READ_ONLY": "Esta es una versión anterior del plan: solo se puede consultar.",
+    "AI_NOT_CONFIGURED": "Los títulos con IA no están activos en este momento.",
+    "AI_TIMEOUT": "El modelo no ha respondido a tiempo. Vuelve a intentarlo en un momento.",
+    "AI_UNAVAILABLE": "No se puede acceder al servicio de títulos con IA. Vuelve a intentarlo en un momento.",
+    "AI_INVALID_RESPONSE": "El modelo ha dado una respuesta que no se puede usar. Vuelve a intentarlo.",
+    "AI_MODEL_NOT_FREE": "El modelo tiene que ser gratuito: un ID como autor/modelo:free.",
+    "AI_BUSY": "Todos los modelos gratuitos están ocupados: vuelve a intentarlo dentro de unos minutos.",
+    "AI_DAILY_LIMIT": "Se han agotado las solicitudes a la IA de hoy: vuelve a intentarlo mañana."
+  },
+  "errorPages": {
+    "error": {
+      "title": "Se ha producido un error",
+      "body": "No se ha podido cargar la página. Vuelve a intentarlo dentro de unos instantes.",
+      "code": "Código de error: {digest}",
+      "retry": "Reintentar"
+    },
+    "notFound": {
+      "title": "Página no encontrada",
+      "body": "La página que buscas no existe o no está disponible con tu cuenta.",
+      "back": "Volver al panel"
+    }
+  },
+  "project": {
+    "shell": {
+      "label": "Pasos del proyecto",
+      "keywords": "Palabras clave",
+      "keptCount": "{count, plural, one {# conservada} other {# conservadas}}",
+      "newTopic": {
+        "title": "Nuevo tema",
+        "fieldLabel": "¿De qué trata el tema?",
+        "placeholder": "p. ej., zapatillas de trail",
+        "hint": "Titan SEO busca en Google las búsquedas que empiezan por estas palabras.",
+        "more": "Añadir más palabras clave semilla",
+        "moreLabel": "Más palabras clave semilla, una por línea",
+        "submit": "Buscar palabras clave",
+        "submitting": "Creando…",
+        "cancel": "Cancelar",
+        "required": "Escribe de qué trata el tema.",
+        "nameTaken": "Ya existe un tema con este nombre."
+      },
+      "plan": "Plan de contenidos",
+      "planToCreate": "por crear",
+      "planPages": "{count, plural, one {# página} other {# páginas}}",
+      "settings": "Ajustes",
+      "closeMenu": "Cerrar el menú",
+      "status": {
+        "done": "hecho",
+        "todo": "pendiente"
+      },
+      "addTopic": "Nuevo tema",
+      "writing": "Redacción",
+      "writingProgress": "{published, number} de {total, plural, one {# publicada} other {# publicadas}}",
+      "writingToStart": "después del plan",
+      "topicMenu": "Acciones del tema {name}",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "moveFailed": "No se ha podido mover el tema: vuelve a intentarlo."
+    }
+  },
+  "nextStep": {
+    "label": "Siguiente paso",
+    "text": {
+      "add_topic": "añade un tema y Titan SEO buscará las palabras clave a partir de sus palabras.",
+      "searching": "Buscando palabras clave…",
+      "run_topic": "el tema «{topic}» todavía no tiene palabras clave.",
+      "build_plan": "{count, plural, one {# palabra clave conservada está lista} other {# palabras clave conservadas están listas}} para convertirse en páginas.",
+      "open_plan": "el plan de contenidos está listo: organiza y escribe las páginas.",
+      "write_next": "la siguiente por escribir: «{title}» (n.º {number}).",
+      "writing": "tienes {count, plural, one {# página} other {# páginas}} en redacción.",
+      "plan_done": "plan completado: todas las páginas están publicadas."
+    },
+    "actions": {
+      "add_topic": "Añadir un tema",
+      "run_topic": "Iniciar la búsqueda",
+      "build_plan": "Crear el plan",
+      "building": "Creando el plan…",
+      "open_plan": "Abrir el plan",
+      "searching": "Seguir la búsqueda",
+      "write_next": "Empezar a escribirla",
+      "writing": "Abrir el plan",
+      "plan_done": "Añadir un tema"
+    },
+    "notStarted": "La búsqueda no ha empezado: {reason}"
+  },
+  "dashboard": {
+    "quickStart": {
+      "title": "¿De qué trata tu sitio web?",
+      "intro": "Escribe un tema: Titan SEO encuentra lo que la gente busca en Google y lo convierte en un plan de páginas para escribir.",
+      "compactLabel": "Nuevo proyecto: ¿de qué trata el sitio web?",
+      "placeholder": "p. ej., zapatillas de running, zapatillas de trail",
+      "help": "De 1 a 3 palabras por idea; separa varias ideas con comas (hasta {max})",
+      "submit": "Buscar palabras clave",
+      "submitting": "Iniciando la búsqueda…",
+      "required": "Escribe de qué trata el sitio web.",
+      "tooMany": "Puedes escribir como máximo {max} ideas separadas por comas.",
+      "targeting": "Búsquedas en {language} · {country}",
+      "change": "cambiar",
+      "languageLabel": "Idioma de las búsquedas",
+      "countryLabel": "País de las búsquedas",
+      "examplesLabel": "O prueba con un ejemplo:",
+      "examples": {
+        "one": "casa rural en asturias",
+        "two": "dentista en madrid",
+        "three": "clases de yoga online"
+      }
+    },
+    "projects": {
+      "title": "Tus proyectos"
+    },
+    "card": {
+      "keywords": "Palabras clave · {count, plural, one {# conservada} other {# conservadas}}",
+      "noKeywords": "Todavía no hay palabras clave",
+      "planToCreate": "Plan por crear",
+      "planPages": "Plan · {count, plural, one {# página} other {# páginas}}",
+      "menu": "Acciones del proyecto {name}",
+      "rename": "Cambiar el nombre",
+      "renameTitle": "Cambiar el nombre del proyecto",
+      "nameLabel": "Nombre del proyecto",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "settings": "Ajustes",
+      "delete": "Eliminar",
+      "deleteTitle": "¿Eliminar el proyecto?",
+      "writing": "Redacción: {published, number} de {total, plural, one {# publicada} other {# publicadas}}",
+      "writingLabel": "Progreso de la redacción"
+    }
+  },
+  "keywords": {
+    "projectTitle": "Todas las palabras clave",
+    "counts": "{found, plural, one {# encontrada} other {# encontradas}} · {kept, plural, one {# conservada} other {# conservadas}}",
+    "noTopics": "Añade el primer tema",
+    "noTopicsHint": "Un tema es un asunto del sitio web: escribe de qué trata y Titan SEO buscará las palabras clave.",
+    "findMore": "+ Buscar más palabras clave",
+    "menu": "Más acciones para {name}",
+    "menuSeeds": "Palabras clave semilla",
+    "menuDetails": "Nombre y descripción",
+    "menuDelete": "Eliminar",
+    "details": {
+      "title": "Nombre y descripción",
+      "name": "Nombre del tema",
+      "description": "Descripción",
+      "cancel": "Cancelar",
+      "save": "Guardar"
+    },
+    "delete": {
+      "title": "¿Eliminar el tema?",
+      "text": "Se eliminarán el tema «{name}» y sus palabras clave. No se puede deshacer.",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar"
+    },
+    "chips": {
+      "label": "Filtros rápidos",
+      "all": "Todas",
+      "questions": "Preguntas",
+      "buy": "Para comprar",
+      "local": "Locales",
+      "brands": "Marcas"
+    },
+    "search": {
+      "label": "Buscar una palabra clave",
+      "placeholder": "Buscar una palabra clave",
+      "submit": "Buscar"
+    },
+    "filters": {
+      "toggle": "Filtros",
+      "minVolume": "Búsquedas al mes, mínimo",
+      "maxVolume": "Búsquedas al mes, máximo",
+      "intent": "Intención",
+      "type": "Tipo",
+      "any": "Cualquiera",
+      "apply": "Aplicar",
+      "reset": "Quitar los filtros"
+    },
+    "sort": {
+      "label": "Ordenar",
+      "promising": "Más prometedoras",
+      "searches": "Más buscadas",
+      "az": "A-Z"
+    },
+    "columns": {
+      "toggle": "Columnas",
+      "source": "Fuente",
+      "intent": "Intención",
+      "type": "Tipo",
+      "competition": "Competencia",
+      "score": "Puntuación"
+    },
+    "table": {
+      "label": "Palabras clave conservadas",
+      "discardedLabel": "Palabras clave descartadas",
+      "action": "Conservar o descartar",
+      "topic": "Tema",
+      "keyword": "Palabra clave",
+      "searches": "Búsquedas al mes",
+      "potential": "Potencial",
+      "potentialValue": "Potencial {value} de 100",
+      "potentialMissing": "Potencial sin calcular",
+      "otherSource": "Otra fuente"
+    },
+    "row": {
+      "discard": "Descartar {keyword}",
+      "keep": "Conservar {keyword}"
+    },
+    "tags": {
+      "question": "pregunta",
+      "buy": "para comprar",
+      "local": "local",
+      "brandReview": "¿es una marca?"
+    },
+    "discarded": {
+      "toggle": "Descartadas ({count})",
+      "hint": "Las palabras clave descartadas no entran en el plan de contenidos."
+    },
+    "bulk": {
+      "keep": "Conservar estas {count}",
+      "discard": "Descartar estas {count}"
+    },
+    "empty": {
+      "filtered": "No hay palabras clave conservadas con estos filtros.",
+      "topic": "Todavía no hay palabras clave: inicia la búsqueda desde la barra inferior o con «Buscar más palabras clave».",
+      "project": "Todavía no hay palabras clave en este proyecto.",
+      "discarded": "No hay palabras clave descartadas."
+    },
+    "saveFailed": "No se ha guardado tu elección: {reason}",
+    "rows": "{start}-{end} de {total}",
+    "searchProgress": {
+      "title": "Buscando palabras clave…",
+      "phase": {
+        "expand": "Buscando las sugerencias de Google",
+        "autocomplete": "Buscando las sugerencias de Google",
+        "metrics": "Obteniendo el volumen de búsqueda",
+        "store": "Guardando las palabras clave",
+        "done": "Guardando las palabras clave"
+      },
+      "found": "{count, plural, one {# palabra clave encontrada hasta ahora} other {# palabras clave encontradas hasta ahora}}",
+      "duration": "Normalmente tarda unos minutos.",
+      "preview": "Primeras palabras clave encontradas",
+      "previewHint": "Podrás descartarlas en cuanto termine la búsqueda.",
+      "cancel": "Cancelar la búsqueda",
+      "canceling": "Cancelando…",
+      "canceled": "Búsqueda cancelada.",
+      "failed": "No se ha podido completar la búsqueda.",
+      "progress": "Progreso de la búsqueda"
+    },
+    "seeds": {
+      "title": "Palabras clave semilla",
+      "intro": "Titan SEO busca en Google las búsquedas que empiezan por estas palabras.",
+      "current": "Palabras actuales",
+      "empty": "Todavía no hay palabras clave semilla.",
+      "remove": "Quitar {seed}",
+      "addLabel": "Añade palabras clave semilla, una por línea",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "saveAndSearch": "Guardar y buscar",
+      "saving": "Guardando…"
+    },
+    "fewResults": {
+      "label": "Pocas sugerencias",
+      "text": "Google tiene pocas sugerencias para estas palabras: prueba con palabras más cortas o más generales.",
+      "change": "Cambiar las palabras clave semilla"
+    },
+    "volumes": {
+      "notice": "Todavía no sabemos cuántas personas buscan estas palabras clave.",
+      "open": "Añadir el volumen de búsqueda",
+      "title": "Añadir el volumen de búsqueda",
+      "autoTitle": "Obtención automática",
+      "autoText": "Obtenemos el volumen de búsqueda con DataForSEO y repetimos la búsqueda: las palabras clave conservadas y descartadas se quedan como están.",
+      "autoButton": "Obtener el volumen",
+      "autoRunning": "Iniciando…",
+      "guidedTitle": "Con el Planificador de palabras clave de Google Ads, gratis",
+      "step1": "Descarga el archivo con las palabras clave.",
+      "step2": "En Google Ads, abre el Planificador de palabras clave, elige «Consultar el volumen de búsqueda y las previsiones» y sube el archivo.",
+      "step3": "Descarga el resultado del Planificador de palabras clave y súbelo aquí.",
+      "close": "Cerrar",
+      "reason": {
+        "credentials": "DataForSEO ha rechazado las credenciales: revisa el usuario y la contraseña configurados para la aplicación.",
+        "verifyAccount": "Hay que verificar la cuenta de DataForSEO: completa la verificación en el panel de DataForSEO y vuelve a hacer la búsqueda.",
+        "code": "DataForSEO ha respondido con el código {code}.",
+        "noResponse": "DataForSEO no ha respondido a tiempo: inténtalo más tarde.",
+        "notice": {
+          "PROVIDER_NOT_CONFIGURED": "DataForSEO no está configurado: faltan las credenciales.",
+          "LOCATION_UNSUPPORTED": "DataForSEO no tiene volumen de búsqueda para el país de este tema.",
+          "LANGUAGE_UNSUPPORTED": "DataForSEO no tiene volumen de búsqueda para el idioma de este tema.",
+          "METRICS_BUDGET_EXCEEDED": "Se ha alcanzado el límite de gasto mensual del volumen de búsqueda.",
+          "RUN_BUDGET_EXCEEDED": "La búsqueda ha alcanzado el límite de gasto por búsqueda: algunas palabras clave se han quedado sin volumen.",
+          "PLAN_NO_LICENSED_METRICS": "El plan del espacio de trabajo no incluye el volumen de búsqueda de DataForSEO.",
+          "LICENSED_METRICS_QUOTA_EXCEEDED": "Se ha agotado la cuota mensual de palabras clave con volumen de búsqueda de DataForSEO."
+        }
+      }
+    },
+    "menuOverrides": "Ajustes distintos de los del proyecto…",
+    "overrides": {
+      "title": "Ajustes distintos de los del proyecto",
+      "intro": "Cambia solo lo que tenga que ser distinto para «{name}»: el resto sigue al proyecto.",
+      "asProject": "Igual que el proyecto",
+      "yes": "Sí",
+      "no": "No",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "saving": "Guardando…"
+    }
+  },
+  "plan": {
+    "title": "Plan de contenidos",
+    "intro": "Las páginas por escribir: una columna por página pilar, con sus artículos satélite debajo en el orden en que conviene escribirlos.",
+    "meta": "Creado el {date} · {pages, plural, one {# página} other {# páginas}}",
+    "empty": {
+      "title": "Todavía no hay plan",
+      "text": "Titan SEO organiza las palabras clave conservadas en páginas pilar y artículos satélite, con títulos y esquemas sugeridos. Después las escribes una a una."
+    },
+    "regenerate": "Regenerar",
+    "versions": "Versiones anteriores ({count, number})",
+    "menu": "Más acciones del plan",
+    "deletePlan": "Eliminar el plan",
+    "deleteTitle": "¿Eliminar el plan?",
+    "deleteText": "El plan «{name}» se elimina con sus páginas y su estado; si hay una versión anterior, esa pasa a ser el plan.",
+    "progress": {
+      "label": "Progreso de la redacción",
+      "text": "{published, plural, one {# publicada} other {# publicadas}} · {writing, number} en redacción · {todo, number} por escribir"
+    },
+    "groupBy": "Agrupar por",
+    "group": {
+      "hub": "Grupo",
+      "status": "Estado"
+    },
+    "viewLabel": "Vista",
+    "views": {
+      "board": "Tablero",
+      "list": "Lista"
+    },
+    "boardLabel": "Tablero del plan",
+    "statusColumns": {
+      "TODO": "Por escribir",
+      "WRITING": "En redacción",
+      "PUBLISHED": "Publicadas"
+    },
+    "column": {
+      "pages": "{count, plural, one {# página} other {# páginas}}",
+      "unassigned": "Sin página",
+      "unassignedHint": "Arrastra una palabra clave a una tarjeta o usa su menú.",
+      "empty": "No hay páginas"
+    },
+    "card": {
+      "number": "n.º {number}",
+      "pillar": "Página pilar",
+      "keywords": "{count, plural, one {# palabra clave} other {# palabras clave}} · {volume, number} búsquedas/mes",
+      "keywordsNoVolume": "{count, plural, one {# palabra clave} other {# palabras clave}}",
+      "publishedOn": "Publicada el {date}",
+      "menu": "Acciones de la página «{title}»",
+      "moveUnder": "Mover debajo de…",
+      "status": "Estado de «{title}»: {status}"
+    },
+    "chip": {
+      "menu": "Acciones de la palabra clave «{keyword}»",
+      "assignTo": "Asignar a…"
+    },
+    "pick": {
+      "moveTitle": "Mover debajo de otra página pilar",
+      "moveLabel": "Página pilar",
+      "assignTitle": "Asignar «{keyword}» a una página",
+      "keywordTitle": "Mover «{keyword}» a otra página",
+      "pageLabel": "Página",
+      "mergeTitle": "Fusionar con otra página",
+      "mergeLabel": "Página que recibe las palabras clave",
+      "confirm": "Mover",
+      "assign": "Asignar",
+      "merge": "Fusionar",
+      "cancel": "Cancelar"
+    },
+    "conflict": "Otro miembro ha modificado el plan: he cargado la última versión.",
+    "list": {
+      "label": "Lista de las páginas del plan",
+      "columns": {
+        "number": "N.º",
+        "h1": "Título (H1)",
+        "type": "Tipo",
+        "keywords": "Palabras clave",
+        "volume": "Búsquedas",
+        "status": "Estado"
+      }
+    },
+    "panel": {
+      "close": "Cerrar",
+      "relationPillar": "Página pilar",
+      "relationSpoke": "Artículo satélite de «{hub}»",
+      "status": "Estado",
+      "h1": "Título (H1)",
+      "h2": "Esquema (H2, un elemento por línea)",
+      "suggested": "sugerido",
+      "contentType": "Tipo de contenido",
+      "keywords": "Palabras clave",
+      "main": "principal",
+      "searches": "{volume, number} búsquedas/mes",
+      "noVolume": "volumen no disponible",
+      "moveKeyword": "Mover a…",
+      "moveKeywordLabel": "Mover «{keyword}» a otra página",
+      "removeKeyword": "Quitar",
+      "removeKeywordLabel": "Quitar «{keyword}» de la página",
+      "reason": "Por qué esta página",
+      "links": "Enlaces internos",
+      "noLinks": "No hay enlaces internos previstos.",
+      "noH2": "Sin H2",
+      "saved": "Guardado",
+      "saving": "Guardando…",
+      "menu": "Más acciones de la página",
+      "merge": "Fusionar con…",
+      "promote": "Convertirla en página pilar",
+      "delete": "Eliminar la página",
+      "deleteTitle": "¿Eliminar la página?",
+      "deleteText": "La página «{title}» se elimina y sus palabras clave pasan a las que no tienen página.",
+      "readOnly": "Versión anterior: solo se puede consultar."
+    },
+    "ai": {
+      "suggest": "Mejorar los títulos con IA",
+      "loading": "Escribiendo los títulos…",
+      "title": "Propuesta de la IA",
+      "model": "Modelo: {model}",
+      "use": "Usar estos títulos",
+      "discard": "Descartar",
+      "rateLimited": "Has alcanzado el límite de propuestas: podrás pedir otra a partir de las {time}.",
+      "droppedH2": "{count, plural, one {No se ha conservado otro título propuesto.} other {No se han conservado otros # títulos propuestos.}}"
+    },
+    "regenerateDialog": {
+      "title": "Regenerar el plan",
+      "text": "Reorganizo las páginas que todavía no se han empezado con las palabras clave conservadas de hoy. Las páginas en redacción o publicadas se quedan como están.",
+      "cancel": "Cancelar"
+    },
+    "versionsPage": {
+      "title": "Versiones anteriores del plan",
+      "intro": "Cada vez que regeneras el plan, el anterior se queda aquí en solo lectura. Se guardan hasta 20; después se elimina la más antigua.",
+      "empty": "No hay versiones anteriores: el plan todavía no se ha regenerado.",
+      "columns": {
+        "name": "Nombre",
+        "created": "Creada",
+        "mode": "Modo",
+        "pages": "Páginas"
+      },
+      "back": "Volver al plan",
+      "readOnly": "Versión del {date} en solo lectura.",
+      "delete": "Eliminar",
+      "deleteTitle": "¿Eliminar la versión?",
+      "deleteText": "La versión «{name}» se elimina; el plan actual no cambia.",
+      "cancel": "Cancelar",
+      "menu": "Acciones de la versión «{name}»",
+      "menuColumn": "Acciones"
+    }
+  }
+}

@@ -54,6 +54,8 @@ vi.mock("next/headers", () => ({
   cookies: async () => ({
     get: (name: string) => (name === "kwb_session" && shared.sessionToken ? { name, value: shared.sessionToken } : undefined),
   }),
+  // impacted-by: T-4701 (la home legge Accept-Language per il paese predefinito delle ricerche in es-419)
+  headers: async () => new Headers(),
 }));
 vi.mock("next/font/google", () => ({
   Manrope: () => ({ variable: "font-manrope" }),

@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { PaginationLinks } from "@/components/pagination-links";
 import { ProjectCard } from "@/components/project-card";
@@ -22,11 +23,12 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   // Workspace attivo (T-1504): cookie kwb_workspace riverificato, altrimenti il workspace personale.
   const { workspace } = await getPageWorkspace(user.id);
-  const [dashboard, locale] = await Promise.all([
+  const [dashboard, locale, headerStore] = await Promise.all([
     listDashboardProjects(workspace.id, Array.isArray(rawPage) ? rawPage[0] : rawPage),
     getLocale(),
+    headers(),
   ]);
-  const targeting = await resolveDefaultTargeting(workspace.id, locale);
+  const targeting = await resolveDefaultTargeting(workspace.id, locale, headerStore.get("accept-language"));
 
   if (dashboard.total === 0) {
     return (

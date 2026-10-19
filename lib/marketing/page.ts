@@ -2,23 +2,23 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getPublicAppUrl } from "@/lib/env";
-import { type AppLocale, DEFAULT_LOCALE, isSupportedLocale } from "@/lib/i18n/locale";
+import { DEFAULT_LOCALE, isOfferedLocale, type OfferedLocale } from "@/lib/i18n/locale";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import { type MarketingPage, marketingPath } from "@/lib/marketing/routes";
 
 /** Props delle pagine sotto app/[lang] (T-1801): il segmento della lingua. */
 export type LangPageProps = { params: Promise<{ lang: string }> };
 
-/** Lingua del segmento [lang]: solo it ed en, ogni altro valore è una pagina inesistente (404), mai una route nuova. */
-export async function marketingLocale({ params }: LangPageProps): Promise<AppLocale> {
+/** Lingua del segmento [lang]: solo le lingue offerte (it ed en, T-4701), ogni altro valore è una pagina inesistente (404). */
+export async function marketingLocale({ params }: LangPageProps): Promise<OfferedLocale> {
   const { lang } = await params;
-  if (!isSupportedLocale(lang)) {
+  if (!isOfferedLocale(lang)) {
     notFound();
   }
   return lang;
 }
 
-const OPEN_GRAPH_LOCALES: Record<AppLocale, string> = { it: "it_IT", en: "en_US" };
+const OPEN_GRAPH_LOCALES: Record<OfferedLocale, string> = { it: "it_IT", en: "en_US" };
 
 // Immagine Open Graph 1200x630 di public/og/, servita senza sessione dal proxy.
 const OPEN_GRAPH_IMAGE = { url: "/og/site.png", width: 1200, height: 630 };

@@ -1,11 +1,18 @@
 /**
- * Lingua dell'interfaccia (T-1301, D-07): italiano e inglese, default italiano, nessun prefisso negli URL dell'app (le
- * pagine pubbliche di T-1801 hanno /it e /en, D-28 emendata).
+ * Lingua dell'interfaccia (T-1301, D-07; T-4701, D-47): italiano, inglese e le due varianti dello spagnolo, default
+ * italiano, nessun prefisso negli URL dell'app (le pagine pubbliche di T-1801 hanno /it e /en, D-28 emendata).
  * Modulo puro, senza import: lo usano i18n/request.ts, la rotta /api/locale e il selettore lato client.
  */
 
-export const SUPPORTED_LOCALES = ["it", "en"] as const;
+export const SUPPORTED_LOCALES = ["it", "en", "es-ES", "es-419"] as const;
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
+
+/**
+ * Lingue offerte (T-4701): selettori, preferenze salvabili (PATCH e POST /api/locale), riconoscimento dal browser e sito
+ * pubblico. Lo spagnolo resta fuori finché i cataloghi non sono completi (T-4902): lo legge solo chi ha la lingua salvata.
+ */
+export const OFFERED_LOCALES = ["it", "en"] as const satisfies readonly AppLocale[];
+export type OfferedLocale = (typeof OFFERED_LOCALES)[number];
 
 export const DEFAULT_LOCALE: AppLocale = "it";
 export const LOCALE_COOKIE = "kwb_locale";
@@ -19,23 +26,37 @@ export const PAGE_LOCALE_HEADER = "x-kwb-page-locale";
 /** Fuso orario unico di date e ore formattate (server e client devono coincidere): quello del mercato di default. */
 export const APP_TIME_ZONE = "Europe/Rome";
 
-/** Solo i due letterali ammessi superano il controllo (CWE-22, CWE-79): ogni altro valore è scartato. */
+/**
+ * Paesi ispanofoni d'America Latina (T-4701): un browser es-<paese> di questo elenco vale es-419 e il paese diventa
+ * quello predefinito delle ricerche; con es-419 senza un paese dell'elenco il paese delle ricerche è MX.
+ */
+export const LATIN_AMERICA_COUNTRIES: readonly string[] = [
+  "AR", "BO", "CL", "CO", "CR", "CU", "DO", "EC", "GT", "HN", "MX", "NI", "PA", "PE", "PR", "PY", "SV", "UY", "VE",
+];
+
+/** Solo i letterali ammessi superano il controllo (CWE-22, CWE-79): ogni altro valore è scartato. */
 export function isSupportedLocale(value: unknown): value is AppLocale {
   return typeof value === "string" && (SUPPORTED_LOCALES as readonly string[]).includes(value);
 }
 
-// Un elemento di Accept-Language: tag di lingua (con eventuali sottotag) e peso q facoltativo tra 0 e 1.
-const LANGUAGE_RANGE = /^([A-Za-z]{1,8})(?:-[A-Za-z0-9]{1,8})*$/;
-const QUALITY = /^q=(0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/i;
+/** Lingua offerta nei selettori e salvabile (T-4701): fino a T-4902 solo it ed en. */
+export function isOfferedLocale(value: unknown): value is OfferedLocale {
+  return typeof value === "string" && (OFFERED_LOCALES as readonly string[]).includes(value);
+}
 
-/** Lingue di Accept-Language ordinate per peso decrescente (a parità, nell'ordine dell'header); malformate scartate. */
+// Un elemento di Accept-Language: tag di lingua (con eventuali sottotag) e peso q facoltativo tra 0 e 1.
+const LANGUAGE_RANGE = /^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/;
+const QUALITY = /^q=(0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/i;
+// Sottotag di regione di un tag BCP 47: due lettere (MX) o tre cifre (419), dopo l'eventuale scrittura (Latn).
+const REGION_SUBTAG = /^(?:[a-z]{2}|\d{3})$/;
+
+/** Tag di Accept-Language minuscoli ordinati per peso decrescente (a parità, nell'ordine dell'header); malformati scartati. */
 function parseAcceptLanguage(header: string): string[] {
-  const entries: { language: string; quality: number; index: number }[] = [];
+  const entries: { tag: string; quality: number; index: number }[] = [];
 
   header.split(",").forEach((part, index) => {
     const [range, ...params] = part.trim().split(";").map((piece) => piece.trim());
-    const match = range ? LANGUAGE_RANGE.exec(range) : null;
-    if (!match) return;
+    if (!range || !LANGUAGE_RANGE.test(range)) return;
 
     let quality = 1;
     for (const param of params) {
@@ -45,11 +66,37 @@ function parseAcceptLanguage(header: string): string[] {
     }
 
     if (quality > 0) {
-      entries.push({ language: match[1].toLowerCase(), quality, index });
+      entries.push({ tag: range.toLowerCase(), quality, index });
     }
   });
 
-  return entries.sort((a, b) => b.quality - a.quality || a.index - b.index).map((entry) => entry.language);
+  return entries.sort((a, b) => b.quality - a.quality || a.index - b.index).map((entry) => entry.tag);
+}
+
+/** Regione maiuscola di un tag (es-mx → MX, es-419 → 419), null senza regione. */
+function regionOf(tag: string): string | null {
+  const region = tag.split("-").slice(1).find((subtag) => REGION_SUBTAG.test(subtag));
+  return region ? region.toUpperCase() : null;
+}
+
+/**
+ * Lingua dell'app di un tag (T-1301, T-4701): it-IT → it, en-US → en; es ed es-ES → es-ES; es-419, es-US ed es con un
+ * paese d'America Latina → es-419; gli altri es-XX → es-ES; ogni altra lingua null.
+ */
+function localeOfTag(tag: string): AppLocale | null {
+  const language = tag.split("-")[0];
+  if (language === "it" || language === "en") return language;
+  if (language !== "es") return null;
+
+  const region = regionOf(tag);
+  return region === "419" || region === "US" || (region !== null && LATIN_AMERICA_COUNTRIES.includes(region)) ? "es-419" : "es-ES";
+}
+
+/** Paese d'America Latina della prima lingua spagnola di Accept-Language (es-CO → CO), null senza (T-4701). */
+export function latinAmericaCountryOf(acceptLanguage: string | null | undefined): string | null {
+  const spanish = parseAcceptLanguage(acceptLanguage ?? "").find((tag) => tag.split("-")[0] === "es");
+  const region = spanish ? regionOf(spanish) : null;
+  return region !== null && LATIN_AMERICA_COUNTRIES.includes(region) ? region : null;
 }
 
 export type LocaleSources = {
@@ -58,11 +105,19 @@ export type LocaleSources = {
   acceptLanguage?: string | null;
 };
 
-/** Priorità: preferenza dell'utente, poi cookie, poi Accept-Language (regione ridotta: en-US → en), poi it. */
-export function resolveLocale({ userLocale, cookieLocale, acceptLanguage }: LocaleSources): AppLocale {
+/**
+ * Priorità: preferenza dell'utente (qualunque lingua supportata, salvata solo dalle rotte che accettano le offerte), poi
+ * cookie, poi Accept-Language per peso (en-US → en, es-AR → es-419), poi it. Cookie e browser valgono solo per le lingue
+ * di offered: OFFERED_LOCALES di default, SUPPORTED_LOCALES per provare il riconoscimento dello spagnolo prima di T-4902.
+ */
+export function resolveLocale(
+  { userLocale, cookieLocale, acceptLanguage }: LocaleSources,
+  offered: readonly AppLocale[] = OFFERED_LOCALES
+): AppLocale {
+  const isOffered = (value: unknown): value is AppLocale => isSupportedLocale(value) && offered.includes(value);
   if (isSupportedLocale(userLocale)) return userLocale;
-  if (isSupportedLocale(cookieLocale)) return cookieLocale;
+  if (isOffered(cookieLocale)) return cookieLocale;
 
-  const fromHeader = parseAcceptLanguage(acceptLanguage ?? "").find(isSupportedLocale);
+  const fromHeader = parseAcceptLanguage(acceptLanguage ?? "").map(localeOfTag).find(isOffered);
   return fromHeader ?? DEFAULT_LOCALE;
 }

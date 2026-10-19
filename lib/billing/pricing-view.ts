@@ -9,7 +9,7 @@ import {
   type PlanConfig,
   type PlanId,
 } from "@/lib/billing/plans";
-import type { AppLocale } from "@/lib/i18n/locale";
+import type { OfferedLocale } from "@/lib/i18n/locale";
 
 /** Chi guarda la pagina prezzi (T-1802): decide solo la destinazione delle CTA. */
 export type PricingViewer = "anonymous" | "authenticated";
@@ -41,7 +41,7 @@ function planCta(planId: PlanId, viewer: PricingViewer): PricingPlanView["cta"] 
  * piani pubblici nell'ordine di order, prezzi visualizzati della lingua per intervallo e righe dei limiti dalle stesse
  * chiavi di getEntitlements. Nessun valore è scritto nel markup: cambiare un limite cambia pagina e enforcement insieme.
  */
-export function buildPricingView(plans: Record<PlanId, PlanConfig>, locale: AppLocale, viewer: PricingViewer): PricingPlanView[] {
+export function buildPricingView(plans: Record<PlanId, PlanConfig>, locale: OfferedLocale, viewer: PricingViewer): PricingPlanView[] {
   return Object.values(plans)
     .filter((plan) => plan.public)
     .sort((a, b) => a.order - b.order)

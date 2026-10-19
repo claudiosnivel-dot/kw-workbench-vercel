@@ -132,10 +132,12 @@ enum ColorVisionMode {
   TRITANOPIA
 }
 
-/// Lingua dell'interfaccia scelta dall'utente (T-1301, D-07).
+/// Lingua dell'interfaccia scelta dall'utente (T-1301, D-07; T-4701, D-47: le due varianti dello spagnolo).
 enum UiLocale {
   it
   en
+  es_ES  @map("es-ES")
+  es_419 @map("es-419")
 }
 
 /// Ruolo nel workspace (T-1501, D-08): OWNER > ADMIN > MEMBER; i permessi stanno in lib/authz/permissions.ts.

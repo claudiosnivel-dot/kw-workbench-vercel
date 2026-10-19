@@ -1,6 +1,6 @@
 import { redeemOneTimeToken, sendOneTimeTokenEmail } from "@/lib/auth/one-time-token";
 import { sendTemplateEmail } from "@/lib/email";
-import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
+import { emailLocaleOf } from "@/lib/i18n/db-locale";
 import { prisma } from "@/lib/prisma";
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -45,7 +45,7 @@ export async function notifyExistingAccount(email: string): Promise<void> {
   await sendTemplateEmail({
     to: email,
     template: "account-exists",
-    locale: user.ui_locale ?? DEFAULT_LOCALE,
+    locale: emailLocaleOf(user.ui_locale),
     vars: { displayName: user.display_name },
   });
 }
