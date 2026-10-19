@@ -11,7 +11,7 @@ export type ClassificationResult = {
 };
 
 type ClassificationLexicon = {
-  /** Parole che, in prima posizione, rendono la keyword una domanda. */
+  /** Parole (o sequenze di parole) che, all'inizio, rendono la keyword una domanda. */
   question: string[];
   local: string[];
   tool: string[];
@@ -27,6 +27,7 @@ type ClassificationLexicon = {
 /**
  * Lessici per lingua (T-704): ogni indizio è una parola intera o una sequenza contigua di parole
  * della forma normalizzata (T-702). Le lingue senza lessico ricevono la classificazione neutra.
+ * Lo spagnolo (T-5001) elenca anche le forme senza accento, come l'italiano «perché»/«perche».
  */
 export const CLASSIFICATION_LEXICONS: Record<string, ClassificationLexicon> = {
   en: {
@@ -84,6 +85,37 @@ export const CLASSIFICATION_LEXICONS: Record<string, ClassificationLexicon> = {
     service: ["servizio", "servizi", "agenzia", "consulente", "consulenza", "freelance"],
     content: ["guida", "idee", "consigli", "esempi", "tutorial"],
   },
+  es: {
+    question: [
+      "cómo",
+      "como",
+      "qué",
+      "que",
+      "cuál",
+      "cual",
+      "cuánto",
+      "cuanto",
+      "cuántos",
+      "cuantos",
+      "dónde",
+      "donde",
+      "cuándo",
+      "cuando",
+      "por qué",
+      "por que",
+      "quién",
+      "quien",
+    ],
+    local: ["cerca de mí", "cerca de mi"],
+    tool: ["calculadora", "generador", "plantilla"],
+    commercial: ["precio", "barato", "mejor", "mejores", "comparativa", "opiniones", "reseñas", "resenas", "vs"],
+    comparison: ["vs", "comparativa"],
+    transactional: ["comprar", "alquiler", "alquilar", "contratar", "oferta", "descuento"],
+    navigational: ["login", "iniciar sesión", "iniciar sesion", "sitio oficial", "oficial", "app"],
+    product: ["producto", "productos", "kit", "dispositivo", "dispositivos", "accesorio", "accesorios"],
+    service: ["servicio", "servicios", "agencia", "consultor", "consultoría", "consultoria", "freelance"],
+    content: ["guía", "guia", "ideas", "consejos", "ejemplos", "tutorial"],
+  },
 };
 
 const NEUTRAL_CLASSIFICATION: ClassificationResult = {
@@ -108,7 +140,9 @@ export function classifyKeyword(keyword: string, languageCode: string): Classifi
   const tokens = normalizeKeyword(keyword).split(" ").filter(Boolean);
   const has = (hints: string[]) => hints.some((hint) => containsTokenSequence(tokens, hint.split(" ")));
 
-  const isQuestion = keyword.trim().endsWith("?") || lexicon.question.includes(tokens[0] ?? "");
+  const isQuestion =
+    keyword.trim().endsWith("?") ||
+    lexicon.question.some((hint) => hint.split(" ").every((word, index) => tokens[index] === word));
   const isLocalIntent = has(lexicon.local);
   const isToolIntent = has(lexicon.tool);
   const isCommercialIntent = has(lexicon.commercial);

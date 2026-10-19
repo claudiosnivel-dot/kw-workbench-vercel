@@ -1,10 +1,10 @@
 // Parser del file scaricato da Keyword Planner (T-905, D-09, D-17). Struttura gestita: encoding dal BOM
 // (UTF-16LE, UTF-16BE, UTF-8 con o senza BOM), separatore tab, punto e virgola o virgola, righe di titolo prima
 // dei nomi colonna, colonne riconosciute per nome in inglese (guida Google Ads, fonte in
-// docs/METRICS-PROVIDERS.md) e in italiano.
+// docs/METRICS-PROVIDERS.md), in italiano e in spagnolo (guida di Google Ads in spagnolo, T-5002).
 // Verificato sul primo file reale (2026-10-06, docs/PLANNER-ROUNDTRIP.md): UTF-16LE, tab, due righe di titolo,
 // nomi inglesi, righe di riepilogo per segmento senza keyword, volumi decimali «50000.0», offerte «"1,35"». Restano
-// da verificare i nomi italiani delle colonne su un file scaricato con l'interfaccia in italiano.
+// da verificare i nomi italiani e spagnoli delle colonne su un file scaricato con l'interfaccia in quella lingua.
 
 export type PlannerCsvRow = {
   keyword: string;
@@ -26,17 +26,31 @@ export type PlannerCsvParseResult = {
 type Column = "keyword" | "volume" | "competition" | "competitionIndex" | "lowBid" | "highBid";
 
 const COLUMN_NAMES: Record<Column, string[]> = {
-  keyword: ["keyword", "parola chiave", "parole chiave"],
-  volume: ["avg. monthly searches", "media ricerche mensili"],
-  competition: ["competition", "concorrenza"],
-  competitionIndex: ["competition (indexed value)", "concorrenza (valore indicizzato)"],
-  lowBid: ["top of page bid (low range)", "offerta per la parte superiore della pagina (intervallo basso)"],
-  highBid: ["top of page bid (high range)", "offerta per la parte superiore della pagina (intervallo alto)"],
+  keyword: ["keyword", "parola chiave", "parole chiave", "palabra clave", "palabras clave"],
+  volume: ["avg. monthly searches", "media ricerche mensili", "promedio de búsquedas mensuales"],
+  competition: ["competition", "concorrenza", "competencia", "competitividad"],
+  competitionIndex: [
+    "competition (indexed value)",
+    "concorrenza (valore indicizzato)",
+    "competencia (valor indexado)",
+    "competitividad (valor indexado)",
+  ],
+  lowBid: [
+    "top of page bid (low range)",
+    "offerta per la parte superiore della pagina (intervallo basso)",
+    "puja por la parte superior de la página (intervalo bajo)",
+  ],
+  highBid: [
+    "top of page bid (high range)",
+    "offerta per la parte superiore della pagina (intervallo alto)",
+    "puja por la parte superior de la página (intervalo alto)",
+  ],
 };
 
 const COMPETITION_LEVELS = new Map<string, number>([
   ["low", 0.2],
   ["bassa", 0.2],
+  ["baja", 0.2],
   ["medium", 0.5],
   ["media", 0.5],
   ["high", 0.8],
@@ -103,12 +117,15 @@ function columnOf(name: string): Column | undefined {
   return (Object.keys(COLUMN_NAMES) as Column[]).find((column) => COLUMN_NAMES[column].includes(normalized));
 }
 
-/** Intero con separatori delle migliaia (punto, virgola, spazi) o numero con suffisso K/M e decimali localizzati. */
+/**
+ * Intero con separatori delle migliaia (punto, virgola, spazi) o numero con suffisso K/M (o «mil», le migliaia in
+ * spagnolo: «10 mil») e decimali localizzati.
+ */
 function parseCount(raw: string): number | null {
   const value = raw.replace(SPACES, "");
-  const suffixed = value.match(/^(\d+(?:[.,]\d+)?)([kKmM])$/);
+  const suffixed = value.match(/^(\d+(?:[.,]\d+)?)(mil|[km])$/i);
   if (suffixed) {
-    return Math.round(Number(suffixed[1].replace(",", ".")) * (/[kK]/.test(suffixed[2]) ? 1_000 : 1_000_000));
+    return Math.round(Number(suffixed[1].replace(",", ".")) * (/^(k|mil)$/i.test(suffixed[2]) ? 1_000 : 1_000_000));
   }
   if (/^\d{1,3}([.,]\d{3})+$/.test(value) || /^\d+$/.test(value)) {
     return Number(value.replace(/[.,]/g, ""));

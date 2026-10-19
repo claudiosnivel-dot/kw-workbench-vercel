@@ -1,5 +1,6 @@
 // Gate di T-3702 (AC-3702-1, D-44): la ricerca usa solo le composizioni globali della sua lingua; una lingua senza
 // composizioni cerca la parola, la parola con le lettere e con le cifre. Autocomplete simulato, nessuna chiamata reale.
+// Gate di T-5001 (AC-5001-1, D-47): una ricerca in spagnolo usa le 8 composizioni spagnole del seed.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { enqueueExtractionJob, runJobById } from "@/lib/modules/jobs/job-runner";
 import { prisma } from "@/lib/prisma";
@@ -22,6 +23,31 @@ vi.mock("@/lib/modules/providers/autocomplete/factory", () => ({
 
 const LETTERS = Array.from({ length: 26 }, (_, index) => String.fromCharCode(97 + index));
 const DIGITS = Array.from({ length: 10 }, (_, index) => String(index));
+
+/** La parola, la parola con a…z e con 0…9: le query di una ricerca senza composizioni. */
+function baseQueries(seed: string): string[] {
+  return [seed, ...LETTERS.map((letter) => `${seed} ${letter}`), ...DIGITS.map((digit) => `${seed} ${digit}`)];
+}
+
+// Composizioni italiane e inglesi del seed (T-3702), scritte qui per verificare che la ricerca spagnola non le usi.
+const OTHER_LANGUAGE_PATTERNS = [
+  "{seed} for beginners",
+  "best {seed}",
+  "{seed} near me",
+  "how to {seed}",
+  "{seed} vs {seed} alternative",
+  "free {seed} tool",
+  "{seed} template",
+  "{seed} examples",
+  "{seed} per",
+  "{seed} vicino a me",
+  "{seed} recensioni",
+  "{seed} prezzo",
+  "{seed} online",
+  "migliori {seed}",
+  "{seed} offerte",
+  "{seed} opinioni",
+];
 
 /** Query della ricerca di un argomento con una sola seed nella lingua data. */
 async function queriesOf(workspaceId: string, languageCode: string, countryCode: string, seed: string): Promise<string[]> {
@@ -52,21 +78,45 @@ beforeEach(async () => {
 
 describe("composizioni nella lingua della ricerca", () => {
   // covers: AC-3702-1
-  it("italiano con le composizioni italiane, inglese con le inglesi, spagnolo solo con parola, lettere e cifre", async () => {
+  // impacted-by: T-5001 (lo spagnolo ha le sue composizioni: la lingua senza composizioni è il francese)
+  it("italiano con le composizioni italiane, inglese con le inglesi, francese solo con parola, lettere e cifre", async () => {
     const { user } = await createUserWithSession({ displayName: "t3702-owner" });
     const workspaceId = await personalWorkspaceId(user.id);
 
     const italian = await queriesOf(workspaceId, "it", "IT", "letto ospedaliero");
     const english = await queriesOf(workspaceId, "en", "US", "running shoes");
-    const spanish = await queriesOf(workspaceId, "es", "ES", "zapatillas");
+    const french = await queriesOf(workspaceId, "fr", "FR", "chaussures");
 
     expect(italian).toContain("letto ospedaliero prezzo");
     expect(italian).toContain("migliori letto ospedaliero");
     expect(italian.filter((query) => query.includes("near me") || query.includes("best"))).toEqual([]);
     expect(english).toContain("best running shoes");
     expect(english.filter((query) => query.includes("prezzo"))).toEqual([]);
-    expect([...spanish].sort()).toEqual(
-      ["zapatillas", ...LETTERS.map((letter) => `zapatillas ${letter}`), ...DIGITS.map((digit) => `zapatillas ${digit}`)].sort()
-    );
+    expect([...french].sort()).toEqual(baseQueries("chaussures").sort());
+  });
+
+  // covers: AC-5001-1
+  it("spagnolo con le 8 composizioni spagnole e nessuna italiana o inglese", async () => {
+    const { user } = await createUserWithSession({ displayName: "t5001-owner" });
+    const workspaceId = await personalWorkspaceId(user.id);
+
+    const spanish = await queriesOf(workspaceId, "es", "ES", "cama de hospital");
+
+    const compositions = [
+      "qué es cama de hospital",
+      "cama de hospital precio",
+      "comprar cama de hospital",
+      "cama de hospital con",
+      "mejor cama de hospital",
+      "tipos de cama de hospital",
+      "cama de hospital opiniones",
+      "cama de hospital cerca de mí",
+    ];
+    for (const query of compositions) {
+      expect(spanish).toContain(query);
+    }
+    const others = OTHER_LANGUAGE_PATTERNS.map((pattern) => pattern.replaceAll("{seed}", "cama de hospital"));
+    expect(spanish.filter((query) => others.includes(query))).toEqual([]);
+    expect([...spanish].sort()).toEqual([...baseQueries("cama de hospital"), ...compositions].sort());
   });
 });

@@ -158,7 +158,7 @@ Le versioni sono fissate in modo esatto, perché al 2026-10-02 i dist-tag `lates
     - id: AC-403-4
       given: "migrazioni applicate e seed eseguito due volte di seguito con npx prisma db seed"
       when: "si eseguono la suite del seed di T-204 e le caratterizzazioni T-104..T-107"
-      then: "brand_blacklist globali = 5 righe, expansion_patterns globali = 16 righe (emendato da T-3702 il 2026-10-18, D-44: 8 per lingua, prima 8), tutte le suite escono 0 e nessuno snapshot risulta modificato"
+      then: "brand_blacklist globali = 5 righe, expansion_patterns globali = 24 righe (emendato da T-5001 il 2026-10-19, D-47: 8 per ciascuna di en, it ed es, prima 16; emendato da T-3702 il 2026-10-18, D-44: prima 8), tutte le suite escono 0 e nessuno snapshot risulta modificato"
 
   target_tests:
     - file: "tests/integration/prisma-client.test.ts"
@@ -404,3 +404,4 @@ Gli ID e i `depends_on` sono quelli dell'outline; questi artefatti sono usati ma
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Semantico: `self-check-checklist.md` punti 6-10.
 - Emendamento dichiarato (2026-10-18, costruzione del macrotask 37, T-3702, D-44): dopo il seed le righe globali di expansion_patterns sono 16 (8 inglesi e 8 italiane), quindi AC-403-4 ne attende 16; lo snapshot del golden master resta invariato perché il test registra le sue 8 composizioni con la lingua del progetto (it).
+- Emendamento dichiarato (2026-10-19, costruzione del macrotask 50, T-5001, D-47): dopo il seed le righe globali di expansion_patterns sono 24 (8 inglesi, 8 italiane e 8 spagnole), quindi AC-403-4 ne attende 24; lo snapshot del golden master resta invariato (il test registra le sue composizioni italiane).

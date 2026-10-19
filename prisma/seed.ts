@@ -11,6 +11,8 @@ export const DEFAULT_BRANDS = [
 /**
  * Composizioni globali per lingua (T-3702, D-44): la ricerca usa solo quelle della sua lingua. Il set italiano è stato
  * scelto il 2026-10-18 contando i suggerimenti di Google su quattro parole di prova (le 8 con più suggerimenti su 16).
+ * Il set spagnolo (T-5001, D-47) è stato scelto il 2026-10-19 allo stesso modo in es/ES ed es/MX, fra 22 candidate e
+ * contando i suggerimenti nuovi rispetto a parola, lettere e cifre (conteggi in docs/I18N-ES.md).
  */
 export const DEFAULT_PATTERNS = {
   en: [
@@ -32,6 +34,16 @@ export const DEFAULT_PATTERNS = {
     "migliori {seed}",
     "{seed} offerte",
     "{seed} opinioni",
+  ],
+  es: [
+    "qué es {seed}",
+    "{seed} precio",
+    "comprar {seed}",
+    "{seed} con",
+    "mejor {seed}",
+    "tipos de {seed}",
+    "{seed} opiniones",
+    "{seed} cerca de mí",
   ],
 } as const;
 

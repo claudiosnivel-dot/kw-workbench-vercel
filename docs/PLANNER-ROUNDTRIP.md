@@ -48,8 +48,10 @@ Annotare qui il limite osservato.
 Il parser (T-905) rileva l'encoding dal BOM (UTF-16LE, UTF-16BE, UTF-8), il separatore (tab, punto e virgola,
 virgola) e la riga dei nomi colonna dopo le eventuali righe di titolo; riconosce le colonne in inglese
 («Keyword», «Avg. monthly searches», «Competition», «Competition (indexed value)», «Top of page bid (low
-range)», «Top of page bid (high range)») e in italiano. Un volume a intervallo («1K – 10K») vale il punto
-medio con precisione `range` (D-17); «--» o vuoto non porta metriche. Ogni riga si abbina alle candidate con
+range)», «Top of page bid (high range)»), in italiano e in spagnolo («Palabra clave», «Promedio de búsquedas
+mensuales», «Competencia» o «Competitividad», «Puja por la parte superior de la página (intervalo bajo)» e
+«(intervalo alto)», T-5002). Un volume a intervallo («1K – 10K», «10 mil - 100 mil», «1000 - 10.000») vale il
+punto medio con precisione `range` (D-17); «--» o vuoto non porta metriche. Ogni riga si abbina alle candidate con
 lo stesso canonical nella lingua effettiva della sezione; le candidate ricevono volumi, concorrenza, offerte,
 provider `PLANNER_CSV`, stato `imported` e punteggio ricalcolato, tutto in una transazione.
 
@@ -60,7 +62,9 @@ riepilogo per segmento senza keyword («Tutti», «Italia», scartate), volumi c
 nulla («50000.0», 0 o 1 decimale), offerte tra virgolette con la virgola decimale («"1,35"»), concorrenza in
 italiano («Bassa», «Alta») con il valore indicizzato, «∞» nelle variazioni. La fixture
 `tests/fixtures/planner/keyword-stats-real-2026-10-utf16le.csv` riproduce questa struttura con keyword
-anonimizzate. Restano da verificare i nomi delle colonne di un file scaricato con l'interfaccia in italiano.
+anonimizzate. Restano da verificare i nomi delle colonne di un file scaricato con l'interfaccia in italiano e
+in spagnolo: la fixture spagnola `tests/fixtures/planner/keyword-planner-es.csv` è costruita dalle intestazioni
+della guida di Google Ads in spagnolo e un file reale la sostituirebbe.
 
 **Re-run** (D-19 emendata il 2026-10-06): con il provider di metriche della sezione «Nessuna metrica» (NONE)
 le keyword ancora prodotte conservano i volumi importati, con la data dell'import, e il punteggio si ricalcola
