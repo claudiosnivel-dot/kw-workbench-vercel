@@ -29,10 +29,15 @@ export function buildPoolConfig(source: EnvSource = process.env): PoolConfig {
   };
 }
 
+/**
+ * La password di WordPress cifrata (T-4601) resta fuori da ogni lettura del progetto che non la chiede con select:
+ * pagine, dashboard e risposte che passano la riga intera non la vedono mai (CWE-312).
+ */
 function createPrismaClient(): PrismaClient {
   return new PrismaClient({
     adapter: new PrismaPg(buildPoolConfig()),
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    omit: { project: { wp_app_password_encrypted: true } },
   });
 }
 

@@ -199,6 +199,30 @@
       "counter": "{count} of {max} characters",
       "openRouter": "These texts are sent to OpenRouter together with the keywords when you generate an article.",
       "readOnly": "Only people who can edit the project can change these texts."
+    },
+    "wordpress": {
+      "title": "WordPress",
+      "intro": "Connect your site to send articles as drafts to review in WordPress, with no plugin to install.",
+      "siteUrl": "WordPress site address",
+      "siteUrlHint": "For example https://www.example.com: https addresses only.",
+      "username": "WordPress username",
+      "appPassword": "Application password",
+      "appPasswordSaved": "Saved and encrypted: type it again to change the address or the username.",
+      "save": "Save connection",
+      "saving": "Saving…",
+      "saved": "Connection saved.",
+      "test": "Test connection",
+      "testing": "Testing…",
+      "testOk": "Connected as {name}.",
+      "testNoEditPosts": "This user can't write posts: use an Author, Editor or Administrator user.",
+      "disconnect": "Disconnect",
+      "guide": {
+        "title": "How to create an application password",
+        "step1": "In WordPress, open Users → Profile.",
+        "step2": "Under «Application Passwords», type a name such as Titan SEO and create the password.",
+        "step3": "Copy the 24-character password and paste it here: spaces don't matter.",
+        "structuredData": "Structured data stays in the content only if the WordPress user is an administrator (unfiltered_html permission): with other roles WordPress removes it."
+      }
     }
   },
   "jobs": {
@@ -424,7 +448,12 @@
     "AI_BUSY": "All the free models are busy: try again in a few minutes.",
     "AI_DAILY_LIMIT": "Today's AI requests have run out: try again tomorrow.",
     "ARTICLE_NOT_FOUND": "Article not found.",
-    "ARTICLE_VERSION_CONFLICT": "This article was changed elsewhere: reload the page."
+    "ARTICLE_VERSION_CONFLICT": "This article was changed elsewhere: reload the page.",
+    "WP_NOT_CONFIGURED": "Connect the project to WordPress first, in the project settings.",
+    "WP_AUTH_FAILED": "WordPress did not accept the username and application password: check them and try again.",
+    "WP_NOT_FOUND": "The site does not answer like WordPress: check the address and that the REST API is turned on.",
+    "WP_UNREACHABLE": "The WordPress site can't be reached: check the address and try again shortly.",
+    "WP_REJECTED": "WordPress refused the article: try again or check the WordPress user's permissions."
   },
   "errorPages": {
     "error": {
@@ -1927,6 +1956,13 @@
         "text": "{count, plural, one {# fact to check} other {# facts to check}} still in the text: check them before you publish the article.",
         "continue": "Continue anyway",
         "back": "Back to the text"
+      },
+      "wordpress": {
+        "send": "Send to WordPress",
+        "update": "Update the WordPress draft",
+        "sending": "Sending to WordPress…",
+        "draft": "WordPress draft",
+        "sent": "Draft sent to WordPress."
       }
     },
     "marks": {

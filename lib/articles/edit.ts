@@ -76,7 +76,7 @@ function cleanBody(body: string, links: ReadonlyMap<string, string>): string {
 }
 
 /** Articolo della pagina del piano corrente, senza lavori attivi; altrimenti 404, 409 STRATEGY_READ_ONLY o JOB_ALREADY_ACTIVE. */
-async function requireIdleArticle(actor: Actor, projectId: string, strategyId: string, pageId: string) {
+export async function requireIdleArticle(actor: Actor, projectId: string, strategyId: string, pageId: string) {
   const project = await requireProjectAccess(actor, projectId, "strategy.write", {});
   await requirePlanPage(project, strategyId, pageId);
   const article = await findArticle(project, strategyId, pageId);

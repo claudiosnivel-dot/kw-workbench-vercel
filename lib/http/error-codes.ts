@@ -125,6 +125,12 @@ export const API_ERROR_CODES = [
   // Articoli con l'AI (T-4002, T-4402, D-46).
   "ARTICLE_NOT_FOUND",
   "ARTICLE_VERSION_CONFLICT",
+  // Collegamento a WordPress e invio delle bozze (T-4601, T-4602).
+  "WP_NOT_CONFIGURED",
+  "WP_AUTH_FAILED",
+  "WP_NOT_FOUND",
+  "WP_UNREACHABLE",
+  "WP_REJECTED",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
