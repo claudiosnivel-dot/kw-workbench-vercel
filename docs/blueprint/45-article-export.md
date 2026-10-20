@@ -112,7 +112,7 @@ Dopo il modulo 44 l'articolo si legge e si modifica nell'app. Dopo questo modulo
 - Emendamento dichiarato (2026-10-20, costruzione): AC-4501-4 parlava di un VIEWER, ruolo che non esiste (D-08: OWNER,
   ADMIN e MEMBER, come per AC-4001-3 nel modulo 40); il criterio parla ora di un MEMBER, il ruolo più basso con
   project.read. Il comportamento del DoD («con i permessi di lettura del piano») è invariato.
-- Note di costruzione (2026-10-20, scelte dell'agente da confermare dall'utente):
+- Note di costruzione (2026-10-20, scelte dell'agente confermate dall'utente lo stesso giorno con AskUserQuestion, D-50; gli avvisi di osv su vite sono diventati il modulo 53):
   - il campo del corpo della PATCH della pagina è `publishedUrl`, in camelCase come `contentType` (T-1904); la colonna è
     `published_url`. L'indirizzo accettato è https assoluto con un host, senza credenziali, fino a 500 caratteri, salvato
     com'è (senza togliere la barra finale); cambiare lo stato in seguito non lo cancella;
