@@ -96,11 +96,14 @@ export function sectionReply(data: SentSectionData): string {
 
 const FAQ_ANSWER = "La risposta dipende da come corri, da quanti chilometri fai ogni settimana e dal terreno: prova le scarpe in negozio prima di scegliere il modello giusto.";
 
-/** Quattro coppie valide di domande frequenti (T-4202): dalle keyword-domanda finché ci sono, poi domande sulla principale. */
+/**
+ * Quattro coppie valide di domande frequenti (T-4202): dalle keyword-domanda finché ci sono, poi domande generiche
+ * senza la keyword principale, così il blocco non supera la densità dei controlli (T-4302).
+ */
 export function faqReply(data: SentFaqData) {
   return {
     faq: [0, 1, 2, 3].map((index) => ({
-      question: `${data.questionKeywords[index] ?? `Domanda ${index + 1} su ${data.mainKeyword}`}?`,
+      question: `${data.questionKeywords[index] ?? `Domanda ${index + 1} sul tema`}?`,
       answer: FAQ_ANSWER,
     })),
   };

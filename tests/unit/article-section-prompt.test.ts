@@ -1,9 +1,10 @@
 // Gate di T-4201 (AC-4201-3): la richiesta di un blocco vieta di inventare prezzi e indica il segnaposto da verificare;
 // i dati del blocco hanno il suo tetto di parole e le sue keyword. In più le istruzioni in spagnolo e in inglese, i link
-// del blocco con l'id breve, l'istruzione dell'autore e il controllo della risposta (keyword principale
-// nell'introduzione, link della scaletta).
+// del blocco con l'id breve, l'istruzione dell'autore, il controllo della risposta (keyword principale
+// nell'introduzione, link della scaletta) e i problemi della riscrittura dei controlli (T-4302).
 import { describe, expect, it } from "vitest";
 import { AiTitlesError } from "@/lib/ai/errors";
+import { buildFaqRequest } from "@/lib/articles/faq-prompt";
 import type { OutlineBlock } from "@/lib/articles/outline-response";
 import { buildSectionRequest, type SectionInput } from "@/lib/articles/section-prompt";
 import { parseSectionResponse } from "@/lib/articles/section-response";
@@ -103,6 +104,23 @@ describe("richiesta di un blocco dell'articolo", () => {
     expect(german).toContain("in German");
     expect(german).toContain("[to verify: …]");
     expect(german).toContain("[source to add]");
+  });
+
+  it("la riscrittura dei controlli (T-4302) porta i problemi tra i dati e la regola che li spiega; la prima stesura no", () => {
+    const problems = [
+      { rule: "phrase", text: "In conclusione" },
+      { rule: "link_missing", target: "page:L1" },
+    ];
+    const rewrite = buildSectionRequest({ ...costInput, problems });
+
+    expect(JSON.parse(rewrite.messages[1].content)).toMatchObject({ problems });
+    expect(rewrite.messages[0].content).toContain("nei dati c'è problems");
+    expect(buildFaqRequest({ ...costInput, problems }).messages[0].content).toContain("nei dati c'è problems");
+    expect(buildSectionRequest({ ...costInput, plan: { ...costInput.plan, language: "es", country: "ES" }, problems }).messages[0].content).toContain(
+      "en los datos está problems"
+    );
+    expect(buildSectionRequest(costInput).messages[0].content).not.toContain("problems");
+    expect(sentData(costInput)).not.toHaveProperty("problems");
   });
 });
 

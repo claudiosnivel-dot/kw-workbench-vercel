@@ -2,6 +2,8 @@
 // nell'ordine, con il link alla pagina pilastro nell'introduzione e una riga di ai_requests per richiesta. In più i dati
 // inviati per un blocco, l'introduzione senza la keyword principale scartata (la scrive il modello successivo) e la
 // riscrittura di un solo blocco con scope SECTION e l'istruzione dell'autore.
+// impacted-by: T-4302 (i controlli riscrivono un'introduzione senza il link obbligatorio alla pilastro: il testo del
+// modello successivo ora lo contiene, così l'introduzione non si riscrive)
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { advanceArticleRun } from "@/lib/articles/run";
@@ -99,17 +101,22 @@ describe("scrittura dei blocchi dell'articolo", () => {
 
   it("un'introduzione senza la keyword principale è scartata e la scrive il modello successivo", async () => {
     await saveArticleSettings({ models: [MODEL_A, MODEL_B] });
-    const { articleId, runId } = await spokeArticle("t4201-c");
+    const { plan, articleId, runId } = await spokeArticle("t4201-c");
+    const valid = "Le scarpe running da donna giuste cambiano la corsa: leggi [la guida](page:L1).";
     fetchMock.mockImplementation(async (_url, init) => {
       const { model } = sentBody(init);
       if (sentData<Partial<SentSectionData>>(init).block?.id !== "INTRO") return articleCompletion(init);
-      return modelReply(model === MODEL_A ? "Un testo che parla d'altro dall'inizio alla fine." : "Le scarpe running da donna giuste cambiano la corsa.", model);
+      return modelReply(model === MODEL_A ? "Un testo che parla d'altro dall'inizio alla fine." : valid, model);
     });
 
     expect(await advanceArticleRun(runId, Date.now() + STEP_MS)).toMatchObject({ status: "completed" });
 
     const [intro] = await sectionsOf(articleId);
-    expect(intro).toMatchObject({ kind: "INTRO", model: MODEL_B, body: "Le scarpe running da donna giuste cambiano la corsa." });
+    expect(intro).toMatchObject({
+      kind: "INTRO",
+      model: MODEL_B,
+      body: `Le scarpe running da donna giuste cambiano la corsa: leggi [la guida](page:${plan.pageIds.hub}).`,
+    });
     expect(await prisma.aiRequest.count({ where: { model: MODEL_A, outcome: "invalid_response" } })).toBe(1);
   });
 });

@@ -1,12 +1,23 @@
 import { buildFaqRequest, type FaqInput } from "@/lib/articles/faq-prompt";
 import { faqMarkdown, parseFaqResponse } from "@/lib/articles/faq-response";
-import { phaseInstruction, readPhaseArticle, saveSectionText, skipPhase } from "@/lib/articles/phase-data";
-import { type PhaseContext, requestForRun, writeRun } from "@/lib/articles/run-context";
+import { type PhaseArticle, phaseInstruction, readPhaseArticle, saveSectionText, skipPhase } from "@/lib/articles/phase-data";
+import { type PhaseContext, type PhaseRun, requestForRun, writeRun } from "@/lib/articles/run-context";
 import { prisma } from "@/lib/prisma";
 
 /** Titolo del blocco FAQ nella lingua del piano (T-4202); inglese per le lingue senza istruzioni proprie. */
 const FAQ_HEADINGS: Record<string, string> = { it: "Domande frequenti", es: "Preguntas frecuentes" };
 const faqHeading = (language: string) => FAQ_HEADINGS[language] ?? "Frequently asked questions";
+
+/** Dati della richiesta delle domande frequenti: la pagina, la scheda, le note, la scaletta e l'istruzione dell'autore. */
+export function faqInput(article: PhaseArticle, run: PhaseRun): FaqInput {
+  return { plan: article.plan, brief: article.brief, notes: article.notes, blocks: article.blocks, instruction: phaseInstruction(run) };
+}
+
+/** Blocco FAQ scritto dal modello (T-4202): il titolo della lingua e le coppie accettate dal controllo, in Markdown. */
+export async function faqText(context: PhaseContext, input: FaqInput): Promise<{ heading: string; body: string; model: string }> {
+  const { value: pairs, model } = await requestForRun(context, buildFaqRequest(input), parseFaqResponse);
+  return { heading: faqHeading(input.plan.language), body: faqMarkdown(pairs), model };
+}
 
 /**
  * Fase faq del lavoro di un articolo (T-4202), dopo sections: una richiesta con le keyword-domanda della pagina, le
@@ -23,9 +34,7 @@ export async function faqPhase(context: PhaseContext): Promise<void> {
     return;
   }
 
-  const input: FaqInput = { plan: article.plan, brief: article.brief, notes: article.notes, blocks: article.blocks, instruction: phaseInstruction(run) };
-  const { value: pairs, model } = await requestForRun(context, buildFaqRequest(input), parseFaqResponse);
-  const text = { heading: faqHeading(article.plan.language), body: faqMarkdown(pairs), model };
+  const text = await faqText(context, faqInput(article, run));
   if (existing) {
     await saveSectionText(context, { phase: context.nextPhase }, existing.id, text);
     return;

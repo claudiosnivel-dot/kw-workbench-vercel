@@ -1,13 +1,24 @@
-import { phaseInstruction, readPhaseArticle, saveSectionText, skipPhase } from "@/lib/articles/phase-data";
-import { type PhaseContext, requestForRun } from "@/lib/articles/run-context";
+import { type PhaseArticle, phaseInstruction, readPhaseArticle, saveSectionText, skipPhase } from "@/lib/articles/phase-data";
+import { type PhaseContext, type PhaseRun, requestForRun } from "@/lib/articles/run-context";
 import { buildSectionRequest, type SectionInput } from "@/lib/articles/section-prompt";
 import { parseSectionResponse } from "@/lib/articles/section-response";
 import type { Prisma } from "@/lib/generated/prisma/client";
 
-/** Posizione del prossimo blocco da scrivere, salvata nel cursore del lavoro come { block: n }; 0 all'inizio della fase. */
-function cursorBlock(cursor: Prisma.JsonValue): number {
+/** Posizione del prossimo blocco da scrivere o controllare, salvata nel cursore del lavoro come { block: n }; 0 all'inizio della fase. */
+export function cursorBlock(cursor: Prisma.JsonValue): number {
   const block = cursor && typeof cursor === "object" && !Array.isArray(cursor) ? cursor.block : undefined;
   return typeof block === "number" ? block : 0;
+}
+
+/** Dati della richiesta per il blocco in position: la pagina, la scheda, le note, la scaletta e l'istruzione dell'autore. */
+export function sectionInput(article: PhaseArticle, run: PhaseRun, position: number): SectionInput {
+  return { plan: article.plan, brief: article.brief, notes: article.notes, blocks: article.blocks, position, instruction: phaseInstruction(run) };
+}
+
+/** Testo di un'introduzione o di un H2 scritto dal modello (T-4201), accettato dal controllo della risposta. */
+export async function sectionText(context: PhaseContext, input: SectionInput): Promise<{ body: string; model: string }> {
+  const { value: body, model } = await requestForRun(context, buildSectionRequest(input), (content) => parseSectionResponse(content, input));
+  return { body, model };
 }
 
 /**
@@ -30,15 +41,7 @@ export async function sectionsPhase(context: PhaseContext): Promise<void> {
     return;
   }
 
-  const input: SectionInput = {
-    plan: article.plan,
-    brief: article.brief,
-    notes: article.notes,
-    blocks: article.blocks,
-    position: target.position,
-    instruction: phaseInstruction(run),
-  };
-  const { value: body, model } = await requestForRun(context, buildSectionRequest(input), (content) => parseSectionResponse(content, input));
+  const text = await sectionText(context, sectionInput(article, run, target.position));
   const more = run.scope === "ARTICLE" && writable.some((section) => section.position > target.position);
-  await saveSectionText(context, more ? { cursor: { block: target.position + 1 } } : { phase: context.nextPhase, cursor: {} }, target.id, { body, model });
+  await saveSectionText(context, more ? { cursor: { block: target.position + 1 } } : { phase: context.nextPhase, cursor: {} }, target.id, text);
 }

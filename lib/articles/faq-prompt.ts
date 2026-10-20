@@ -1,7 +1,7 @@
 import { languageName, spanishMarket } from "@/lib/ai/titles-prompt";
 import { OUTLINE_MAX_SECONDARY } from "@/lib/articles/outline-prompt";
 import type { ModelRequest } from "@/lib/articles/run-context";
-import { styleRules, type WritingInput, writingData } from "@/lib/articles/section-prompt";
+import { problemsRule, styleRules, type WritingInput, writingData } from "@/lib/articles/section-prompt";
 
 /*
  * Richiesta al modello per le domande frequenti dell'articolo (T-4202, D-46): una richiesta dopo i blocchi, con le
@@ -57,10 +57,10 @@ const FAQ_ANSWER = {
   en: `Answer only with a JSON object of the form ${ANSWER_SHAPE}, with no other text.`,
 };
 
-function faqInstructions(language: string, country: string | null): string {
+function faqInstructions(language: string, country: string | null, rewrite: boolean): string {
   const lines = language === "it" ? italianFaq() : language === "es" ? spanishFaq(country) : englishFaq(language);
   const answer = language === "it" ? FAQ_ANSWER.it : language === "es" ? FAQ_ANSWER.es : FAQ_ANSWER.en;
-  return [...lines, ...styleRules(language, country), answer].join("\n");
+  return [...lines, ...styleRules(language, country), ...(rewrite ? [problemsRule(language)] : []), answer].join("\n");
 }
 
 /**
@@ -77,7 +77,7 @@ export function buildFaqRequest(input: FaqInput): ModelRequest {
   };
   return {
     messages: [
-      { role: "system", content: faqInstructions(input.plan.language, input.plan.country) },
+      { role: "system", content: faqInstructions(input.plan.language, input.plan.country, Boolean(input.problems?.length)) },
       { role: "user", content: JSON.stringify(data) },
     ],
     temperature: 0.7,
