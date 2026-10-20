@@ -39,8 +39,9 @@ const PUBLIC_PATHS = new Set([
   "/api/contact",
 ]);
 
-// Passi dei job in background (T-1203): nessuna sessione, solo la firma HMAC verificata dalla rotta.
-const INTERNAL_JOBS_PREFIX = "/api/internal/jobs/";
+// Passi dei job in background (T-1203) e dei lavori degli articoli (T-4101): nessuna sessione, solo la firma HMAC
+// verificata dalla rotta.
+const INTERNAL_STEP_PREFIXES = ["/api/internal/jobs/", "/api/internal/article-runs/"];
 
 // File di public serviti senza login: un solo segmento (es. /robots.txt) con estensione ammessa.
 const PUBLIC_ROOT_FILE = /^\/[^/]+\.(?:txt|xml|ico|png|jpg|jpeg|svg|webp|webmanifest)$/;
@@ -58,7 +59,7 @@ function isPublicPath(pathname: string): boolean {
     return true;
   }
 
-  if (pathname.startsWith(INTERNAL_JOBS_PREFIX)) {
+  if (INTERNAL_STEP_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return true;
   }
 

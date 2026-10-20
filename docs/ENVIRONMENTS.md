@@ -135,6 +135,10 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 - Cron di sicurezza in `vercel.json`: `GET /api/cron/reap-jobs` ogni giorno alle 04:00 UTC, l'unica frequenza
   ammessa sul piano Hobby (precisione oraria); su Pro la frequenza può salire fino a una volta al minuto. Vercel
   invia `CRON_SECRET` come `Authorization: Bearer`; senza `CRON_SECRET` la rotta risponde 401.
+- I lavori degli articoli (T-4101) usano lo stesso schema e le stesse variabili: POST firmata verso
+  `/api/internal/article-runs/{id}/advance` (firma di `article-run:` più l'id, così quella di un job non vale), passi
+  fino a 270 s nella `maxDuration` di 300 s, e ripresa dallo stesso cron `reap-jobs` con `JOB_STALE_AFTER_MS` e
+  `JOB_MAX_ATTEMPTS`.
 
 ## Preview
 

@@ -7,6 +7,7 @@ import { getOpenRouterSettings } from "@/lib/env";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { ArticleLength } from "@/lib/generated/prisma/enums";
 import { AppError, ConflictError, JOB_ERROR_CODES, ValidationError } from "@/lib/http/errors";
+import { scheduleArticleRunContinuation } from "@/lib/modules/jobs/continuation";
 import { findPlanId, requirePlanPage } from "@/lib/modules/strategy/service";
 import { prisma } from "@/lib/prisma";
 import { enforceRateLimits } from "@/lib/security/rate-limit";
@@ -14,8 +15,8 @@ import { rateLimitRules } from "@/lib/security/rate-limit-config";
 
 /*
  * Articoli con l'AI (T-4002, D-46): avvio della generazione dell'articolo di una pagina del piano con i limiti, lettura
- * dell'articolo con i blocchi e il lavoro attivo, annullamento del lavoro. Il motore che fa avanzare i lavori arriva con
- * il modulo 41; qui il lavoro nasce pending.
+ * dell'articolo con i blocchi e il lavoro attivo, annullamento del lavoro. Il lavoro nasce pending e il primo passo del
+ * motore (T-4101, lib/articles/run.ts) parte con la continuazione programmata dopo l'avvio.
  */
 
 type Actor = { id: string; isRootAdmin: boolean };
@@ -87,8 +88,9 @@ const isUniqueViolation = (error: unknown) => error instanceof Prisma.PrismaClie
  * pagina del piano corrente (404, 409 STRATEGY_READ_ONLY); articoli spenti o chiave assente → 503 AI_NOT_CONFIGURED;
  * un lavoro attivo sull'articolo → 409 JOB_ALREADY_ACTIVE; poi i limiti. In una transazione crea o sostituisce
  * l'articolo (GENERATING, blocchi, meta e controlli cancellati, version cresciuta), crea il lavoro pending con il
- * workspace del progetto e porta la pagina da TODO a WRITING. Due avvii insieme: l'indice unico della pagina o quello
- * del lavoro attivo fa fallire il secondo, che risponde 409 (CWE-362).
+ * workspace del progetto e porta la pagina da TODO a WRITING; dopo il commit programma il primo passo del lavoro
+ * (T-4101). Due avvii insieme: l'indice unico della pagina o quello del lavoro attivo fa fallire il secondo, che
+ * risponde 409 (CWE-362).
  */
 export async function startArticle(
   actor: Actor,
@@ -108,8 +110,9 @@ export async function startArticle(
   if (existing && existing.runs.length > 0) throw activeRunError(existing.runs[0].id);
   await consumeArticleLimits(actor, project.workspace_id, settings, page.h2.length);
 
+  let started: { articleId: string; runId: string };
   try {
-    return await prisma.$transaction(async (tx) => {
+    started = await prisma.$transaction(async (tx) => {
       if ((await findPlanId(project.id, tx)) !== strategyId) {
         throw new ConflictError("Le versioni precedenti del piano sono in sola lettura", "STRATEGY_READ_ONLY");
       }
@@ -156,6 +159,8 @@ export async function startArticle(
     if (!isUniqueViolation(error)) throw error;
     throw activeRunError((await findArticle(project, strategyId, pageId))?.runs[0]?.id);
   }
+  scheduleArticleRunContinuation(started.runId);
+  return started;
 }
 
 const ARTICLE_SELECT = {
@@ -246,7 +251,7 @@ export async function readArticle(actor: { id: string }, projectId: string, stra
 
 /**
  * Annulla il lavoro attivo dell'articolo (T-4002): pending o running diventa canceled e il motore si ferma al passo
- * successivo (modulo 41); se era la generazione dell'intero articolo, l'articolo in generazione diventa FAILED con
+ * successivo (T-4101); se era la generazione dell'intero articolo, l'articolo in generazione diventa FAILED con
  * error_code CANCELED. Senza articolo 404 ARTICLE_NOT_FOUND, senza lavoro attivo 409 JOB_NOT_CANCELABLE.
  */
 export async function cancelArticleRun(actor: { id: string }, projectId: string, strategyId: string, pageId: string): Promise<{ runId: string }> {

@@ -37,9 +37,9 @@ function italianInstructions(maxH2: number): string {
 /**
  * Spagnolo del mercato (T-5102, D-47): di Spagna per ES, del paese per un paese ispanofono d'America Latina (con il nome
  * spagnolo del paese, «español de México»), neutro per gli altri; con il vocabolario e la seconda persona plurale del
- * mercato («vosotros» in Spagna, «ustedes» altrove).
+ * mercato («vosotros» in Spagna, «ustedes» altrove). Lo usa anche la scaletta degli articoli (T-4102).
  */
-function spanishMarket(country: string | null): { variant: string; vocabulary: string; plural: string } {
+export function spanishMarket(country: string | null): { variant: string; vocabulary: string; plural: string } {
   const code = country?.toUpperCase() ?? "";
   if (code === "ES") {
     return { variant: "español de España", vocabulary: "Usa el vocabulario de España", plural: "«vosotros»" };
@@ -73,7 +73,7 @@ function spanishInstructions(maxH2: number, country: string | null): string {
 }
 
 /** Nome inglese della lingua del piano (de → German); il codice se Intl non lo conosce. */
-function languageName(code: string): string {
+export function languageName(code: string): string {
   try {
     return new Intl.DisplayNames(["en"], { type: "language" }).of(code) ?? code;
   } catch {

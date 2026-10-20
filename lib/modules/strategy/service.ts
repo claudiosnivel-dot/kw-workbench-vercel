@@ -11,6 +11,7 @@ import {
   applyOperation,
   applyPagePatch,
   type EditorState,
+  orderedSpokes,
   type PagePatch,
   type StrategyOperation,
   titlePageOf,
@@ -744,6 +745,47 @@ export async function readPlanTitlePage(
   const page = state.pages.find((item) => item.id === pageId);
   if (!page) throw new StrategyNotFoundError();
   return { language: record.language, country: await strategyCountry(prisma, record), page: titlePageOf(state, page) };
+}
+
+/** Pagina del sito collegabile da un articolo (T-4102): la pilastro di uno spoke o uno spoke, con il suo H1. */
+export type LinkablePage = { pageId: string; role: "pillar" | "spoke"; h1: string };
+
+/** Pagina del piano da cui nasce la scaletta di un articolo (T-4102), con lingua e paese del piano. */
+export type ArticlePlanPage = {
+  language: string;
+  country: string;
+  page: TitlePage;
+  h1: string;
+  h2: string[];
+  linkable: LinkablePage[];
+};
+
+/**
+ * Pagina dell'articolo letta dal lavoro in background (T-4102), senza sessione: la strategia è quella della pagina, nel
+ * progetto dell'articolo (CWE-639). Collegabili: per uno spoke la sua pilastro e gli altri spoke dello stesso hub, per
+ * un hub i suoi spoke, in ordine di priorità.
+ */
+export async function readArticlePlanPage(projectId: string, pageId: string): Promise<ArticlePlanPage> {
+  const owner = await prisma.strategyPage.findFirst({ where: { id: pageId, strategy: { project_id: projectId } }, select: { strategy_id: true } });
+  if (!owner) throw new StrategyNotFoundError();
+  const record = await findRecord(prisma, projectId, owner.strategy_id);
+  const state = toEditorState(record);
+  const page = state.pages.find((item) => item.id === pageId);
+  if (!page) throw new StrategyNotFoundError();
+  const hub = page.kind === "SPOKE" ? state.pages.find((item) => item.id === page.hubPageId) : undefined;
+  const spokes = page.kind === "HUB" ? orderedSpokes(state, page.id) : hub ? orderedSpokes(state, hub.id).filter((item) => item.id !== page.id) : [];
+  const linkable: LinkablePage[] = [
+    ...(hub ? [{ pageId: hub.id, role: "pillar" as const, h1: hub.h1 }] : []),
+    ...spokes.map((spoke) => ({ pageId: spoke.id, role: "spoke" as const, h1: spoke.h1 })),
+  ];
+  return {
+    language: record.language,
+    country: await strategyCountry(prisma, record),
+    page: titlePageOf(state, page),
+    h1: page.h1,
+    h2: page.h2,
+    linkable,
+  };
 }
 
 /**
