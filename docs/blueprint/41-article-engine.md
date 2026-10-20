@@ -30,7 +30,7 @@ Un articolo costa 10-25 richieste da circa 10 secondi: più del tempo di una ric
     - id: AC-4101-1
       given: "un articolo con un lavoro pending e un OpenRouter simulato che risponde alla scaletta"
       when: "si esegue advanceArticleRun fino alla fine"
-      then: "il lavoro è completed, l'articolo READY con la scaletta salvata, e ai_requests ha 1 riga con feature article e il workspace del progetto"
+      then: "il lavoro è completed, l'articolo READY con la scaletta salvata, e ai_requests ha una riga per richiesta (scaletta, blocchi e FAQ del modulo 42), tutte con feature article e il workspace del progetto"
     - id: AC-4101-2
       given: "un lavoro running con locked_until passato da 10 minuti"
       when: "si invoca GET /api/cron/reap-jobs con il Bearer giusto"
@@ -74,7 +74,7 @@ Un articolo costa 10-25 richieste da circa 10 secondi: più del tempo di una ric
   acceptance_criteria:
     - id: AC-4102-1
       given: "uno spoke del piano con 3 H2, la scheda del progetto e un OpenRouter simulato che restituisce una scaletta valida"
-      when: "si esegue il lavoro dell'articolo con length MEDIUM"
+      when: "si esegue la fase della scaletta del lavoro dell'articolo con length MEDIUM"
       then: "l'articolo ha meta_title e meta_description con la keyword principale, lo slug dalla keyword principale e 4 blocchi vuoti (INTRO e 3 H2 nell'ordine del piano); il corpo inviato al modello contiene la scheda, le note e l'H1 della pagina pilastro, e non contiene nome del progetto, volumi o punteggi"
     - id: AC-4102-2
       given: "risposte simulate di scaletta con un H2 mancante, con 3000 parole per un articolo MEDIUM, con un link verso una pagina non collegabile e, per uno spoke, senza link alla pagina pilastro"
@@ -107,3 +107,4 @@ Un articolo costa 10-25 richieste da circa 10 secondi: più del tempo di una ric
 - Emendamento dichiarato (2026-10-18, D-47, prima della costruzione): lo spagnolo (moduli 47-51) si costruisce prima di questo modulo, quindi ogni testo nuovo va nei cataloghi it, en ed es-ES, con le differenze in es-419, e il controllo di parità di T-4702 vale anche per i namespace di questo modulo.
 - Emendamento dichiarato (2026-10-18, D-47): istruzioni della scaletta anche in spagnolo, con la variante del paese.
 - Note di costruzione (2026-10-20), scelte dell'agente da confermare. T-4101: un passo dura al massimo 270 s con la lease fino a 30 s dopo (dentro la maxDuration di 300 s) e una nuova richiesta parte solo se restano 120 s; continuazione con `scheduleArticleRunContinuation` accanto a `scheduleJobContinuation` (stessa POST firmata, firma di `articleRunStepId`), programmata anche dall'avvio di T-4002 dopo il commit; stessi `JOB_STALE_AFTER_MS` e `JOB_MAX_ATTEMPTS` dei job (`staleWhere` condiviso); il cron somma i lavori degli articoli nei conteggi `{ resumed, failed }`, corpo invariato; risposte tutte scartate dal controllo → `AI_INVALID_RESPONSE` (la richiesta con le riserve da sola dà `AI_UNAVAILABLE`), chiave assente durante il lavoro → `AI_UNAVAILABLE`; le righe di `ai_requests` hanno `by_root_admin` di chi ha avviato l'articolo; a lavoro completato `progress_done` = `progress_total`; nessun recupero al polling dell'articolo (sul piano Hobby il cron gira una volta al giorno, alle 04:00 UTC): da valutare con l'editor del modulo 44. T-4102: id brevi per le pagine collegabili (`L1`...) e per i blocchi (`INTRO`, `H2_1`...), i link salvati con l'id della pagina del piano; slug, nomi dei file e prompt delle immagini calcolati dal codice (il modello dà blocco, scopo, testo alternativo e soggetto), copertina `{slug}.webp` e poi `{slug}-2.webp`...; oltre sei immagini si tengono le prime sei; nome e indirizzo dell'attività e indirizzo del sito non vanno al modello (servono ai dati strutturati e ai link dell'export); `max_tokens` 4000; `outline` salvata come `{ model, blocks }`; il blocco FAQ nasce con il modulo 42.
+- Emendamento dichiarato (2026-10-20, con la costruzione del modulo 42): dopo la scaletta il lavoro scrive i blocchi e le FAQ (T-4201, T-4202), quindi AC-4101-1 conta una riga di ai_requests per richiesta (era 1 riga, la sola scaletta) e AC-4102-1 esegue la sola fase della scaletta (i blocchi sono vuoti finché non li scrive la fase sections).
