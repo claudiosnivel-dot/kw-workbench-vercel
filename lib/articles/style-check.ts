@@ -102,7 +102,7 @@ function phrasePattern(phrase: string): string {
       part
         .split(" ")
         .map((word) => escapeRegExp(word).replace(/'/g, "['’]"))
-        .join("\\s+")
+        .join(String.raw`\s+`)
     )
     .join(`${NOT_WORD_AFTER}[^.!?\\n]{1,200}?${NOT_WORD_BEFORE}`);
 }
