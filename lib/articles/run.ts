@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { AiTitlesError } from "@/lib/ai/errors";
+import { checksPhase } from "@/lib/articles/checks";
 import { faqPhase } from "@/lib/articles/faq";
 import { outlinePhase } from "@/lib/articles/outline";
 import { type PhaseContext, REQUEST_DEADLINE_MS, type RunLease, RunLeaseLostError, writeRun } from "@/lib/articles/run-context";
@@ -30,16 +31,18 @@ export type ArticleRunErrorCode = "AI_BUSY" | "AI_DAILY_LIMIT" | "AI_UNAVAILABLE
 
 type Phase = { name: string; run: (context: PhaseContext) => Promise<void> };
 
-/** Fasi del lavoro dell'articolo intero, in ordine: scaletta (T-4102), blocchi (T-4201) e FAQ (T-4202); il modulo 43 aggiunge i controlli. */
+/** Fasi del lavoro dell'articolo intero, in ordine: scaletta (T-4102), blocchi (T-4201), FAQ (T-4202) e controlli (T-4302). */
 const ARTICLE_PHASES: Phase[] = [
   { name: "outline", run: outlinePhase },
   { name: "sections", run: sectionsPhase },
   { name: "faq", run: faqPhase },
+  { name: "checks", run: checksPhase },
 ];
 
 /**
  * Fasi della riscrittura di un blocco (scope SECTION, modulo 44): il lavoro nasce nella fase sections, che riscrive
- * un'introduzione o un H2; la fase faq riscrive il blocco FAQ. Ognuna salta il blocco che non è suo.
+ * un'introduzione o un H2; la fase faq riscrive il blocco FAQ. Ognuna salta il blocco che non è suo; la fase checks
+ * controlla il blocco riscritto e ricalcola il rapporto SEO dell'articolo.
  */
 const SECTION_PHASES: Phase[] = ARTICLE_PHASES.slice(1);
 

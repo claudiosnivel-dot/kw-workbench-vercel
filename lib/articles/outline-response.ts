@@ -128,11 +128,15 @@ function parseBlocks(value: unknown, input: OutlineInput): OutlineBlock[] {
   });
 }
 
+/** Pagine da collegare per forza (T-4102), anche per i controlli (T-4302): per uno spoke la pilastro, per una pilastro ogni spoke. */
+export function requiredLinkPages(plan: OutlineInput["plan"]): string[] {
+  return plan.linkable.filter((page) => (plan.page.kind === "HUB" ? page.role === "spoke" : page.role === "pillar")).map((page) => page.pageId);
+}
+
 /** Link obbligatori (T-4102): uno spoke collega la sua pilastro, una pilastro ognuno dei suoi spoke. */
 function checkRequiredLinks(blocks: OutlineBlock[], input: OutlineInput): void {
   const linked = new Set(blocks.flatMap((block) => block.links));
-  const required = input.plan.linkable.filter((page) => (input.plan.page.kind === "HUB" ? page.role === "spoke" : page.role === "pillar"));
-  if (required.some((page) => !linked.has(page.pageId))) {
+  if (requiredLinkPages(input.plan).some((pageId) => !linked.has(pageId))) {
     throw invalid(input.plan.page.kind === "HUB" ? "manca il link a uno spoke" : "manca il link alla pagina pilastro");
   }
 }

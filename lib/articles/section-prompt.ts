@@ -11,8 +11,21 @@ import type { ModelRequest } from "@/lib/articles/run-context";
  * Le regole di stile valgono anche per le domande frequenti (T-4202).
  */
 
-/** Dati comuni della scrittura (T-4201, T-4202): la pagina, la scheda, le note, la scaletta salvata e l'istruzione dell'autore. */
-export type WritingInput = Pick<OutlineInput, "plan" | "brief" | "notes"> & { blocks: OutlineBlock[]; instruction: string | null };
+/**
+ * Problema trovato dai controlli nella stesura precedente di un blocco (T-4302): un tratto AI con il testo trovato, una
+ * keyword da usare, la keyword principale da usare al massimo max volte o un link da inserire verso target.
+ */
+export type RewriteProblem = { rule: string; text?: string; keyword?: string; max?: number; target?: string };
+
+/**
+ * Dati comuni della scrittura (T-4201, T-4202): la pagina, la scheda, le note, la scaletta salvata e l'istruzione
+ * dell'autore; per la riscrittura dei controlli (T-4302) anche i problemi della stesura precedente.
+ */
+export type WritingInput = Pick<OutlineInput, "plan" | "brief" | "notes"> & {
+  blocks: OutlineBlock[];
+  instruction: string | null;
+  problems?: RewriteProblem[];
+};
 
 /** Blocco da scrivere: la sua posizione nella scaletta (0 per l'introduzione). */
 export type SectionInput = WritingInput & { position: number };
@@ -58,7 +71,19 @@ export function writingData(input: WritingInput) {
     notes: input.notes,
     outline: input.blocks.map((block) => ({ id: ids[block.position], heading: block.heading, covers: block.covers })),
     ...(input.instruction ? { instruction: input.instruction } : {}),
+    ...(input.problems?.length ? { problems: input.problems } : {}),
   };
+}
+
+/** Regola della riscrittura dei controlli (T-4302), solo quando i dati hanno problems: cosa vuol dire ogni problema. */
+export function problemsRule(language: string): string {
+  if (language === "it") {
+    return "- nei dati c'è problems: è una nuova stesura e problems elenca i problemi che il controllo automatico ha trovato nella stesura precedente, da evitare tutti: phrase, em_dash, emoji, rhetorical_questions e repeated_openings sono tratti tipici dei testi generati (text è il testo trovato), keyword_missing è una keyword da usare, density chiede di usare keyword al massimo max volte, link_missing è un link da inserire verso target;";
+  }
+  if (language === "es") {
+    return "- en los datos está problems: es una nueva redacción y problems enumera los problemas que el control automático ha encontrado en la redacción anterior, que hay que evitar todos: phrase, em_dash, emoji, rhetorical_questions y repeated_openings son rasgos típicos de los textos generados (text es el texto encontrado), keyword_missing es una palabra clave que hay que usar, density pide usar keyword como máximo max veces, link_missing es un enlace que hay que añadir hacia target;";
+  }
+  return "- the data include problems: this is a new draft and problems lists the issues the automatic check found in the previous draft, all to be avoided: phrase, em_dash, emoji, rhetorical_questions and repeated_openings are habits typical of generated text (text is the text found), keyword_missing is a keyword to use, density asks to use keyword at most max times, link_missing is a link to add towards target;";
 }
 
 /** Blocco della scaletta in input.position; un errore se manca (scaletta e blocchi dell'articolo non coincidono). */
@@ -130,10 +155,10 @@ const SECTION_ANSWER = {
   en: "Answer only with the text of the block in Markdown, with no other text.",
 };
 
-function sectionInstructions(language: string, country: string | null): string {
+function sectionInstructions(language: string, country: string | null, rewrite: boolean): string {
   const [opening, ...lines] = language === "it" ? italianInstructions() : language === "es" ? spanishInstructions(country) : englishInstructions(language);
   const answer = language === "it" ? SECTION_ANSWER.it : language === "es" ? SECTION_ANSWER.es : SECTION_ANSWER.en;
-  return [opening, ...lines, ...styleRules(language, country), answer].join("\n");
+  return [opening, ...lines, ...styleRules(language, country), ...(rewrite ? [problemsRule(language)] : []), answer].join("\n");
 }
 
 /**
@@ -158,7 +183,7 @@ export function buildSectionRequest(input: SectionInput): ModelRequest {
   };
   return {
     messages: [
-      { role: "system", content: sectionInstructions(input.plan.language, input.plan.country) },
+      { role: "system", content: sectionInstructions(input.plan.language, input.plan.country, Boolean(input.problems?.length)) },
       { role: "user", content: JSON.stringify(data) },
     ],
     temperature: 0.7,

@@ -269,4 +269,32 @@ modulo 40 prepara i dati e l'avvio; il lavoro che scrive l'articolo arriva con i
   questions» e ogni domanda in grassetto seguita dalla risposta.
 - **Riscrittura di un blocco** (scope `SECTION`, la crea il modulo 44): il lavoro nasce nella fase `sections` con il
   blocco e l'istruzione dell'autore, che va tra i dati; `sections` riscrive un'introduzione o un H2, `faq` il blocco FAQ,
-  e il blocco torna `edited` false. Un articolo intero fa una richiesta per la scaletta, una per blocco e una per le FAQ.
+  e il blocco torna `edited` false. Un articolo intero fa una richiesta per la scaletta, una per blocco e una per le FAQ,
+  più al massimo una riscrittura per blocco dai controlli (modulo 43).
+
+## Articoli con l'AI: controlli e riscrittura (modulo 43)
+
+Il verdetto sul testo è di due controlli deterministici, mai del modello.
+
+- **Tratti AI e dati da verificare** (T-4301, `lib/articles/style-check.ts`): `analyzeStyle(markdown, language)`
+  restituisce le corrispondenze `{ kind, rule, start, end }` (posizioni nel Markdown del blocco, per l'editor), le
+  parole, `score` (tratti AI ogni 300 parole) e `overLimit`. `ai_pattern`: le formule tipiche di italiano, inglese e
+  spagnolo (`phrase`, elenco versionato con `STYLE_RULES_VERSION`) e, per ogni lingua, trattini lunghi (`em_dash`),
+  emoji, più di 2 domande di fila (`rhetorical_questions`) e più di 2 frasi di fila con la stessa parola iniziale
+  (`repeated_openings`). `to_verify`: i segnaposto delle tre lingue, i riferimenti normativi con il numero (`law`),
+  gli importi con €, EUR o USD, le percentuali, gli anni e le cifre di 3 o più caratteri, ognuno contato una volta. La
+  soglia è superata con almeno 2 tratti AI ogni 300 parole, mai meno di 2; i dati da verificare non contano.
+- **SEO** (T-4302, `lib/articles/seo-check.ts`): una keyword compare quando il testo ha, una dopo l'altra, le sue
+  parole nella forma canonica di T-702 senza parole vuote e ridotte alla radice, in qualunque ordine e anche al plurale.
+  Per l'articolo: keyword principale nell'H1, nelle prime 100 parole, nel meta title e nella meta description, meta
+  title fino a 60 e meta description fino a 155 caratteri, densità della keyword principale (almeno 2 occorrenze e più
+  di 2,5 ogni 100 parole è troppo). Per ogni blocco: le keyword assegnate dalla scaletta, la densità e i link
+  obbligatori (la pilastro per uno spoke, ogni spoke per una pilastro) che la scaletta gli ha assegnato.
+- **Fase `checks`** (`lib/articles/checks.ts`), dopo `faq`: un blocco per volta con il cursore `{ block: n }`. Un
+  blocco con la soglia dei tratti AI superata, una keyword assegnata assente, la densità oltre il limite o un link
+  obbligatorio mancante si riscrive una volta con la richiesta della sua fase (blocchi o FAQ) più `problems`, l'elenco
+  dei problemi trovati; un blocco `edited` true non si riscrive, e una riscrittura non riuscita lascia la prima
+  stesura. Il blocco salva `checks` (analisi, problemi SEO e se è stato riscritto); dopo l'ultimo l'articolo salva
+  `seo_report` con la densità, i problemi dell'articolo e i blocchi con i problemi rimasti (`ai_patterns` per la
+  soglia ancora superata). Con lo scope `SECTION` si controlla solo il blocco del lavoro e il rapporto si ricalcola
+  sull'intero articolo. Al massimo una riscrittura per blocco e per lavoro (CWE-770).

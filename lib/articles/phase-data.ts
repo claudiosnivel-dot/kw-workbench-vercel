@@ -6,15 +6,19 @@ import { readArticlePlanPage } from "@/lib/modules/strategy/service";
 import { prisma } from "@/lib/prisma";
 
 /*
- * Letture e scritture comuni alle fasi del lavoro di un articolo (T-4102, T-4201, T-4202): l'articolo con la pagina del
- * piano, la scheda del progetto, la scaletta salvata e i blocchi; il salvataggio di un blocco scritto dal modello e il
- * passaggio alla fase successiva senza richieste. Ogni lettura e scrittura porta il progetto del lavoro (CWE-639).
+ * Letture e scritture comuni alle fasi del lavoro di un articolo (T-4102, T-4201, T-4202, T-4302): l'articolo con la
+ * pagina del piano, la scheda del progetto, la scaletta salvata, le meta e i blocchi con il loro testo; il salvataggio di
+ * un blocco scritto dal modello e il passaggio alla fase successiva senza richieste. Ogni lettura e scrittura porta il
+ * progetto del lavoro (CWE-639).
  */
 
 export type PhaseArticle = OutlineInput & {
   /** Blocchi della scaletta salvata dalla fase outline; vuoto prima della scaletta. */
   blocks: OutlineBlock[];
-  sections: { id: string; position: number; kind: ArticleSectionKind }[];
+  /** Blocchi dell'articolo in ordine, con il testo e se l'autore lo ha cambiato. */
+  sections: { id: string; position: number; kind: ArticleSectionKind; body: string; edited: boolean }[];
+  metaTitle: string | null;
+  metaDescription: string | null;
 };
 
 /** Blocchi della scaletta salvata in articles.outline come { model, blocks } (T-4102). */
@@ -23,7 +27,7 @@ function outlineBlocks(outline: Prisma.JsonValue): OutlineBlock[] {
   return Array.isArray(blocks) ? (blocks as unknown as OutlineBlock[]) : [];
 }
 
-/** Articolo del lavoro con la pagina del piano (T-4102), la scheda del progetto (T-4001), la scaletta e i blocchi in ordine. */
+/** Articolo del lavoro con la pagina del piano (T-4102), la scheda del progetto (T-4001), la scaletta, le meta e i blocchi in ordine. */
 export async function readPhaseArticle(run: PhaseRun): Promise<PhaseArticle> {
   const article = await prisma.article.findFirstOrThrow({
     where: { id: run.articleId, project_id: run.projectId },
@@ -32,8 +36,10 @@ export async function readPhaseArticle(run: PhaseRun): Promise<PhaseArticle> {
       length: true,
       notes: true,
       outline: true,
+      meta_title: true,
+      meta_description: true,
       project: { select: { article_about: true, article_audience: true, article_tone: true } },
-      sections: { orderBy: { position: "asc" }, select: { id: true, position: true, kind: true } },
+      sections: { orderBy: { position: "asc" }, select: { id: true, position: true, kind: true, body: true, edited: true } },
     },
   });
   return {
@@ -43,6 +49,8 @@ export async function readPhaseArticle(run: PhaseRun): Promise<PhaseArticle> {
     length: article.length,
     blocks: outlineBlocks(article.outline),
     sections: article.sections,
+    metaTitle: article.meta_title,
+    metaDescription: article.meta_description,
   };
 }
 
