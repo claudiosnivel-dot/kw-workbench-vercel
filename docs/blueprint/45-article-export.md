@@ -41,9 +41,9 @@ Dopo il modulo 44 l'articolo si legge e si modifica nell'app. Dopo questo modulo
       when: "renderArticleHtml riceve l'articolo"
       then: "l'HTML contiene un solo tag script, quello application/ld+json, e il testo compare come \\u003c/script> dentro il JSON"
     - id: AC-4501-4
-      given: "un VIEWER del progetto e un utente di un altro workspace"
+      given: "un MEMBER del progetto e un utente di un altro workspace"
       when: "chiedono GET .../article/export?format=md"
-      then: "il VIEWER riceve 200 con Content-Disposition attachment e nome file dallo slug con .md; l'altro utente riceve 404"
+      then: "il MEMBER riceve 200 con Content-Disposition attachment e nome file dallo slug con .md; l'altro utente riceve 404"
 
   target_tests:
     - file: "tests/unit/article-render.test.ts"
@@ -109,3 +109,30 @@ Dopo il modulo 44 l'articolo si legge e si modifica nell'app. Dopo questo modulo
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): URL di ripiego site_url più slug con la barra finale; segnaposto immagine come commenti HTML; conferma con il numero dei segnaposto aperti; libreria docx per il file Word.
 - Emendamento dichiarato (2026-10-18, D-47, prima della costruzione): lo spagnolo (moduli 47-51) si costruisce prima di questo modulo, quindi ogni testo nuovo va nei cataloghi it, en ed es-ES, con le differenze in es-419, e il controllo di parità di T-4702 vale anche per i namespace di questo modulo.
 - Emendamento dichiarato (2026-10-18, D-47): la migrazione diventa 0051.
+- Emendamento dichiarato (2026-10-20, costruzione): AC-4501-4 parlava di un VIEWER, ruolo che non esiste (D-08: OWNER,
+  ADMIN e MEMBER, come per AC-4001-3 nel modulo 40); il criterio parla ora di un MEMBER, il ruolo più basso con
+  project.read. Il comportamento del DoD («con i permessi di lettura del piano») è invariato.
+- Note di costruzione (2026-10-20, scelte dell'agente da confermare dall'utente):
+  - il campo del corpo della PATCH della pagina è `publishedUrl`, in camelCase come `contentType` (T-1904); la colonna è
+    `published_url`. L'indirizzo accettato è https assoluto con un host, senza credenziali, fino a 500 caratteri, salvato
+    com'è (senza togliere la barra finale); cambiare lo stato in seguito non lo cancella;
+  - il Markdown dei blocchi si legge con `mdast-util-from-markdown` 2.1.0 (già nell'albero tramite react-markdown, ora
+    dipendenza diretta a versione fissata); l'HTML lo scrive il codice con i soli tag p, h3-h6, ul, ol, li, blockquote,
+    strong, em, br e a con href; HTML grezzo e codice restano testo con le entità; un link page: verso una pagina fuori
+    dal piano resta testo;
+  - i segnaposto immagine vanno dopo il loro blocco con numero, copertina, testo alternativo, nome del file e prompt
+    nella lingua del piano (it, es, altrimenti en); nei commenti anche '<' e '>' diventano entità, così nessun tag
+    compare neppure lì;
+  - il JSON-LD è un solo `@graph` (Article con headline, description e inLanguage; FAQPage dalle coppie del blocco FAQ:
+    un paragrafo tutto in grassetto è la domanda, i blocchi che seguono la risposta; BreadcrumbList; LocalBusiness con
+    nome e indirizzo entrambi presenti);
+  - l'export .html è il frammento da incollare (H1, blocchi e script), senza `<html>` né `<head>`; il nome del file è lo
+    slug in ASCII (altrimenti «article»); lo slug di una pagina senza articolo è quello che la scaletta ricaverebbe
+    dalla keyword principale (`articleSlug` di T-4102, ora esportata);
+  - «Copia» chiede i due export al server e li mette negli appunti con un ClipboardItem (text/html e text/plain), con le
+    Promise dentro il ClipboardItem così il clic resta valido; senza ClipboardItem copia solo il Markdown come testo;
+    copia e download sono spenti mentre un lavoro è attivo;
+  - nel file Word H2 è «Heading 2» e H3 «Heading 3» (H1 «Title»), gli elenchi numerati ripartono da 1 a ogni elenco;
+  - «Segna come pubblicata» usa la version del piano letta dall'editor; un 409 STRATEGY_CONFLICT chiede di ricaricare la
+    pagina; con la pagina pubblicata il pulsante diventa «Cambia l'indirizzo» e l'indirizzo compare come link;
+  - target test scritti dopo il codice di render e migrazione (il comportamento asserito viene dagli AC).
