@@ -98,3 +98,30 @@ Dopo il modulo 45 l'articolo esce con la copia o i file. L'utente vuole caricarl
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): un sito WordPress per progetto; solo bozze; un secondo invio aggiorna la stessa bozza; nomi host che sono indirizzi IP rifiutati.
 - Emendamento dichiarato (2026-10-18, D-47, prima della costruzione): lo spagnolo (moduli 47-51) si costruisce prima di questo modulo, quindi ogni testo nuovo va nei cataloghi it, en ed es-ES, con le differenze in es-419, e il controllo di parità di T-4702 vale anche per i namespace di questo modulo.
 - Emendamento dichiarato (2026-10-18, D-47): la migrazione diventa 0052.
+- Note di costruzione (2026-10-20, scelte dell'agente da confermare dall'utente):
+  - la password cifrata resta fuori da ogni lettura del progetto che non la chiede con select: il client Prisma la
+    omette di default (`omit` in `lib/prisma.ts`), così la risposta della PATCH del progetto, la dashboard e le pagine
+    che leggono la riga intera non la portano mai; la leggono solo il collegamento, la prova, l'invio e l'editor (per
+    sapere se il progetto è collegato);
+  - l'indirizzo del sito usa le regole di `parseSiteUrl` della scheda «Per gli articoli» (T-4001, ora esportata) più il
+    controllo del nome host; la porta non è limitata; per cambiare indirizzo o utente si riscrive anche la password,
+    perché la PUT vuole sempre i tre campi;
+  - i redirect non si seguono mai, nemmeno verso lo stesso host (più stretto del DoD): nella prova un 3xx è
+    WP_UNREACHABLE, nell'invio WP_REJECTED; ogni errore del sito è 502, WP_NOT_CONFIGURED è 409; nella prova un 200 che
+    non è un utente dell'API REST è WP_NOT_FOUND e ogni altro status WP_UNREACHABLE;
+  - la prova e il collegamento usano project.update; il blocco delle impostazioni compare solo con project.update e
+    la nota sui dati strutturati (unfiltered_html) sta nella sua guida;
+  - il contenuto inviato è l'HTML dell'export senza l'H1 (`renderArticleHtml` con `title: false`), perché WordPress
+    riceve l'H1 come titolo;
+  - prima di aggiornare la bozza salvata l'invio la legge (GET posts/{id}?context=edit): se è ancora draft, pending o
+    auto-draft la aggiorna senza cambiarne lo stato; se WordPress non la trova (404 o 410) o non è più una bozza
+    (pubblicata, programmata, privata o nel cestino) ne crea una nuova, così l'app non tocca mai un articolo in linea;
+  - una PUT con un indirizzo diverso da quello salvato e la DELETE tolgono id e link delle bozze degli articoli del
+    progetto, così un invio non aggiorna mai l'articolo di un altro sito;
+  - l'invio vuole l'articolo senza lavori attivi e nella versione corrente del piano (`requireIdleArticle` di T-4402,
+    ora esportata: 409 JOB_ALREADY_ACTIVE o STRATEGY_READ_ONLY); l'id della risposta deve essere un intero positivo
+    entro 2^31-1 (altrimenti WP_REJECTED), il link si salva solo se è http o https entro 500 caratteri;
+  - `useApiData` dà l'errore generico quando la richiesta non parte (prima il caricamento restava acceso) e ha `clear`;
+  - copertura non verificata: tra il controllo del DNS e la connessione di fetch il nome host si risolve di nuovo
+    (DNS rebinding): fissare l'indirizzo vorrebbe un dispatcher di undici come dipendenza diretta, non aggiunta;
+  - target test scritti dopo il codice (il comportamento asserito viene dagli AC).
