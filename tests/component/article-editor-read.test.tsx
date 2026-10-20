@@ -76,6 +76,7 @@ function renderEditor(article: ArticleView = ARTICLE, overrides: Partial<Article
       article={article}
       canEdit
       canStart
+      publication={{ strategyVersion: 3, status: "WRITING", publishedUrl: null, siteUrl: null }}
       {...overrides}
     />
   );

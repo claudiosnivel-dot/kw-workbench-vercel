@@ -34,7 +34,14 @@ export type StrategyOperation =
   | { type: "delete_page"; pageId: string }
   | { type: "move_page"; pageId: string; targetHubId: string };
 
-export type PagePatch = { h1?: string; h2?: string[]; contentType?: StrategyContentType; status?: StrategyPageStatus };
+export type PagePatch = {
+  h1?: string;
+  h2?: string[];
+  contentType?: StrategyContentType;
+  status?: StrategyPageStatus;
+  /** Indirizzo della pagina pubblicata (T-4502), già validato: https assoluto. */
+  publishedUrl?: string;
+};
 
 /** Id di pagina o keyword che non appartiene alla strategia del percorso (CWE-639): diventa 404 STRATEGY_NOT_FOUND. */
 export class UnknownStrategyItemError extends Error {
@@ -287,7 +294,7 @@ export function applyOperation(state: EditorState, operation: StrategyOperation,
 /**
  * Modifica dei titoli, del tipo o dello stato di una pagina (T-1904, T-2501): un H1 o gli H2 inviati diventano
  * «modificati» e non si ricalcolano più; un tipo nuovo ricalcola i titoli non modificati; uno stato nuovo registra
- * l'istante del cambio e non tocca i titoli.
+ * l'istante del cambio e non tocca i titoli; un indirizzo della pagina pubblicata (T-4502) sostituisce il precedente.
  */
 export function applyPagePatch(
   state: EditorState,
@@ -302,6 +309,7 @@ export function applyPagePatch(
     page.status = patch.status;
     page.statusChangedAt = now.toISOString();
   }
+  if (patch.publishedUrl !== undefined) page.publishedUrl = patch.publishedUrl;
   if (patch.contentType && patch.contentType !== page.contentType) {
     page.contentType = patch.contentType;
     editor.retyped.add(page.id);

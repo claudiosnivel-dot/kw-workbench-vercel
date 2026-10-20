@@ -861,6 +861,9 @@ model StrategyPage {
   /// Ultima proposta riuscita dei titoli con l'AI ({ h1, h2, model, createdAt }, T-3601, D-43); null se non c'è o è
   /// stata usata o scartata (T-3602).
   ai_proposal       Json?
+  /// Indirizzo della pagina pubblicata (T-4502): https assoluto; i link interni degli articoli esportati lo usano per
+  /// primo (T-4501). «Rigenera» lo copia con la pagina (T-2502).
+  published_url     String?             @db.VarChar(500)
   strategy          Strategy            @relation(fields: [strategy_id], references: [id], onDelete: Cascade)
   hub               StrategyPage?       @relation("HubSpokes", fields: [hub_page_id], references: [id], onDelete: SetNull)
   spokes            StrategyPage[]      @relation("HubSpokes")

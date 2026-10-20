@@ -11,6 +11,8 @@ export type StrategyPageKind = "HUB" | "SPOKE";
 
 /** Stato di scrittura di una pagina del piano (T-2501), nell'ordine del percorso. */
 export const STRATEGY_PAGE_STATUSES = ["TODO", "WRITING", "PUBLISHED"] as const;
+/** Lunghezza massima dell'indirizzo della pagina pubblicata (T-4502), come la colonna published_url. */
+export const PUBLISHED_URL_MAX_LENGTH = 500;
 export type StrategyPageStatus = (typeof STRATEGY_PAGE_STATUSES)[number];
 export type StrategyMode = "AUTO" | "EXPERT";
 
@@ -121,6 +123,8 @@ export type StrategyPageView = {
   status: StrategyPageStatus;
   /** Istante dell'ultimo cambio di stato in ISO 8601, null se la pagina non l'ha mai cambiato. */
   statusChangedAt: string | null;
+  /** Indirizzo della pagina pubblicata (T-4502), null finché non c'è: i link degli articoli lo usano per primo (T-4501). */
+  publishedUrl: string | null;
   /** Ultima proposta dell'AI non ancora usata né scartata (T-3602); sempre null nelle versioni precedenti. */
   aiProposal: StrategyAiProposal | null;
   keywords: StrategyKeywordView[];

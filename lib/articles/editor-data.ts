@@ -1,6 +1,6 @@
 import { ArticleNotFoundError, readArticle } from "@/lib/articles/service";
 import type { ArticleView } from "@/lib/articles/view";
-import type { StrategyPageKind } from "@/lib/modules/strategy/types";
+import type { StrategyPageKind, StrategyPageStatus } from "@/lib/modules/strategy/types";
 import { prisma } from "@/lib/prisma";
 
 /** Pagina del piano dell'articolo come la legge l'editor (T-4401). */
@@ -12,12 +12,14 @@ export type ArticleEditorData = {
   /** H1 delle pagine dello stesso piano: i link interni del testo e quelli del controllo SEO. */
   pages: Record<string, string>;
   article: ArticleView;
+  /** Pubblicazione della pagina (T-4502): version del piano per la PATCH, stato, indirizzo e sito del progetto. */
+  publication: { strategyVersion: number; status: StrategyPageStatus; publishedUrl: string | null; siteUrl: string | null };
 };
 
 /**
  * Dati della pagina dell'editor (T-4401) per un utente membro del progetto: la pagina del piano in una versione del
  * progetto (l'articolo segue la pagina con «Rigenera», T-2502), l'articolo con i blocchi e il lavoro attivo (T-4002) e
- * gli H1 delle pagine dello stesso piano. null senza la pagina nel progetto o senza articolo: la pagina risponde 404
+ * gli H1 delle pagine dello stesso piano, con lo stato e l'indirizzo della pagina pubblicata (T-4502). null senza la pagina nel progetto o senza articolo: la pagina risponde 404
  * come per un progetto di un altro workspace (CWE-639).
  */
 export async function readArticleEditor(user: { id: string }, projectId: string, pageId: string): Promise<ArticleEditorData | null> {
@@ -29,6 +31,9 @@ export async function readArticleEditor(user: { id: string }, projectId: string,
       kind: true,
       content_type: true,
       h2: true,
+      status: true,
+      published_url: true,
+      strategy: { select: { version: true, project: { select: { site_url: true } } } },
       keywords: { where: { role: "MAIN" }, select: { keyword: true }, take: 1 },
     },
   });
@@ -54,5 +59,11 @@ export async function readArticleEditor(user: { id: string }, projectId: string,
     },
     pages: Object.fromEntries(planPages.map((item) => [item.id, item.h1])),
     article,
+    publication: {
+      strategyVersion: page.strategy.version,
+      status: page.status,
+      publishedUrl: page.published_url,
+      siteUrl: page.strategy.project.site_url,
+    },
   };
 }

@@ -1903,6 +1903,32 @@
       "copied": "Copied",
       "copyFailed": "Copy failed: select the prompt and copy it by hand."
     },
+    "export": {
+      "copy": "Copy",
+      "download": "Download {format}",
+      "copied": "Article copied: paste it into your site.",
+      "copyFailed": "Copy failed: download the .html file and paste its content.",
+      "markPublished": "Mark as published",
+      "changeUrl": "Change the address",
+      "publishedAt": "Published at",
+      "publish": {
+        "title": "Mark as published",
+        "intro": "Enter the address of the page on your site: the page moves to “Published” and the other articles will use this address in their links.",
+        "url": "Page address",
+        "hint": "A full https address, for example https://www.example.com/page/.",
+        "submit": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "invalid": "Enter a full https address, up to 500 characters.",
+        "conflict": "The plan was changed in the meantime: reload the page."
+      },
+      "confirm": {
+        "title": "Some facts still need checking",
+        "text": "{count, plural, one {# fact to check} other {# facts to check}} still in the text: check them before you publish the article.",
+        "continue": "Continue anyway",
+        "back": "Back to the text"
+      }
+    },
     "marks": {
       "ai_pattern": "Typical trait of generated text: {rule}",
       "to_verify": "To verify: {rule}",

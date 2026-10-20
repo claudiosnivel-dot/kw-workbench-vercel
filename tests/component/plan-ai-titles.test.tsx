@@ -42,6 +42,7 @@ const PAGE: StrategyPageView = {
   reason: { code: "SPOKE_WORD", params: { word: "donna", faq: 0 } },
   status: "TODO",
   statusChangedAt: null,
+  publishedUrl: null,
   aiProposal: null,
   keywords: [
     { id: "k1", keyword: "scarpe running donna", canonical: "scarpe running donna", role: "MAIN", volume: 2100, score: 80, isQuestion: false },

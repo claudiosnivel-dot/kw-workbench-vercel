@@ -73,7 +73,7 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 
 /** Slug della keyword principale: minuscolo, senza accenti latini, parole unite da trattini, al massimo 80 caratteri. */
-function articleSlug(keyword: string, language: string): string {
+export function articleSlug(keyword: string, language: string): string {
   const slug = canonicalizeKeyword(keyword, language)
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "");

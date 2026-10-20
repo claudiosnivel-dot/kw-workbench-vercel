@@ -30,6 +30,7 @@ const PAGE: StrategyPageView = {
   reason: { code: "SPOKE_MODIFIER", params: { category: "comparison", faq: 0 } },
   status: "TODO",
   statusChangedAt: null,
+  publishedUrl: null,
   aiProposal: null,
   keywords: [
     { id: "k1", keyword: "migliori scarpe running", canonical: "migliori scarpe running", role: "MAIN", volume: 2900, score: 80, isQuestion: false },

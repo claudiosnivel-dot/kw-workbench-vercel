@@ -30,6 +30,7 @@ import { strategyTranslator } from "@/lib/modules/strategy/translator";
 import {
   STRATEGY_CONTENT_TYPES,
   STRATEGY_PAGE_STATUSES,
+  PUBLISHED_URL_MAX_LENGTH,
   type PlanAnchor,
   type PlanReason,
   type StrategyAiProposal,
@@ -87,6 +88,18 @@ const operationSchema = z.object({
 });
 
 const titleField = z.string().trim().min(1).max(MAX_TITLE_LENGTH);
+
+/** Indirizzo della pagina pubblicata (T-4502): https assoluto, senza credenziali, fino a 500 caratteri (CWE-601). */
+const publishedUrlField = z
+  .string()
+  .trim()
+  .max(PUBLISHED_URL_MAX_LENGTH)
+  .refine((value) => {
+    if (!URL.canParse(value)) return false;
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname !== "" && !url.username && !url.password;
+  }, "indirizzo https assoluto, senza credenziali");
+
 const pagePatchSchema = z
   .object({
     version: versionField,
@@ -94,11 +107,11 @@ const pagePatchSchema = z
     h2: z.array(titleField).max(MAX_H2_ITEMS).optional(),
     contentType: z.enum(STRATEGY_CONTENT_TYPES).optional(),
     status: z.enum(STRATEGY_PAGE_STATUSES).optional(),
+    publishedUrl: publishedUrlField.optional(),
   })
-  .refine(
-    (value) => value.h1 !== undefined || value.h2 !== undefined || value.contentType !== undefined || value.status !== undefined,
-    { message: "nessun campo da modificare" }
-  );
+  .refine((value) => [value.h1, value.h2, value.contentType, value.status, value.publishedUrl].some((field) => field !== undefined), {
+    message: "nessun campo da modificare",
+  });
 
 function parseBody<T extends z.ZodType>(schema: T, body: unknown, what: string): z.output<T> {
   const parsed = schema.safeParse(body);
@@ -205,6 +218,7 @@ const COPY_PAGE_SELECT = {
   reason_params: true,
   status: true,
   status_changed_at: true,
+  published_url: true,
 } satisfies Prisma.StrategyPageSelect;
 
 const COPY_KEYWORD_SELECT = {
@@ -435,6 +449,7 @@ export async function generateStrategy(
       reason_params: page.reason_params as Prisma.InputJsonValue,
       status: page.status,
       status_changed_at: page.status_changed_at,
+      published_url: page.published_url,
     })),
     ...plan.pages.map((page) => {
       const titles = buildPageTitles(planTitlePage(plan, page, asTitle), context);
@@ -597,6 +612,7 @@ const RECORD_SELECT = {
       reason_params: true,
       status: true,
       status_changed_at: true,
+      published_url: true,
       ai_proposal: true,
     },
   },
@@ -638,6 +654,7 @@ function toEditorState(record: StrategyRecord): EditorState {
       reason: { code: page.reason_code, params: page.reason_params } as PlanReason,
       status: page.status,
       statusChangedAt: page.status_changed_at?.toISOString() ?? null,
+      publishedUrl: page.published_url,
     })),
     keywords: record.keywords.map((keyword) => ({
       id: keyword.id,
@@ -861,7 +878,8 @@ async function persistState(tx: Prisma.TransactionClient, strategyId: string, be
       old.priority === page.priority &&
       old.position === page.position &&
       old.status === page.status &&
-      old.statusChangedAt === page.statusChangedAt;
+      old.statusChangedAt === page.statusChangedAt &&
+      old.publishedUrl === page.publishedUrl;
     if (same) continue;
     await tx.strategyPage.updateMany({
       where: { strategy_id: strategyId, id: page.id },
@@ -877,6 +895,7 @@ async function persistState(tx: Prisma.TransactionClient, strategyId: string, be
         position: page.position,
         status: page.status,
         status_changed_at: page.statusChangedAt ? new Date(page.statusChangedAt) : null,
+        published_url: page.publishedUrl,
       },
     });
   }
