@@ -3,6 +3,8 @@ import { AiTitlesError } from "@/lib/ai/errors";
 import { enforcePlatformRequestCap } from "@/lib/ai/requests";
 import { type AiSettings, getAiTitlesSettings } from "@/lib/ai/settings";
 import { type AuthorizedProject, requireProjectAccess } from "@/lib/authz/workspace";
+import { estimateArticleRequests } from "@/lib/articles/lengths";
+import type { ArticleView } from "@/lib/articles/view";
 import { getOpenRouterSettings } from "@/lib/env";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { ArticleLength } from "@/lib/generated/prisma/enums";
@@ -16,10 +18,11 @@ import { rateLimitRules } from "@/lib/security/rate-limit-config";
 /*
  * Articoli con l'AI (T-4002, D-46): avvio della generazione dell'articolo di una pagina del piano con i limiti, lettura
  * dell'articolo con i blocchi e il lavoro attivo, annullamento del lavoro. Il lavoro nasce pending e il primo passo del
- * motore (T-4101, lib/articles/run.ts) parte con la continuazione programmata dopo l'avvio.
+ * motore (T-4101, lib/articles/run.ts) parte con la continuazione programmata dopo l'avvio. Modifiche e riscrittura di
+ * un blocco dall'editor (T-4402) sono in lib/articles/edit.ts e usano le stesse regole.
  */
 
-type Actor = { id: string; isRootAdmin: boolean };
+export type Actor = { id: string; isRootAdmin: boolean };
 
 const ACTIVE_RUN = ["pending", "running"] as const;
 /** error_code dell'articolo il cui lavoro è stato annullato prima della fine (DELETE .../article/run). */
@@ -32,7 +35,7 @@ export class ArticleNotFoundError extends AppError {
   }
 }
 
-const activeRunError = (runId?: string) =>
+export const activeRunError = (runId?: string) =>
   new AppError(409, JOB_ERROR_CODES.alreadyActive, "C'è già un lavoro in corso per questo articolo", runId ? { runId } : undefined);
 
 // Corpo dell'avvio: strict, così un id di workspace o di progetto nel corpo è un 400 (CWE-639, CWE-915).
@@ -44,44 +47,50 @@ const startSchema = z.strictObject({
     .transform((value) => (value ? value : null)),
 });
 
-function parseStart(body: unknown): z.output<typeof startSchema> {
-  const result = startSchema.safeParse(body);
+/** Corpo validato dallo schema strict; un campo in più o un valore non valido → 400 VALIDATION_ERROR con il campo. */
+export function parseArticleBody<S extends z.ZodType>(schema: S, body: unknown): z.output<S> {
+  const result = schema.safeParse(body);
   if (result.success) return result.data;
   const issue = result.error.issues[0];
   if (issue.code === "unrecognized_keys") throw new ValidationError(`Campo non ammesso: ${issue.keys.join(", ")}`);
   throw new ValidationError(`Valore non valido per ${issue.path.map(String).join(".") || "body"}: ${issue.message}`);
 }
 
-/** Stima delle richieste di un articolo (D-46): un H2 alla volta più 3 (scaletta, introduzione e FAQ), più il 30%. */
-function estimateArticleRequests(h2Count: number): number {
-  return Math.ceil(((h2Count + 3) * 13) / 10);
+/**
+ * Limiti di un avvio (T-4002) o di una riscrittura (T-4402), root admin escluso (D-43): prima il tetto della
+ * piattaforma, che deve avere posto per la stima e non consuma nulla, poi il limite del workspace nelle ultime 24 ore,
+ * che consuma un avvio; così un 429 del tetto non toglie nulla al workspace. Il primo che blocca risponde 429
+ * RATE_LIMITED con Retry-After.
+ */
+export async function consumeArticleLimits(
+  actor: Actor,
+  settings: AiSettings,
+  requests: number,
+  workspace: { key: string; max: number; windowSeconds: number }
+): Promise<void> {
+  if (actor.isRootAdmin) return;
+  await enforcePlatformRequestCap(settings.platformDailyRequests, requests);
+  await enforceRateLimits([{ key: workspace.key, rule: { max: workspace.max, windowSeconds: workspace.windowSeconds } }]);
 }
 
-/**
- * Limiti di un avvio (T-4002), root admin escluso (D-43): prima il tetto della piattaforma, che deve avere posto per la
- * stima e non consuma nulla, poi il limite del workspace in articoli nelle ultime 24 ore, che consuma un avvio; così un
- * 429 del tetto non toglie un articolo al workspace. Il primo che blocca risponde 429 RATE_LIMITED con Retry-After.
- */
-async function consumeArticleLimits(actor: Actor, workspaceId: string, settings: AiSettings, h2Count: number): Promise<void> {
-  if (actor.isRootAdmin) return;
-  await enforcePlatformRequestCap(settings.platformDailyRequests, estimateArticleRequests(h2Count));
-  await enforceRateLimits([
-    {
-      key: `ai-articles:workspace:${workspaceId}`,
-      rule: { max: settings.articlesPerWorkspaceDaily, windowSeconds: rateLimitRules().aiArticlesWorkspace.windowSeconds },
-    },
-  ]);
+/** Impostazioni dell'AI con gli articoli accesi e la chiave di OpenRouter; altrimenti 503 AI_NOT_CONFIGURED (T-4002, T-4402). */
+export async function requireArticleSettings(): Promise<AiSettings> {
+  const settings = await getAiTitlesSettings();
+  if (!settings.articlesEnabled || !getOpenRouterSettings()) {
+    throw new AiTitlesError("AI_NOT_CONFIGURED", "Gli articoli con l'AI non sono attivi");
+  }
+  return settings;
 }
 
 /** Articolo della pagina nel progetto autorizzato, con il lavoro attivo se c'è (CWE-639). */
-function findArticle(project: AuthorizedProject, strategyId: string, pageId: string) {
+export function findArticle(project: AuthorizedProject, strategyId: string, pageId: string) {
   return prisma.article.findFirst({
     where: { page_id: pageId, project_id: project.id, project: project.perimeter, page: { strategy_id: strategyId } },
     select: { id: true, runs: { where: { status: { in: [...ACTIVE_RUN] } }, select: { id: true, scope: true } } },
   });
 }
 
-const isUniqueViolation = (error: unknown) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+export const isUniqueViolation = (error: unknown) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 
 /**
  * Avvio della generazione dell'articolo di una pagina (T-4002): permesso strategy.write e corpo { length, notes? };
@@ -100,15 +109,16 @@ export async function startArticle(
   body: unknown
 ): Promise<{ articleId: string; runId: string }> {
   const project = await requireProjectAccess(actor, projectId, "strategy.write", {});
-  const input = parseStart(body);
+  const input = parseArticleBody(startSchema, body);
   const page = await requirePlanPage(project, strategyId, pageId);
-  const settings = await getAiTitlesSettings();
-  if (!settings.articlesEnabled || !getOpenRouterSettings()) {
-    throw new AiTitlesError("AI_NOT_CONFIGURED", "Gli articoli con l'AI non sono attivi");
-  }
+  const settings = await requireArticleSettings();
   const existing = await findArticle(project, strategyId, pageId);
   if (existing && existing.runs.length > 0) throw activeRunError(existing.runs[0].id);
-  await consumeArticleLimits(actor, project.workspace_id, settings, page.h2.length);
+  await consumeArticleLimits(actor, settings, estimateArticleRequests(page.h2.length), {
+    key: `ai-articles:workspace:${project.workspace_id}`,
+    max: settings.articlesPerWorkspaceDaily,
+    windowSeconds: rateLimitRules().aiArticlesWorkspace.windowSeconds,
+  });
 
   let started: { articleId: string; runId: string };
   try {
@@ -191,7 +201,7 @@ const ARTICLE_SELECT = {
 
 type ArticleRecord = Prisma.ArticleGetPayload<{ select: typeof ARTICLE_SELECT }>;
 
-function toArticleView(record: ArticleRecord) {
+function toArticleView(record: ArticleRecord): ArticleView {
   const run = record.runs[0];
   return {
     id: record.id,
@@ -232,8 +242,6 @@ function toArticleView(record: ArticleRecord) {
       : null,
   };
 }
-
-type ArticleView = ReturnType<typeof toArticleView>;
 
 /**
  * Articolo di una pagina (T-4002) per chi legge il progetto: blocchi in ordine e lavoro attivo con l'avanzamento,
@@ -276,4 +284,10 @@ export async function cancelArticleRun(actor: { id: string }, projectId: string,
     }));
   if (!canceled) throw new AppError(409, JOB_ERROR_CODES.notCancelable, "Nessun lavoro in corso da annullare");
   return { runId: run.id };
+}
+
+/** Pagine del progetto con un articolo (T-4401): il pannello mostra «Apri l'articolo». Il progetto è già autorizzato. */
+export async function articlePageIds(projectId: string): Promise<string[]> {
+  const articles = await prisma.article.findMany({ where: { project_id: projectId }, select: { page_id: true } });
+  return articles.map((article) => article.page_id);
 }

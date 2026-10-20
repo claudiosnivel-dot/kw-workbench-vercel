@@ -37,6 +37,8 @@ export type PlanBoardProps = {
   readOnly: boolean;
   /** «Migliora i titoli con l'AI» nel pannello della pagina (T-3603): funzione accesa, chiave e permesso di modifica. */
   aiTitlesAvailable: boolean;
+  /** Articoli nel pannello della pagina (T-4401): avvio disponibile e pagine che hanno già un articolo; assente nelle versioni precedenti. */
+  articles?: { available: boolean; pageIds: string[] };
   /** Pagina il cui pannello è aperto all'arrivo (parametro page, T-2506). */
   openPageId: string | null;
 };
@@ -133,7 +135,7 @@ function Column({ title, count, target, testId, children }: { title: string; cou
 
 type ColumnTarget = { active: boolean; props: Record<string, unknown> };
 
-function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitlesAvailable, openPageId }: PlanBoardProps) {
+function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitlesAvailable, articles, openPageId }: PlanBoardProps) {
   const t = useTranslations("plan");
   const requests = usePlanRequests();
   const model = useMemo(() => planModel(strategy), [strategy]);
@@ -366,6 +368,7 @@ function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitles
           destinations={model.destinations}
           readOnly={readOnly}
           aiTitlesAvailable={aiTitlesAvailable && !readOnly}
+          article={articles && !readOnly ? { available: articles.available, exists: articles.pageIds.includes(openPage.id) } : undefined}
           onClose={closePanel}
         />
       )}

@@ -423,7 +423,8 @@
     "AI_MODEL_NOT_FREE": "The model must be free: an ID like author/model:free.",
     "AI_BUSY": "All the free models are busy: try again in a few minutes.",
     "AI_DAILY_LIMIT": "Today's AI requests have run out: try again tomorrow.",
-    "ARTICLE_NOT_FOUND": "Article not found."
+    "ARTICLE_NOT_FOUND": "Article not found.",
+    "ARTICLE_VERSION_CONFLICT": "This article was changed elsewhere: reload the page."
   },
   "errorPages": {
     "error": {
@@ -1834,6 +1835,124 @@
       "cancel": "Cancel",
       "menu": "Actions for the version “{name}”",
       "menuColumn": "Actions"
+    }
+  },
+  "article": {
+    "start": {
+      "open": "Write the article with AI",
+      "openExisting": "Open the article",
+      "title": "Write the article with AI",
+      "replaceTitle": "Write the article again",
+      "intro": "AI writes the article in the background, one block at a time: you can close the page and come back later.",
+      "replaceWarning": "The new article replaces the current text, including the changes you made.",
+      "length": "Length",
+      "lengths": {
+        "SHORT": "Short",
+        "MEDIUM": "Medium",
+        "LONG": "Long"
+      },
+      "lengthHint": "up to {words, number} words",
+      "notes": "Notes for the article (optional)",
+      "notesHint": "For example what to mention, what to avoid or what to add to the outline.",
+      "estimate": "About {count, plural, one {# AI request} other {# AI requests}}.",
+      "cancel": "Cancel",
+      "submit": "Write",
+      "replaceSubmit": "Replace and write",
+      "starting": "Starting…",
+      "rateLimited": "You have reached the article limit: try again after {time}."
+    },
+    "editor": {
+      "back": "Back to the plan",
+      "status": {
+        "GENERATING": "Writing",
+        "READY": "Ready",
+        "FAILED": "Failed"
+      },
+      "progress": "Requests done: {done} of {total}",
+      "rewriting": "Rewriting a block…",
+      "writeAgain": "Write again",
+      "meta": "Search engine details",
+      "metaTitle": "Title",
+      "metaDescription": "Meta description",
+      "slug": "Slug",
+      "counter": "{count} of {max}",
+      "intro": "Introduction",
+      "writing": "Writing…",
+      "emptyBlock": "This block has no text yet.",
+      "edit": "Edit",
+      "editLabel": "Text of the block “{block}”",
+      "editHint": "Markdown: **bold**, lists with - and links to plan pages as [text](page:…).",
+      "done": "Done",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "conflict": "This article was changed elsewhere: reload the page",
+      "edited": "edited by you",
+      "rewrite": "Rewrite this block",
+      "rewriteLabel": "What to change (optional)",
+      "rewriteSubmit": "Rewrite",
+      "rewriteCancel": "Cancel",
+      "rewriteLimited": "You have reached the limit of rewritten blocks: try again after {time}.",
+      "images": "Image placeholders",
+      "image": "Image placeholder {number}",
+      "cover": "cover",
+      "imagePurpose": "Purpose",
+      "imageAlt": "Alt text",
+      "imageFile": "File name",
+      "imagePrompt": "Prompt",
+      "copyPrompt": "Copy prompt",
+      "copied": "Copied",
+      "copyFailed": "Copy failed: select the prompt and copy it by hand."
+    },
+    "marks": {
+      "ai_pattern": "Typical trait of generated text: {rule}",
+      "to_verify": "To verify: {rule}",
+      "rules": {
+        "phrase": "stock phrase",
+        "em_dash": "em dash",
+        "emoji": "emoji",
+        "rhetorical_questions": "rhetorical questions in a row",
+        "repeated_openings": "sentences that start the same way",
+        "placeholder": "placeholder to fill in",
+        "law": "legal reference",
+        "amount": "amount",
+        "percentage": "percentage",
+        "year": "year",
+        "number": "figure"
+      }
+    },
+    "seo": {
+      "title": "SEO check",
+      "empty": "The SEO check arrives when the article is written.",
+      "density": "Density of “{keyword}”: {density, number} per 100 words",
+      "metaTitle": "Title: {length} characters of {max}",
+      "metaDescription": "Meta description: {length} characters of {max}",
+      "toVerify": "Open items to verify: {count}",
+      "articleProblems": "To fix in the article",
+      "problems": {
+        "main_keyword_h1": "The main keyword is not in the H1 title",
+        "main_keyword_opening": "The main keyword is not in the first 100 words",
+        "main_keyword_meta_title": "The main keyword is not in the title",
+        "main_keyword_meta_description": "The main keyword is not in the meta description",
+        "meta_title_length": "The title has {length} characters: {max} at most",
+        "meta_description_length": "The meta description has {length} characters: {max} at most",
+        "density": "The main keyword appears {count} times: {max} at most",
+        "ai_patterns": "{count, plural, one {# typical trait} other {# typical traits}} of generated text, above the threshold"
+      },
+      "keywordsUsed": "Keywords used: {list}",
+      "keywordsMissing": "Missing keywords: {list}",
+      "linksPresent": "Internal links present: {list}",
+      "linksMissing": "Missing required links: {list}",
+      "noProblems": "No problems"
+    },
+    "errors": {
+      "AI_BUSY": "The free models are all busy: write the article again in a few minutes.",
+      "AI_DAILY_LIMIT": "Today's AI requests are used up: write the article again tomorrow.",
+      "AI_UNAVAILABLE": "The AI service cannot be reached: write the article again shortly.",
+      "AI_INVALID_RESPONSE": "The models gave unusable answers: write the article again.",
+      "AI_NOT_CONFIGURED": "AI articles are not active right now.",
+      "JOB_ALREADY_ACTIVE": "This article is already being written: wait for it to finish.",
+      "CANCELED": "Writing was stopped before the end.",
+      "INTERNAL_ERROR": "Writing stopped because of an error: write the article again."
     }
   }
 }

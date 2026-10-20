@@ -129,6 +129,11 @@ export function planHref(projectId: string, options: { group?: PlanGroup; view?:
   return `/projects/${projectId}/plan${search ? `?${search}` : ""}`;
 }
 
+/** Editor dell'articolo di una pagina del piano (T-4401). */
+export function articleHref(projectId: string, pageId: string): string {
+  return `/projects/${projectId}/plan/pages/${pageId}/article`;
+}
+
 /** Versioni precedenti del piano (T-2502). */
 export function planVersionsHref(projectId: string): string {
   return `/projects/${projectId}/plan/versions`;

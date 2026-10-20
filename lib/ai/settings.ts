@@ -26,7 +26,7 @@ import { prisma } from "@/lib/prisma";
  */
 
 export type AiTitlesSettings = { enabled: boolean; models: string[]; platformDailyRequests: number; workspaceDailyLimit: number };
-/** Articoli con l'AI (T-4002): spenti finché l'editor (modulo 44) non è in produzione. */
+/** Articoli con l'AI (T-4002): spenti di default; il root admin li accende dalla card quando l'editor (T-4401) è in produzione. */
 type AiArticlesSettings = { articlesEnabled: boolean; articlesPerWorkspaceDaily: number; sectionRewritesPerWorkspaceDaily: number };
 export type AiSettings = AiTitlesSettings & AiArticlesSettings;
 type AiTitlesView = AiSettings & {
@@ -124,6 +124,11 @@ export async function getAiTitlesSettings(): Promise<AiSettings> {
 /** Funzione accesa e chiave presente (T-3603): la pagina del piano mostra «Migliora i titoli con l'AI». */
 export async function isAiTitlesAvailable(): Promise<boolean> {
   return getOpenRouterSettings() !== null && (await getAiTitlesSettings()).enabled;
+}
+
+/** Articoli con l'AI disponibili (T-4401): chiave di OpenRouter configurata e funzione accesa dal root admin. */
+export async function isArticlesAvailable(): Promise<boolean> {
+  return getOpenRouterSettings() !== null && (await getAiTitlesSettings()).articlesEnabled;
 }
 
 /**

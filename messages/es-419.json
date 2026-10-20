@@ -305,5 +305,10 @@
     "versionsPage": {
       "empty": "No hay versiones anteriores: el plan todavía no se regeneró."
     }
+  },
+  "article": {
+    "start": {
+      "notesHint": "Por ejemplo, qué mencionar, qué evitar o qué agregar al esquema."
+    }
   }
 }

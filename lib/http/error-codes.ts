@@ -122,8 +122,9 @@ export const API_ERROR_CODES = [
   // Modelli di riserva (T-3802, D-46).
   "AI_BUSY",
   "AI_DAILY_LIMIT",
-  // Articoli con l'AI (T-4002, D-46).
+  // Articoli con l'AI (T-4002, T-4402, D-46).
   "ARTICLE_NOT_FOUND",
+  "ARTICLE_VERSION_CONFLICT",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

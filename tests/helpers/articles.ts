@@ -1,14 +1,15 @@
 import { DELETE as cancelRunRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article/run/route";
-import { GET as readRoute, POST as startRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article/route";
+import { GET as readRoute, PATCH as patchRoute, POST as startRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article/route";
+import { POST as rewriteRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article/sections/[sectionId]/rewrite/route";
 import type { AiSettings } from "@/lib/ai/settings";
 import { upsertSettingValue } from "@/lib/integrations/app-settings";
 import type { PlanPage } from "./ai-titles";
 import { callRoute } from "./http";
 
 /*
- * Supporto dei test degli articoli (T-4002): impostazioni dell'AI con gli articoli accesi, salvate come le salva la card
- * del root admin, le rotte dell'articolo di una pagina del piano e le risposte simulate del modello per le richieste del
- * lavoro (scaletta, blocchi e domande frequenti).
+ * Supporto dei test degli articoli (T-4002, T-4402): impostazioni dell'AI con gli articoli accesi, salvate come le salva
+ * la card del root admin, le rotte dell'articolo di una pagina del piano (avvio, lettura, modifica, riscrittura di un
+ * blocco, annullamento) e le risposte simulate del modello per le richieste del lavoro (scaletta, blocchi e FAQ).
  */
 
 /** Impostazioni dell'AI con gli articoli accesi e i limiti predefiniti, salvo indicazione contraria. */
@@ -37,6 +38,18 @@ export const readArticle = (cookie: string | undefined, page: PlanPage) =>
 
 export const cancelArticleRun = (cookie: string | undefined, page: PlanPage) =>
   callRoute(cancelRunRoute, { method: "DELETE", url: `${articleUrl(page)}/run`, cookie, params: params(page) });
+
+export const patchArticle = (cookie: string | undefined, page: PlanPage, body: unknown) =>
+  callRoute(patchRoute, { method: "PATCH", url: articleUrl(page), cookie, params: params(page), body });
+
+export const rewriteSection = (cookie: string | undefined, page: PlanPage, sectionId: string, body: unknown = {}) =>
+  callRoute(rewriteRoute, {
+    method: "POST",
+    url: `${articleUrl(page)}/sections/${sectionId}/rewrite`,
+    cookie,
+    params: { ...params(page), sectionId },
+    body,
+  });
 
 /** Dati della pagina che la scaletta invia al modello (T-4102), letti dal messaggio dell'utente. */
 export type SentOutlineData = {

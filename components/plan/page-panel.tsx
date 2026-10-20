@@ -7,6 +7,7 @@ import { DialogActions } from "@/components/dialog-actions";
 import { EntityMenu, type EntityMenuItem } from "@/components/entity-menu";
 import { ModalDialog } from "@/components/modal-dialog";
 import { AiTitles } from "@/components/plan/ai-titles";
+import { ArticleEntry, type PanelArticle } from "@/components/plan/article-entry";
 import { type PickGroup, PickDialog } from "@/components/plan/pick-dialog";
 import { type PlanRequestResult, usePlanRequests } from "@/components/plan/plan-requests";
 import { StatusLabel } from "@/components/plan/status-menu";
@@ -35,6 +36,8 @@ export type PagePanelProps = {
   readOnly: boolean;
   /** Titoli con l'AI accesi, con la chiave, e permesso di modificare il piano (T-3603): «Migliora i titoli con l'AI». */
   aiTitlesAvailable: boolean;
+  /** Articolo della pagina (T-4401): «Scrivi l'articolo con l'AI» o «Apri l'articolo»; assente nelle versioni precedenti. */
+  article?: PanelArticle;
   onClose: () => void;
 };
 
@@ -62,9 +65,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * modifica scrivendo: H1 e H2 si salvano all'uscita dal campo o dopo 800 ms senza digitare, sempre con la version
  * corrente (CWE-362). Un errore di validazione resta sotto il campo senza perdere il testo; dopo un 409
  * STRATEGY_CONFLICT il piano si ricarica con il suo messaggio. Sotto i campi, se disponibile, la proposta dei titoli con
- * l'AI (T-3603). Esc chiude e il focus torna alla scheda. Tutti i testi del piano sono resi come testo (CWE-79).
+ * l'AI (T-3603) e l'articolo della pagina (T-4401). Esc chiude e il focus torna alla scheda. Tutti i testi del piano
+ * sono resi come testo (CWE-79).
  */
-export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAvailable, onClose }: PagePanelProps) {
+export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAvailable, article, onClose }: PagePanelProps) {
   const t = useTranslations("plan.panel");
   const tPick = useTranslations("plan.pick");
   const tStrategy = useTranslations("strategy");
@@ -328,6 +332,7 @@ export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAv
 
             {/* Il piano ricaricato con un'altra proposta (o senza) riparte dalla proposta salvata nella pagina. */}
             {aiTitlesAvailable && <AiTitles key={page.aiProposal?.createdAt ?? ""} page={page} onUse={useProposal} />}
+            {article && <ArticleEntry page={page} article={article} />}
           </>
         )}
 

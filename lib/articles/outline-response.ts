@@ -1,6 +1,7 @@
 import { AiTitlesError } from "@/lib/ai/errors";
 import { cleanTitle, firstJsonObject, hasKeywordWords } from "@/lib/ai/titles-response";
-import { ARTICLE_WORD_CAPS, linkableRef, OUTLINE_MAX_SECONDARY, outlineBlockIds, type OutlineInput } from "@/lib/articles/outline-prompt";
+import { ARTICLE_WORD_CAPS } from "@/lib/articles/lengths";
+import { linkableRef, OUTLINE_MAX_SECONDARY, outlineBlockIds, type OutlineInput } from "@/lib/articles/outline-prompt";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 
 /*

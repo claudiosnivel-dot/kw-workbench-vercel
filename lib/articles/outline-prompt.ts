@@ -1,4 +1,5 @@
 import { languageName, spanishMarket } from "@/lib/ai/titles-prompt";
+import { ARTICLE_WORD_CAPS } from "@/lib/articles/lengths";
 import type { ModelRequest } from "@/lib/articles/run-context";
 import type { ArticleLength, ArticleTone } from "@/lib/generated/prisma/enums";
 import type { ArticlePlanPage } from "@/lib/modules/strategy/service";
@@ -9,9 +10,6 @@ import type { ArticlePlanPage } from "@/lib/modules/strategy/service";
  * a chi si rivolge, tono), le note dell'articolo, il tetto di parole e le pagine collegabili con il loro H1; mai volumi,
  * punteggi, nomi di progetto, utente o workspace, né nome, indirizzo o sito dell'attività.
  */
-
-/** Tetto di parole dell'articolo per lunghezza: un massimo, non un obiettivo (D-46). */
-export const ARTICLE_WORD_CAPS: Record<ArticleLength, number> = { SHORT: 800, MEDIUM: 1500, LONG: 2500 };
 
 /** Secondarie inviate, dalla più importante (come i titoli, T-3502). */
 export const OUTLINE_MAX_SECONDARY = 30;

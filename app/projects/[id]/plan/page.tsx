@@ -3,7 +3,8 @@ import { PlanActions } from "@/components/plan/plan-actions";
 import { PlanBoard } from "@/components/plan/plan-board";
 import { PlanShell } from "@/components/plan/plan-header";
 import { StrategySettings } from "@/components/strategy/strategy-settings";
-import { isAiTitlesAvailable } from "@/lib/ai/settings";
+import { isAiTitlesAvailable, isArticlesAvailable } from "@/lib/ai/settings";
+import { articlePageIds } from "@/lib/articles/service";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { canPerform } from "@/lib/authz/permissions";
 import type { PlanGroup, PlanView } from "@/lib/modules/next-step";
@@ -21,7 +22,8 @@ const single = (value: string | string[] | undefined) => (Array.isArray(value) ?
  * Piano dei contenuti del progetto (T-2502, T-2504): il piano è la strategia più recente. Senza piano, «Costruisci il
  * piano» con le opzioni avanzate chiuse; con il piano, intestazione con «Rigenera», versioni precedenti e menu ⋯, poi la
  * bacheca. group, view e page arrivano dall'URL; l'Esporta della barra in alto riceve il piano aperto (T-2406). Il
- * pannello della pagina propone i titoli con l'AI se la funzione è accesa e l'utente può modificare il piano (T-3603).
+ * pannello della pagina propone i titoli con l'AI se la funzione è accesa e l'utente può modificare il piano (T-3603), e
+ * l'articolo: «Apri l'articolo» se c'è, altrimenti «Scrivi l'articolo con l'AI» con gli articoli accesi (T-4401).
  */
 export default async function PlanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<SearchParams> }) {
   const user = await requirePageUser();
@@ -50,9 +52,12 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
     );
   }
 
-  const [strategy, aiTitlesAvailable] = await Promise.all([
+  const canWrite = canPerform(project.role, "strategy.write");
+  const [strategy, aiTitlesAvailable, articlesAvailable, pageIds] = await Promise.all([
     readStrategy(project.id, strategies[0].id),
-    canPerform(project.role, "strategy.write") ? isAiTitlesAvailable() : false,
+    canWrite ? isAiTitlesAvailable() : false,
+    canWrite ? isArticlesAvailable() : false,
+    articlePageIds(project.id),
   ]);
   const group: PlanGroup = single(query.group) === "status" ? "status" : "hub";
   const viewParam = single(query.view);
@@ -80,6 +85,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
         view={view}
         readOnly={false}
         aiTitlesAvailable={aiTitlesAvailable}
+        articles={{ available: articlesAvailable, pageIds }}
         openPageId={openPageId}
       />
     </PlanShell>

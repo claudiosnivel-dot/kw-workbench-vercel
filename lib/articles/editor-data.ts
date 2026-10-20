@@ -1,0 +1,58 @@
+import { ArticleNotFoundError, readArticle } from "@/lib/articles/service";
+import type { ArticleView } from "@/lib/articles/view";
+import type { StrategyPageKind } from "@/lib/modules/strategy/types";
+import { prisma } from "@/lib/prisma";
+
+/** Pagina del piano dell'articolo come la legge l'editor (T-4401). */
+type EditorPlanPage = { id: string; h1: string; kind: StrategyPageKind; contentType: string; h2Count: number; mainKeyword: string };
+
+export type ArticleEditorData = {
+  strategyId: string;
+  page: EditorPlanPage;
+  /** H1 delle pagine dello stesso piano: i link interni del testo e quelli del controllo SEO. */
+  pages: Record<string, string>;
+  article: ArticleView;
+};
+
+/**
+ * Dati della pagina dell'editor (T-4401) per un utente membro del progetto: la pagina del piano in una versione del
+ * progetto (l'articolo segue la pagina con «Rigenera», T-2502), l'articolo con i blocchi e il lavoro attivo (T-4002) e
+ * gli H1 delle pagine dello stesso piano. null senza la pagina nel progetto o senza articolo: la pagina risponde 404
+ * come per un progetto di un altro workspace (CWE-639).
+ */
+export async function readArticleEditor(user: { id: string }, projectId: string, pageId: string): Promise<ArticleEditorData | null> {
+  const page = await prisma.strategyPage.findFirst({
+    where: { id: pageId, strategy: { project_id: projectId } },
+    select: {
+      strategy_id: true,
+      h1: true,
+      kind: true,
+      content_type: true,
+      h2: true,
+      keywords: { where: { role: "MAIN" }, select: { keyword: true }, take: 1 },
+    },
+  });
+  if (!page) return null;
+  const article = await readArticle(user, projectId, page.strategy_id, pageId).catch((error: unknown) => {
+    if (error instanceof ArticleNotFoundError) return null;
+    throw error;
+  });
+  if (!article) return null;
+  const planPages = await prisma.strategyPage.findMany({
+    where: { strategy_id: page.strategy_id, strategy: { project_id: projectId } },
+    select: { id: true, h1: true },
+  });
+  return {
+    strategyId: page.strategy_id,
+    page: {
+      id: pageId,
+      h1: page.h1,
+      kind: page.kind,
+      contentType: page.content_type,
+      h2Count: page.h2.length,
+      mainKeyword: page.keywords[0]?.keyword ?? page.h1,
+    },
+    pages: Object.fromEntries(planPages.map((item) => [item.id, item.h1])),
+    article,
+  };
+}
