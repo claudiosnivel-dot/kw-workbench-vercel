@@ -33,6 +33,7 @@ export default async function ArticleEditorPage({ params }: { params: Promise<{ 
       article={data.article}
       canEdit={canEdit}
       canStart={canStart}
+      publication={data.publication}
     />
   );
 }

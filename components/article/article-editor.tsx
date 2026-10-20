@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { type ArticlePublication, ArticleExportBar } from "@/components/article/article-export-bar";
 import { type ArticleMark, ArticleMarkdown } from "@/components/article/article-markdown";
 import { articleApiUrl, useArticleRequests } from "@/components/article/article-request";
 import { ArticleSeoReport } from "@/components/article/article-seo-report";
@@ -55,6 +56,8 @@ export type ArticleEditorProps = {
   canEdit: boolean;
   /** Articoli accesi con la chiave e strategy.write: nuova generazione e «Riscrivi questo blocco». */
   canStart: boolean;
+  /** Stato e indirizzo della pagina pubblicata, con la version del piano e il sito del progetto (T-4502). */
+  publication: ArticlePublication;
 };
 
 const metaValue = (article: ArticleView, field: MetaField) =>
@@ -66,9 +69,10 @@ const metaValue = (article: ArticleView, field: MetaField) =>
  * tratti AI in giallo e i dati da verificare in arancio, «Modifica» con il salvataggio automatico 1 s dopo l'ultima
  * modifica e «Riscrivi questo blocco», i segnaposto immagine dopo il loro blocco con «Copia prompt» e il riquadro
  * «Controllo SEO». I salvataggi partono uno alla volta con la version dell'ultima risposta (CWE-362); un 409
- * ARTICLE_VERSION_CONFLICT chiede di ricaricare la pagina. Con un lavoro attivo non si modifica.
+ * ARTICLE_VERSION_CONFLICT chiede di ricaricare la pagina. Con un lavoro attivo non si modifica. Sotto l'H1 «Copia»,
+ * «Scarica» e «Segna come pubblicata» (T-4501, T-4502).
  */
-export function ArticleEditor({ projectId, strategyId, page, pages, article: initial, canEdit, canStart }: ArticleEditorProps) {
+export function ArticleEditor({ projectId, strategyId, page, pages, article: initial, canEdit, canStart, publication }: ArticleEditorProps) {
   const t = useTranslations("article.editor");
   const tMarks = useTranslations("article.marks");
   const tStatus = useTranslations("article.editor.status");
@@ -262,6 +266,15 @@ export function ArticleEditor({ projectId, strategyId, page, pages, article: ini
           {run?.scope === "ARTICLE" && run.progress.total > 0 && <span>{t("progress", run.progress)}</span>}
           {run?.scope === "SECTION" && <span>{t("rewriting")}</span>}
         </div>
+        <ArticleExportBar
+          projectId={projectId}
+          strategyId={strategyId}
+          pageId={page.id}
+          article={article}
+          publication={publication}
+          canEdit={canEdit}
+          busy={active || article.status === "GENERATING"}
+        />
         {article.status === "FAILED" && (
           <p className="text-sm text-red-700" role="alert">
             {requests.jobError(article.errorCode)}

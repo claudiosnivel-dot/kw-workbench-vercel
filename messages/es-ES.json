@@ -1903,6 +1903,32 @@
       "copied": "Copiado",
       "copyFailed": "No se pudo copiar: selecciona el prompt y cópialo a mano."
     },
+    "export": {
+      "copy": "Copiar",
+      "download": "Descargar {format}",
+      "copied": "Artículo copiado: pégalo en tu sitio.",
+      "copyFailed": "No se pudo copiar: descarga el archivo .html y pega su contenido.",
+      "markPublished": "Marcar como publicada",
+      "changeUrl": "Cambiar la dirección",
+      "publishedAt": "Publicada en",
+      "publish": {
+        "title": "Marcar como publicada",
+        "intro": "Escribe la dirección de la página en tu sitio: la página pasa a «Publicada» y los demás artículos usarán esta dirección en sus enlaces.",
+        "url": "Dirección de la página",
+        "hint": "Una dirección https completa, por ejemplo https://www.ejemplo.es/pagina/.",
+        "submit": "Guardar",
+        "saving": "Guardando…",
+        "cancel": "Cancelar",
+        "invalid": "Escribe una dirección https completa, de hasta 500 caracteres.",
+        "conflict": "El plan se ha modificado mientras tanto: recarga la página."
+      },
+      "confirm": {
+        "title": "Hay datos por verificar",
+        "text": "{count, plural, one {# dato por verificar} other {# datos por verificar}} todavía en el texto: revísalos antes de publicar el artículo.",
+        "continue": "Continuar de todos modos",
+        "back": "Volver al texto"
+      }
+    },
     "marks": {
       "ai_pattern": "Rasgo típico de los textos generados: {rule}",
       "to_verify": "Por verificar: {rule}",

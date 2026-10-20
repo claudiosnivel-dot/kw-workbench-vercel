@@ -1,15 +1,18 @@
 import { DELETE as cancelRunRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article/run/route";
+import { GET as exportRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article/export/route";
 import { GET as readRoute, PATCH as patchRoute, POST as startRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article/route";
 import { POST as rewriteRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article/sections/[sectionId]/rewrite/route";
 import type { AiSettings } from "@/lib/ai/settings";
+import type { ArticleSectionKind } from "@/lib/generated/prisma/enums";
 import { upsertSettingValue } from "@/lib/integrations/app-settings";
+import { prisma } from "@/lib/prisma";
 import type { PlanPage } from "./ai-titles";
 import { callRoute } from "./http";
 
 /*
- * Supporto dei test degli articoli (T-4002, T-4402): impostazioni dell'AI con gli articoli accesi, salvate come le salva
- * la card del root admin, le rotte dell'articolo di una pagina del piano (avvio, lettura, modifica, riscrittura di un
- * blocco, annullamento) e le risposte simulate del modello per le richieste del lavoro (scaletta, blocchi e FAQ).
+ * Supporto dei test degli articoli (T-4002, T-4402, T-4501): impostazioni dell'AI con gli articoli accesi, salvate come
+ * le salva la card del root admin, le rotte dell'articolo di una pagina del piano (avvio, lettura, modifica, riscrittura
+ * di un blocco, annullamento, export), un articolo pronto salvato senza il motore e le risposte simulate del modello per le richieste del lavoro (scaletta, blocchi e FAQ).
  */
 
 /** Impostazioni dell'AI con gli articoli accesi e i limiti predefiniti, salvo indicazione contraria. */
@@ -41,6 +44,24 @@ export const cancelArticleRun = (cookie: string | undefined, page: PlanPage) =>
 
 export const patchArticle = (cookie: string | undefined, page: PlanPage, body: unknown) =>
   callRoute(patchRoute, { method: "PATCH", url: articleUrl(page), cookie, params: params(page), body });
+
+export const exportArticle = (cookie: string | undefined, page: PlanPage, format: string) =>
+  callRoute(exportRoute, { method: "GET", url: `${articleUrl(page)}/export?format=${format}`, cookie, params: params(page) });
+
+/** Articolo pronto della pagina con i blocchi dati, salvato senza il motore (T-4501, T-4502). */
+export async function insertReadyArticle(
+  page: PlanPage,
+  data: { slug: string; sections: { kind: ArticleSectionKind; heading?: string; body: string }[] }
+): Promise<string> {
+  const article = await prisma.article.create({
+    data: { page_id: page.pageId, project_id: page.projectId, length: "MEDIUM", status: "READY", slug: data.slug, meta_description: "Descrizione" },
+    select: { id: true },
+  });
+  await prisma.articleSection.createMany({
+    data: data.sections.map((section, position) => ({ article_id: article.id, position, kind: section.kind, heading: section.heading ?? null, body: section.body })),
+  });
+  return article.id;
+}
 
 export const rewriteSection = (cookie: string | undefined, page: PlanPage, sectionId: string, body: unknown = {}) =>
   callRoute(rewriteRoute, {

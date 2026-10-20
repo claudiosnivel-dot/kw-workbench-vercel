@@ -1903,6 +1903,32 @@
       "copied": "Copiato",
       "copyFailed": "Copia non riuscita: seleziona il prompt e copialo a mano."
     },
+    "export": {
+      "copy": "Copia",
+      "download": "Scarica {format}",
+      "copied": "Articolo copiato: incollalo nel tuo sito.",
+      "copyFailed": "Copia non riuscita: scarica il file .html e incollane il contenuto.",
+      "markPublished": "Segna come pubblicata",
+      "changeUrl": "Cambia l'indirizzo",
+      "publishedAt": "Pubblicata su",
+      "publish": {
+        "title": "Segna come pubblicata",
+        "intro": "Scrivi l'indirizzo della pagina sul tuo sito: la pagina passa a «Pubblicata» e gli altri articoli useranno questo indirizzo nei link.",
+        "url": "Indirizzo della pagina",
+        "hint": "Un indirizzo https completo, per esempio https://www.esempio.it/pagina/.",
+        "submit": "Salva",
+        "saving": "Salvataggio…",
+        "cancel": "Annulla",
+        "invalid": "Scrivi un indirizzo https completo, fino a 500 caratteri.",
+        "conflict": "Il piano è stato modificato nel frattempo: ricarica la pagina."
+      },
+      "confirm": {
+        "title": "Ci sono dati da verificare",
+        "text": "{count, plural, one {# dato da verificare} other {# dati da verificare}} ancora nel testo: controllali prima di pubblicare l'articolo.",
+        "continue": "Continua lo stesso",
+        "back": "Torna al testo"
+      }
+    },
     "marks": {
       "ai_pattern": "Tratto tipico dei testi generati: {rule}",
       "to_verify": "Da verificare: {rule}",
