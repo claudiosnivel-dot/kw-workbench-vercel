@@ -1,7 +1,7 @@
 import { buildOutlineRequest, type OutlineInput } from "@/lib/articles/outline-prompt";
 import { parseOutlineResponse } from "@/lib/articles/outline-response";
+import { readPhaseArticle } from "@/lib/articles/phase-data";
 import { type PhaseContext, requestForRun, writeRun } from "@/lib/articles/run-context";
-import { readArticlePlanPage } from "@/lib/modules/strategy/service";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -12,21 +12,8 @@ import { prisma } from "@/lib/prisma";
  */
 export async function outlinePhase(context: PhaseContext): Promise<void> {
   const { run } = context;
-  const article = await prisma.article.findFirstOrThrow({
-    where: { id: run.articleId, project_id: run.projectId },
-    select: {
-      page_id: true,
-      length: true,
-      notes: true,
-      project: { select: { article_about: true, article_audience: true, article_tone: true } },
-    },
-  });
-  const input: OutlineInput = {
-    plan: await readArticlePlanPage(run.projectId, article.page_id),
-    brief: { about: article.project.article_about, audience: article.project.article_audience, tone: article.project.article_tone },
-    notes: article.notes,
-    length: article.length,
-  };
+  const { plan, brief, notes, length } = await readPhaseArticle(run);
+  const input: OutlineInput = { plan, brief, notes, length };
   const { value: outline, model } = await requestForRun(context, buildOutlineRequest(input), (content) => parseOutlineResponse(content, input));
 
   await prisma.$transaction(async (tx) => {

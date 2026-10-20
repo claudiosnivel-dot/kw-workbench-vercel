@@ -2,12 +2,13 @@
 // progetto, le note e le pagine collegabili, senza nome del progetto, volumi o punteggi, e salva meta, slug, scaletta,
 // segnaposto immagine e i blocchi vuoti nell'ordine del piano. In più le istruzioni in spagnolo con la variante del
 // paese e le pagine collegabili di una pilastro.
+// impacted-by: T-4201 (dopo la scaletta il lavoro scrive i blocchi: il test esegue la sola fase outline, AC-4102-1 emendato)
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { advanceArticleRun } from "@/lib/articles/run";
 import { prisma } from "@/lib/prisma";
 import { memberWithPlan, stubOpenRouterEnv } from "../helpers/ai-titles";
-import { outlineCompletion, saveArticleSettings, type SentOutlineData, sentBody, startArticle } from "../helpers/articles";
+import { articleCompletion, saveArticleSettings, type SentOutlineData, sentBody, startArticle } from "../helpers/articles";
 import { resetDatabase } from "../helpers/db";
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -30,7 +31,7 @@ afterAll(() => {
 beforeEach(async () => {
   stubOpenRouterEnv();
   fetchMock.mockReset();
-  fetchMock.mockImplementation(async (_url, init) => outlineCompletion(init));
+  fetchMock.mockImplementation(async (_url, init) => articleCompletion(init));
   vi.stubGlobal("fetch", fetchMock);
   await resetDatabase();
   await saveArticleSettings();
@@ -49,11 +50,14 @@ async function planWithBrief(label: string) {
   return setup;
 }
 
-/** Avvia l'articolo e porta il lavoro alla fine; restituisce l'articolo e il corpo inviato al modello. */
+/**
+ * Avvia l'articolo ed esegue la sola fase della scaletta: con 60 s davanti il passo non ha tempo per un'altra richiesta e
+ * il lavoro resta alla fase sections. Restituisce l'articolo e il corpo inviato al modello.
+ */
 async function generate(member: { cookie: string }, page: Parameters<typeof startArticle>[1], body: unknown) {
   const response = await startArticle(member.cookie, page, body);
   const { data } = (await response.json()) as { data: { articleId: string; runId: string } };
-  await advanceArticleRun(data.runId, Date.now() + 270_000);
+  expect(await advanceArticleRun(data.runId, Date.now() + 60_000)).toMatchObject({ status: "running", phase: "sections", more: true });
   const article = await prisma.article.findUniqueOrThrow({ where: { id: data.articleId }, include: { sections: { orderBy: { position: "asc" } } } });
   return { article, sent: sentBody(fetchMock.mock.calls[0][1]) };
 }
@@ -65,7 +69,7 @@ describe("scaletta dell'articolo", () => {
 
     const { article, sent } = await generate(member, spoke, { length: "MEDIUM", notes: "Consegna gratuita sopra i 50 euro" });
 
-    expect(article.status).toBe("READY");
+    expect(article.status).toBe("GENERATING");
     expect(article.meta_title).toContain("scarpe running donna");
     expect(article.meta_description).toContain("scarpe running donna");
     expect(article.slug).toBe("scarpe-running-donna");
@@ -103,7 +107,7 @@ describe("scaletta dell'articolo", () => {
 
     const { article, sent } = await generate(member, spoke, { length: "SHORT" });
 
-    expect(article.status).toBe("READY");
+    expect(article.status).toBe("GENERATING");
     expect(sent.messages[0].content).toContain("preparas en español de México el esquema de un artículo");
     expect(JSON.parse(sent.messages[1].content)).toMatchObject({ language: "es", maxWords: 800 });
   });
@@ -114,7 +118,7 @@ describe("scaletta dell'articolo", () => {
 
     const { article, sent } = await generate(member, hub, { length: "LONG" });
 
-    expect(article.status).toBe("READY");
+    expect(article.status).toBe("GENERATING");
     expect(JSON.parse(sent.messages[1].content)).toMatchObject({ pageType: "pillar", maxWords: 2500, linkablePages: [{ id: "L1", role: "spoke", h1: "H1 spoke" }] });
     expect((article.outline as { blocks: { links: string[] }[] }).blocks[0].links).toEqual([plan.pageIds.spoke]);
   });

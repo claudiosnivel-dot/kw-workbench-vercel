@@ -1,9 +1,11 @@
 import { after } from "next/server";
 import { AiTitlesError } from "@/lib/ai/errors";
+import { faqPhase } from "@/lib/articles/faq";
 import { outlinePhase } from "@/lib/articles/outline";
 import { type PhaseContext, REQUEST_DEADLINE_MS, type RunLease, RunLeaseLostError, writeRun } from "@/lib/articles/run-context";
+import { sectionsPhase } from "@/lib/articles/sections";
 import { getIntEnv } from "@/lib/env";
-import type { JobStatus } from "@/lib/generated/prisma/client";
+import type { ArticleRunScope, JobStatus } from "@/lib/generated/prisma/client";
 import { AppError, JOB_ERROR_CODES } from "@/lib/http/errors";
 import { scheduleArticleRunContinuation } from "@/lib/modules/jobs/continuation";
 import { articleRunStepId, verifyJobStep } from "@/lib/modules/jobs/job-signature";
@@ -26,10 +28,27 @@ const DONE_PHASE = "done";
 /** Esiti salvati in error_code del lavoro e dell'articolo quando una fase fallisce. */
 export type ArticleRunErrorCode = "AI_BUSY" | "AI_DAILY_LIMIT" | "AI_UNAVAILABLE" | "AI_INVALID_RESPONSE" | "INTERNAL_ERROR";
 
-/** Fasi del lavoro dell'articolo intero, in ordine: i moduli 42 e 43 aggiungono le loro dopo la scaletta. */
-const ARTICLE_PHASES: { name: string; run: (context: PhaseContext) => Promise<void> }[] = [{ name: "outline", run: outlinePhase }];
+type Phase = { name: string; run: (context: PhaseContext) => Promise<void> };
 
-const nextPhaseOf = (phase: string) => ARTICLE_PHASES[ARTICLE_PHASES.findIndex((item) => item.name === phase) + 1]?.name ?? DONE_PHASE;
+/** Fasi del lavoro dell'articolo intero, in ordine: scaletta (T-4102), blocchi (T-4201) e FAQ (T-4202); il modulo 43 aggiunge i controlli. */
+const ARTICLE_PHASES: Phase[] = [
+  { name: "outline", run: outlinePhase },
+  { name: "sections", run: sectionsPhase },
+  { name: "faq", run: faqPhase },
+];
+
+/**
+ * Fasi della riscrittura di un blocco (scope SECTION, modulo 44): il lavoro nasce nella fase sections, che riscrive
+ * un'introduzione o un H2; la fase faq riscrive il blocco FAQ. Ognuna salta il blocco che non è suo.
+ */
+const SECTION_PHASES: Phase[] = ARTICLE_PHASES.slice(1);
+
+const phasesOf = (scope: ArticleRunScope) => (scope === "SECTION" ? SECTION_PHASES : ARTICLE_PHASES);
+
+function nextPhaseOf(scope: ArticleRunScope, phase: string): string {
+  const phases = phasesOf(scope);
+  return phases[phases.findIndex((item) => item.name === phase) + 1]?.name ?? DONE_PHASE;
+}
 
 export type ArticleStepResult = { status: JobStatus; phase: string; more: boolean; skipped?: "lease_busy" };
 
@@ -41,8 +60,11 @@ function readRun(runId: string) {
       article_id: true,
       workspace_id: true,
       scope: true,
+      section_id: true,
+      instruction: true,
       status: true,
       phase: true,
+      cursor: true,
       progress_total: true,
       locked_until: true,
       article: { select: { project_id: true, created_by: { select: { is_root_admin: true } } } },
@@ -94,10 +116,14 @@ function phaseContext(run: RunRecord, lease: RunLease, deadlineMs: number): Phas
       workspaceId: run.workspace_id,
       byRootAdmin: run.article.created_by?.is_root_admin ?? false,
       phase: run.phase,
+      scope: run.scope,
+      sectionId: run.section_id,
+      instruction: run.instruction,
+      cursor: run.cursor,
     },
     lease,
     deadlineMs,
-    nextPhase: nextPhaseOf(run.phase),
+    nextPhase: nextPhaseOf(run.scope, run.phase),
   };
 }
 
@@ -133,7 +159,7 @@ export async function advanceArticleRun(runId: string, deadlineMs: number): Prom
       if (run.phase === DONE_PHASE) {
         await completeRun(run, lease);
       } else {
-        const phase = ARTICLE_PHASES.find((item) => item.name === run.phase);
+        const phase = phasesOf(run.scope).find((item) => item.name === run.phase);
         if (!phase) throw new Error(`Lavoro ${runId}: fase sconosciuta ${run.phase}`);
         await phase.run(phaseContext(run, lease, deadlineMs));
       }
