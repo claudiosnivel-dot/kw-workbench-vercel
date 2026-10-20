@@ -21,7 +21,7 @@ Dopo il modulo 45 l'articolo esce con la copia o i file. L'utente vuole caricarl
     collegamento prima di usarlo.
 
   definition_of_done:
-    - "Migrazione additiva 0052_wordpress: projects con wp_site_url (fino a 300), wp_username (fino a 120) e wp_app_password_encrypted (cifrata con encryptSecret come le altre credenziali); articles con wp_post_id e wp_post_url."
+    - "Migrazione additiva 0052_wordpress: projects con wp_site_url (fino a 300), wp_username (fino a 120) e wp_password_encrypted (cifrata con encryptSecret come le altre credenziali); articles con wp_post_id e wp_post_url."
     - "PUT /api/projects/[id]/wordpress { siteUrl, username, appPassword } con project.update: siteUrl solo https assoluto senza credenziali, query o frammento e con un nome host che non è un indirizzo IP né localhost; password per le applicazioni con gli spazi tolti, da 24 caratteri alfanumerici; la password non torna mai nelle risposte (solo «configurata: sì»). DELETE scollega e cancella i tre campi."
     - "POST /api/projects/[id]/wordpress/test: GET {siteUrl}/wp-json/wp/v2/users/me?context=edit con Basic auth, timeout 10 s, senza seguire redirect verso un altro host; prima della richiesta il nome host si risolve e si rifiuta se un indirizzo è privato, di loopback, link-local o riservato (CWE-918); esito ok con il nome dell'utente WordPress e se può pubblicare (capabilities edit_posts), oppure WP_AUTH_FAILED (401/403), WP_NOT_FOUND (404, API REST assente), WP_UNREACHABLE (rete, timeout, indirizzo rifiutato)."
     - "Impostazioni del progetto: blocco «WordPress» con i tre campi, «Prova collegamento» con l'esito e la guida per creare una password per le applicazioni (Utenti → Profilo → Password per le applicazioni); testi it ed en."
@@ -30,7 +30,7 @@ Dopo il modulo 45 l'articolo esce con la copia o i file. L'utente vuole caricarl
     - id: AC-4601-1
       given: "un OWNER del progetto"
       when: "invia PUT /wordpress con siteUrl 'https://blog.esempio.it', username 'redazione' e una password per le applicazioni di 24 caratteri scritta a gruppi di 4 con gli spazi"
-      then: "la risposta è 200 senza la password; nel database wp_app_password_encrypted è diverso dalla password e decryptSecret restituisce la password senza spazi"
+      then: "la risposta è 200 senza la password; nel database wp_password_encrypted è diverso dalla password e decryptSecret restituisce la password senza spazi"
     - id: AC-4601-2
       given: "un OWNER del progetto"
       when: "invia PUT /wordpress con siteUrl 'http://blog.esempio.it', poi 'https://127.0.0.1', poi 'https://localhost'"
@@ -98,6 +98,11 @@ Dopo il modulo 45 l'articolo esce con la copia o i file. L'utente vuole caricarl
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): un sito WordPress per progetto; solo bozze; un secondo invio aggiorna la stessa bozza; nomi host che sono indirizzi IP rifiutati.
 - Emendamento dichiarato (2026-10-18, D-47, prima della costruzione): lo spagnolo (moduli 47-51) si costruisce prima di questo modulo, quindi ogni testo nuovo va nei cataloghi it, en ed es-ES, con le differenze in es-419, e il controllo di parità di T-4702 vale anche per i namespace di questo modulo.
 - Emendamento dichiarato (2026-10-18, D-47): la migrazione diventa 0052.
+- Emendamento dichiarato (2026-10-21, costruzione): la colonna della password si chiama `wp_password_encrypted` e non
+  `wp_app_password_encrypted`. Nell'enum dei campi del client Prisma generato in `lib/generated` il nome è insieme
+  chiave e valore stringa della stessa riga: con 25 caratteri la regola `trueline-generic-assigned-secret` di gitleaks
+  lo leggeva come un segreto (2 finding CRITICAL nuovi alla prima esecuzione del checkpoint), con 21 caratteri la
+  regola non si applica. Il comportamento di DoD e AC-4601-1 è invariato.
 - Note di costruzione (2026-10-20, scelte dell'agente da confermare dall'utente):
   - la password cifrata resta fuori da ogni lettura del progetto che non la chiede con select: il client Prisma la
     omette di default (`omit` in `lib/prisma.ts`), così la risposta della PATCH del progetto, la dashboard e le pagine

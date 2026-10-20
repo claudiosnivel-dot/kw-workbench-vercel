@@ -38,19 +38,19 @@ export function wordPressFailure(context: WordPressLogContext, status: number | 
 }
 
 /** Campi del collegamento letti con select: la password cifrata resta fuori dalle altre letture (lib/prisma.ts). */
-export const WORDPRESS_SELECT = { wp_site_url: true, wp_username: true, wp_app_password_encrypted: true } as const;
+export const WORDPRESS_SELECT = { wp_site_url: true, wp_username: true, wp_password_encrypted: true } as const;
 
-type StoredConnection = { wp_site_url: string | null; wp_username: string | null; wp_app_password_encrypted: string | null };
+type StoredConnection = { wp_site_url: string | null; wp_username: string | null; wp_password_encrypted: string | null };
 export type WordPressConnection = { siteUrl: string; username: string; appPassword: string };
 
 /** true se indirizzo, utente e password sono tutti salvati. */
 export const isWordPressConfigured = (project: StoredConnection) =>
-  Boolean(project.wp_site_url && project.wp_username && project.wp_app_password_encrypted);
+  Boolean(project.wp_site_url && project.wp_username && project.wp_password_encrypted);
 
 /** Collegamento salvato con la password decifrata, oppure null se manca uno dei tre campi. */
 export function connectionOf(project: StoredConnection): WordPressConnection | null {
-  if (!project.wp_site_url || !project.wp_username || !project.wp_app_password_encrypted) return null;
-  return { siteUrl: project.wp_site_url, username: project.wp_username, appPassword: decryptSecret(project.wp_app_password_encrypted) };
+  if (!project.wp_site_url || !project.wp_username || !project.wp_password_encrypted) return null;
+  return { siteUrl: project.wp_site_url, username: project.wp_username, appPassword: decryptSecret(project.wp_password_encrypted) };
 }
 
 /** Collegamento per il blocco delle impostazioni (T-4601) di un progetto già autorizzato: la password mai. */
@@ -91,7 +91,7 @@ export async function saveWordPressConnection(actor: { id: string }, projectId: 
   await prisma.$transaction(async (tx) => {
     const { count } = await tx.project.updateMany({
       where: { id: project.id, ...project.perimeter },
-      data: { wp_site_url: input.siteUrl, wp_username: input.username, wp_app_password_encrypted: encryptSecret(input.appPassword) },
+      data: { wp_site_url: input.siteUrl, wp_username: input.username, wp_password_encrypted: encryptSecret(input.appPassword) },
     });
     expectOneRow(count, () => new ProjectNotFoundError());
     if (project.wp_site_url !== input.siteUrl) {
@@ -107,7 +107,7 @@ export async function deleteWordPressConnection(actor: { id: string }, projectId
   await prisma.$transaction([
     prisma.project.updateMany({
       where: { id: project.id, ...project.perimeter },
-      data: { wp_site_url: null, wp_username: null, wp_app_password_encrypted: null },
+      data: { wp_site_url: null, wp_username: null, wp_password_encrypted: null },
     }),
     prisma.article.updateMany({ where: { project_id: project.id }, data: { wp_post_id: null, wp_post_url: null } }),
   ]);

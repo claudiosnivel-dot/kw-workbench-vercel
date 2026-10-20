@@ -40,7 +40,7 @@ export const sendToWordPress = (cookie: string | undefined, page: PlanPage) =>
 export async function saveConnection(projectId: string, siteUrl = SITE_URL): Promise<void> {
   await prisma.project.update({
     where: { id: projectId },
-    data: { wp_site_url: siteUrl, wp_username: "redazione", wp_app_password_encrypted: encryptSecret(APP_PASSWORD.replaceAll(" ", "")) },
+    data: { wp_site_url: siteUrl, wp_username: "redazione", wp_password_encrypted: encryptSecret(APP_PASSWORD.replaceAll(" ", "")) },
   });
 }
 

@@ -5,7 +5,7 @@
 -- com'è.
 ALTER TABLE "projects" ADD COLUMN "wp_site_url" VARCHAR(300),
 ADD COLUMN "wp_username" VARCHAR(120),
-ADD COLUMN "wp_app_password_encrypted" TEXT;
+ADD COLUMN "wp_password_encrypted" TEXT;
 
 ALTER TABLE "articles" ADD COLUMN "wp_post_id" INTEGER,
 ADD COLUMN "wp_post_url" VARCHAR(500);

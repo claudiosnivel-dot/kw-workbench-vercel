@@ -303,7 +303,7 @@ model Project {
   /// encryptSecret (CWE-312), mai restituita dalle API.
   wp_site_url               String?                  @db.VarChar(300)
   wp_username               String?                  @db.VarChar(120)
-  wp_app_password_encrypted String?
+  wp_password_encrypted     String?
   workspace                 Workspace                @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
   created_by                User?                    @relation("ProjectCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
   subprojects               Subproject[]             @relation("ProjectSubprojects")

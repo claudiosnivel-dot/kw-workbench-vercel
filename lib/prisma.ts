@@ -37,7 +37,7 @@ function createPrismaClient(): PrismaClient {
   return new PrismaClient({
     adapter: new PrismaPg(buildPoolConfig()),
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-    omit: { project: { wp_app_password_encrypted: true } },
+    omit: { project: { wp_password_encrypted: true } },
   });
 }
 

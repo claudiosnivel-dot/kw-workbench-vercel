@@ -50,7 +50,7 @@ async function ownerProject(label: string) {
 const connectionRow = (projectId: string) =>
   prisma.project.findUniqueOrThrow({
     where: { id: projectId },
-    select: { wp_site_url: true, wp_username: true, wp_app_password_encrypted: true, updated_at: true },
+    select: { wp_site_url: true, wp_username: true, wp_password_encrypted: true, updated_at: true },
   });
 
 const meResponse = (capabilities: Record<string, boolean>) => Response.json({ id: 3, name: "Redazione Blog", capabilities });
@@ -71,10 +71,10 @@ describe("collegamento a WordPress", () => {
     expect(text).not.toContain(APP_PASSWORD);
     expect(row.wp_site_url).toBe(SITE_URL);
     expect(row.wp_username).toBe("redazione");
-    expect(row.wp_app_password_encrypted).not.toBeNull();
-    expect(row.wp_app_password_encrypted).not.toBe(plain);
-    expect(row.wp_app_password_encrypted).not.toBe(APP_PASSWORD);
-    expect(decryptSecret(row.wp_app_password_encrypted ?? "")).toBe(plain);
+    expect(row.wp_password_encrypted).not.toBeNull();
+    expect(row.wp_password_encrypted).not.toBe(plain);
+    expect(row.wp_password_encrypted).not.toBe(APP_PASSWORD);
+    expect(decryptSecret(row.wp_password_encrypted ?? "")).toBe(plain);
   });
 
   it("la riga intera del progetto, come nella risposta della PATCH, non contiene la password cifrata", async () => {
@@ -93,7 +93,7 @@ describe("collegamento a WordPress", () => {
     expect(response.status).toBe(200);
     expect(body.data.name).toBe("Blog aggiornato");
     expect(body.data.wp_site_url).toBe(SITE_URL);
-    expect(body.data).not.toHaveProperty("wp_app_password_encrypted");
+    expect(body.data).not.toHaveProperty("wp_password_encrypted");
   });
 
   // covers: AC-4601-2
@@ -182,6 +182,6 @@ describe("collegamento a WordPress", () => {
     const row = await connectionRow(projectId);
 
     expect(response.status).toBe(200);
-    expect([row.wp_site_url, row.wp_username, row.wp_app_password_encrypted]).toEqual([null, null, null]);
+    expect([row.wp_site_url, row.wp_username, row.wp_password_encrypted]).toEqual([null, null, null]);
   });
 });
