@@ -36,3 +36,44 @@ export const readArticle = (cookie: string | undefined, page: PlanPage) =>
 
 export const cancelArticleRun = (cookie: string | undefined, page: PlanPage) =>
   callRoute(cancelRunRoute, { method: "DELETE", url: `${articleUrl(page)}/run`, cookie, params: params(page) });
+
+/** Dati della pagina che la scaletta invia al modello (T-4102), letti dal messaggio dell'utente. */
+export type SentOutlineData = {
+  h2: { id: string; heading: string }[];
+  mainKeyword: string;
+  linkablePages: { id: string; role: "pillar" | "spoke"; h1: string }[];
+};
+
+/** Corpo di una chiamata catturata dal fetch simulato: messaggi e modello inviati a OpenRouter. */
+export function sentBody(init: RequestInit | undefined): { model: string; messages: { role: string; content: string }[] } {
+  return JSON.parse(String(init?.body)) as { model: string; messages: { role: string; content: string }[] };
+}
+
+/**
+ * Scaletta valida per i dati inviati (T-4102): un blocco per id con 100 parole, nell'introduzione i link a ogni pagina
+ * collegabile (così ci sono quello alla pilastro e quelli agli spoke), meta con la keyword principale e la copertina.
+ */
+export function outlineReply(data: SentOutlineData) {
+  return {
+    metaTitle: data.mainKeyword,
+    metaDescription: `Guida a ${data.mainKeyword}: cosa sapere prima di scegliere.`,
+    blocks: [{ id: "INTRO" }, ...data.h2].map((block, index) => ({
+      id: block.id,
+      covers: `Argomento del blocco ${block.id}`,
+      keywords: index === 0 ? [data.mainKeyword] : [],
+      words: 100,
+      links: index === 0 ? data.linkablePages.map((page) => page.id) : [],
+    })),
+    images: [{ block: "INTRO", purpose: "Copertina", alt: `Foto per ${data.mainKeyword}`, subject: "A pair of running shoes on a track" }],
+  };
+}
+
+/** Risposta di OpenRouter con il testo indicato del modello. */
+export const modelReply = (content: unknown, model = "autore/modello-prova:free") =>
+  Response.json({ model, choices: [{ message: { content: typeof content === "string" ? content : JSON.stringify(content) } }] });
+
+/** Risposta di OpenRouter con la scaletta valida per i dati della richiesta ricevuta. */
+export function outlineCompletion(init: RequestInit | undefined): Response {
+  const data = JSON.parse(sentBody(init).messages[1].content) as SentOutlineData;
+  return modelReply(outlineReply(data));
+}

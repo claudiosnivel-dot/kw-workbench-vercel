@@ -213,3 +213,34 @@ modulo 40 prepara i dati e l'avvio; il lavoro che scrive l'articolo arriva con i
 - **Tabelle**: `articles` (una per pagina), `article_sections` (blocchi con il testo in Markdown) e `article_runs`
   (lavori a passi con un solo lavoro attivo per articolo), con la RLS abilitata senza policy (migrazione 0050); la
   scheda sta in `projects` (migrazione 0049).
+
+## Articoli con l'AI: motore e scaletta (modulo 41)
+
+- **Motore** (T-4101, `lib/articles/run.ts`): l'avvio programma il primo passo con una POST firmata verso
+  `/api/internal/article-runs/{id}/advance` (fuori dal controllo di sessione del proxy; firma HMAC di `article-run:`
+  più l'id, quindi la firma di un job delle ricerche non vale: 401 `JOB_SIGNATURE_INVALID`), che risponde 202 e fa il
+  passo in `after()`. Un passo prende la lease (`locked_until`) e il battito come i job, esegue le fasi finché restano
+  120 s per un'altra richiesta, entro 270 s, e salva fase e avanzamento dopo ogni richiesta; poi programma il passo
+  successivo. Le fasi di oggi sono `outline` e `done`: un lavoro senza fasi rimaste è `completed` e l'articolo `READY`.
+- **Richieste**: modelli delle impostazioni in ordine con le riserve (T-3802), 45 s per tentativo e 120 s per tutta la
+  richiesta, una riga di `ai_requests` per tentativo con funzione `article`, il workspace del lavoro e il root admin se
+  l'ha avviato lui (righe fuori dal tetto). Nel log `article_run_request` solo id, fase, modello, esito e tentativi.
+- **Errori**: un errore dell'AI porta il lavoro a `failed` e l'articolo a `FAILED` con `error_code` `AI_BUSY`,
+  `AI_DAILY_LIMIT`, `AI_UNAVAILABLE` (anche senza chiave) o `AI_INVALID_RESPONSE` (tutte le risposte scartate dal
+  controllo); un'eccezione conta un tentativo e riprova, e al tetto `JOB_MAX_ATTEMPTS` (5) è `INTERNAL_ERROR`. Il cron
+  `reap-jobs` riprende anche i lavori fermi (lease scaduta e nessun battito da `JOB_STALE_AFTER_MS`), con i conteggi
+  sommati a quelli dei job. Un lavoro annullato perde la lease e il passo si ferma senza salvare.
+- **Scaletta** (T-4102, `lib/articles/outline-*.ts`): istruzioni in italiano, in spagnolo con la variante del paese o
+  in inglese con la lingua del piano; dati inviati: tipo di pagina e di contenuto, H1, H2 con gli id `H2_1`..., keyword
+  principale e fino a 30 secondarie con il flag domanda, cosa fa l'attività, a chi si rivolge e tono della scheda, note
+  dell'articolo, tetto di parole (SHORT 800, MEDIUM 1500, LONG 2500, un massimo) e pagine collegabili con un id breve
+  (`L1`...) e l'H1: per uno spoke la pilastro e gli altri spoke dello stesso hub, per una pilastro i suoi spoke. Mai
+  volumi, punteggi, nomi di progetto, utente o workspace, né nome, indirizzo o sito dell'attività.
+- **Controllo della scaletta**: INTRO e un blocco per H2 nell'ordine del piano, cosa trattare entro 400 caratteri, solo
+  keyword della pagina (ogni secondaria in un solo blocco), parole entro il tetto, link solo verso le pagine
+  collegabili con quello alla pilastro per uno spoke e a ogni spoke per una pilastro, meta title (60) e meta
+  description (155) con la keyword principale, da 1 a 6 immagini (oltre si tengono le prime sei). Slug, nomi dei file
+  (`{slug}.webp` per la copertina, poi `{slug}-2.webp`...) e prompt delle immagini (soggetto del modello, foto
+  realistica, 16:9 per la copertina e 4:3 nel testo, nessun testo nell'immagine) li calcola il codice. La scaletta
+  accettata salva meta, slug, `outline` (modello e blocchi con keyword, parole e link con l'id della pagina) e `images`
+  e crea i blocchi vuoti; `progress_total` diventa i blocchi più 2.

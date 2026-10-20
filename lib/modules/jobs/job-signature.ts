@@ -14,6 +14,12 @@ function hmac(secret: string, jobId: string, expiresAt: number): string {
   return createHmac("sha256", secret).update(`${jobId}.${expiresAt}`).digest("base64url");
 }
 
+/**
+ * Stringa firmata al posto dell'id per il passo di un lavoro di articolo (T-4101): con il prefisso la firma di un job
+ * delle ricerche non vale per un lavoro di articolo con lo stesso id, e viceversa (gli id non contengono «:»).
+ */
+export const articleRunStepId = (runId: string): string => `article-run:${runId}`;
+
 /** Firma il passo del job con scadenza expiresAt (ms epoch); senza JOB_SIGNING_SECRET lancia un errore. */
 export function signJobStep(jobId: string, expiresAt: number): string {
   const secret = getJobSigningSecret();

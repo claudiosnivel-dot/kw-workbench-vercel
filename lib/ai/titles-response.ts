@@ -37,8 +37,11 @@ function closingBrace(text: string, start: number): number {
   return -1;
 }
 
-/** Primo oggetto JSON del testo, anche dopo una frase o dentro un blocco di codice; null se non ce n'è. */
-function firstJsonObject(content: string): Record<string, unknown> | null {
+/**
+ * Primo oggetto JSON del testo, anche dopo una frase o dentro un blocco di codice; null se non ce n'è. Lo usa anche la
+ * scaletta degli articoli (T-4102).
+ */
+export function firstJsonObject(content: string): Record<string, unknown> | null {
   for (let start = content.indexOf("{"); start !== -1; start = content.indexOf("{", start + 1)) {
     const end = closingBrace(content, start);
     if (end === -1) continue;
@@ -55,7 +58,7 @@ function firstJsonObject(content: string): Record<string, unknown> | null {
 }
 
 /** Titolo ripulito: senza tag HTML, caratteri di controllo o invisibili, spazi ripetuti e '#' iniziali. */
-function cleanTitle(value: string): string {
+export function cleanTitle(value: string): string {
   return value
     .replace(HTML_TAG, " ")
     .replace(CONTROL, " ")
@@ -66,6 +69,12 @@ function cleanTitle(value: string): string {
 }
 
 const tooLong = (title: string) => Array.from(title).length > MAX_TITLE_LENGTH;
+
+/** true se il testo ha tutte le parole della keyword di forma canonica indicata (keywordWords di T-1901), in qualunque ordine. */
+export function hasKeywordWords(text: string, canonical: string, language: string): boolean {
+  const words = keywordWords(canonicalizeKeyword(text, language), language);
+  return [...keywordWords(canonical, language)].every((word) => words.has(word));
+}
 
 /**
  * Proposta del modello per la pagina (T-3502): H1 non vuoto, entro 200 caratteri e con tutte le parole della keyword
@@ -87,8 +96,7 @@ export function parseTitlesResponse(content: string, page: TitlePage, language: 
   if (!h1 || tooLong(h1)) {
     throw invalid("H1 vuoto o troppo lungo");
   }
-  const h1Words = keywordWords(canonicalizeKeyword(h1, language), language);
-  if (![...keywordWords(page.main.canonical, language)].every((word) => h1Words.has(word))) {
+  if (!hasKeywordWords(h1, page.main.canonical, language)) {
     throw invalid("H1 senza la keyword principale");
   }
 
