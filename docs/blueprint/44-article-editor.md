@@ -108,7 +108,7 @@ Dopo i moduli 40-43 il lavoro scrive e controlla l'articolo, ma nessuno può ved
 - Gate umani: nessuno sulle baseline visive esistenti (pagina nuova). Dopo il merge il root admin accende gli articoli dalla card.
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): default LONG per la pagina pilastro, SHORT per le pagine locali, MEDIUM per le altre; polling ogni 3 s; salvataggio automatico dopo 1 s; un nuovo avvio dall'editor chiede conferma.
 - Emendamento dichiarato (2026-10-18, D-47, prima della costruzione): lo spagnolo (moduli 47-51) si costruisce prima di questo modulo, quindi ogni testo nuovo va nei cataloghi it, en ed es-ES, con le differenze in es-419, e il controllo di parità di T-4702 vale anche per i namespace di questo modulo.
-- Note di costruzione (2026-10-20, scelte dell'agente da confermare dall'utente; nessun AC emendato):
+- Note di costruzione (2026-10-20, scelte dell'agente confermate dall'utente lo stesso giorno con AskUserQuestion, D-49, insieme al nome «Riscrivi questo blocco»; le due scelte rimaste aperte sono diventate il modulo 52):
   - l'editor trova la pagina in qualunque versione del piano del progetto (l'articolo segue la pagina con «Rigenera», T-2502); senza pagina o senza articolo la risposta è 404 come per un progetto di un altro workspace;
   - «Apri l'articolo» compare a chi legge il progetto; «Scrivi l'articolo con l'AI» solo con gli articoli accesi, la chiave e strategy.write; la stima nella finestra è quella dell'avvio (H2 più 3, più il 30%);
   - la nuova generazione dall'editor usa la stessa finestra con l'avviso che il testo attuale sarà sostituito e il pulsante «Sostituisci e scrivi»: è la conferma;

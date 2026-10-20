@@ -37,7 +37,8 @@ macrotask, senza chiedere conferme.
      38 ai-model-fallback · 39 ai-usage-counter · 40 article-data ·
      41 article-engine · 42 article-writing · 43 article-checks ·
      44 article-editor · 45 article-export · 46 wordpress · 47 es-locales ·
-     48 es-catalog-work · 49 es-public · 50 es-search · 51 es-strategy-ai
+     48 es-catalog-work · 49 es-public · 50 es-search · 51 es-strategy-ai ·
+     52 article-polish
    • Baseline (.trueline/baseline.json, .trueline/hygiene-baseline.json) e budget
      consumato (MAX_RETRIES_PER_FINDING = 2, GLOBAL_WALL_CLOCK_MS = 242401).
    • Per ogni task chiuso: id, output prodotto, esito del gate (quale oracolo/test
