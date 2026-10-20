@@ -96,6 +96,17 @@ function instructionsFor(language: string, country: string | null): string {
   return englishInstructions(language);
 }
 
+/** Dati della pagina in ogni richiesta del lavoro (scaletta, blocchi e FAQ): lingua, tipi, H1 e keyword principale. */
+export function articlePageData(plan: ArticlePlanPage) {
+  return {
+    language: plan.language,
+    pageType: plan.page.kind === "HUB" ? "pillar" : "spoke",
+    contentType: plan.page.contentType,
+    h1: plan.h1,
+    mainKeyword: plan.page.main.keyword,
+  };
+}
+
 /**
  * Corpo della chiamata a OpenRouter per la scaletta (T-4102): istruzioni in italiano per il piano in italiano, in
  * spagnolo con la variante del paese per il piano in spagnolo (come T-5102), in inglese con la lingua del piano indicata
@@ -105,12 +116,8 @@ export function buildOutlineRequest(input: OutlineInput): ModelRequest {
   const { plan, brief } = input;
   const blockIds = outlineBlockIds(plan.h2.length);
   const data = {
-    language: plan.language,
-    pageType: plan.page.kind === "HUB" ? "pillar" : "spoke",
-    contentType: plan.page.contentType,
-    h1: plan.h1,
+    ...articlePageData(plan),
     h2: plan.h2.map((heading, index) => ({ id: blockIds[index + 1], heading })),
-    mainKeyword: plan.page.main.keyword,
     secondaryKeywords: plan.page.secondary
       .slice(0, OUTLINE_MAX_SECONDARY)
       .map((keyword) => ({ keyword: keyword.keyword, question: keyword.isQuestion })),

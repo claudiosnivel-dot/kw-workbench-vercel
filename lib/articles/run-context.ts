@@ -5,7 +5,7 @@ import { requestWithFallback } from "@/lib/ai/openrouter";
 import { getAiTitlesSettings } from "@/lib/ai/settings";
 import type { TitlesRequest } from "@/lib/ai/titles-prompt";
 import { getOpenRouterSettings } from "@/lib/env";
-import type { Prisma } from "@/lib/generated/prisma/client";
+import type { ArticleRunScope, Prisma } from "@/lib/generated/prisma/client";
 import { logger } from "@/lib/observability/logger";
 
 /*
@@ -28,8 +28,22 @@ export class RunLeaseLostError extends Error {
   }
 }
 
-/** Lavoro passato a una fase: articolo, progetto e workspace, e se l'ha avviato il root admin (le sue righe non contano, D-43). */
-export type PhaseRun = { id: string; articleId: string; projectId: string; workspaceId: string; byRootAdmin: boolean; phase: string };
+/**
+ * Lavoro passato a una fase: articolo, progetto e workspace, e se l'ha avviato il root admin (le sue righe non contano,
+ * D-43); l'ambito con il blocco e l'istruzione della riscrittura (scope SECTION) e il cursore salvato dalla fase.
+ */
+export type PhaseRun = {
+  id: string;
+  articleId: string;
+  projectId: string;
+  workspaceId: string;
+  byRootAdmin: boolean;
+  phase: string;
+  scope: ArticleRunScope;
+  sectionId: string | null;
+  instruction: string | null;
+  cursor: Prisma.JsonValue;
+};
 
 export type PhaseContext = { run: PhaseRun; lease: RunLease; deadlineMs: number; nextPhase: string };
 

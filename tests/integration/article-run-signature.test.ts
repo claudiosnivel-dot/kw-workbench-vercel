@@ -10,7 +10,7 @@ import { articleRunStepId, signJobStep } from "@/lib/modules/jobs/job-signature"
 import { prisma } from "@/lib/prisma";
 import { proxy } from "@/proxy";
 import { memberWithPlan, stubOpenRouterEnv } from "../helpers/ai-titles";
-import { outlineCompletion, saveArticleSettings, startArticle } from "../helpers/articles";
+import { articleCompletion, saveArticleSettings, startArticle } from "../helpers/articles";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { clearAfter, flushAfter } from "../helpers/next-after";
@@ -62,7 +62,8 @@ describe("rotta interna dei lavori degli articoli", () => {
   it("con la firma di un job delle ricerche risponde 401 e il lavoro non cambia; con la firma giusta 202", async () => {
     const runId = await pendingRun();
     const before = await prisma.articleRun.findUniqueOrThrow({ where: { id: runId } });
-    fetchMock.mockImplementation(async (_url, init) => outlineCompletion(init));
+    // impacted-by: T-4201 e T-4202 (il lavoro scrive anche blocchi e FAQ: risposte simulate per ogni richiesta)
+    fetchMock.mockImplementation(async (_url, init) => articleCompletion(init));
 
     const jobSigned = await callAdvance(runId, runId);
     await flushAfter();

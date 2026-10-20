@@ -221,7 +221,8 @@ modulo 40 prepara i dati e l'avvio; il lavoro che scrive l'articolo arriva con i
   più l'id, quindi la firma di un job delle ricerche non vale: 401 `JOB_SIGNATURE_INVALID`), che risponde 202 e fa il
   passo in `after()`. Un passo prende la lease (`locked_until`) e il battito come i job, esegue le fasi finché restano
   120 s per un'altra richiesta, entro 270 s, e salva fase e avanzamento dopo ogni richiesta; poi programma il passo
-  successivo. Le fasi di oggi sono `outline` e `done`: un lavoro senza fasi rimaste è `completed` e l'articolo `READY`.
+  successivo. Le fasi sono `outline`, `sections` e `faq` (modulo 42) e poi `done`: un lavoro senza fasi rimaste è
+  `completed` e l'articolo `READY`.
 - **Richieste**: modelli delle impostazioni in ordine con le riserve (T-3802), 45 s per tentativo e 120 s per tutta la
   richiesta, una riga di `ai_requests` per tentativo con funzione `article`, il workspace del lavoro e il root admin se
   l'ha avviato lui (righe fuori dal tetto). Nel log `article_run_request` solo id, fase, modello, esito e tentativi.
@@ -244,3 +245,28 @@ modulo 40 prepara i dati e l'avvio; il lavoro che scrive l'articolo arriva con i
   realistica, 16:9 per la copertina e 4:3 nel testo, nessun testo nell'immagine) li calcola il codice. La scaletta
   accettata salva meta, slug, `outline` (modello e blocchi con keyword, parole e link con l'id della pagina) e `images`
   e crea i blocchi vuoti; `progress_total` diventa i blocchi più 2.
+
+## Articoli con l'AI: scrittura dei blocchi e FAQ (modulo 42)
+
+- **Blocchi** (T-4201, `lib/articles/section-*.ts`, `lib/articles/sections.ts`): dopo la scaletta la fase `sections`
+  scrive un blocco per richiesta, introduzione e H2 nell'ordine, con il cursore `{ block: n }` salvato dopo ogni
+  richiesta. Al modello vanno la pagina come nella scaletta, la scheda, le note, la scaletta intera (id, titolo e cosa
+  tratta ogni blocco) e il blocco da scrivere con le sue keyword, il suo tetto di parole e le sue pagine da collegare
+  (`page:L1` e l'H1). Le istruzioni, in italiano, in spagnolo con la variante del paese o in inglese con la lingua del
+  piano, chiedono il tono della scheda, frasi varie e paragrafi brevi, esempi concreti, nessun riempitivo, nessuna
+  delle formule tipiche dei testi generati, nessun dato inventato (segnaposto `[da verificare: …]`, `[por verificar: …]`
+  o `[to verify: …]`), nessun link esterno (`[fonte da aggiungere]`, `[fuente por añadir]` o `[source to add]`) e
+  Markdown semplice. Il modello risponde con il solo testo del blocco.
+- **Pulizia** (`lib/articles/markdown-sanitizer.ts`): restano paragrafi, grassetto, corsivo, elenchi, sottotitoli H3 e
+  i link `page:` verso le pagine del blocco, salvati con l'id della pagina del piano; si tolgono HTML (script e stili con
+  il contenuto), titoli di livello 1 e 2, immagini, tabelle, codice, citazioni, link esterni e indirizzi web, lasciando
+  il testo. Un blocco vuoto dopo la pulizia, o un'introduzione senza la keyword principale nelle prime 100 parole, è
+  `AI_INVALID_RESPONSE` e si prova il modello successivo. Il blocco salva `body`, `model` ed `edited` false.
+- **Domande frequenti** (T-4202, `lib/articles/faq*.ts`): la fase `faq` fa una richiesta con le keyword-domanda della
+  pagina, le altre secondarie (fino a 30 ciascuna), la scaletta, la scheda e le note; la risposta JSON deve avere da 3
+  a 6 coppie, domande entro 150 caratteri con il punto interrogativo e risposte da 20 a 120 parole pulite come i blocchi
+  (senza link). Il blocco `FAQ` va in fondo con il titolo «Domande frequenti», «Preguntas frecuentes» o «Frequently asked
+  questions» e ogni domanda in grassetto seguita dalla risposta.
+- **Riscrittura di un blocco** (scope `SECTION`, la crea il modulo 44): il lavoro nasce nella fase `sections` con il
+  blocco e l'istruzione dell'autore, che va tra i dati; `sections` riscrive un'introduzione o un H2, `faq` il blocco FAQ,
+  e il blocco torna `edited` false. Un articolo intero fa una richiesta per la scaletta, una per blocco e una per le FAQ.

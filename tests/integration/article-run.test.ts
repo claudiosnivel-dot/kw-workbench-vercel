@@ -1,5 +1,5 @@
 // Gate di T-4101 (AC-4101-1, AC-4101-2, AC-4101-4): il motore porta il lavoro di un articolo fino alla fine con la
-// scaletta salvata e una riga di ai_requests per richiesta; il cron reap-jobs riprende un lavoro fermo e fallisce quello
+// scaletta, i blocchi e le FAQ salvati e una riga di ai_requests per richiesta; il cron reap-jobs riprende un lavoro fermo e fallisce quello
 // con 5 tentativi; il limite giornaliero dell'account fa fallire il lavoro con AI_DAILY_LIMIT. In più l'annullamento,
 // anche durante una richiesta, le risposte tutte scartate e il primo passo programmato all'avvio. La continuazione è
 // sostituita da un registratore: nessuna chiamata HTTP nei test.
@@ -10,7 +10,7 @@ import { advanceArticleRun, runArticleStep } from "@/lib/articles/run";
 import { scheduleArticleRunContinuation } from "@/lib/modules/jobs/continuation";
 import { prisma } from "@/lib/prisma";
 import { memberWithPlan, stubOpenRouterEnv } from "../helpers/ai-titles";
-import { cancelArticleRun, modelReply, outlineCompletion, saveArticleSettings, startArticle } from "../helpers/articles";
+import { articleCompletion, cancelArticleRun, modelReply, saveArticleSettings, startArticle } from "../helpers/articles";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 
@@ -69,12 +69,13 @@ async function makeStuck(runId: string, attempts: number) {
 
 describe("motore dei lavori degli articoli", () => {
   // covers: AC-4101-1
-  it("porta il lavoro a completed e l'articolo a READY con la scaletta, con 1 riga di ai_requests del workspace", async () => {
+  // impacted-by: T-4201 e T-4202 (dopo la scaletta il lavoro scrive blocchi e FAQ: una riga di ai_requests per richiesta, AC-4101-1 emendato)
+  it("porta il lavoro a completed e l'articolo a READY con scaletta, blocchi e FAQ, con una riga di ai_requests del workspace per richiesta", async () => {
     await saveArticleSettings();
     const { owner, articleId, runId } = await startedArticle("t4101-a");
     // Il primo passo parte con la continuazione programmata dall'avvio.
     expect(registrar.mock.calls).toEqual([[runId]]);
-    fetchMock.mockImplementation(async (_url, init) => outlineCompletion(init));
+    fetchMock.mockImplementation(async (_url, init) => articleCompletion(init));
 
     const step = await advanceArticleRun(runId, Date.now() + STEP_MS);
 
@@ -85,18 +86,22 @@ describe("motore dei lavori degli articoli", () => {
     expect(article).toMatchObject({ status: "READY", error_code: null, meta_title: "scarpe running donna", slug: "scarpe-running-donna" });
     expect(article.outline).toMatchObject({ model: "autore/modello-prova:free", blocks: [{ kind: "INTRO" }, { kind: "H2", heading: "H2 spoke" }] });
     expect(article.images).toMatchObject([{ cover: true, aspectRatio: "16:9", fileName: "scarpe-running-donna.webp" }]);
-    expect(article.sections.map((section) => [section.position, section.kind, section.heading, section.body])).toEqual([
-      [0, "INTRO", null, ""],
-      [1, "H2", "H2 spoke", ""],
+    expect(article.sections.map((section) => [section.position, section.kind, section.heading, section.body.length > 0])).toEqual([
+      [0, "INTRO", null, true],
+      [1, "H2", "H2 spoke", true],
+      [2, "FAQ", "Domande frequenti", true],
     ]);
+    // Scaletta, introduzione, H2 e FAQ: una richiesta ciascuno.
     const requests = await prisma.aiRequest.findMany();
-    expect(requests).toHaveLength(1);
-    expect(requests[0]).toMatchObject({ feature: "article", outcome: "ok", workspace_id: owner.workspaceId, by_root_admin: false });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requests).toHaveLength(4);
+    for (const request of requests) {
+      expect(request).toMatchObject({ feature: "article", outcome: "ok", workspace_id: owner.workspaceId, by_root_admin: false });
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(4);
 
     // Un passo su un lavoro finito non fa nulla.
     expect(await advanceArticleRun(runId, Date.now() + STEP_MS)).toMatchObject({ status: "completed", more: false });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   // covers: AC-4101-2
@@ -107,7 +112,7 @@ describe("motore dei lavori degli articoli", () => {
     await makeStuck(stuck.runId, 1);
     await makeStuck(exhausted.runId, 5);
     registrar.mockClear();
-    fetchMock.mockImplementation(async (_url, init) => outlineCompletion(init));
+    fetchMock.mockImplementation(async (_url, init) => articleCompletion(init));
 
     const response = await callCron();
 
@@ -174,7 +179,7 @@ describe("annullamento del lavoro", () => {
     const { member, spoke, articleId, runId } = await startedArticle("t4101-g");
     fetchMock.mockImplementation(async (_url, init) => {
       expect((await cancelArticleRun(member.cookie, spoke)).status).toBe(200);
-      return outlineCompletion(init);
+      return articleCompletion(init);
     });
 
     expect(await advanceArticleRun(runId, Date.now() + STEP_MS)).toMatchObject({ status: "canceled", more: false });

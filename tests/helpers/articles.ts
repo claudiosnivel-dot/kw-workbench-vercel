@@ -7,7 +7,8 @@ import { callRoute } from "./http";
 
 /*
  * Supporto dei test degli articoli (T-4002): impostazioni dell'AI con gli articoli accesi, salvate come le salva la card
- * del root admin, e le rotte dell'articolo di una pagina del piano.
+ * del root admin, le rotte dell'articolo di una pagina del piano e le risposte simulate del modello per le richieste del
+ * lavoro (scaletta, blocchi e domande frequenti).
  */
 
 /** Impostazioni dell'AI con gli articoli accesi e i limiti predefiniti, salvo indicazione contraria. */
@@ -72,8 +73,43 @@ export function outlineReply(data: SentOutlineData) {
 export const modelReply = (content: unknown, model = "autore/modello-prova:free") =>
   Response.json({ model, choices: [{ message: { content: typeof content === "string" ? content : JSON.stringify(content) } }] });
 
-/** Risposta di OpenRouter con la scaletta valida per i dati della richiesta ricevuta. */
-export function outlineCompletion(init: RequestInit | undefined): Response {
-  const data = JSON.parse(sentBody(init).messages[1].content) as SentOutlineData;
-  return modelReply(outlineReply(data));
+/** Dati di un blocco che la scrittura invia al modello (T-4201), letti dal messaggio dell'utente. */
+export type SentSectionData = {
+  mainKeyword: string;
+  outline: { id: string; heading: string | null; covers: string }[];
+  block: { id: string; heading: string | null; keywords: string[]; maxWords: number; links: { target: string; h1: string }[] };
+  instruction?: string;
+};
+
+/** Dati delle domande frequenti inviati al modello (T-4202). */
+export type SentFaqData = { mainKeyword: string; questionKeywords: string[]; otherKeywords: string[]; instruction?: string };
+
+/** Messaggio dell'utente di una chiamata catturata, letto come JSON. */
+export const sentData = <T>(init: RequestInit | undefined): T => JSON.parse(sentBody(init).messages[1].content) as T;
+
+/** Testo valido di un blocco (T-4201): la keyword principale nella prima frase e un link a ogni pagina del blocco. */
+export function sectionReply(data: SentSectionData): string {
+  const links = data.block.links.map((link) => `[${link.h1}](${link.target})`).join(" e ");
+  const opening = `Chi cerca ${data.mainKeyword} trova qui il blocco ${data.block.id}.`;
+  return links ? `${opening}\n\nPer approfondire leggi ${links}.` : opening;
+}
+
+const FAQ_ANSWER = "La risposta dipende da come corri, da quanti chilometri fai ogni settimana e dal terreno: prova le scarpe in negozio prima di scegliere il modello giusto.";
+
+/** Quattro coppie valide di domande frequenti (T-4202): dalle keyword-domanda finché ci sono, poi domande sulla principale. */
+export function faqReply(data: SentFaqData) {
+  return {
+    faq: [0, 1, 2, 3].map((index) => ({
+      question: `${data.questionKeywords[index] ?? `Domanda ${index + 1} su ${data.mainKeyword}`}?`,
+      answer: FAQ_ANSWER,
+    })),
+  };
+}
+
+/** Risposta valida di OpenRouter per qualunque richiesta del lavoro: scaletta (T-4102), blocco (T-4201) o FAQ (T-4202). */
+export function articleCompletion(init: RequestInit | undefined): Response {
+  const data = sentData<Record<string, unknown>>(init);
+  if ("block" in data) return modelReply(sectionReply(data as unknown as SentSectionData));
+  if ("questionKeywords" in data) return modelReply(faqReply(data as unknown as SentFaqData));
+  return modelReply(outlineReply(data as unknown as SentOutlineData));
 }
