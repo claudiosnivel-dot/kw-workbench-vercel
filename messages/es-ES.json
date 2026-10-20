@@ -423,7 +423,8 @@
     "AI_MODEL_NOT_FREE": "El modelo tiene que ser gratuito: un ID como autor/modelo:free.",
     "AI_BUSY": "Todos los modelos gratuitos están ocupados: vuelve a intentarlo dentro de unos minutos.",
     "AI_DAILY_LIMIT": "Se han agotado las solicitudes a la IA de hoy: vuelve a intentarlo mañana.",
-    "ARTICLE_NOT_FOUND": "No se ha encontrado el artículo."
+    "ARTICLE_NOT_FOUND": "No se ha encontrado el artículo.",
+    "ARTICLE_VERSION_CONFLICT": "Este artículo se ha modificado en otro lugar: recarga la página."
   },
   "errorPages": {
     "error": {
@@ -1834,6 +1835,124 @@
       "cancel": "Cancelar",
       "menu": "Acciones de la versión «{name}»",
       "menuColumn": "Acciones"
+    }
+  },
+  "article": {
+    "start": {
+      "open": "Escribir el artículo con IA",
+      "openExisting": "Abrir el artículo",
+      "title": "Escribir el artículo con IA",
+      "replaceTitle": "Volver a escribir el artículo",
+      "intro": "La IA escribe el artículo en segundo plano, un bloque cada vez: puedes cerrar la página y volver más tarde.",
+      "replaceWarning": "El nuevo artículo sustituye el texto actual, incluidos los cambios que hiciste.",
+      "length": "Longitud",
+      "lengths": {
+        "SHORT": "Breve",
+        "MEDIUM": "Media",
+        "LONG": "Larga"
+      },
+      "lengthHint": "hasta {words, number} palabras",
+      "notes": "Notas para el artículo (opcionales)",
+      "notesHint": "Por ejemplo, qué mencionar, qué evitar o qué añadir al esquema.",
+      "estimate": "Unas {count, plural, one {# solicitud} other {# solicitudes}} a la IA.",
+      "cancel": "Cancelar",
+      "submit": "Escribir",
+      "replaceSubmit": "Sustituir y escribir",
+      "starting": "Iniciando…",
+      "rateLimited": "Has alcanzado el límite de artículos: vuelve a intentarlo después de las {time}."
+    },
+    "editor": {
+      "back": "Volver al plan",
+      "status": {
+        "GENERATING": "En redacción",
+        "READY": "Listo",
+        "FAILED": "Sin completar"
+      },
+      "progress": "Solicitudes hechas: {done} de {total}",
+      "rewriting": "Reescribiendo un bloque…",
+      "writeAgain": "Volver a escribir",
+      "meta": "Datos para los buscadores",
+      "metaTitle": "Title",
+      "metaDescription": "Meta description",
+      "slug": "Slug",
+      "counter": "{count} de {max}",
+      "intro": "Introducción",
+      "writing": "Escribiendo…",
+      "emptyBlock": "Este bloque todavía no tiene texto.",
+      "edit": "Editar",
+      "editLabel": "Texto del bloque «{block}»",
+      "editHint": "Markdown: **negrita**, listas con - y enlaces a las páginas del plan con la forma [texto](page:…).",
+      "done": "Listo",
+      "saving": "Guardando…",
+      "saved": "Guardado",
+      "conflict": "Este artículo se ha modificado en otro lugar: recarga la página",
+      "edited": "editado por ti",
+      "rewrite": "Reescribir este bloque",
+      "rewriteLabel": "Qué cambiar (opcional)",
+      "rewriteSubmit": "Reescribir",
+      "rewriteCancel": "Cancelar",
+      "rewriteLimited": "Has alcanzado el límite de bloques reescritos: vuelve a intentarlo después de las {time}.",
+      "images": "Marcadores de imagen",
+      "image": "Marcador de imagen {number}",
+      "cover": "portada",
+      "imagePurpose": "Finalidad",
+      "imageAlt": "Texto alternativo",
+      "imageFile": "Nombre del archivo",
+      "imagePrompt": "Prompt",
+      "copyPrompt": "Copiar prompt",
+      "copied": "Copiado",
+      "copyFailed": "No se pudo copiar: selecciona el prompt y cópialo a mano."
+    },
+    "marks": {
+      "ai_pattern": "Rasgo típico de los textos generados: {rule}",
+      "to_verify": "Por verificar: {rule}",
+      "rules": {
+        "phrase": "fórmula hecha",
+        "em_dash": "raya",
+        "emoji": "emoji",
+        "rhetorical_questions": "preguntas retóricas seguidas",
+        "repeated_openings": "frases que empiezan igual",
+        "placeholder": "marcador por completar",
+        "law": "referencia legal",
+        "amount": "importe",
+        "percentage": "porcentaje",
+        "year": "año",
+        "number": "dato numérico"
+      }
+    },
+    "seo": {
+      "title": "Revisión SEO",
+      "empty": "La revisión SEO llega cuando el artículo está escrito.",
+      "density": "Densidad de «{keyword}»: {density, number} por cada 100 palabras",
+      "metaTitle": "Title: {length} caracteres de {max}",
+      "metaDescription": "Meta description: {length} caracteres de {max}",
+      "toVerify": "Datos por verificar pendientes: {count}",
+      "articleProblems": "Por corregir en el artículo",
+      "problems": {
+        "main_keyword_h1": "La palabra clave principal no está en el título H1",
+        "main_keyword_opening": "La palabra clave principal no está en las primeras 100 palabras",
+        "main_keyword_meta_title": "La palabra clave principal no está en el title",
+        "main_keyword_meta_description": "La palabra clave principal no está en la meta description",
+        "meta_title_length": "El title tiene {length} caracteres: como máximo {max}",
+        "meta_description_length": "La meta description tiene {length} caracteres: como máximo {max}",
+        "density": "La palabra clave principal aparece {count} veces: como máximo {max}",
+        "ai_patterns": "{count, plural, one {# rasgo típico} other {# rasgos típicos}} de los textos generados, por encima del umbral"
+      },
+      "keywordsUsed": "Palabras clave usadas: {list}",
+      "keywordsMissing": "Palabras clave que faltan: {list}",
+      "linksPresent": "Enlaces internos presentes: {list}",
+      "linksMissing": "Enlaces obligatorios que faltan: {list}",
+      "noProblems": "Ningún problema"
+    },
+    "errors": {
+      "AI_BUSY": "Los modelos gratuitos están todos ocupados: vuelve a escribir el artículo dentro de unos minutos.",
+      "AI_DAILY_LIMIT": "Se han agotado las solicitudes a la IA de hoy: vuelve a escribir el artículo mañana.",
+      "AI_UNAVAILABLE": "No se puede acceder al servicio de IA: vuelve a escribir el artículo dentro de poco.",
+      "AI_INVALID_RESPONSE": "Los modelos dieron respuestas que no se pueden usar: vuelve a escribir el artículo.",
+      "AI_NOT_CONFIGURED": "Los artículos con IA no están activos en este momento.",
+      "JOB_ALREADY_ACTIVE": "Este artículo ya tiene un trabajo en curso: espera a que termine.",
+      "CANCELED": "La redacción se detuvo antes del final.",
+      "INTERNAL_ERROR": "La redacción se interrumpió por un error: vuelve a escribir el artículo."
     }
   }
 }

@@ -27,8 +27,11 @@ function outlineBlocks(outline: Prisma.JsonValue): OutlineBlock[] {
   return Array.isArray(blocks) ? (blocks as unknown as OutlineBlock[]) : [];
 }
 
-/** Articolo del lavoro con la pagina del piano (T-4102), la scheda del progetto (T-4001), la scaletta, le meta e i blocchi in ordine. */
-export async function readPhaseArticle(run: PhaseRun): Promise<PhaseArticle> {
+/**
+ * Articolo del lavoro con la pagina del piano (T-4102), la scheda del progetto (T-4001), la scaletta, le meta e i blocchi
+ * in ordine; anche per i controlli di una modifica dell'autore (T-4402), con il solo articolo e il suo progetto.
+ */
+export async function readPhaseArticle(run: Pick<PhaseRun, "articleId" | "projectId">): Promise<PhaseArticle> {
   const article = await prisma.article.findFirstOrThrow({
     where: { id: run.articleId, project_id: run.projectId },
     select: {

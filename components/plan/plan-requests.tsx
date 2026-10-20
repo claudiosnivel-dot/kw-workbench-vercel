@@ -18,6 +18,9 @@ export type AiTitlesResult =
   | { ok: false; code: string | null; message: string; retryAfterSeconds: number | null };
 
 export type PlanRequests = {
+  /** Progetto e piano delle richieste: servono anche all'avvio dell'articolo di una pagina (T-4401). */
+  projectId: string;
+  strategyId: string;
   pending: boolean;
   /** Ultimo errore, già tradotto; dopo un 409 STRATEGY_CONFLICT il messaggio del piano ricaricato. */
   error: string | null;
@@ -111,6 +114,8 @@ export function PlanRequestsProvider({
   };
 
   const value: PlanRequests = {
+    projectId,
+    strategyId,
     pending,
     error,
     clearError: () => setError(null),

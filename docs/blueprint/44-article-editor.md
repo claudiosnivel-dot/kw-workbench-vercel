@@ -6,7 +6,7 @@
 Dopo i moduli 40-43 il lavoro scrive e controlla l'articolo, ma nessuno può vederlo. Dopo questo modulo:
 
 - **Avvio**: nel pannello della pagina del piano «Scrivi l'articolo con l'AI» apre una finestra con la lunghezza (Breve, Media, Lunga; default secondo la pagina) e le note, poi porta all'editor; con un articolo esistente il pannello mostra «Apri l'articolo».
-- **Editor** a `/projects/<id>/plan/pages/<pagina>/article`: H1, avanzamento, title, meta description e slug con i contatori, poi i blocchi formattati con i tratti AI in giallo e i dati da verificare in arancio; «Modifica» apre un blocco come testo con salvataggio automatico; «Riscrivi questa sezione» con un'istruzione facoltativa; rapporto «Controllo SEO»; riquadri dei segnaposto immagine con «Copia prompt».
+- **Editor** a `/projects/<id>/plan/pages/<pagina>/article`: H1, avanzamento, title, meta description e slug con i contatori, poi i blocchi formattati con i tratti AI in giallo e i dati da verificare in arancio; «Modifica» apre un blocco come testo con salvataggio automatico; «Riscrivi questo blocco» con un'istruzione facoltativa; rapporto «Controllo SEO»; riquadri dei segnaposto immagine con «Copia prompt».
 - **Accensione**: con questo modulo il root admin può accendere gli articoli dalla card.
 
 ## Task atomici
@@ -71,7 +71,7 @@ Dopo i moduli 40-43 il lavoro scrive e controlla l'articolo, ma nessuno può ved
   definition_of_done:
     - "PATCH .../article con { version, sections?: [{ id, body }], meta_title?, meta_description?, slug? }: version diversa → 409 ARTICLE_VERSION_CONFLICT; body ripulito con il sanitizer di T-4201; un blocco salvato diventa edited true e i suoi checks e seo_report si ricalcolano (T-4301, T-4302) senza chiamare il modello; meta e slug con i limiti di T-4102 (400 VALIDATION_ERROR)."
     - "«Modifica» apre il blocco in un campo di testo (Markdown con grassetto, elenchi e link alle pagine del piano), con salvataggio automatico 1 s dopo l'ultima modifica e «Salvato» o l'errore; il conflitto 409 mostra «Questo articolo è stato modificato altrove: ricarica la pagina»."
-    - "«Riscrivi questa sezione» con un'istruzione facoltativa (fino a 500 caratteri): POST .../article/sections/[sectionId]/rewrite crea un lavoro con scope SECTION entro sectionRewritesPerWorkspaceDaily e il tetto della piattaforma (429 RATE_LIMITED); un lavoro attivo → 409 JOB_ALREADY_ACTIVE; il blocco riscritto torna edited false."
+    - "«Riscrivi questo blocco» con un'istruzione facoltativa (fino a 500 caratteri): POST .../article/sections/[sectionId]/rewrite crea un lavoro con scope SECTION entro sectionRewritesPerWorkspaceDaily e il tetto della piattaforma (429 RATE_LIMITED); un lavoro attivo → 409 JOB_ALREADY_ACTIVE; il blocco riscritto torna edited false."
     - "Riquadro «Controllo SEO»: keyword usate e mancanti per blocco, densità della keyword principale, link interni presenti e obbligatori mancanti, lunghezze di title e meta, numero di segnaposto da verificare aperti; testi it ed en."
 
   acceptance_criteria:
@@ -81,7 +81,7 @@ Dopo i moduli 40-43 il lavoro scrive e controlla l'articolo, ma nessuno può ved
       then: "la prima risposta è 200 con version 4, il body salvato non contiene '<b>' e contiene '**grassetto**', il blocco è edited; la seconda è 409 ARTICLE_VERSION_CONFLICT"
     - id: AC-4402-2
       given: "sectionRewritesPerWorkspaceDaily 1 e una riscrittura già fatta oggi nel workspace"
-      when: "un MEMBER chiede «Riscrivi questa sezione», poi il root admin"
+      when: "un MEMBER chiede «Riscrivi questo blocco», poi il root admin"
       then: "il MEMBER riceve 429 RATE_LIMITED e nessun lavoro nuovo; il root admin riceve 202 con un lavoro di scope SECTION"
     - id: AC-4402-3
       given: "l'editor reso con un seo_report che segnala la keyword 'noleggio letto ospedaliero roma' mancante e il link alla pagina pilastro mancante"
@@ -108,3 +108,12 @@ Dopo i moduli 40-43 il lavoro scrive e controlla l'articolo, ma nessuno può ved
 - Gate umani: nessuno sulle baseline visive esistenti (pagina nuova). Dopo il merge il root admin accende gli articoli dalla card.
 - Scelte dell'agente (confermate dall'utente il 2026-10-18 con l'approvazione del modulo, «approvo tutto»): default LONG per la pagina pilastro, SHORT per le pagine locali, MEDIUM per le altre; polling ogni 3 s; salvataggio automatico dopo 1 s; un nuovo avvio dall'editor chiede conferma.
 - Emendamento dichiarato (2026-10-18, D-47, prima della costruzione): lo spagnolo (moduli 47-51) si costruisce prima di questo modulo, quindi ogni testo nuovo va nei cataloghi it, en ed es-ES, con le differenze in es-419, e il controllo di parità di T-4702 vale anche per i namespace di questo modulo.
+- Note di costruzione (2026-10-20, scelte dell'agente da confermare dall'utente; nessun AC emendato):
+  - l'editor trova la pagina in qualunque versione del piano del progetto (l'articolo segue la pagina con «Rigenera», T-2502); senza pagina o senza articolo la risposta è 404 come per un progetto di un altro workspace;
+  - «Apri l'articolo» compare a chi legge il progetto; «Scrivi l'articolo con l'AI» solo con gli articoli accesi, la chiave e strategy.write; la stima nella finestra è quella dell'avvio (H2 più 3, più il 30%);
+  - la nuova generazione dall'editor usa la stessa finestra con l'avviso che il testo attuale sarà sostituito e il pulsante «Sostituisci e scrivi»: è la conferma;
+  - i link interni del testo diventano link alla pagina del piano con il suo pannello aperto (`/projects/<id>/plan?page=<pagina>`); ogni altro indirizzo resta testo;
+  - title, meta description e slug si modificano nell'intestazione con lo stesso salvataggio automatico dei blocchi (1 s); lo slug ammette lettere minuscole e cifre unite da trattini, fino a 80 caratteri;
+  - PATCH con un lavoro attivo sull'articolo → 409 JOB_ALREADY_ACTIVE (il motore sta scrivendo); un blocco vuoto dopo la pulizia → 400 VALIDATION_ERROR; un id di blocco che non è dell'articolo → 400 VALIDATION_ERROR;
+  - emendamento dichiarato del DoD di T-4402, dell'obiettivo e di AC-4402-2: il pulsante si chiama «Riscrivi questo blocco» («Rewrite this block», «Reescribir este bloque») e non «Riscrivi questa sezione», perché «sezione» e «section» sono tra le parole vietate nei testi del cliente da T-2604 (AC-2604-1, `tests/unit/plain-language.test.ts`), e l'editor parla già di blocchi; la rotta resta `.../article/sections/[sectionId]/rewrite`;
+  - «Riscrivi questo blocco»: un blocco che non è dell'articolo → 404 ARTICLE_NOT_FOUND; il tetto della piattaforma deve avere posto per 3 richieste (la riscrittura e quella eventuale dei controlli, più il 30%) e non consuma nulla, poi il limite del workspace consuma una riscrittura (chiave `ai-section-rewrites:workspace:<id>`, 24 ore), root admin escluso da entrambi (D-43); l'avvio della riscrittura fa crescere la version dell'articolo, così una modifica aperta prima della riscrittura non la sovrascrive.

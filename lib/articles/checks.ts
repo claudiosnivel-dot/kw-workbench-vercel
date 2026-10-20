@@ -95,8 +95,11 @@ async function rewrite(context: PhaseContext, article: PhaseArticle, section: Se
 
 const storedChecks = (check: BlockCheck, rewritten: boolean) => ({ version: STYLE_RULES_VERSION, ...check.style, problems: check.problems, rewritten });
 
+/** Controlli salvati di un blocco modificato dall'autore (T-4402): quelli del testo che ha nell'articolo dato, senza modello. */
+export const authorBlockChecks = (article: PhaseArticle, position: number) => storedChecks(checkBlock(article, position), false);
+
 /** Rapporto SEO dell'articolo (T-4302): densità e problemi dell'articolo, poi i blocchi con i problemi rimasti. */
-function seoReport(article: PhaseArticle) {
+export function seoReport(article: PhaseArticle) {
   const seo = analyzeSeo(seoArticle(article));
   const blocks = article.sections.map((section) => {
     const style = analyzeStyle(section.body, article.plan.language);

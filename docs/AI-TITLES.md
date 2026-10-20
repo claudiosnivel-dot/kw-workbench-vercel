@@ -298,3 +298,29 @@ Il verdetto sul testo è di due controlli deterministici, mai del modello.
   `seo_report` con la densità, i problemi dell'articolo e i blocchi con i problemi rimasti (`ai_patterns` per la
   soglia ancora superata). Con lo scope `SECTION` si controlla solo il blocco del lavoro e il rapporto si ricalcola
   sull'intero articolo. Al massimo una riscrittura per blocco e per lavoro (CWE-770).
+
+## Articoli con l'AI: editor (modulo 44)
+
+Dopo il merge del modulo 44 il root admin accende gli articoli dalla card «Titoli con l'AI» (switch «Articoli per gli
+utenti»); senza la chiave di OpenRouter restano spenti.
+
+- **Avvio dal pannello** (T-4401, `components/plan/article-entry.tsx`): con gli articoli accesi, la chiave e
+  `strategy.write`, «Scrivi l'articolo con l'AI» apre la finestra con la lunghezza (Lunga per la pilastro, Breve per le
+  pagine con tipo `local`, Media per le altre, `lib/articles/lengths.ts`), le note fino a 1000 caratteri e la stima
+  delle richieste; «Scrivi» chiama la POST dell'articolo e apre l'editor. Con un articolo esistente il pannello mostra
+  «Apri l'articolo».
+- **Editor** (`/projects/<id>/plan/pages/<pagina>/article`, `components/article/article-editor.tsx`): pagina e
+  articolo risolti nel progetto del workspace, altrimenti 404. Intestazione con H1, stato e avanzamento (polling della
+  GET ogni 3 s finché c'è un lavoro attivo), title, meta description e slug con i contatori; blocchi resi da
+  react-markdown senza HTML né immagini, con i link `page:` verso le pagine del piano come link al loro pannello, i
+  tratti AI in giallo e i dati da verificare in arancio (la regola nel title); segnaposto immagine dopo il loro blocco
+  con «Copia prompt»; riquadro «Controllo SEO» dal rapporto salvato. «Scrivi di nuovo» riapre la finestra con l'avviso
+  che il testo attuale sarà sostituito.
+- **Modifiche** (T-4402, `lib/articles/edit.ts`): PATCH `.../article` con `{ version, sections?: [{ id, body }],
+  meta_title?, meta_description?, slug? }`; version diversa → 409 `ARTICLE_VERSION_CONFLICT`, un lavoro attivo → 409
+  `JOB_ALREADY_ACTIVE`. Il testo passa dalla pulizia di T-4201, il blocco diventa `edited` e i suoi controlli e il
+  rapporto SEO si ricalcolano senza il modello. L'editor salva 1 s dopo l'ultima modifica, una richiesta alla volta.
+- **«Riscrivi questo blocco»**: POST `.../article/sections/<blocco>/rewrite` con `{ instruction? }` fino a 500
+  caratteri crea un lavoro con scope `SECTION`; il tetto della piattaforma deve avere posto per 3 richieste, poi il
+  limite `sectionRewritesPerWorkspaceDaily` del workspace nelle ultime 24 ore (429 `RATE_LIMITED`), root admin escluso.
+  L'avvio fa crescere la version dell'articolo e il blocco riscritto torna `edited` false.
