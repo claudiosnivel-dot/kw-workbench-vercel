@@ -52,7 +52,8 @@ export function isIpOrLocalHostname(hostname: string): boolean {
   return isIP(host) !== 0 || host === "localhost" || host.endsWith(".localhost");
 }
 
-function isPublicAddress(address: string): boolean {
+/** true se l'indirizzo IP non è in nessuna delle reti riservate; un testo che non è un indirizzo IP è false. */
+export function isPublicAddress(address: string): boolean {
   const family = isIP(address);
   if (family === 0) return false;
   return !BLOCKED.check(address, family === 4 ? "ipv4" : "ipv6");

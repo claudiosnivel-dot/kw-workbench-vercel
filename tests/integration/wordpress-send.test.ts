@@ -1,6 +1,7 @@
 // Gate di T-4602 (AC-4602-1, AC-4602-2, AC-4602-3): l'articolo va a WordPress come bozza con titolo, slug, estratto e
 // Basic auth, e l'articolo ne salva id e link; un secondo invio aggiorna la stessa bozza; senza collegamento 409
 // WP_NOT_CONFIGURED, con un 401 di WordPress 502 WP_AUTH_FAILED, e il log non contiene la password né il testo.
+// impacted-by: T-5402 (pinnedFetch simulato al posto del fetch globale, stesse risposte e asserzioni)
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +11,8 @@ import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { APP_PASSWORD, captureLogs, expectedAuthorization, putConnection, saveConnection, SITE_URL, sendToWordPress, stubDns } from "../helpers/wordpress";
 
-const fetchMock = vi.fn<typeof fetch>();
+const fetchMock = vi.hoisted(() => vi.fn<typeof fetch>());
+vi.mock("@/lib/security/pinned-fetch", () => ({ pinnedFetch: fetchMock }));
 const BODY = "Misura il piede la sera, quando è più gonfio.";
 const POSTS = `${SITE_URL}/wp-json/wp/v2/posts`;
 
@@ -22,12 +24,10 @@ beforeAll(() => {
 beforeEach(async () => {
   await resetDatabase();
   fetchMock.mockReset();
-  vi.stubGlobal("fetch", fetchMock);
   stubDns({ "blog.esempio.it": "93.184.216.34", "nuovo.esempio.it": "93.184.216.35" });
 });
 
 afterEach(() => {
-  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 

@@ -1,4 +1,3 @@
-import dns from "node:dns";
 import { vi } from "vitest";
 import { POST as sendRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/article/wordpress/route";
 import { DELETE as deleteRoute, PUT as putRoute } from "@/app/api/projects/[id]/wordpress/route";
@@ -6,6 +5,7 @@ import { POST as testRoute } from "@/app/api/projects/[id]/wordpress/test/route"
 import { prisma } from "@/lib/prisma";
 import { encryptSecret } from "@/lib/security/encryption";
 import type { PlanPage } from "./ai-titles";
+import { stubLookup } from "./dns";
 import { callRoute } from "./http";
 
 /*
@@ -45,14 +45,8 @@ export async function saveConnection(projectId: string, siteUrl = SITE_URL): Pro
 }
 
 /** DNS simulato: ogni nome host dell'elenco si risolve nell'indirizzo indicato, gli altri non esistono. */
-export function stubDns(addresses: Record<string, string>) {
-  const lookup = async (hostname: string) => {
-    const address = addresses[hostname];
-    if (!address) throw Object.assign(new Error(`getaddrinfo ENOTFOUND ${hostname}`), { code: "ENOTFOUND" });
-    return [{ address, family: address.includes(":") ? 6 : 4 }];
-  };
-  return vi.spyOn(dns.promises, "lookup").mockImplementation(lookup as unknown as typeof dns.promises.lookup);
-}
+export const stubDns = (addresses: Record<string, string>) =>
+  stubLookup(Object.fromEntries(Object.entries(addresses).map(([hostname, address]) => [hostname, [address]])));
 
 /** Righe scritte dal logger su stdout durante action. */
 export async function captureLogs<T>(action: () => Promise<T>): Promise<{ result: T; logs: string }> {
