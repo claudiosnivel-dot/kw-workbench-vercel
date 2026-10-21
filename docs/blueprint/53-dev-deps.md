@@ -46,3 +46,15 @@ Dopo il modulo 45 il checkpoint conta osv 3: oltre a uuid (via exceljs) e a brac
 - Modulo dalle risposte dell'utente del 2026-10-20 (D-50) alle domande sulle scelte del modulo 45: «piccolo modulo dedicato» per gli avvisi di osv.
 - Gate umani: nessuno (nessuna schermata, nessuna baseline visiva toccata).
 - Ordine: dipende solo dal modulo 04, già chiuso; si costruisce quando lo dice l'utente, anche prima del 46 e del 52.
+- Note di costruzione (2026-10-21, scelte dell'agente da confermare dall'utente):
+  - vite fissata a 8.3.4 con `npm install --save-dev --save-exact vite@8.3.4`; vitest e @vitest/mocker usano la stessa
+    vite (deduped);
+  - effetti nel lockfile dichiarati (fuori dal testo del DoD, conseguenza diretta dell'aggiornamento): vite 8.3.4
+    chiede postcss ^8.5.29, quindi npm mette postcss 8.5.31 sotto vite (la postcss di primo livello resta 8.5.28, quella
+    di next resta 8.5.23) e porta nanoid da 3.3.19 a 3.3.20 (patch, condivisa da tutte le postcss);
+  - il 2026-10-20 sera `npm audit` ha cominciato a riportare GHSA-587h-7wmj-h5pm come HIGH: il test delle dipendenze
+    era già rosso su `master` e sul branch del 46, come il DoD temeva; dopo l'aggiornamento `npm audit` non riporta più
+    vite;
+  - il test AC-5301-1 legge tutte le vite dell'albero di `npm ls vite --json`, ne vuole almeno due (primo livello e
+    sotto vitest), tutte almeno alla 8.3.3, una sola versione e uguale a quella di package.json; scritto prima
+    dell'aggiornamento e visto rosso (tre vite 8.3.2).
