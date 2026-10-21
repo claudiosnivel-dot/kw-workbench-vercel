@@ -7,13 +7,14 @@ import { parseSiteUrl } from "@/lib/modules/project-settings";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret, encryptSecret } from "@/lib/security/encryption";
+import { pinnedFetch } from "@/lib/security/pinned-fetch";
 import { isIpOrLocalHostname, resolvesToPublicAddresses } from "@/lib/security/public-address";
 
 /*
  * Collegamento di un progetto al suo sito WordPress (T-4601, D-46) con le password per le applicazioni dell'API REST,
  * senza plugin. La password si salva cifrata e non torna mai nelle risposte né nei log (CWE-312, CWE-532); ogni
- * richiesta va solo in https verso un nome host che si risolve in indirizzi pubblici, con un timeout e senza seguire
- * i redirect (CWE-918).
+ * richiesta va solo in https verso un nome host che si risolve in indirizzi pubblici, anche nella risoluzione della
+ * connessione (T-5402, DNS rebinding), con un timeout e senza seguire i redirect (CWE-918, CWE-367).
  */
 
 const WP_TIMEOUT_MS = 10_000;
@@ -115,8 +116,9 @@ export async function deleteWordPressConnection(actor: { id: string }, projectId
 
 /**
  * Richiesta all'API REST del sito ({siteUrl}/wp-json/wp/v2/{path}) con Basic auth: prima il nome host deve risolversi
- * in indirizzi pubblici, poi la richiesta parte con il timeout e i redirect non seguiti (la risposta 3xx torna al
- * chiamante). Indirizzo rifiutato, rete o timeout → WP_UNREACHABLE.
+ * in indirizzi pubblici (un nome già privato risponde senza aprire connessioni), poi la richiesta parte con pinnedFetch,
+ * che si connette solo agli indirizzi pubblici della sua risoluzione, con il timeout e i redirect non seguiti (la
+ * risposta 3xx torna al chiamante). Indirizzo rifiutato, anche alla connessione, rete o timeout → WP_UNREACHABLE.
  */
 export async function wordPressRequest(
   context: WordPressLogContext,
@@ -134,7 +136,7 @@ export async function wordPressRequest(
   });
   if (body !== undefined) headers.set("Content-Type", "application/json");
   try {
-    return await fetch(url, {
+    return await pinnedFetch(url, {
       method: body === undefined ? "GET" : "POST",
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),

@@ -1,6 +1,7 @@
 // Gate di T-4601 (AC-4601-1, AC-4601-2, AC-4601-3): il collegamento a WordPress salva la password per le applicazioni
 // cifrata e senza spazi e non la restituisce mai; l'indirizzo è solo https verso un nome host pubblico; la prova
 // risponde con l'utente WordPress o con l'esito, e non chiama mai un sito che si risolve in un indirizzo privato.
+// impacted-by: T-5402 (pinnedFetch simulato al posto del fetch globale, stesse risposte e asserzioni)
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH as patchProjectRoute } from "@/app/api/projects/[id]/route";
@@ -21,7 +22,8 @@ import {
   testConnection,
 } from "../helpers/wordpress";
 
-const fetchMock = vi.fn<typeof fetch>();
+const fetchMock = vi.hoisted(() => vi.fn<typeof fetch>());
+vi.mock("@/lib/security/pinned-fetch", () => ({ pinnedFetch: fetchMock }));
 
 beforeAll(() => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");
@@ -31,12 +33,10 @@ beforeAll(() => {
 beforeEach(async () => {
   await resetDatabase();
   fetchMock.mockReset();
-  vi.stubGlobal("fetch", fetchMock);
   stubDns({ "blog.esempio.it": "93.184.216.34", "interno.esempio.it": "10.0.0.5" });
 });
 
 afterEach(() => {
-  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
