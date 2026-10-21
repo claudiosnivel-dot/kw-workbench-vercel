@@ -103,7 +103,7 @@ Dopo il modulo 45 l'articolo esce con la copia o i file. L'utente vuole caricarl
   chiave e valore stringa della stessa riga: con 25 caratteri la regola `trueline-generic-assigned-secret` di gitleaks
   lo leggeva come un segreto (2 finding CRITICAL nuovi alla prima esecuzione del checkpoint), con 21 caratteri la
   regola non si applica. Il comportamento di DoD e AC-4601-1 è invariato.
-- Note di costruzione (2026-10-20, scelte dell'agente da confermare dall'utente):
+- Note di costruzione (2026-10-20, scelte dell'agente da confermare dall'utente; il 2026-10-21 confermati i redirect mai seguiti e deciso il modulo 54 per il DNS rebinding, D-51):
   - la password cifrata resta fuori da ogni lettura del progetto che non la chiede con select: il client Prisma la
     omette di default (`omit` in `lib/prisma.ts`), così la risposta della PATCH del progetto, la dashboard e le pagine
     che leggono la riga intera non la portano mai; la leggono solo il collegamento, la prova, l'invio e l'editor (per
