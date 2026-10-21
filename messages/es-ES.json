@@ -199,6 +199,30 @@
       "counter": "{count} de {max} caracteres",
       "openRouter": "Estos textos se envían a OpenRouter junto con las palabras clave cuando generas un artículo.",
       "readOnly": "Solo quien puede modificar el proyecto puede cambiar estos textos."
+    },
+    "wordpress": {
+      "title": "WordPress",
+      "intro": "Conecta tu sitio para enviar los artículos como borradores que revisar en WordPress, sin instalar plugins.",
+      "siteUrl": "Dirección del sitio de WordPress",
+      "siteUrlHint": "Por ejemplo, https://www.ejemplo.es: solo direcciones https.",
+      "username": "Usuario de WordPress",
+      "appPassword": "Contraseña de aplicación",
+      "appPasswordSaved": "Guardada y cifrada: vuelve a escribirla para cambiar la dirección o el usuario.",
+      "save": "Guardar la conexión",
+      "saving": "Guardando…",
+      "saved": "Conexión guardada.",
+      "test": "Probar la conexión",
+      "testing": "Probando…",
+      "testOk": "Conectado como {name}.",
+      "testNoEditPosts": "Este usuario no puede escribir entradas: usa un usuario Autor, Editor o Administrador.",
+      "disconnect": "Desconectar",
+      "guide": {
+        "title": "Cómo crear una contraseña de aplicación",
+        "step1": "En WordPress, abre Usuarios → Perfil.",
+        "step2": "En «Contraseñas de aplicación», escribe un nombre, por ejemplo Titan SEO, y crea la contraseña.",
+        "step3": "Copia la contraseña de 24 caracteres y pégala aquí: los espacios no importan.",
+        "structuredData": "Los datos estructurados se quedan en el contenido solo si el usuario de WordPress es administrador (permiso unfiltered_html): con otros roles, WordPress los quita."
+      }
     }
   },
   "jobs": {
@@ -424,7 +448,12 @@
     "AI_BUSY": "Todos los modelos gratuitos están ocupados: vuelve a intentarlo dentro de unos minutos.",
     "AI_DAILY_LIMIT": "Se han agotado las solicitudes a la IA de hoy: vuelve a intentarlo mañana.",
     "ARTICLE_NOT_FOUND": "No se ha encontrado el artículo.",
-    "ARTICLE_VERSION_CONFLICT": "Este artículo se ha modificado en otro lugar: recarga la página."
+    "ARTICLE_VERSION_CONFLICT": "Este artículo se ha modificado en otro lugar: recarga la página.",
+    "WP_NOT_CONFIGURED": "Primero conecta el proyecto a WordPress en los ajustes del proyecto.",
+    "WP_AUTH_FAILED": "WordPress no ha aceptado el usuario y la contraseña de aplicación: revísalos e inténtalo de nuevo.",
+    "WP_NOT_FOUND": "El sitio no responde como un WordPress: revisa la dirección y que la API REST esté activa.",
+    "WP_UNREACHABLE": "No se puede acceder al sitio de WordPress: revisa la dirección y vuelve a intentarlo en un momento.",
+    "WP_REJECTED": "WordPress ha rechazado el artículo: inténtalo de nuevo o revisa los permisos del usuario de WordPress."
   },
   "errorPages": {
     "error": {
@@ -1927,6 +1956,13 @@
         "text": "{count, plural, one {# dato por verificar} other {# datos por verificar}} todavía en el texto: revísalos antes de publicar el artículo.",
         "continue": "Continuar de todos modos",
         "back": "Volver al texto"
+      },
+      "wordpress": {
+        "send": "Enviar a WordPress",
+        "update": "Actualizar el borrador en WordPress",
+        "sending": "Enviando a WordPress…",
+        "draft": "Borrador en WordPress",
+        "sent": "Borrador enviado a WordPress."
       }
     },
     "marks": {

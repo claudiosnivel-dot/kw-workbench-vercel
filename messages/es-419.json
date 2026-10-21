@@ -32,6 +32,9 @@
         "friendly": "Amigable"
       },
       "siteUrlHint": "Por ejemplo https://www.ejemplo.com: sirve para escribir en los artículos los enlaces a tus otras páginas."
+    },
+    "wordpress": {
+      "siteUrlHint": "Por ejemplo, https://www.ejemplo.com: solo direcciones https."
     }
   },
   "jobs": {
@@ -68,7 +71,10 @@
     "AI_TIMEOUT": "El modelo no respondió a tiempo. Vuelve a intentarlo en un momento.",
     "AI_INVALID_RESPONSE": "El modelo dio una respuesta que no se puede usar. Vuelve a intentarlo.",
     "AI_DAILY_LIMIT": "Se agotaron las solicitudes a la IA de hoy: vuelve a intentarlo mañana.",
-    "ARTICLE_NOT_FOUND": "No se encontró el artículo."
+    "ARTICLE_NOT_FOUND": "No se encontró el artículo.",
+    "WP_NOT_CONFIGURED": "Primero conecta el proyecto a WordPress en la configuración del proyecto.",
+    "WP_AUTH_FAILED": "WordPress no aceptó el usuario y la contraseña de aplicación: revísalos e inténtalo de nuevo.",
+    "WP_REJECTED": "WordPress rechazó el artículo: inténtalo de nuevo o revisa los permisos del usuario de WordPress."
   },
   "errorPages": {
     "error": {

@@ -123,9 +123,10 @@ function optionalText(max: number) {
 
 /**
  * Indirizzo del sito (T-4001): assoluto in https, senza credenziali, query o frammento, salvato senza barra finale.
- * Serve solo a scrivere i link degli articoli: l'app non lo chiama mai (CWE-918).
+ * Serve solo a scrivere i link degli articoli: l'app non lo chiama mai (CWE-918). Lo usa anche l'indirizzo del sito
+ * WordPress (T-4601), con in più il controllo del nome host.
  */
-function parseSiteUrl(value: string, ctx: z.RefinementCtx): string {
+export function parseSiteUrl(value: string, ctx: z.RefinementCtx): string {
   const invalid = () => {
     ctx.addIssue({ code: "custom", message: "indirizzo https assoluto, senza credenziali, query o frammento" });
     return z.NEVER;

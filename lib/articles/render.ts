@@ -185,9 +185,10 @@ function jsonLd(article: ArticleExport): string {
 /**
  * HTML dell'articolo da incollare nel sito (T-4501): H1, i blocchi nell'ordine (l'introduzione senza titolo, un H2 per
  * blocco, le domande frequenti), i segnaposto immagine come commenti dopo il loro blocco e lo script JSON-LD in fondo.
+ * Con title false manca l'H1: WordPress lo riceve come titolo dell'articolo (T-4602).
  */
-export function renderArticleHtml(article: ArticleExport): string {
-  const parts = [`<h1>${escapeHtml(article.h1)}</h1>`];
+export function renderArticleHtml(article: ArticleExport, options: { title?: boolean } = {}): string {
+  const parts = options.title === false ? [] : [`<h1>${escapeHtml(article.h1)}</h1>`];
   for (const section of article.sections) {
     if (section.kind !== "INTRO" && section.heading) parts.push(`<h2>${escapeHtml(section.heading)}</h2>`);
     if (section.body.trim()) parts.push(nodeHtml(parseMarkdown(section.body), article));

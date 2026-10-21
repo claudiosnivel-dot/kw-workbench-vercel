@@ -199,6 +199,30 @@
       "counter": "{count} su {max} caratteri",
       "openRouter": "Questi testi vanno a OpenRouter insieme alle keyword quando generi un articolo.",
       "readOnly": "Solo chi può modificare il progetto cambia questi testi."
+    },
+    "wordpress": {
+      "title": "WordPress",
+      "intro": "Collega il sito per inviare gli articoli come bozze da rileggere in WordPress, senza installare plugin.",
+      "siteUrl": "Indirizzo del sito WordPress",
+      "siteUrlHint": "Per esempio https://www.esempio.it: solo indirizzi https.",
+      "username": "Utente WordPress",
+      "appPassword": "Password per le applicazioni",
+      "appPasswordSaved": "Salvata e cifrata: per cambiare indirizzo o utente scrivila di nuovo.",
+      "save": "Salva il collegamento",
+      "saving": "Salvataggio…",
+      "saved": "Collegamento salvato.",
+      "test": "Prova collegamento",
+      "testing": "Prova in corso…",
+      "testOk": "Collegato come {name}.",
+      "testNoEditPosts": "Questo utente non può scrivere articoli: usa un utente Autore, Editore o Amministratore.",
+      "disconnect": "Scollega",
+      "guide": {
+        "title": "Come creare la password per le applicazioni",
+        "step1": "In WordPress apri Utenti → Profilo.",
+        "step2": "Nel riquadro «Password per le applicazioni» scrivi un nome, per esempio Titan SEO, e crea la password.",
+        "step3": "Copia la password di 24 caratteri e incollala qui: gli spazi non contano.",
+        "structuredData": "I dati strutturati restano nel contenuto solo se l'utente WordPress è un amministratore (permesso unfiltered_html): con gli altri ruoli WordPress li toglie."
+      }
     }
   },
   "jobs": {
@@ -424,7 +448,12 @@
     "AI_BUSY": "I modelli gratuiti sono tutti occupati: riprova tra qualche minuto.",
     "AI_DAILY_LIMIT": "Le richieste all'AI di oggi sono finite: riprova domani.",
     "ARTICLE_NOT_FOUND": "Articolo non trovato.",
-    "ARTICLE_VERSION_CONFLICT": "Questo articolo è stato modificato altrove: ricarica la pagina."
+    "ARTICLE_VERSION_CONFLICT": "Questo articolo è stato modificato altrove: ricarica la pagina.",
+    "WP_NOT_CONFIGURED": "Collega prima il progetto a WordPress nelle impostazioni del progetto.",
+    "WP_AUTH_FAILED": "WordPress non ha accettato utente e password per le applicazioni: controllali e riprova.",
+    "WP_NOT_FOUND": "Il sito non risponde come un WordPress: controlla l'indirizzo e che l'API REST sia attiva.",
+    "WP_UNREACHABLE": "Il sito WordPress non è raggiungibile: controlla l'indirizzo e riprova tra poco.",
+    "WP_REJECTED": "WordPress ha rifiutato l'articolo: riprova o controlla i permessi dell'utente WordPress."
   },
   "errorPages": {
     "error": {
@@ -1927,6 +1956,13 @@
         "text": "{count, plural, one {# dato da verificare} other {# dati da verificare}} ancora nel testo: controllali prima di pubblicare l'articolo.",
         "continue": "Continua lo stesso",
         "back": "Torna al testo"
+      },
+      "wordpress": {
+        "send": "Invia a WordPress",
+        "update": "Aggiorna la bozza su WordPress",
+        "sending": "Invio a WordPress…",
+        "draft": "Bozza su WordPress",
+        "sent": "Bozza inviata a WordPress."
       }
     },
     "marks": {

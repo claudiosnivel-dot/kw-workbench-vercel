@@ -3,8 +3,10 @@ import { PageIntro } from "@/components/page-intro";
 import { ProjectBrands } from "@/components/project-brands";
 import { ProjectDeleteCard } from "@/components/project-delete-card";
 import { ProjectSettingsForm } from "@/components/project-form";
+import { ProjectWordPress } from "@/components/project-wordpress";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { canPerform } from "@/lib/authz/permissions";
+import { readWordPressSettings } from "@/lib/integrations/wordpress";
 import { listProjectBrands } from "@/lib/modules/project-brands";
 import { requireProjectPage } from "@/lib/modules/project-pages";
 
@@ -12,15 +14,20 @@ export const dynamic = "force-dynamic";
 
 /**
  * Impostazioni del progetto (T-2602): «Il progetto», i marchi dei concorrenti (T-2601), la scheda «Per gli articoli»
- * modificabile con project.update (T-4001), le Avanzate chiuse e, in fondo, «Elimina il progetto» solo con
- * project.delete (ADMIN e OWNER, D-08); le rotte lo riverificano.
+ * modificabile con project.update (T-4001), le Avanzate chiuse, il collegamento a WordPress solo con project.update
+ * (T-4601) e, in fondo, «Elimina il progetto» solo con project.delete (ADMIN e OWNER, D-08); le rotte lo riverificano.
  */
 export default async function ProjectSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageUser();
   const { id } = await params;
 
   const project = await requireProjectPage(user.id, id, {});
-  const [brands, t] = await Promise.all([listProjectBrands(project.id), getTranslations("projects.settings")]);
+  const canUpdate = canPerform(project.role, "project.update");
+  const [brands, wordpress, t] = await Promise.all([
+    listProjectBrands(project.id),
+    canUpdate ? readWordPressSettings(project.id) : null,
+    getTranslations("projects.settings"),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -28,7 +35,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
       <ProjectSettingsForm
         projectId={project.id}
         canEditAutocompleteProvider={user.isRootAdmin}
-        canEditArticleBrief={canPerform(project.role, "project.update")}
+        canEditArticleBrief={canUpdate}
         initialValues={{
           name: project.name,
           language_code: project.language_code,
@@ -53,6 +60,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
         }}
         brands={<ProjectBrands projectId={project.id} brands={brands} />}
       />
+      {wordpress && <ProjectWordPress projectId={project.id} initial={wordpress} />}
       {canPerform(project.role, "project.delete") && <ProjectDeleteCard project={{ id: project.id, name: project.name }} />}
     </div>
   );

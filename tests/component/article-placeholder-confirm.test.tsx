@@ -1,10 +1,12 @@
 // Gate di T-4502 (AC-4502-3): con 2 segnaposto «[da verificare: …]» aperti, «Copia» apre la finestra con «2 dati da
 // verificare» e gli appunti non cambiano finché l'utente non clicca «Continua lo stesso». In più la copia diretta senza
-// segnaposto con l'HTML e il Markdown dell'export e «Segna come pubblicata» con l'indirizzo precompilato.
+// segnaposto con l'HTML e il Markdown dell'export, «Segna come pubblicata» con l'indirizzo precompilato e «Invia a
+// WordPress» (T-4602) con la stessa conferma, il link alla bozza e «Aggiorna la bozza su WordPress».
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ArticleEditor } from "@/components/article/article-editor";
 import type { ArticleView } from "@/lib/articles/view";
+import type { ArticleEditorData } from "@/lib/articles/editor-data";
 import { renderWithIntl } from "./intl";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
@@ -68,7 +70,9 @@ function article(withPlaceholders: boolean): ArticleView {
   };
 }
 
-function renderEditor(withPlaceholders: boolean) {
+const NOT_CONNECTED: ArticleEditorData["publication"]["wordpress"] = { configured: false, postId: null, postUrl: null };
+
+function renderEditor(withPlaceholders: boolean, wordpress = NOT_CONNECTED) {
   return renderWithIntl(
     <ArticleEditor
       projectId="P"
@@ -78,7 +82,7 @@ function renderEditor(withPlaceholders: boolean) {
       article={article(withPlaceholders)}
       canEdit
       canStart={false}
-      publication={{ strategyVersion: 7, status: "WRITING", publishedUrl: null, siteUrl: "https://www.esempio.it" }}
+      publication={{ strategyVersion: 7, status: "WRITING", publishedUrl: null, siteUrl: "https://www.esempio.it", wordpress }}
     />
   );
 }
@@ -192,5 +196,43 @@ describe("«Segna come pubblicata»", () => {
     });
 
     expect(within(dialog).getByRole("alert").textContent).toBe("Scrivi un indirizzo https completo, fino a 500 caratteri.");
+  });
+});
+
+describe("«Invia a WordPress»", () => {
+  const CONNECTED = { configured: true, postId: null, postUrl: null };
+
+  it("con i segnaposto chiede conferma, poi crea la bozza, mostra il link e diventa «Aggiorna la bozza su WordPress»", async () => {
+    fetchMock.mockImplementation(async () => Response.json({ data: { postId: 57, postUrl: "https://blog.esempio.it/?p=57" } }));
+    renderEditor(true, CONNECTED);
+
+    fireEvent.click(screen.getByRole("button", { name: "Invia a WordPress" }));
+    const dialog = screen.getByRole("dialog", { name: "Ci sono dati da verificare" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole("button", { name: "Continua lo stesso" }));
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe("/api/projects/P/strategies/S/pages/pg1/article/wordpress");
+    expect(init?.method).toBe("POST");
+    expect(await screen.findByText("Bozza inviata a WordPress.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Bozza su WordPress" }).getAttribute("href")).toBe("https://blog.esempio.it/?p=57");
+    expect(screen.getByRole("button", { name: "Aggiorna la bozza su WordPress" })).toBeTruthy();
+  });
+
+  it("senza collegamento il pulsante non c'è; un errore di WordPress mostra il testo del catalogo", async () => {
+    const { unmount } = renderEditor(false);
+    expect(screen.queryByRole("button", { name: "Invia a WordPress" })).toBeNull();
+    unmount();
+
+    fetchMock.mockImplementation(async () => Response.json({ error: "WordPress", code: "WP_AUTH_FAILED" }, { status: 502 }));
+    renderEditor(false, { configured: true, postId: 57, postUrl: "https://blog.esempio.it/?p=57" });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Aggiorna la bozza su WordPress" }));
+    });
+
+    expect(screen.getByRole("alert").textContent).toBe("WordPress non ha accettato utente e password per le applicazioni: controllali e riprova.");
+    expect(screen.getByRole("link", { name: "Bozza su WordPress" })).toBeTruthy();
   });
 });

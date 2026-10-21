@@ -299,6 +299,11 @@ model Project {
   /// Indirizzo del sito per i link interni degli articoli (T-4001): https assoluto senza barra finale; l'app non lo
   /// chiama mai (CWE-918).
   site_url                  String?                  @db.VarChar(300)
+  /// Collegamento a WordPress (T-4601): indirizzo https del sito, utente e password per le applicazioni cifrata con
+  /// encryptSecret (CWE-312), mai restituita dalle API.
+  wp_site_url               String?                  @db.VarChar(300)
+  wp_username               String?                  @db.VarChar(120)
+  wp_password_encrypted     String?
   workspace                 Workspace                @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
   created_by                User?                    @relation("ProjectCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
   subprojects               Subproject[]             @relation("ProjectSubprojects")
@@ -946,6 +951,9 @@ model Article {
   images             Json?
   seo_report         Json?
   version            Int              @default(0)
+  /// Bozza su WordPress (T-4602): id e link della risposta dell'API REST; un secondo invio aggiorna la stessa bozza.
+  wp_post_id         Int?
+  wp_post_url        String?          @db.VarChar(500)
   created_by_user_id String?
   created_at         DateTime         @default(now())
   updated_at         DateTime         @updatedAt

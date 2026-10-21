@@ -1,5 +1,6 @@
 import { ArticleNotFoundError, readArticle } from "@/lib/articles/service";
 import type { ArticleView } from "@/lib/articles/view";
+import { isWordPressConfigured, WORDPRESS_SELECT } from "@/lib/integrations/wordpress";
 import type { StrategyPageKind, StrategyPageStatus } from "@/lib/modules/strategy/types";
 import { prisma } from "@/lib/prisma";
 
@@ -12,14 +13,24 @@ export type ArticleEditorData = {
   /** H1 delle pagine dello stesso piano: i link interni del testo e quelli del controllo SEO. */
   pages: Record<string, string>;
   article: ArticleView;
-  /** Pubblicazione della pagina (T-4502): version del piano per la PATCH, stato, indirizzo e sito del progetto. */
-  publication: { strategyVersion: number; status: StrategyPageStatus; publishedUrl: string | null; siteUrl: string | null };
+  /**
+   * Pubblicazione della pagina (T-4502): version del piano per la PATCH, stato, indirizzo e sito del progetto; il
+   * collegamento a WordPress e la bozza già inviata (T-4602).
+   */
+  publication: {
+    strategyVersion: number;
+    status: StrategyPageStatus;
+    publishedUrl: string | null;
+    siteUrl: string | null;
+    wordpress: { configured: boolean; postId: number | null; postUrl: string | null };
+  };
 };
 
 /**
  * Dati della pagina dell'editor (T-4401) per un utente membro del progetto: la pagina del piano in una versione del
  * progetto (l'articolo segue la pagina con «Rigenera», T-2502), l'articolo con i blocchi e il lavoro attivo (T-4002) e
- * gli H1 delle pagine dello stesso piano, con lo stato e l'indirizzo della pagina pubblicata (T-4502). null senza la pagina nel progetto o senza articolo: la pagina risponde 404
+ * gli H1 delle pagine dello stesso piano, con lo stato e l'indirizzo della pagina pubblicata (T-4502) e la bozza su
+ * WordPress (T-4602). null senza la pagina nel progetto o senza articolo: la pagina risponde 404
  * come per un progetto di un altro workspace (CWE-639).
  */
 export async function readArticleEditor(user: { id: string }, projectId: string, pageId: string): Promise<ArticleEditorData | null> {
@@ -33,7 +44,8 @@ export async function readArticleEditor(user: { id: string }, projectId: string,
       h2: true,
       status: true,
       published_url: true,
-      strategy: { select: { version: true, project: { select: { site_url: true } } } },
+      strategy: { select: { version: true, project: { select: { site_url: true, ...WORDPRESS_SELECT } } } },
+      article: { select: { wp_post_id: true, wp_post_url: true } },
       keywords: { where: { role: "MAIN" }, select: { keyword: true }, take: 1 },
     },
   });
@@ -64,6 +76,11 @@ export async function readArticleEditor(user: { id: string }, projectId: string,
       status: page.status,
       publishedUrl: page.published_url,
       siteUrl: page.strategy.project.site_url,
+      wordpress: {
+        configured: isWordPressConfigured(page.strategy.project),
+        postId: page.article?.wp_post_id ?? null,
+        postUrl: page.article?.wp_post_url ?? null,
+      },
     },
   };
 }

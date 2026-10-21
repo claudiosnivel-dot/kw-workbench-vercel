@@ -6,13 +6,25 @@ import { ArticlePublishDialog } from "@/components/article/article-publish-dialo
 import { articleApiUrl } from "@/components/article/article-request";
 import { DialogActions } from "@/components/dialog-actions";
 import { ModalDialog } from "@/components/modal-dialog";
+import { useApiData } from "@/lib/client/use-api-data";
 import { type ArticleView, checkMatches } from "@/lib/articles/view";
 import type { StrategyPageStatus } from "@/lib/modules/strategy/types";
 
 const DOWNLOAD_FORMATS = ["html", "md", "docx"] as const;
 
-/** Pubblicazione della pagina dell'articolo (T-4502): version del piano per la PATCH, stato, indirizzo e sito del progetto. */
-export type ArticlePublication = { strategyVersion: number; status: StrategyPageStatus; publishedUrl: string | null; siteUrl: string | null };
+/**
+ * Pubblicazione della pagina dell'articolo (T-4502): version del piano per la PATCH, stato, indirizzo e sito del
+ * progetto; collegamento a WordPress e bozza già inviata (T-4602).
+ */
+export type ArticlePublication = {
+  strategyVersion: number;
+  status: StrategyPageStatus;
+  publishedUrl: string | null;
+  siteUrl: string | null;
+  wordpress: WordPressDraft & { configured: boolean };
+};
+
+type WordPressDraft = { postId: number | null; postUrl: string | null };
 
 type ArticleExportBarProps = {
   projectId: string;
@@ -20,7 +32,7 @@ type ArticleExportBarProps = {
   pageId: string;
   article: ArticleView;
   publication: ArticlePublication;
-  /** Permesso strategy.write: «Segna come pubblicata». */
+  /** Permesso strategy.write: «Segna come pubblicata» e «Invia a WordPress». */
   canEdit: boolean;
   /** Lavoro attivo o articolo in scrittura: niente copia né download. */
   busy: boolean;
@@ -38,7 +50,8 @@ function openPlaceholders(article: ArticleView): number {
  * Uscita dell'articolo dall'app (T-4501, T-4502): «Copia» mette negli appunti l'HTML con i dati strutturati e il Markdown
  * come testo, «Scarica» il file .html, .md o .docx dell'export; con segnaposto da verificare ancora aperti una finestra
  * ne dice il numero e l'azione parte solo con «Continua lo stesso». «Segna come pubblicata» salva l'indirizzo della
- * pagina, mostrato poi come link con «Cambia l'indirizzo».
+ * pagina, mostrato poi come link con «Cambia l'indirizzo». Con il progetto collegato, «Invia a WordPress» (con la
+ * stessa conferma) crea la bozza e mostra il link «Bozza su WordPress»; dopo il primo invio il pulsante la aggiorna.
  */
 export function ArticleExportBar({ projectId, strategyId, pageId, article, publication, canEdit, busy }: ArticleExportBarProps) {
   const t = useTranslations("article.export");
@@ -46,6 +59,8 @@ export function ArticleExportBar({ projectId, strategyId, pageId, article, publi
   const [copied, setCopied] = useState<boolean | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [page, setPage] = useState(publication);
+  const wordpressSend = useApiData<WordPressDraft>();
+  const draft = wordpressSend.data ?? publication.wordpress;
   const placeholders = openPlaceholders(article);
   const exportUrl = (format: string) => articleApiUrl(projectId, strategyId, pageId, `/export?format=${format}`);
 
@@ -83,6 +98,8 @@ export function ArticleExportBar({ projectId, strategyId, pageId, article, publi
     link.remove();
   };
 
+  const sendToWordPress = () => void wordpressSend.load(() => fetch(articleApiUrl(projectId, strategyId, pageId, "/wordpress"), { method: "POST" }));
+
   const published = page.status === "PUBLISHED" && page.publishedUrl;
 
   return (
@@ -101,10 +118,32 @@ export function ArticleExportBar({ projectId, strategyId, pageId, article, publi
             {published ? t("changeUrl") : t("markPublished")}
           </button>
         )}
+        {canEdit && publication.wordpress.configured && (
+          <button type="button" className="btn-secondary btn-compact" disabled={busy || wordpressSend.loading} onClick={guarded(sendToWordPress)}>
+            {wordpressSend.loading ? t("wordpress.sending") : draft.postId ? t("wordpress.update") : t("wordpress.send")}
+          </button>
+        )}
       </div>
       {copied !== null && (
         <p className="text-sm text-slate-600" role="status">
           {copied ? t("copied") : t("copyFailed")}
+        </p>
+      )}
+      {wordpressSend.data && (
+        <p className="text-sm text-slate-600" role="status">
+          {t("wordpress.sent")}
+        </p>
+      )}
+      {wordpressSend.error && (
+        <p className="text-sm text-red-700" role="alert">
+          {wordpressSend.error}
+        </p>
+      )}
+      {draft.postUrl && (
+        <p className="text-sm">
+          <a className="break-all font-medium underline" href={draft.postUrl} target="_blank" rel="noopener noreferrer">
+            {t("wordpress.draft")}
+          </a>
         </p>
       )}
       {published && (
