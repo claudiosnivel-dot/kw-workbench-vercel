@@ -82,7 +82,7 @@ export function ProjectWordPress({ projectId, initial }: { projectId: string; in
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className="btn-secondary" disabled={loading}>
             {loading ? t("saving") : t("save")}
           </button>
           {initial.configured && (

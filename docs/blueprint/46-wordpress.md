@@ -115,7 +115,9 @@ Dopo il modulo 45 l'articolo esce con la copia o i file. L'utente vuole caricarl
     WP_UNREACHABLE, nell'invio WP_REJECTED; ogni errore del sito è 502, WP_NOT_CONFIGURED è 409; nella prova un 200 che
     non è un utente dell'API REST è WP_NOT_FOUND e ogni altro status WP_UNREACHABLE;
   - la prova e il collegamento usano project.update; il blocco delle impostazioni compare solo con project.update e
-    la nota sui dati strutturati (unfiltered_html) sta nella sua guida;
+    la nota sui dati strutturati (unfiltered_html) sta nella sua guida; il suo «Salva» è un pulsante secondario come
+    quelli delle altre schede delle impostazioni (2026-10-21: da primario rompeva AC-2605-1, un solo pulsante primario
+    per schermata, rosso nell'E2E della CI della PR #128);
   - il contenuto inviato è l'HTML dell'export senza l'H1 (`renderArticleHtml` con `title: false`), perché WordPress
     riceve l'H1 come titolo;
   - prima di aggiornare la bozza salvata l'invio la legge (GET posts/{id}?context=edit): se è ancora draft, pending o
