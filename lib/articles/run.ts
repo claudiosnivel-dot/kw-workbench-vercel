@@ -217,16 +217,23 @@ export function acceptArticleRunStep(runId: string, headers: Headers): void {
 }
 
 /**
- * Lavori degli articoli fermi (T-4101), dal cron reap-jobs: attivi, senza lease valida e senza battito da
- * JOB_STALE_AFTER_MS, come i job (T-1203). Ognuno riparte con un updateMany condizionale che conta il tentativo, così
- * una consegna doppia del cron non lo riprende due volte; con JOB_MAX_ATTEMPTS tentativi è failed e l'articolo FAILED.
+ * Lavori degli articoli fermi (T-4101), dal cron reap-jobs e, con runId, dalla lettura dell'articolo (T-5201): attivi,
+ * senza lease valida e senza battito da JOB_STALE_AFTER_MS, come i job (T-1203). Ognuno riparte con un updateMany
+ * condizionale che conta il tentativo, così una consegna doppia del cron o due letture insieme non lo riprendono due
+ * volte; con JOB_MAX_ATTEMPTS tentativi è failed e l'articolo FAILED.
  */
-export async function reapStaleArticleRuns(limit = 50): Promise<{ resumed: number; failed: number }> {
+export async function reapStaleArticleRuns(options: { runId?: string; limit?: number } = {}): Promise<{ resumed: number; failed: number }> {
+  const { runId, limit = 50 } = options;
   const now = new Date();
   const where = staleWhere(now);
   const maxAttempts = getIntEnv("JOB_MAX_ATTEMPTS");
   const totals = { resumed: 0, failed: 0 };
-  const stale = await prisma.articleRun.findMany({ where, orderBy: { created_at: "asc" }, take: limit, select: { id: true, attempts: true } });
+  const stale = await prisma.articleRun.findMany({
+    where: runId ? { ...where, id: runId } : where,
+    orderBy: { created_at: "asc" },
+    take: limit,
+    select: { id: true, attempts: true },
+  });
   for (const run of stale) {
     if (run.attempts >= maxAttempts) {
       if (await failArticleRun(run.id, "INTERNAL_ERROR")) totals.failed += 1;

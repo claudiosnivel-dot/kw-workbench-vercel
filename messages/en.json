@@ -1998,7 +1998,8 @@
         "meta_title_length": "The title has {length} characters: {max} at most",
         "meta_description_length": "The meta description has {length} characters: {max} at most",
         "density": "The main keyword appears {count} times: {max} at most",
-        "ai_patterns": "{count, plural, one {# typical trait} other {# typical traits}} of generated text, above the threshold"
+        "ai_patterns": "{count, plural, one {# typical trait} other {# typical traits}} of generated text, above the threshold",
+        "words_over": "The block has {count} words: {max} at most"
       },
       "keywordsUsed": "Keywords used: {list}",
       "keywordsMissing": "Missing keywords: {list}",

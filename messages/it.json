@@ -1998,7 +1998,8 @@
         "meta_title_length": "Il title ha {length} caratteri: al massimo {max}",
         "meta_description_length": "La meta description ha {length} caratteri: al massimo {max}",
         "density": "La keyword principale compare {count} volte: al massimo {max}",
-        "ai_patterns": "{count, plural, one {# tratto tipico} other {# tratti tipici}} dei testi generati, oltre la soglia"
+        "ai_patterns": "{count, plural, one {# tratto tipico} other {# tratti tipici}} dei testi generati, oltre la soglia",
+        "words_over": "Il blocco ha {count} parole: al massimo {max}"
       },
       "keywordsUsed": "Keyword usate: {list}",
       "keywordsMissing": "Keyword mancanti: {list}",
