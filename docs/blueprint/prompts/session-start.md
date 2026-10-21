@@ -44,7 +44,9 @@ ridiscute il design.
    46 wordpress (26, 40, 45) · 47 es-locales (13, 23, 39) ·
    48 es-catalog-work (21, 47) · 49 es-public (14, 18, 48) ·
    50 es-search (07, 09, 37, 49) · 51 es-strategy-ai (19, 38, 48, 50) ·
-   52 article-polish (41, 43, 44) · 53 dev-deps (04)
+   52 article-polish (41, 43, 44) · 53 dev-deps (04) ·
+   54 dns-pinning (46) · 55 article-tables (42, 43, 44) ·
+   56 article-tables-export (45, 46, 55)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15
