@@ -86,3 +86,24 @@ Dopo il modulo 46 la prova del collegamento e l'invio a WordPress controllano ch
 - Modulo dalle risposte dell'utente del 2026-10-21 (D-51) alle domande sulle scelte del modulo 46: «piccolo modulo per chiuderlo» per il DNS rebinding, prima dei moduli delle tabelle.
 - Gate umani: nessuno (nessuna schermata, nessuna baseline visiva toccata).
 - Ordine: dipende solo dal modulo 46, già chiuso; viene prima del 55 e del 56 su indicazione dell'utente.
+- Note di costruzione (2026-10-21, scelte dell'agente da confermare dall'utente):
+  - `undici` 8.11.2 come dipendenza diretta esatta: è la versione che il lockfile aveva già sotto jsdom (solo sviluppo),
+    quindi nell'albero resta una sola undici e il lockfile cambia solo nel flag `dev`; nessun avviso di `npm audit` su
+    undici. La 8.12.3, l'ultima, è uscita il 2026-10-19;
+  - il fetch di undici restituisce la sua `Response`, che ha la stessa forma di quella globale: `PinnedFetch` accetta
+    solo un URL (stringa o `URL`), perché una `Request` globale è dell'undici di Node e non di questo pacchetto;
+  - il rifiuto è un errore `AddressNotAllowedError` senza nome host né indirizzi nel messaggio (CWE-532): diretto per
+    un indirizzo IP o localhost nell'URL, come `cause` dell'errore di fetch quando lo rifiuta il lookup. Un indirizzo
+    IP nell'URL è rifiutato da `createPinnedFetch` per ogni `isAllowed`, non solo da `pinnedFetch`, perché il lookup
+    non lo vedrebbe mai;
+  - il lookup risponde con tutti gli indirizzi quando Node li chiede (`all`, con la scelta automatica della famiglia,
+    predefinita da Node 20) e con il primo altrimenti;
+  - un `Agent` per ogni `createPinnedFetch`: le connessioni tenute aperte restano verso l'indirizzo controllato quando
+    si sono aperte;
+  - DNS simulato dei test in `tests/helpers/dns.ts` (`stubLookup`, anche con una risposta diversa per chiamata);
+    `stubDns` dei test del 46 lo usa;
+  - un test in più oltre agli AC: un nome che non si risolve è rifiutato con la causa `ENOTFOUND`, e un indirizzo IP
+    nell'URL è rifiutato anche con un `isAllowed` che accetta tutto.
+- Copertura non verificata (dichiarata): nessuna prova contro un DNS ostile vero (il rebinding è simulato con
+  `dns.promises.lookup`); il ramo del lookup senza `all` non ha un test; il potere delle asserzioni (AT-1 Fase C) non è
+  eseguito.
