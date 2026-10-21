@@ -24,7 +24,7 @@ class AddressNotAllowedError extends Error {
 }
 
 /** Lookup del socket: una risoluzione con tutti gli indirizzi, rifiutata se uno non soddisfa isAllowed. */
-function checkedLookup(isAllowed: (address: string) => boolean): LookupFunction {
+function verifiedLookup(isAllowed: (address: string) => boolean): LookupFunction {
   return (hostname, options, callback) => {
     dns.lookup(hostname, { all: true, verbatim: true }).then(
       (records) => {
@@ -43,7 +43,7 @@ function checkedLookup(isAllowed: (address: string) => boolean): LookupFunction 
  * lookup, quindi si rifiuta prima di connettersi, come localhost.
  */
 export function createPinnedFetch({ isAllowed }: { isAllowed: (address: string) => boolean }): PinnedFetch {
-  const dispatcher = new Agent({ connect: { lookup: checkedLookup(isAllowed) } });
+  const dispatcher = new Agent({ connect: { lookup: verifiedLookup(isAllowed) } });
   return async (input, init) => {
     const url = new URL(input);
     if (isIpOrLocalHostname(url.hostname)) throw new AddressNotAllowedError();
