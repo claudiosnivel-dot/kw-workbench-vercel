@@ -8,7 +8,7 @@ const COMMAND_TIMEOUT_MS = 180_000;
 const TASK_ID = /^T-\d{3,4}$/;
 
 type AllowlistEntry = { ghsa: string; package: string; reason: string; closedBy: string[] };
-type LsNode = { version?: string; invalid?: string; missing?: boolean };
+type LsNode = { version?: string; invalid?: string; missing?: boolean; dependencies?: Record<string, LsNode> };
 type LsOutput = { dependencies?: Record<string, LsNode>; problems?: string[] };
 type AuditVia = string | { name: string; severity: string; url: string };
 type AuditOutput = {
@@ -36,6 +36,24 @@ function sourceFiles(dir: string): string[] {
     .map((file) => join(dir, file))
     .filter((file) => /\.(ts|tsx|mjs|js)$/.test(file) && statSync(join(process.cwd(), file)).isFile())
     .filter((file) => !file.replace(/\\/g, "/").startsWith("lib/generated/"));
+}
+
+/** Versioni di un pacchetto in tutto l'albero di npm ls, anche sotto le altre dipendenze. */
+function versionsOf(name: string, node: LsNode, found: string[] = []): string[] {
+  for (const [child, entry] of Object.entries(node.dependencies ?? {})) {
+    if (child === name && entry.version) found.push(entry.version);
+    versionsOf(name, entry, found);
+  }
+  return found;
+}
+
+/** true se la versione x.y.z è almeno minimum. */
+function atLeast(version: string, minimum: string): boolean {
+  const [a, b] = [version, minimum].map((value) => value.split(".").map(Number));
+  for (let index = 0; index < 3; index += 1) {
+    if (a[index] !== b[index]) return a[index] > b[index];
+  }
+  return true;
 }
 
 /** Advisory high dell'albero, per id GHSA, con i pacchetti che le dichiarano direttamente. */
@@ -115,6 +133,18 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
 
     expect(allowlist.filter((entry) => !reported.get(entry.ghsa)?.has(entry.package)).map((e) => e.ghsa)).toEqual([]);
   });
+
+  // covers: AC-5301-1
+  it("ogni vite dell'albero è almeno alla 8.3.3, con una sola versione anche sotto vitest", () => {
+    const ls = run("npm ls vite --json");
+    expect(ls.status, ls.stderr).toBe(0);
+    const versions = versionsOf("vite", JSON.parse(ls.stdout) as LsNode);
+
+    expect(versions.length).toBeGreaterThanOrEqual(2);
+    expect(versions.filter((version) => !atLeast(version, "8.3.3"))).toEqual([]);
+    expect(new Set(versions).size).toBe(1);
+    expect(readJson<{ devDependencies: Record<string, string> }>("package.json").devDependencies.vite).toBe(versions[0]);
+  }, COMMAND_TIMEOUT_MS);
 
   // covers: AC-406-4
   it("xlsx non è nell'albero delle dipendenze e nessun sorgente lo importa", () => {
