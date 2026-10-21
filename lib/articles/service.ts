@@ -4,6 +4,7 @@ import { enforcePlatformRequestCap } from "@/lib/ai/requests";
 import { type AiSettings, getAiTitlesSettings } from "@/lib/ai/settings";
 import { type AuthorizedProject, requireProjectAccess } from "@/lib/authz/workspace";
 import { estimateArticleRequests } from "@/lib/articles/lengths";
+import { reapStaleArticleRuns } from "@/lib/articles/run";
 import type { ArticleView } from "@/lib/articles/view";
 import { getOpenRouterSettings } from "@/lib/env";
 import { Prisma } from "@/lib/generated/prisma/client";
@@ -245,16 +246,21 @@ function toArticleView(record: ArticleRecord): ArticleView {
 
 /**
  * Articolo di una pagina (T-4002) per chi legge il progetto: blocchi in ordine e lavoro attivo con l'avanzamento,
- * oppure 404 ARTICLE_NOT_FOUND, anche per una pagina di un altro progetto (CWE-639).
+ * oppure 404 ARTICLE_NOT_FOUND, anche per una pagina di un altro progetto (CWE-639). Un lavoro attivo fermo riparte
+ * prima della risposta come dal cron (T-5201), solo quello dell'articolo letto, e la risposta è lo stato dopo la ripresa.
  */
 export async function readArticle(actor: { id: string }, projectId: string, strategyId: string, pageId: string): Promise<ArticleView> {
   const project = await requireProjectAccess(actor, projectId, "project.read", {});
-  const record = await prisma.article.findFirst({
-    where: { page_id: pageId, project_id: project.id, project: project.perimeter, page: { strategy_id: strategyId } },
-    select: ARTICLE_SELECT,
-  });
+  const where = { page_id: pageId, project_id: project.id, project: project.perimeter, page: { strategy_id: strategyId } };
+  const record = await prisma.article.findFirst({ where, select: ARTICLE_SELECT });
   if (!record) throw new ArticleNotFoundError();
-  return toArticleView(record);
+  const run = record.runs[0];
+  if (!run) return toArticleView(record);
+  const { resumed, failed } = await reapStaleArticleRuns({ runId: run.id });
+  if (resumed + failed === 0) return toArticleView(record);
+  const current = await prisma.article.findFirst({ where, select: ARTICLE_SELECT });
+  if (!current) throw new ArticleNotFoundError();
+  return toArticleView(current);
 }
 
 /**

@@ -1998,7 +1998,8 @@
         "meta_title_length": "El title tiene {length} caracteres: como máximo {max}",
         "meta_description_length": "La meta description tiene {length} caracteres: como máximo {max}",
         "density": "La palabra clave principal aparece {count} veces: como máximo {max}",
-        "ai_patterns": "{count, plural, one {# rasgo típico} other {# rasgos típicos}} de los textos generados, por encima del umbral"
+        "ai_patterns": "{count, plural, one {# rasgo típico} other {# rasgos típicos}} de los textos generados, por encima del umbral",
+        "words_over": "El bloque tiene {count} palabras: como máximo {max}"
       },
       "keywordsUsed": "Palabras clave usadas: {list}",
       "keywordsMissing": "Palabras clave que faltan: {list}",

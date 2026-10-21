@@ -20,7 +20,7 @@ const characters = (text: string | null) => Array.from(text ?? "").length;
  * Riquadro «Controllo SEO» dell'editor (T-4402), chiuso finché l'utente non lo apre: densità della keyword principale,
  * lunghezze di title e meta description, dati da verificare ancora aperti e problemi dell'articolo, poi per ogni blocco
  * le keyword della scaletta usate e mancanti, i link interni presenti e quelli obbligatori mancanti con l'H1 della
- * pagina. Legge il rapporto salvato dai controlli (T-4302) e il testo dei blocchi; tutto è reso come testo (CWE-79). Il
+ * pagina e il tetto di parole della scaletta superato (T-5202). Legge il rapporto salvato dai controlli (T-4302) e il testo dei blocchi; tutto è reso come testo (CWE-79). Il
  * contenuto si rende solo con il riquadro aperto.
  */
 export function ArticleSeoReport({ article, pages, mainKeyword }: ArticleSeoReportProps) {
@@ -46,7 +46,8 @@ export function ArticleSeoReport({ article, pages, mainKeyword }: ArticleSeoRepo
       case "meta_description_length":
         return t(`problems.${problem.rule}`, { length: problem.length ?? 0, max: problem.max ?? 0 });
       case "density":
-        return t("problems.density", { count: problem.count ?? 0, max: problem.max ?? 0 });
+      case "words_over":
+        return t(`problems.${problem.rule}`, { count: problem.count ?? 0, max: problem.max ?? 0 });
       case "ai_patterns":
         return t("problems.ai_patterns", { count: problem.count ?? 0 });
       default:

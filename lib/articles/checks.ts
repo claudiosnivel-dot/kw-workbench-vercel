@@ -1,5 +1,6 @@
 import { AiTitlesError } from "@/lib/ai/errors";
 import { faqInput, faqText } from "@/lib/articles/faq";
+import { markdownWords } from "@/lib/articles/markdown-sanitizer";
 import { linkableRef } from "@/lib/articles/outline-prompt";
 import { requiredLinkPages } from "@/lib/articles/outline-response";
 import { type PhaseArticle, readPhaseArticle } from "@/lib/articles/phase-data";
@@ -26,12 +27,18 @@ type Section = PhaseArticle["sections"][number];
 /** Controlli di un blocco: l'analisi del testo (T-4301) e i problemi SEO del blocco (T-4302). */
 type BlockCheck = { style: StyleAnalysis; problems: SeoProblem[] };
 
-/** Problema del rapporto oltre a quelli SEO: il blocco supera ancora la soglia dei tratti AI. */
-type ReportProblem = SeoProblem | { rule: "ai_patterns"; count: number };
+/**
+ * Problemi del rapporto oltre a quelli SEO: il blocco supera ancora la soglia dei tratti AI, oppure ha count parole dove
+ * la scaletta ne dà al massimo max (T-5202).
+ */
+type ReportProblem = SeoProblem | { rule: "ai_patterns"; count: number } | { rule: "words_over"; count: number; max: number };
+
+/** Blocco della scaletta di una sezione; nessuno per il blocco FAQ, che non è nella scaletta. */
+const outlineBlock = (article: PhaseArticle, section: Section) =>
+  section.kind === "FAQ" ? undefined : article.blocks.find((block) => block.position === section.position);
 
 /** Articolo per il controllo SEO: keyword e link di ogni blocco dalla scaletta, nessuno per il blocco FAQ. */
 function seoArticle(article: PhaseArticle): SeoArticle {
-  const outline = new Map(article.blocks.map((block) => [block.position, block]));
   return {
     language: article.plan.language,
     mainKeyword: article.plan.page.main.keyword,
@@ -40,10 +47,17 @@ function seoArticle(article: PhaseArticle): SeoArticle {
     metaDescription: article.metaDescription,
     requiredLinks: requiredLinkPages(article.plan),
     blocks: article.sections.map((section) => {
-      const block = section.kind === "FAQ" ? undefined : outline.get(section.position);
+      const block = outlineBlock(article, section);
       return { position: section.position, body: section.body, keywords: block?.keywords ?? [], links: block?.links ?? [] };
     }),
   };
+}
+
+/** Il blocco ha più parole di words della scaletta (T-5202): un problema del rapporto, mai un motivo di riscrittura. */
+function wordsOver(article: PhaseArticle, section: Section): ReportProblem[] {
+  const max = outlineBlock(article, section)?.words;
+  const count = markdownWords(section.body).length;
+  return max !== undefined && count > max ? [{ rule: "words_over", count, max }] : [];
 }
 
 const aiPatternCount = (style: StyleAnalysis) => style.matches.filter((match) => match.kind === "ai_pattern").length;
@@ -98,7 +112,10 @@ const storedChecks = (check: BlockCheck, rewritten: boolean) => ({ version: STYL
 /** Controlli salvati di un blocco modificato dall'autore (T-4402): quelli del testo che ha nell'articolo dato, senza modello. */
 export const authorBlockChecks = (article: PhaseArticle, position: number) => storedChecks(checkBlock(article, position), false);
 
-/** Rapporto SEO dell'articolo (T-4302): densità e problemi dell'articolo, poi i blocchi con i problemi rimasti. */
+/**
+ * Rapporto SEO dell'articolo (T-4302): densità e problemi dell'articolo, poi i blocchi con i problemi rimasti e il tetto
+ * di parole della scaletta superato (T-5202).
+ */
 export function seoReport(article: PhaseArticle) {
   const seo = analyzeSeo(seoArticle(article));
   const blocks = article.sections.map((section) => {
@@ -106,6 +123,7 @@ export function seoReport(article: PhaseArticle) {
     const problems: ReportProblem[] = [
       ...(seo.blocks.find((block) => block.position === section.position)?.problems ?? []),
       ...(style.overLimit ? [{ rule: "ai_patterns" as const, count: aiPatternCount(style) }] : []),
+      ...wordsOver(article, section),
     ];
     return { position: section.position, problems };
   });

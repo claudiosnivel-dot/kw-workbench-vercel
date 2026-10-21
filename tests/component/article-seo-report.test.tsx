@@ -1,6 +1,7 @@
 // Gate di T-4402 (AC-4402-3): il riquadro «Controllo SEO» dell'editor elenca la keyword mancante del blocco e il link
 // obbligatorio mancante con l'H1 della pagina pilastro. In più keyword usate, densità, lunghezze delle meta, link
-// presenti e segnaposto da verificare aperti.
+// presenti e segnaposto da verificare aperti. Gate di T-5202 (AC-5202-2): il blocco oltre il tetto di parole della
+// scaletta mostra le parole che ha e il tetto.
 import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ArticleSeoReport } from "@/components/article/article-seo-report";
@@ -88,5 +89,16 @@ describe("riquadro «Controllo SEO»", () => {
     expect(details).toHaveTextContent("Meta description: 57 caratteri su 155");
     expect(details).toHaveTextContent("Dati da verificare aperti: 1");
     expect(details).toHaveTextContent("La keyword principale non è nella meta description");
+  });
+
+  // covers: AC-5202-2
+  it("mostra il tetto di parole superato nel blocco «Quanto costa»", () => {
+    const report = { version: 1, density: 1.4, problems: [], blocks: [{ position: 1, problems: [{ rule: "words_over", count: 130, max: 100 }] }] };
+    renderWithIntl(<ArticleSeoReport article={{ ...ARTICLE, seoReport: report }} pages={{ sp2: "Noleggio letti ospedalieri a Milano" }} mainKeyword={MISSING} />);
+
+    fireEvent.click(screen.getByText("Controllo SEO"));
+
+    expect(screen.getByRole("region", { name: "Quanto costa" })).toHaveTextContent("Il blocco ha 130 parole: al massimo 100");
+    expect(screen.getByRole("region", { name: "Introduzione" })).not.toHaveTextContent("parole: al massimo");
   });
 });
