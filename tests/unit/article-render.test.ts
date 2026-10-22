@@ -1,9 +1,9 @@
 // Gate di T-4501 (AC-4501-1, AC-4501-2, AC-4501-3): l'HTML dell'articolo risolve i link interni con l'indirizzo
 // pubblicato, poi con il sito più lo slug, poi con /slug/; ha un solo script JSON-LD con Article, FAQPage e
 // BreadcrumbList e i segnaposto immagine come commenti; un testo con </script> resta testo e nel JSON '<' è \u003c. In
-// più il Markdown, LocalBusiness per la pagina locale e l'elenco chiuso di tag e attributi.
+// più il Markdown, LocalBusiness per la pagina locale, l'elenco chiuso di tag e attributi e le tabelle dei blocchi (T-5601).
 import { describe, expect, it } from "vitest";
-import { type ArticleExport, renderArticleHtml, renderArticleMarkdown } from "@/lib/articles/render";
+import { type ArticleExport, parseMarkdown, renderArticleHtml, renderArticleMarkdown } from "@/lib/articles/render";
 
 const FAQ_BODY = [
   "**Quanto costa il noleggio?**",
@@ -135,5 +135,66 @@ describe("Markdown dell'articolo", () => {
     expect(markdown).toContain(
       "- secondo punto\n\n> Immagine 1 | Testo alternativo: Letto elettrico in camera | File: letto-2.webp | Prompt: A hospital bed at home\n\n## Domande frequenti"
     );
+  });
+});
+
+describe("tabelle dei blocchi (T-5601)", () => {
+  const TABLE = [
+    "Prima della tabella.",
+    "",
+    "| Modello | Peso \\| kg | Prezzo |",
+    "| :--- | :---: | ---: |",
+    "| [Neutra](page:hub) | 250 | **120 €** |",
+    "| Stabile | 290 |",
+    "| Extra | 1 | 2 | 3 |",
+    "",
+    "Dopo la tabella.",
+  ].join("\n");
+  const withTable = (publishedUrl = "https://www.esempio.it/noleggio/") =>
+    article({
+      sections: [{ position: 0, kind: "H2", heading: "Modelli", body: TABLE }],
+      pages: { hub: { publishedUrl, slug: "noleggio-ausili" } },
+    });
+
+  it("nell'HTML l'allineamento della riga di separazione è in align, le celle mancanti sono vuote e quelle in più tolte", () => {
+    const html = renderArticleHtml(withTable());
+    const attributes = [...html.matchAll(/<(?!script)[a-z0-9]+\s+([a-z-]+)=/g)].map((match) => match[1]);
+
+    expect(html).toContain('<tr><th align="left">Modello</th><th align="center">Peso | kg</th><th align="right">Prezzo</th></tr>');
+    expect(html).toContain('<tr><td align="left">Stabile</td><td align="center">290</td><td align="right"></td></tr>');
+    expect(html).toContain('<tr><td align="left">Extra</td><td align="center">1</td><td align="right">2</td></tr>');
+    expect(html).toContain('<td align="left"><a href="https://www.esempio.it/noleggio/">Neutra</a></td>');
+    expect(html).toContain("<p>Prima della tabella.</p>\n<table>");
+    expect(html).toContain("</table>\n<p>Dopo la tabella.</p>");
+    expect(new Set(attributes)).toEqual(new Set(["href", "align"]));
+  });
+
+  it("senza H1 (la bozza di WordPress) la tabella è la stessa dell'HTML scaricato", () => {
+    const table = (html: string) => /<table>[\s\S]*<\/table>/.exec(html)?.[0];
+
+    expect(table(renderArticleHtml(withTable(), { title: false }))).toBe(table(renderArticleHtml(withTable())));
+    expect(table(renderArticleHtml(withTable(), { title: false }))).toBeDefined();
+  });
+
+  it("nel Markdown la tabella è regolare, con l'escape del '|' nella cella e nell'indirizzo del link risolto", () => {
+    const markdown = renderArticleMarkdown(withTable("https://www.esempio.it/a|b/"));
+
+    expect(markdown).toContain(
+      [
+        "Prima della tabella.",
+        "",
+        "| Modello | Peso \\| kg | Prezzo |",
+        "| :--- | :---: | ---: |",
+        "| [Neutra](https://www.esempio.it/a\\|b/) | 250 | **120 €** |",
+        "| Stabile | 290 |  |",
+        "| Extra | 1 | 2 |",
+        "",
+        "Dopo la tabella.",
+      ].join("\n")
+    );
+    const [table] = (parseMarkdown(markdown).children ?? []).filter((node) => node.type === "table");
+    const [firstRow] = table.children?.slice(1) ?? [];
+    expect(firstRow.children).toHaveLength(3);
+    expect(firstRow.children?.[0].children?.[0]).toMatchObject({ type: "link", url: "https://www.esempio.it/a|b/" });
   });
 });

@@ -1,14 +1,30 @@
-import { AlignmentType, Document, ExternalHyperlink, HeadingLevel, LevelFormat, Packer, Paragraph, type ParagraphChild, TextRun } from "docx";
-import { type ArticleExport, imageLine, imagesAfter, linkHref, type MdNode, parseMarkdown } from "@/lib/articles/render";
+import {
+  AlignmentType,
+  Document,
+  ExternalHyperlink,
+  HeadingLevel,
+  LevelFormat,
+  Packer,
+  Paragraph,
+  type ParagraphChild,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
+} from "docx";
+import { type ArticleExport, imageLine, imagesAfter, linkHref, type MdNode, parseMarkdown, tableAlign, tableRows } from "@/lib/articles/render";
 
 /*
  * File Word dell'articolo (T-4502, D-46): l'H1 come titolo, gli H2 e gli H3 come intestazioni, grassetti, corsivi ed
- * elenchi dal Markdown dei blocchi, i link interni risolti come nell'HTML (T-4501) e i segnaposto immagine come
- * paragrafi in corsivo; niente dati strutturati, che servono solo alla pagina web.
+ * elenchi dal Markdown dei blocchi, i link interni risolti come nell'HTML (T-4501), le tabelle come tabelle di Word
+ * (T-5602) e i segnaposto immagine come paragrafi in corsivo; niente dati strutturati, che servono solo alla pagina web.
  */
 
 const NUMBERED = "article-numbered";
 const HEADINGS = [HeadingLevel.HEADING_3, HeadingLevel.HEADING_4, HeadingLevel.HEADING_5, HeadingLevel.HEADING_6] as const;
+
+const CELL_ALIGNMENT = { left: AlignmentType.LEFT, center: AlignmentType.CENTER, right: AlignmentType.RIGHT } as const;
 
 type RunStyle = { bold?: boolean; italics?: boolean };
 type DocxContext = { article: ArticleExport; numberedLists: number };
@@ -38,8 +54,26 @@ function runs(node: MdNode, context: DocxContext, style: RunStyle = {}): Paragra
   }
 }
 
-/** Paragrafi di un nodo di blocco; gli elenchi numerati ripartono da 1 a ogni elenco. */
-function blocks(node: MdNode, context: DocxContext, level = 0): Paragraph[] {
+/**
+ * Tabella di Word a tutta larghezza (T-5602): la riga d'intestazione si ripete in cima a ogni pagina e ha il testo in
+ * grassetto; ogni cella è un paragrafo con l'allineamento della sua colonna.
+ */
+function table(node: MdNode, context: DocxContext): Table {
+  const row = (cells: MdNode[], header: boolean) =>
+    new TableRow({
+      tableHeader: header,
+      children: cells.map((cell, index) => {
+        const align = tableAlign(node, index);
+        const paragraph = new Paragraph({ alignment: align ? CELL_ALIGNMENT[align] : undefined, children: runs(cell, context, header ? { bold: true } : {}) });
+        return new TableCell({ children: [paragraph] });
+      }),
+    });
+  const [header = [], ...rows] = tableRows(node);
+  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [row(header, true), ...rows.map((cells) => row(cells, false))] });
+}
+
+/** Paragrafi e tabelle di un nodo di blocco; gli elenchi numerati ripartono da 1 a ogni elenco. */
+function blocks(node: MdNode, context: DocxContext, level = 0): (Paragraph | Table)[] {
   const children = node.children ?? [];
   switch (node.type) {
     case "paragraph":
@@ -58,6 +92,8 @@ function blocks(node: MdNode, context: DocxContext, level = 0): Paragraph[] {
     }
     case "blockquote":
       return children.flatMap((child) => blocks(child, context, level));
+    case "table":
+      return [table(node, context)];
     case "html":
     case "code":
       return [new Paragraph({ children: [new TextRun(node.value ?? "")] })];
@@ -69,7 +105,7 @@ function blocks(node: MdNode, context: DocxContext, level = 0): Paragraph[] {
 /** Documento Word dell'articolo come Buffer (Packer di docx). */
 export async function renderArticleDocx(article: ArticleExport): Promise<Buffer> {
   const context: DocxContext = { article, numberedLists: 0 };
-  const paragraphs = [new Paragraph({ text: article.h1, heading: HeadingLevel.TITLE })];
+  const paragraphs: (Paragraph | Table)[] = [new Paragraph({ text: article.h1, heading: HeadingLevel.TITLE })];
   for (const section of article.sections) {
     if (section.kind !== "INTRO" && section.heading) paragraphs.push(new Paragraph({ text: section.heading, heading: HeadingLevel.HEADING_2 }));
     if (section.body.trim()) paragraphs.push(...(parseMarkdown(section.body).children ?? []).flatMap((node) => blocks(node, context)));
