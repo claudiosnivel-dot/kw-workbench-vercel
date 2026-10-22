@@ -80,7 +80,7 @@ Dopo il modulo 45 `parseMarkdown` legge il Markdown senza le estensioni GFM: una
 - Modulo dalle risposte dell'utente del 2026-10-21 (D-51): seconda metà delle tabelle, diviso dal 55 per la regola dei macrotask piccoli.
 - Gate umani: nessuno (nessuna schermata nuova, nessuna baseline visiva toccata).
 - Ordine: dipende da 45, 46 e 55; si costruisce dopo il 55.
-- Note di costruzione (2026-10-22, scelte dell'agente da confermare dall'utente):
+- Note di costruzione (2026-10-22, scelte dell'agente confermate dall'utente il 2026-10-22 con AskUserQuestion, D-52):
   - `parseMarkdown` legge la sola estensione GFM delle tabelle, come l'editor (T-5502): link automatici, barrato e note
     restano testo come prima; anche le FAQ dei dati strutturati passano dallo stesso parser (una tabella lì diventa il
     testo delle celle, ma le risposte delle FAQ non ne hanno: `tables: false` del 55);

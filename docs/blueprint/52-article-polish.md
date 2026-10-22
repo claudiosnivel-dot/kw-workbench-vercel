@@ -88,7 +88,7 @@ Dopo i moduli 41-44 un lavoro fermo (per esempio dopo un errore di rete tra due 
 - Modulo dalle risposte dell'utente del 2026-10-20 (D-49) alle domande sulle scelte del modulo 44: ripresa all'apertura dell'editor e tetto di parole segnalato nel «Controllo SEO» senza riscrittura.
 - Gate umani: nessuno (nessuna schermata nuova, nessuna baseline visiva toccata).
 - Ordine: dipende da 41, 43 e 44, già chiusi; nel DAG viene dopo il 45 e il 46, ma si può costruire anche prima su indicazione dell'utente.
-- Note di costruzione (2026-10-21, scelte dell'agente da confermare dall'utente):
+- Note di costruzione (2026-10-21, scelte dell'agente confermate dall'utente il 2026-10-22 con AskUserQuestion, D-52):
   - `reapStaleArticleRuns` prende `{ runId?, limit? }` come `reapStaleJobs`; il cron `reap-jobs` la chiama senza
     argomenti come prima;
   - `readArticle` legge l'articolo, e solo con un lavoro attivo chiede la ripresa di quel lavoro; rilegge l'articolo

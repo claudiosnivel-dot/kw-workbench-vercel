@@ -100,7 +100,7 @@ Dopo i moduli 42-44 le istruzioni del blocco vietano le tabelle e `sanitizeSecti
   dal modulo): timeout di 30 s per `tests/unit/planner-export-cli.test.ts` (T-904) e per il caso AC-1502-4 di
   `tests/tooling/workspace-scoped-writes.test.ts`, di 60 s per beforeAll e afterAll di
   `tests/integration/prisma-client.test.ts` (T-403); stesse asserzioni.
-- Note di costruzione (2026-10-22, scelte dell'agente da confermare dall'utente):
+- Note di costruzione (2026-10-22, scelte dell'agente confermate dall'utente il 2026-10-22 con AskUserQuestion, D-52):
   - la tabella tenuta si riscrive in forma regolare (`| a | b |`, separatore `---` con i due punti degli allineamenti)
     e si separa dal testo con una riga vuota prima e dopo, così nessun lettore di Markdown la attacca a un paragrafo;
   - la tabella finisce alla prima riga vuota o senza `|`: in GFM quella riga sarebbe ancora una riga della tabella,
