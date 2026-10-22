@@ -46,7 +46,7 @@ Dopo il modulo 45 il checkpoint conta osv 3: oltre a uuid (via exceljs) e a brac
 - Modulo dalle risposte dell'utente del 2026-10-20 (D-50) alle domande sulle scelte del modulo 45: «piccolo modulo dedicato» per gli avvisi di osv.
 - Gate umani: nessuno (nessuna schermata, nessuna baseline visiva toccata).
 - Ordine: dipende solo dal modulo 04, già chiuso; si costruisce quando lo dice l'utente, anche prima del 46 e del 52.
-- Note di costruzione (2026-10-21, scelte dell'agente da confermare dall'utente):
+- Note di costruzione (2026-10-21, scelte dell'agente confermate dall'utente il 2026-10-22 con AskUserQuestion, D-52):
   - vite fissata a 8.3.4 con `npm install --save-dev --save-exact vite@8.3.4`; vitest e @vitest/mocker usano la stessa
     vite (deduped);
   - effetti nel lockfile dichiarati (fuori dal testo del DoD, conseguenza diretta dell'aggiornamento): vite 8.3.4

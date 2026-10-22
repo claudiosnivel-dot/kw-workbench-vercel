@@ -86,7 +86,7 @@ Dopo il modulo 46 la prova del collegamento e l'invio a WordPress controllano ch
 - Modulo dalle risposte dell'utente del 2026-10-21 (D-51) alle domande sulle scelte del modulo 46: «piccolo modulo per chiuderlo» per il DNS rebinding, prima dei moduli delle tabelle.
 - Gate umani: nessuno (nessuna schermata, nessuna baseline visiva toccata).
 - Ordine: dipende solo dal modulo 46, già chiuso; viene prima del 55 e del 56 su indicazione dell'utente.
-- Note di costruzione (2026-10-21, scelte dell'agente da confermare dall'utente):
+- Note di costruzione (2026-10-21, scelte dell'agente confermate dall'utente il 2026-10-22 con AskUserQuestion, D-52):
   - `undici` 8.11.2 come dipendenza diretta esatta: è la versione che il lockfile aveva già sotto jsdom (solo sviluppo),
     quindi nell'albero resta una sola undici e il lockfile cambia solo nel flag `dev`; nessun avviso di `npm audit` su
     undici. La 8.12.3, l'ultima, è uscita il 2026-10-19;
