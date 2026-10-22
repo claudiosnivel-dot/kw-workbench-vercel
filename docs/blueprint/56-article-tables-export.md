@@ -80,3 +80,23 @@ Dopo il modulo 45 `parseMarkdown` legge il Markdown senza le estensioni GFM: una
 - Modulo dalle risposte dell'utente del 2026-10-21 (D-51): seconda metà delle tabelle, diviso dal 55 per la regola dei macrotask piccoli.
 - Gate umani: nessuno (nessuna schermata nuova, nessuna baseline visiva toccata).
 - Ordine: dipende da 45, 46 e 55; si costruisce dopo il 55.
+- Note di costruzione (2026-10-22, scelte dell'agente da confermare dall'utente):
+  - `parseMarkdown` legge la sola estensione GFM delle tabelle, come l'editor (T-5502): link automatici, barrato e note
+    restano testo come prima; anche le FAQ dei dati strutturati passano dallo stesso parser (una tabella lì diventa il
+    testo delle celle, ma le risposte delle FAQ non ne hanno: `tables: false` del 55);
+  - l'allineamento della riga di separazione va nell'HTML come attributo `align` di `<th>` e `<td>`, come nell'HTML
+    di riferimento di GFM, e non come `style`: un sito con una Content-Security-Policy senza `unsafe-inline` ignorerebbe
+    lo stile in linea; i valori vengono da un elenco chiuso (left, center, right);
+  - le righe con meno celle dell'intestazione hanno celle vuote e quelle in più si tolgono, come in GFM, nell'HTML, nel
+    Markdown e nel file Word; una tabella senza righe di dati ha solo il `<thead>`;
+  - nel Markdown le tabelle del primo livello del blocco si riscrivono riga per riga dal testo di ogni cella (escape
+    compresi) e con l'allineamento; il resto del blocco si copia come prima. Nell'indirizzo risolto di un link dentro
+    una cella il `|` diventa `\|`, così la riga della tabella resta intera; fuori dalle tabelle l'indirizzo non cambia;
+  - nel file Word la tabella è larga il 100% della pagina con le colonne uguali (le calcola `docx` 9.8.1), i bordi
+    sottili predefiniti di `docx` e l'allineamento della colonna nei paragrafi delle celle;
+  - test in più oltre agli AC: nel test unitario dell'export allineamenti, celle mancanti e in più, attributi `href` e
+    `align` soli, tabella uguale senza H1 (la bozza di WordPress), `\|` nella cella e nell'indirizzo con la rilettura
+    della tabella; nel test del file Word il grassetto dell'intestazione e il link di una cella.
+- Copertura non verificata (dichiarata): nessuna prova con un sito WordPress vero né con Word, LibreOffice o Google
+  Documenti aperti a mano; AC-5601-2 era già verde prima del codice (il Markdown copiava il blocco già regolare del 55);
+  il potere delle asserzioni (AT-1 Fase C) non è eseguito.
