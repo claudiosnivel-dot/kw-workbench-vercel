@@ -96,6 +96,10 @@ Dopo i moduli 42-44 le istruzioni del blocco vietano le tabelle e `sanitizeSecti
 - Ordine: dipende da 42, 43 e 44, già chiusi; viene dopo il 54 su indicazione dell'utente e prima del 56.
 - Emendamento dichiarato (2026-10-22): il test di T-4201 in `tests/unit/article-markdown-sanitizer.test.ts` che toglieva
   «immagini, tabelle e codice» ora tiene la sua tabella di 2 colonne e 1 riga, che è nei limiti (impacted-by T-5501).
+- Fix autorizzata dall'utente (2026-10-22, dopo quattro checkpoint NON-VERDE per test lenti sotto carico non toccati
+  dal modulo): timeout di 30 s per `tests/unit/planner-export-cli.test.ts` (T-904) e per il caso AC-1502-4 di
+  `tests/tooling/workspace-scoped-writes.test.ts`, di 60 s per beforeAll e afterAll di
+  `tests/integration/prisma-client.test.ts` (T-403); stesse asserzioni.
 - Note di costruzione (2026-10-22, scelte dell'agente da confermare dall'utente):
   - la tabella tenuta si riscrive in forma regolare (`| a | b |`, separatore `---` con i due punti degli allineamenti)
     e si separa dal testo con una riga vuota prima e dopo, così nessun lettore di Markdown la attacca a un paragrafo;
