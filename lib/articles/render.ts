@@ -1,17 +1,31 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
+import { gfmTableFromMarkdown } from "mdast-util-gfm-table";
+import { gfmTable } from "micromark-extension-gfm-table";
 import type { ArticleImageView } from "@/lib/articles/view";
 import type { ArticleSectionKind } from "@/lib/generated/prisma/enums";
 
 /*
  * Export dell'articolo (T-4501, D-46): HTML e Markdown da incollare nel sito, con i link interni page:<id> risolti, i
  * segnaposto immagine e i dati strutturati in un solo script JSON-LD. L'HTML nasce solo dal Markdown dei blocchi, già
- * ripulito (T-4201), con un elenco chiuso di tag e il solo attributo href; ogni altro nodo resta testo, con i caratteri
- * speciali scritti come entità (CWE-79), e dentro il JSON ogni '<' è <. Modulo puro: lo usano la rotta dell'export
- * e il file Word (T-4502).
+ * ripulito (T-4201), con un elenco chiuso di tag e i soli attributi href dei link e align delle celle; ogni altro nodo
+ * resta testo, con i caratteri speciali scritti come entità (CWE-79), e dentro il JSON ogni '<' è <. Le tabelle
+ * GFM dei blocchi (T-5501) diventano <table> nell'HTML e tabelle regolari nel Markdown (T-5601). Modulo puro: lo usano
+ * la rotta dell'export, il file Word (T-4502) e la bozza di WordPress (T-4602).
  */
 
 /** Nodo dell'albero del Markdown (mdast) nella sola forma che serve qui. */
-export type MdNode = { type: string; value?: string; url?: string; depth?: number; ordered?: boolean | null; spread?: boolean | null; children?: MdNode[] };
+export type MdNode = {
+  type: string;
+  value?: string;
+  url?: string;
+  depth?: number;
+  ordered?: boolean | null;
+  spread?: boolean | null;
+  /** Allineamento delle colonne di una tabella, dalla riga di separazione. */
+  align?: (string | null)[] | null;
+  position?: { start: { offset?: number }; end: { offset?: number } };
+  children?: MdNode[];
+};
 
 type ExportSection = { position: number; kind: ArticleSectionKind; heading: string | null; body: string };
 
@@ -60,7 +74,27 @@ export function linkHref(url: string, article: ArticleExport): string | null {
   return pageId && Object.hasOwn(article.pages, pageId) ? pageUrl(article.pages[pageId], article.siteUrl) : null;
 }
 
-export const parseMarkdown = (body: string): MdNode => fromMarkdown(body) as MdNode;
+/** Albero del Markdown di un blocco con la sola estensione GFM delle tabelle, come l'editor (T-5502). */
+export const parseMarkdown = (body: string): MdNode =>
+  fromMarkdown(body, { extensions: [gfmTable()], mdastExtensions: [gfmTableFromMarkdown()] }) as MdNode;
+
+export type TableAlign = "left" | "center" | "right" | null;
+
+/** Allineamento della colonna dalla riga di separazione; un valore fuori dall'elenco è nessun allineamento. */
+export function tableAlign(table: MdNode, column: number): TableAlign {
+  const align = table.align?.[column];
+  return align === "left" || align === "center" || align === "right" ? align : null;
+}
+
+/**
+ * Righe di una tabella con le celle quante le colonne dell'intestazione, come in GFM: le celle mancanti sono vuote e
+ * quelle in più si tolgono. La prima riga è l'intestazione.
+ */
+export function tableRows(table: MdNode): MdNode[][] {
+  const rows = table.children ?? [];
+  const columns = table.align?.length ?? rows[0]?.children?.length ?? 0;
+  return rows.map((row) => Array.from({ length: columns }, (_, index) => row.children?.[index] ?? { type: "tableCell", children: [] }));
+}
 
 /** Testo semplice di un nodo, anche quello che il Markdown leggerebbe come HTML, con gli spazi ridotti. */
 function plainText(node: MdNode): string {
@@ -112,7 +146,21 @@ function blocksHtml(nodes: MdNode[], article: ArticleExport, tight: boolean, joi
   return nodes.map((node) => (BLOCK_TEXT.has(node.type) ? `<p>${escapeHtml(node.value ?? "")}</p>` : nodeHtml(node, article, tight))).join(joiner);
 }
 
-/** HTML di un nodo con i soli tag p, h3-h6, ul, ol, li, blockquote, strong, em, br e a con href. */
+/** Tabella con l'intestazione in <thead> (celle <th>) e le righe di dati in <tbody>, con l'allineamento in align. */
+function tableHtml(table: MdNode, article: ArticleExport): string {
+  const row = (cells: MdNode[], tag: "th" | "td") =>
+    `<tr>${cells
+      .map((cell, index) => {
+        const align = tableAlign(table, index);
+        return `<${tag}${align ? ` align="${align}"` : ""}>${nodeHtml(cell, article)}</${tag}>`;
+      })
+      .join("")}</tr>`;
+  const [header = [], ...rows] = tableRows(table);
+  const body = rows.length > 0 ? `\n<tbody>\n${rows.map((cells) => row(cells, "td")).join("\n")}\n</tbody>` : "";
+  return `<table>\n<thead>\n${row(header, "th")}\n</thead>${body}\n</table>`;
+}
+
+/** HTML di un nodo con i soli tag p, h3-h6, ul, ol, li, blockquote, table, strong, em, br e a con href. */
 function nodeHtml(node: MdNode, article: ArticleExport, tight = false): string {
   const children = node.children ?? [];
   const inline = () => children.map((child) => nodeHtml(child, article)).join("");
@@ -133,6 +181,8 @@ function nodeHtml(node: MdNode, article: ArticleExport, tight = false): string {
       return `<li>${blocksHtml(children, article, tight, tight ? " " : "\n")}</li>`;
     case "blockquote":
       return `<blockquote>\n${blocksHtml(children, article, false, "\n")}\n</blockquote>`;
+    case "table":
+      return tableHtml(node, article);
     case "strong":
       return `<strong>${inline()}</strong>`;
     case "emphasis":
@@ -198,15 +248,53 @@ export function renderArticleHtml(article: ArticleExport, options: { title?: boo
   return `${parts.join("\n")}\n`;
 }
 
+/** Markdown con i link page: risolti; in una cella di tabella il '|' dell'indirizzo è escapato, così la riga resta intera. */
+function resolveLinks(markdown: string, article: ArticleExport, cell = false): string {
+  return markdown.replace(MARKDOWN_PAGE_LINK, (_match, text: string, url: string) => {
+    const href = linkHref(url, article);
+    return href ? `[${text}](${cell ? href.replace(/\|/g, "\\|") : href})` : text;
+  });
+}
+
+const DELIMITER: Record<NonNullable<TableAlign> | "none", string> = { left: ":---", center: ":---:", right: "---:", none: "---" };
+
+/**
+ * Tabella GFM riscritta dalle celle (T-5601): intestazione, riga di separazione con l'allineamento e righe di dati, ogni
+ * cella col suo Markdown di partenza (escape compresi) e i link risolti.
+ */
+function tableMarkdown(table: MdNode, body: string, article: ArticleExport): string {
+  const cellMarkdown = (cell: MdNode) => {
+    const first = cell.children?.[0]?.position?.start.offset;
+    const last = cell.children?.at(-1)?.position?.end.offset;
+    return first === undefined || last === undefined ? "" : resolveLinks(body.slice(first, last), article, true);
+  };
+  const line = (cells: string[]) => `| ${cells.join(" | ")} |`;
+  const [header = [], ...rows] = tableRows(table);
+  const delimiter = header.map((_cell, index) => DELIMITER[tableAlign(table, index) ?? "none"]);
+  return [line(header.map(cellMarkdown)), line(delimiter), ...rows.map((cells) => line(cells.map(cellMarkdown)))].join("\n");
+}
+
+/** Markdown di un blocco: il testo con i link risolti e le tabelle del primo livello riscritte cella per cella. */
+function bodyMarkdown(body: string, article: ArticleExport): string {
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const node of parseMarkdown(body).children ?? []) {
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if (node.type !== "table" || start === undefined || end === undefined) continue;
+    parts.push(resolveLinks(body.slice(cursor, start), article), tableMarkdown(node, body, article));
+    cursor = end;
+  }
+  parts.push(resolveLinks(body.slice(cursor), article));
+  return parts.join("");
+}
+
 /** Markdown dell'articolo (T-4501): gli stessi blocchi con i link risolti e i segnaposto immagine come citazioni. */
 export function renderArticleMarkdown(article: ArticleExport): string {
   const parts = [`# ${article.h1}`];
   for (const section of article.sections) {
     if (section.kind !== "INTRO" && section.heading) parts.push(`## ${section.heading}`);
-    const body = section.body.trim().replace(MARKDOWN_PAGE_LINK, (_match, text: string, url: string) => {
-      const href = linkHref(url, article);
-      return href ? `[${text}](${href})` : text;
-    });
+    const body = bodyMarkdown(section.body.trim(), article);
     if (body) parts.push(body);
     for (const item of imagesAfter(article, section.position)) parts.push(`> ${imageLine(article, item)}`);
   }
