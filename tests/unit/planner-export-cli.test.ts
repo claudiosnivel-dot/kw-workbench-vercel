@@ -86,7 +86,8 @@ afterEach(async () => {
   await rm(outDir, { recursive: true, force: true });
 });
 
-describe("CLI planner:export", () => {
+// Il primo caso importa la CLI e normalizza 2.500 keyword: con la macchina carica (checkpoint) supera i 5 s predefiniti.
+describe("CLI planner:export", { timeout: 30_000 }, () => {
   // covers: AC-904-1
   it("scrive blocchi da --chunk keyword con la riga Keyword e un solo file per canonical", async () => {
     // 2.100 canonical distinti; 400 candidate di un'altra sezione differiscono solo per le maiuscole (stesso canonical).

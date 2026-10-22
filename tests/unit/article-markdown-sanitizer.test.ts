@@ -1,7 +1,8 @@
-// Gate di T-4201 (AC-4201-2): la pulizia del testo di un blocco tiene paragrafi, grassetto, corsivo, elenchi, H3 e i
-// link page: della scaletta del blocco; toglie HTML, titoli di livello 1 e 2, immagini, tabelle, blocchi di codice e ogni
-// altro link lasciandone il testo. In più il conteggio delle parole, i segnaposto, il testo dentro un recinto di codice e
-// il blocco vuoto dopo la pulizia.
+// Gate di T-4201 (AC-4201-2) e di T-5501 (AC-5501-2, AC-5501-3, AC-5501-4): la pulizia del testo di un blocco tiene
+// paragrafi, grassetto, corsivo, elenchi, H3, i link page: della scaletta del blocco e le tabelle semplici nei limiti
+// (da 2 a 5 colonne, da 1 a 12 righe di dati) con le celle pulite come il testo; toglie HTML, titoli di livello 1 e 2,
+// immagini, tabelle fuori dai limiti, blocchi di codice e ogni altro link lasciandone il testo. In più il conteggio delle
+// parole, i segnaposto, il testo dentro un recinto di codice, il blocco vuoto dopo la pulizia e le risposte senza tabelle.
 import { describe, expect, it } from "vitest";
 import { AiTitlesError } from "@/lib/ai/errors";
 import { markdownWords, sanitizeSectionMarkdown } from "@/lib/articles/markdown-sanitizer";
@@ -43,7 +44,8 @@ describe("pulizia del Markdown di un blocco", () => {
     expect(result).toContain("- primo punto\n- secondo punto");
   });
 
-  it("tiene grassetto, corsivo, elenchi numerati e H3; toglie H2, porta H4 a H3 e toglie immagini, tabelle e codice", () => {
+  // impacted-by: T-5501 (la tabella nei limiti ora resta, separata dal testo da una riga vuota)
+  it("tiene grassetto, corsivo, elenchi numerati, H3 e la tabella nei limiti; toglie H2, porta H4 a H3 e toglie immagini e codice", () => {
     const body = [
       "## Titolo del blocco ripetuto",
       "Un paragrafo con **grassetto** e *corsivo*.",
@@ -66,9 +68,19 @@ describe("pulizia del Markdown di un blocco", () => {
     const result = sanitizeSectionMarkdown(body, LINKS);
 
     expect(result).toBe(
-      ["Un paragrafo con **grassetto** e *corsivo*.", "", "### Dettagli", "1. primo", "2. secondo", "", "Ultimo paragrafo con codice in linea e barrato."].join(
-        "\n"
-      )
+      [
+        "Un paragrafo con **grassetto** e *corsivo*.",
+        "",
+        "### Dettagli",
+        "1. primo",
+        "2. secondo",
+        "",
+        "| Piano | Prezzo |",
+        "| --- | --- |",
+        "| Base | 10 € |",
+        "",
+        "Ultimo paragrafo con codice in linea e barrato.",
+      ].join("\n")
     );
   });
 
@@ -101,7 +113,15 @@ describe("pulizia del Markdown di un blocco", () => {
   });
 
   it("testi di 60.000 caratteri fatti di parentesi, titoli o tag si puliscono in tempo lineare (CWE-1333)", () => {
-    const inputs = ["[".repeat(60_000), "[a](".repeat(15_000), "](".repeat(30_000), `# ${" ".repeat(60_000)}x`, "<a".repeat(30_000)];
+    const inputs = [
+      "[".repeat(60_000),
+      "[a](".repeat(15_000),
+      "](".repeat(30_000),
+      `# ${" ".repeat(60_000)}x`,
+      "<a".repeat(30_000),
+      "|".repeat(60_000),
+      `${"| a ".repeat(15_000)}|\n${"| --- ".repeat(10_000)}|\n${"| b ".repeat(15_000)}|`,
+    ];
     const start = Date.now();
     for (const input of inputs) {
       try {
@@ -111,6 +131,77 @@ describe("pulizia del Markdown di un blocco", () => {
       }
     }
     expect(Date.now() - start).toBeLessThan(2_000);
+  });
+
+  it("tiene la tabella con gli allineamenti, il link page: e il «\\|» nelle celle; la separa dal testo e toglie il <br>", () => {
+    const body = [
+      "Prezzi indicativi:",
+      "|Modello|Prezzo|",
+      "|:---|---:|",
+      "| A \\| B | [la guida](page:L1)<br>e altro |",
+      "Testo dopo la tabella.",
+    ].join("\n");
+
+    expect(sanitizeSectionMarkdown(body, LINKS)).toBe(
+      [
+        "Prezzi indicativi:",
+        "",
+        "| Modello | Prezzo |",
+        "| :--- | ---: |",
+        `| A \\| B | [la guida](page:${PILLAR_ID}) e altro |`,
+        "",
+        "Testo dopo la tabella.",
+      ].join("\n")
+    );
+  });
+
+  // covers: AC-5501-2
+  it("una tabella con una riga di 4 celle sotto un'intestazione di 3 si toglie tutta e resta il paragrafo", () => {
+    const body = [
+      "Un confronto tra i piani del noleggio.",
+      "",
+      "| Piano | Canone | Durata |",
+      "| --- | --- | --- |",
+      "| Base | 300 € | 36 mesi |",
+      "| Completo | 450 € | 48 mesi | extra |",
+    ].join("\n");
+
+    expect(sanitizeSectionMarkdown(body, LINKS)).toBe("Un confronto tra i piani del noleggio.");
+  });
+
+  // covers: AC-5501-3
+  it("una tabella di 6 colonne si toglie tutta e resta il paragrafo", () => {
+    const body = ["Un confronto tra i piani del noleggio.", "", "| A | B | C | D | E | F |", "| - | - | - | - | - | - |", "| 1 | 2 | 3 | 4 | 5 | 6 |"].join("\n");
+
+    expect(sanitizeSectionMarkdown(body, LINKS)).toBe("Un confronto tra i piani del noleggio.");
+  });
+
+  // covers: AC-5501-4
+  it("in una tabella di 2 colonne la cella con un link esterno e un tag HTML tiene solo il testo", () => {
+    const body = ["| Fonte | Nota |", "| --- | --- |", "| [sito](https://esempio.it) <b>forte</b> | da leggere |"].join("\n");
+
+    const result = sanitizeSectionMarkdown(body, LINKS);
+
+    expect(result).toBe(["| Fonte | Nota |", "| --- | --- |", "| sito forte | da leggere |"].join("\n"));
+  });
+
+  it("si tolgono la tabella di 1 colonna, quella di 13 righe e le righe senza la riga di separazione; con 12 righe la tabella resta", () => {
+    const table = (rows: number) =>
+      ["Testo.", "", "| Voce | Valore |", "| --- | --- |", ...Array.from({ length: rows }, (_, index) => `| riga ${index + 1} | valore |`)].join("\n");
+
+    expect(sanitizeSectionMarkdown(["Testo.", "", "| Voce |", "| --- |", "| riga |"].join("\n"), LINKS)).toBe("Testo.");
+    expect(sanitizeSectionMarkdown(table(13), LINKS)).toBe("Testo.");
+    expect(sanitizeSectionMarkdown(["Testo.", "| Voce | Valore |", "| riga | 1 |"].join("\n"), LINKS)).toBe("Testo.");
+    expect(sanitizeSectionMarkdown(table(12), LINKS)).toBe(table(12));
+  });
+
+  it("una tabella in una citazione passa dagli stessi controlli; con tables false si toglie anche una tabella nei limiti", () => {
+    const quoted = ["> | Voce | Valore |", "> | --- | --- |", "> | a | b | c |", "> Fine della citazione."].join("\n");
+    const table = ["Risposta breve.", "", "| Voce | Valore |", "| --- | --- |", "| a | b |"].join("\n");
+
+    expect(sanitizeSectionMarkdown(quoted, LINKS)).toBe("Fine della citazione.");
+    expect(sanitizeSectionMarkdown(table, LINKS)).toBe(table);
+    expect(sanitizeSectionMarkdown(table, LINKS, { tables: false })).toBe("Risposta breve.");
   });
 
   it("conta le parole del testo senza la sintassi del Markdown né la destinazione dei link", () => {

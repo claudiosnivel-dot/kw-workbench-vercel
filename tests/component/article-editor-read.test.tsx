@@ -1,7 +1,7 @@
-// Gate di T-4401 (AC-4401-2, AC-4401-3): l'editor dell'articolo evidenzia i tratti AI in giallo e i dati da verificare
-// in arancio, «Copia prompt» copia il prompt del segnaposto immagine, e mentre il lavoro è attivo il polling ogni 3 s
-// sostituisce «Sto scrivendo…» con il testo del blocco. In più i link interni verso le pagine del piano e l'errore del
-// lavoro con il testo del catalogo.
+// Gate di T-4401 (AC-4401-2, AC-4401-3) e di T-5502 (AC-5502-1): l'editor dell'articolo evidenzia i tratti AI in giallo
+// e i dati da verificare in arancio, anche nelle celle di una tabella, «Copia prompt» copia il prompt del segnaposto
+// immagine, e mentre il lavoro è attivo il polling ogni 3 s sostituisce «Sto scrivendo…» con il testo del blocco. In più
+// i link interni verso le pagine del piano e l'errore del lavoro con il testo del catalogo.
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArticleEditor, type ArticleEditorProps } from "@/components/article/article-editor";
@@ -159,6 +159,32 @@ describe("lettura dell'articolo nell'editor", () => {
       await vi.advanceTimersByTimeAsync(6000);
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  // covers: AC-5502-1
+  it("un blocco con una tabella di 3 colonne mostra la tabella con le 3 intestazioni e l'importo della cella evidenziato", () => {
+    const body = [
+      "Tre modelli a confronto.",
+      "",
+      "| Modello | Ammortizzazione | Prezzo |",
+      "| --- | --- | ---: |",
+      "| Corsa leggera | media | 90 € |",
+      "| Trail | alta | da scegliere |",
+    ].join("\n");
+    const start = body.indexOf("90 €");
+    const checks = { ...ARTICLE.sections[1].checks!, matches: [{ kind: "to_verify" as const, rule: "amount", start, end: start + 4 }] };
+    const table: ArticleView = { ...ARTICLE, sections: [ARTICLE.sections[0], { ...ARTICLE.sections[1], body, checks }] };
+    renderEditor(table);
+
+    const second = screen.getByRole("region", { name: "Quanto costano" });
+    const grid = within(second).getByRole("table");
+    expect(within(grid).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Modello", "Ammortizzazione", "Prezzo"]);
+    expect(within(grid).getAllByRole("row")).toHaveLength(3);
+    const verify = second.querySelectorAll("mark.article-mark-verify");
+    expect(verify).toHaveLength(1);
+    expect(verify[0]).toHaveTextContent("90 €");
+    expect(verify[0]).toHaveAttribute("title", "Da verificare: importo");
+    expect(verify[0].closest("td")).not.toBeNull();
   });
 
   it("i link interni portano alla pagina del piano, gli altri restano testo", () => {

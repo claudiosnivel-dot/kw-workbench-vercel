@@ -1,4 +1,4 @@
-import { markdownWords } from "@/lib/articles/markdown-sanitizer";
+import { isTableRow, markdownWords } from "@/lib/articles/markdown-sanitizer";
 
 /*
  * Analisi deterministica del testo di un blocco dell'articolo (T-4301, D-46): i tratti tipici dei testi generati
@@ -136,21 +136,21 @@ function sentence(text: string, start: number, end: number): Sentence | null {
   return { start, end: start + content.length, first: first.toLowerCase(), question: /\?[*_)\]»"”'’]*$/.test(content) };
 }
 
-/** Frasi del testo in un solo passaggio: finiscono con . ! ? … seguiti da uno spazio (anche dopo ** o virgolette) o a capo. */
-function sentences(text: string): Sentence[] {
-  const result: Sentence[] = [];
+/**
+ * Frasi della riga text[from, to) in un solo passaggio: finiscono con . ! ? … seguiti da uno spazio (anche dopo ** o
+ * virgolette) o dalla fine della riga.
+ */
+function lineSentences(text: string, from: number, to: number, result: Sentence[]): void {
   let start = -1;
-  let index = 0;
+  let index = from;
   const close = (end: number) => {
     const item = start === -1 ? null : sentence(text, start, end);
     if (item) result.push(item);
     start = -1;
   };
-  while (index < text.length) {
+  while (index < to) {
     const char = text[index];
-    if (char === "\n") {
-      close(index);
-    } else if (start === -1 && !isSpace(char)) {
+    if (start === -1 && !isSpace(char)) {
       start = index;
     } else if (start !== -1 && TERMINATORS.has(char)) {
       let end = index;
@@ -165,7 +165,24 @@ function sentences(text: string): Sentence[] {
     }
     index += 1;
   }
-  close(text.length);
+  close(to);
+}
+
+/**
+ * Frasi del testo, riga per riga. Le righe di una tabella non sono frasi (T-5502): una tabella non è un tratto AI, e al
+ * suo posto c'è una frase senza parola iniziale, così una serie di frasi non continua oltre la tabella.
+ */
+function sentences(text: string): Sentence[] {
+  const result: Sentence[] = [];
+  let offset = 0;
+  let inTable = false;
+  for (const line of text.split("\n")) {
+    const tableRow = isTableRow(line);
+    if (tableRow && !inTable) result.push({ start: offset, end: offset, first: null, question: false });
+    if (!tableRow) lineSentences(text, offset, offset + line.length, result);
+    inTable = tableRow;
+    offset += line.length + 1;
+  }
   return result;
 }
 
@@ -201,7 +218,8 @@ function toVerify(text: string): StyleMatch[] {
 /**
  * Tratti AI e dati da verificare nel Markdown di un blocco (T-4301). ai_pattern: le formule della lingua per it, en ed
  * es, e per ogni lingua i trattini lunghi, le emoji, più di 2 domande retoriche di fila e più di 2 frasi di fila che
- * iniziano con la stessa parola. to_verify: i segnaposto delle tre lingue di T-4201, gli importi con €, EUR o USD, le
+ * iniziano con la stessa parola (le righe di una tabella non sono frasi, T-5502; le sue celle contano nelle parole e
+ * nei dati da verificare). to_verify: i segnaposto delle tre lingue di T-4201, gli importi con €, EUR o USD, le
  * percentuali, i riferimenti normativi con il numero, gli anni e le cifre di 3 o più caratteri. score sono i tratti AI
  * ogni 300 parole; overLimit è la soglia superata, almeno 2 tratti ogni 300 parole e mai meno di 2. I dati da verificare
  * non contano per la soglia.

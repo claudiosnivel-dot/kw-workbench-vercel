@@ -1472,6 +1472,43 @@ input[type="checkbox"] {
   font-weight: 600;
 }
 
+/* Tabelle nel testo di un blocco (T-5502): scorrono in orizzontale su schermi stretti. */
+.article-table {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--surface-border-strong);
+}
+
+.article-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.article-table th,
+.article-table td {
+  padding: 0.4rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.article-table th {
+  background: var(--surface-muted);
+  font-weight: 600;
+}
+
+.article-table tr + tr td,
+.article-table tbody tr:first-child td {
+  border-top: 1px solid var(--surface-border-strong);
+}
+
+.article-table [align="center"] {
+  text-align: center;
+}
+
+.article-table [align="right"] {
+  text-align: right;
+}
+
 .article-image {
   border-radius: 16px;
   border: 1px dashed var(--surface-border-strong);

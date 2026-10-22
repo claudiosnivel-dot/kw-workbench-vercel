@@ -95,6 +95,35 @@ describe("tratti AI e dati da verificare", () => {
     expect(found("Serve davvero? Costa troppo? Il letto è comodo. Il materasso è rigido.", "it")).toEqual([]);
   });
 
+  // covers: AC-5502-2
+  it("le righe di una tabella che cominciano tutte con «Letto» non sono aperture ripetute; le parole delle celle contano e i loro dati sono da verificare", () => {
+    const text = [
+      "Ecco i modelli più venduti in negozio.",
+      "",
+      "| Modello | Misura | Prezzo |",
+      "| --- | --- | --- |",
+      "| Letto singolo | 90 x 190 | 199 € |",
+      "| Letto piazza e mezza | 120 x 190 | 299 € |",
+      "| Letto matrimoniale | 160 x 190 | 399 € |",
+      "| Letto contenitore | 160 x 200 | 499 € |",
+    ].join("\n");
+
+    const analysis = analyzeStyle(text, "it");
+
+    expect(analysis.matches.filter((match) => match.rule === "repeated_openings")).toEqual([]);
+    // 7 parole del paragrafo, 3 dell'intestazione e 6, 8, 6 e 6 delle righe (il simbolo € non è una parola).
+    expect(analysis.words).toBe(36);
+    expect(found(text, "it")).toEqual(expect.arrayContaining([["to_verify", "199 €"], ["to_verify", "499 €"]]));
+  });
+
+  it("una tabella interrompe la serie: due frasi con «Letto» prima e una dopo non sono un tratto", () => {
+    const text = ["Letto alto per chi ha mal di schiena. Letto basso per le camere piccole.", "", "| Tipo | Altezza |", "| --- | --- |", "| alto | 50 cm |", "", "Letto a castello per i bambini."].join(
+      "\n"
+    );
+
+    expect(found(text, "it").filter(([kind]) => kind === "ai_pattern")).toEqual([]);
+  });
+
   it("i segnaposto delle tre lingue, gli anni e le cifre di 3 o più caratteri sono dati da verificare", () => {
     const text = "[da verificare: prezzo] [fonte da aggiungere] [por verificar: dato] [fuente por añadir] [to verify: fact] [source to add] dal 2019, 350 posti, 3,5 metri, 12 mesi.";
 

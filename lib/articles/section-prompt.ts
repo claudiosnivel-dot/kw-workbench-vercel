@@ -115,7 +115,8 @@ function italianInstructions(): string[] {
     "- block.maxWords è un massimo, non un obiettivo: niente riempitivi, un blocco breve va bene;",
     "- se block.id è INTRO, la keyword principale compare nelle prime due frasi;",
     "- link interni solo verso le pagine di block.links, nella forma [testo](page:L1) con il loro target, con un testo naturale e vario che non ripete sempre l'H1 della pagina;",
-    "- Markdown semplice: paragrafi, **grassetto**, *corsivo*, elenchi puntati o numerati e sottotitoli ### se servono; niente titoli # o ##, tabelle, immagini, HTML o blocchi di codice, e non ripetere il titolo del blocco;",
+    "- Markdown semplice: paragrafi, **grassetto**, *corsivo*, elenchi puntati o numerati e sottotitoli ### se servono; niente titoli # o ##, immagini, HTML o blocchi di codice, e non ripetere il titolo del blocco;",
+    "- quando aiuta a confrontare o elencare dati (prezzi, caratteristiche, differenze) puoi usare una tabella Markdown con la riga d'intestazione, al massimo 5 colonne e 12 righe di dati, con celle di solo testo, **grassetto** o *corsivo*;",
   ];
 }
 
@@ -130,7 +131,8 @@ function spanishInstructions(country: string | null): string[] {
     "- block.maxWords es un máximo, no un objetivo: nada de relleno, un bloque breve está bien;",
     "- si block.id es INTRO, la palabra clave principal aparece en las dos primeras frases;",
     "- enlaces internos solo hacia las páginas de block.links, con la forma [texto](page:L1) y su target, con un texto natural y variado que no repite siempre el H1 de la página;",
-    "- Markdown sencillo: párrafos, **negrita**, *cursiva*, listas con viñetas o numeradas y subtítulos ### si hacen falta; sin títulos # o ##, tablas, imágenes, HTML ni bloques de código, y sin repetir el título del bloque;",
+    "- Markdown sencillo: párrafos, **negrita**, *cursiva*, listas con viñetas o numeradas y subtítulos ### si hacen falta; sin títulos # o ##, imágenes, HTML ni bloques de código, y sin repetir el título del bloque;",
+    "- cuando ayude a comparar o enumerar datos (precios, características, diferencias) puedes usar una tabla Markdown con fila de encabezado, como máximo 5 columnas y 12 filas de datos, con celdas de solo texto, **negrita** o *cursiva*;",
   ];
 }
 
@@ -145,7 +147,8 @@ function englishInstructions(language: string): string[] {
     "- block.maxWords is a maximum, not a target: no filler, a short block is fine;",
     "- if block.id is INTRO, the main keyword appears in the first two sentences;",
     "- internal links only to the pages in block.links, in the form [text](page:L1) with their target, with natural and varied anchor text that does not always repeat the page H1;",
-    "- simple Markdown: paragraphs, **bold**, *italic*, bulleted or numbered lists and ### subheadings when useful; no # or ## headings, tables, images, HTML or code blocks, and do not repeat the block heading;",
+    "- simple Markdown: paragraphs, **bold**, *italic*, bulleted or numbered lists and ### subheadings when useful; no # or ## headings, images, HTML or code blocks, and do not repeat the block heading;",
+    "- when it helps to compare or list data (prices, features, differences) you may use a Markdown table with a header row, at most 5 columns and 12 data rows, with cells of plain text, **bold** or *italic* only;",
   ];
 }
 
