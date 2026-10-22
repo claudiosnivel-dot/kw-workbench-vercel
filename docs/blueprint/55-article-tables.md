@@ -94,3 +94,30 @@ Dopo i moduli 42-44 le istruzioni del blocco vietano le tabelle e `sanitizeSecti
 - Modulo dalle risposte dell'utente del 2026-10-21 (D-51) alla domanda sulle tabelle del modulo 42: «permetti le tabelle», diviso in due moduli piccoli (testo ed editor qui, export e WordPress nel 56), dopo il 54.
 - Gate umani: nessuno (la tabella compare dentro un blocco; nessuna baseline visiva la contiene).
 - Ordine: dipende da 42, 43 e 44, già chiusi; viene dopo il 54 su indicazione dell'utente e prima del 56.
+- Emendamento dichiarato (2026-10-22): il test di T-4201 in `tests/unit/article-markdown-sanitizer.test.ts` che toglieva
+  «immagini, tabelle e codice» ora tiene la sua tabella di 2 colonne e 1 riga, che è nei limiti (impacted-by T-5501).
+- Note di costruzione (2026-10-22, scelte dell'agente da confermare dall'utente):
+  - la tabella tenuta si riscrive in forma regolare (`| a | b |`, separatore `---` con i due punti degli allineamenti)
+    e si separa dal testo con una riga vuota prima e dopo, così nessun lettore di Markdown la attacca a un paragrafo;
+  - la tabella finisce alla prima riga vuota o senza `|`: in GFM quella riga sarebbe ancora una riga della tabella,
+    qui resta testo dopo la tabella; una tabella senza righe di dati si toglie (da 1 a 12 righe);
+  - `<br>` diventa uno spazio invece di un a capo, anche fuori dalle tabelle, così una cella con `<br>` resta sulla sua
+    riga; nel testo normale l'esito a schermo è lo stesso (un a capo semplice nel Markdown si legge come uno spazio);
+  - le citazioni si tolgono prima di cercare codice e tabelle: una tabella dentro una citazione passa dagli stessi
+    limiti (prima restava senza controlli) e un recinto di codice dentro una citazione si toglie come gli altri;
+  - le risposte delle domande frequenti del modello passano dal sanitizer con `tables: false` e restano senza tabelle;
+    il testo dell'autore salvato dall'editor tiene le tabelle nei limiti in ogni blocco, anche in quello delle FAQ;
+  - nei controlli al posto della tabella c'è una frase senza parola iniziale, così una serie di aperture o di domande
+    non continua oltre la tabella; `STYLE_RULES_VERSION` resta 1, perché i testi salvati prima non avevano tabelle e
+    i loro controlli non cambiano;
+  - l'editor legge le tabelle con un plugin remark proprio (`remarkTables`, le due estensioni) e non con remark-gfm,
+    che porterebbe anche link automatici, barrato e note; la tabella sta in un contenitore `.article-table` che scorre
+    in orizzontale, con gli allineamenti dall'attributo `align`;
+  - dipendenze dirette esatte: `micromark-extension-gfm-table` 2.1.2 (uscita il 2026-09-11) e `mdast-util-gfm-table`
+    2.0.0, che porta nel lockfile una `markdown-table` annidata; il modulo 56 usa le stesse;
+  - test in più oltre agli AC: istruzioni del blocco in tre lingue e FAQ senza tabelle; nel sanitizer allineamenti,
+    `\|`, link page: e `<br>` nelle celle, tabella di 1 colonna, di 13 righe, righe senza separatore, tabella in una
+    citazione, `tables: false` e righe di 60.000 `|` (CWE-1333); nei controlli la serie interrotta dalla tabella.
+- Copertura non verificata (dichiarata): nessuna prova con un modello vero che scrive una tabella; nessun E2E nuovo
+  dell'editor con una tabella (la resa è provata dal test di componente); il potere delle asserzioni (AT-1 Fase C) non
+  è eseguito.
