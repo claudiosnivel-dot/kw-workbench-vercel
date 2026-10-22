@@ -13,6 +13,7 @@ const require = createRequire(import.meta.url);
 const PRISMA_CLI = require.resolve("prisma/build/index.js");
 const ROOT = process.cwd();
 const CLI_TIMEOUT_MS = 180_000;
+const DROP_TIMEOUT_MS = 60_000;
 // DB vuoto creato e rimosso dal test sullo stesso Postgres locale di TEST_DATABASE_URL.
 const PROBE_DB = "kw_workbench_migrate_probe";
 
@@ -54,14 +55,15 @@ function sourceFiles(dir: string): string[] {
 describe("Prisma 7: prisma.config.ts e adapter pg", () => {
   const probeUrl = withDatabase(testUrl, PROBE_DB);
 
+  // DROP DATABASE forza un checkpoint di Postgres: dopo una suite intera con la macchina carica supera i 10 s predefiniti.
   beforeAll(async () => {
     await adminQuery(`DROP DATABASE IF EXISTS ${PROBE_DB} WITH (FORCE)`);
     await adminQuery(`CREATE DATABASE ${PROBE_DB}`);
-  });
+  }, DROP_TIMEOUT_MS);
 
   afterAll(async () => {
     await adminQuery(`DROP DATABASE IF EXISTS ${PROBE_DB} WITH (FORCE)`);
-  });
+  }, DROP_TIMEOUT_MS);
 
   // covers: AC-403-1
   it("migrate deploy tramite prisma.config.ts applica ogni migrazione su un DB vuoto e migrate status esce 0", async () => {

@@ -118,6 +118,7 @@ describe("scritture con il perimetro del workspace", () => {
   });
 
   // covers: AC-1502-4
+  // Analizza ogni file di app e lib: con la macchina carica (checkpoint) supera i 5 s predefiniti, quindi 30 s.
   it("in app/** e lib/** nessuna scrittura ha un where composto dal solo id, e ogni where è analizzabile", () => {
     const calls = ROOTS.flatMap((root) =>
       sourceFiles(root).flatMap((file) => findScopedWrites(file.split(path.sep).join("/"), readFileSync(file, "utf8")))
@@ -126,5 +127,5 @@ describe("scritture con il perimetro del workspace", () => {
     expect(calls.length).toBeGreaterThan(10);
     expect(calls.filter((call) => call.where === "id-only")).toEqual([]);
     expect(calls.filter((call) => call.where === "unresolved")).toEqual([]);
-  });
+  }, 30_000);
 });
