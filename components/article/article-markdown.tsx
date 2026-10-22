@@ -1,3 +1,5 @@
+import { gfmTableFromMarkdown } from "mdast-util-gfm-table";
+import { gfmTable } from "micromark-extension-gfm-table";
 import Link from "next/link";
 import type { ComponentPropsWithoutRef } from "react";
 import Markdown, { type Components } from "react-markdown";
@@ -68,6 +70,19 @@ function highlightMarks(options: { markdown: string; marks: ArticleMark[] }) {
   return (tree: HastNode) => visit(tree);
 }
 
+/** Dati del parser che remark-parse legge: le estensioni di micromark e di mdast-util-from-markdown. */
+type ParserData = { micromarkExtensions?: unknown[]; fromMarkdownExtensions?: unknown[] };
+
+/**
+ * Plugin remark delle tabelle (T-5502): il parser legge la sola sintassi delle tabelle GFM, non il resto di GFM (link
+ * automatici, barrato, note, caselle), come il testo pulito del blocco (T-5501).
+ */
+function remarkTables(this: { data(): object }) {
+  const data = this.data() as ParserData;
+  (data.micromarkExtensions ??= []).push(gfmTable());
+  (data.fromMarkdownExtensions ??= []).push(gfmTableFromMarkdown());
+}
+
 type ArticleMarkdownProps = {
   markdown: string;
   marks: ArticleMark[];
@@ -78,8 +93,9 @@ type ArticleMarkdownProps = {
 
 /**
  * Testo di un blocco dell'articolo (T-4401): Markdown senza HTML grezzo né immagini (CWE-79), con i link [testo](page:<id>)
- * verso le pagine del piano resi come link al pannello della pagina; ogni altro indirizzo resta testo. Le corrispondenze
- * dei controlli sono evidenziate in giallo (tratti AI) e in arancio (dati da verificare).
+ * verso le pagine del piano resi come link al pannello della pagina; ogni altro indirizzo resta testo. Le tabelle (T-5502)
+ * sono elementi di React con intestazione e corpo, in un contenitore che scorre in orizzontale. Le corrispondenze dei
+ * controlli sono evidenziate in giallo (tratti AI) e in arancio (dati da verificare), anche nelle celle.
  */
 export function ArticleMarkdown({ markdown, marks, projectId, pageIds }: ArticleMarkdownProps) {
   const urlTransform = (url: string): string | undefined => {
@@ -95,6 +111,11 @@ export function ArticleMarkdown({ markdown, marks, projectId, pageIds }: Article
       ) : (
         <span>{children}</span>
       ),
+    table: ({ children }: ComponentPropsWithoutRef<"table">) => (
+      <div className="article-table">
+        <table>{children}</table>
+      </div>
+    ),
   };
   return (
     <div className="article-body space-y-3 text-sm leading-6">
@@ -102,6 +123,7 @@ export function ArticleMarkdown({ markdown, marks, projectId, pageIds }: Article
         skipHtml
         disallowedElements={["img"]}
         urlTransform={urlTransform}
+        remarkPlugins={[remarkTables]}
         rehypePlugins={[[highlightMarks, { markdown, marks }]]}
         components={components}
       >

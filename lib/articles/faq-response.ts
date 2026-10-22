@@ -4,8 +4,8 @@ import { markdownWords, sanitizeSectionMarkdown } from "@/lib/articles/markdown-
 
 /*
  * Controllo deterministico delle domande frequenti restituite dal modello (T-4202): da 3 a 6 coppie, domande entro 150
- * caratteri chiuse dal punto interrogativo, risposte pulite come i blocchi (T-4201, senza link) e da 20 a 120 parole. Un
- * controllo non superato → AI_INVALID_RESPONSE, e il motore prova il modello successivo (T-3802).
+ * caratteri chiuse dal punto interrogativo, risposte pulite come i blocchi (T-4201, senza link né tabelle, T-5501) e da
+ * 20 a 120 parole. Un controllo non superato → AI_INVALID_RESPONSE, e il motore prova il modello successivo (T-3802).
  */
 
 /** Oltre questa lunghezza la risposta non si analizza (max_tokens 3000 ne produce molto meno). */
@@ -40,7 +40,7 @@ function parseQuestion(value: unknown): string {
 }
 
 function parseAnswer(value: unknown): string {
-  const answer = sanitizeSectionMarkdown(typeof value === "string" ? value : "", NO_LINKS);
+  const answer = sanitizeSectionMarkdown(typeof value === "string" ? value : "", NO_LINKS, { tables: false });
   const words = markdownWords(answer).length;
   if (words < MIN_ANSWER_WORDS || words > MAX_ANSWER_WORDS) throw invalid(`risposta di ${words} parole`);
   return answer;
