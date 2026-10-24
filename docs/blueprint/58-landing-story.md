@@ -97,3 +97,32 @@ La landing di T-1801 parla solo della ricerca delle keyword («Dalle seed alle k
 - Gate umani: gli screenshot della pagina principale da computer (1280 px) e da telefono (390 px), nel tema scuro e nel chiaro, in it, en, es-ES ed es-419, e il link all'anteprima di Vercel, approvati dall'utente prima del merge (il merge va subito in produzione).
 - Emendamenti prevedibili: AC-1801-2 in tests/e2e/landing.spec.ts cerca il vecchio H1 «Dalle seed alle keyword pronte da esportare»: l'asserzione passa al nuovo H1 (impacted-by T-5801).
 - Ordine: dipende da 18, 49 e 57; viene prima del 59.
+- Note di costruzione (2026-10-25, scelte dell'agente da confermare):
+  - testi dalla struttura approvata nel brainstorming (D-53): H1 «Dalla prima parola all'articolo pubblicato» in due
+    chiavi (`title` e `titleAccent`, la seconda nel colore verde del tema), occhiello «Keyword research e contenuti SEO»,
+    H2 «Il percorso guidato, in sei tappe» con una frase che dice che le proposte dell'AI le rivede sempre l'utente,
+    H2 «Tutto quello che serve intorno», chiusura «Il tuo primo articolo parte da una parola.»; title per Google
+    «Keyword, piano editoriale e articoli SEO» (con « · Titan SEO» dal branding). «Piano editoriale» come nel modulo,
+    anche se nell'app la voce è «piano dei contenuti» (in spagnolo «plan de contenidos», come nell'app);
+  - funzioni legate al piano con «dove il piano lo prevede»: volumi dal Keyword Planner (l'import è una funzione del
+    piano, `plannerImport`) o dal fornitore, Google Sheets; per il team «il numero di membri dipende dal piano»;
+  - scene (`components/marketing/landing-scenes.tsx`): finestra con i tre punti nei colori di stato del tema e il nome
+    della schermata; i «pulsanti» sono span con l'aspetto di quelli dell'app; barre dei volumi con le classi di larghezza
+    di Tailwind (nessun attributo style: la CSP di T-505 non lo ammette); il paragrafo dell'editor è un solo messaggio con
+    i tag `<ai>` e `<verify>` (t.rich); le scene stanno sotto il testo fino a 1023 px e a destra da 1024 px, come la
+    finestra ferma del 59;
+  - es-419: oltre a «empieza con», al pretérito indefinido e ad «agrega», le scene usano «tenis para correr» con il
+    paese México (registro di docs/I18N-ES.md, come «zapatillas / tenis» dell'avvio rapido); es-ES «zapatillas de
+    running» con España, it «scarpe running» con Italia, en «running shoes» con United Kingdom (come gli esempi
+    inglesi dell'avvio rapido). Registro aggiornato con titolo e occhiello nuovi, «recorrido guiado» e l'esempio;
+  - numero della tappa «01…06» decorativo (aria-hidden): la numerazione per i lettori di schermo è quella dell'elenco;
+  - stili in `app/globals.css` (classi `landing-*`), solo con i token del tema e senza l'animazione di comparsa delle
+    card, che arriva con il movimento del 59;
+  - AC-5801-3: il title atteso è il testo di `marketing.meta.home.title` della lingua seguito da « · Titan SEO» (il nome
+    del branding degli E2E), i link si cercano dentro `main`; AC-1801-2 in `tests/e2e/landing.spec.ts` cerca ora il
+    nuovo H1 dal catalogo (impacted-by T-5801, emendamento previsto dal Self-check);
+  - test in più oltre agli AC: l'ordine dei quattro link della pagina (registrazione, prezzi della lingua, accesso,
+    registrazione) e la parola di partenza degli esempi di it, en ed es-419.
+- Copertura non verificata (dichiarata): gli E2E di AC-5801-3 e AC-5802-3 non sono stati visti rossi prima del codice
+  (il test del componente sì); nessuna prova con Safari, Firefox o un telefono vero; il potere delle asserzioni (AT-1
+  Fase C) non è eseguito; il movimento è del modulo 59.
