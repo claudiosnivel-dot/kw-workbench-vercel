@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { MESSAGES } from "@/lib/i18n/catalogs";
 import { E2E_EMAIL, E2E_USER_PASSWORD } from "./credentials";
 
 // Gate di T-1801 (AC-1801-1…3): landing pubblica per lingua, / per l'anonimo e per l'utente autenticato, head SEO.
+// Gate di T-5801 (AC-5801-3): title e description della pagina principale nelle quattro lingue, con i suoi link.
 
 test.describe("landing pubblica per l'anonimo con il browser in inglese", () => {
   test.use({ locale: "en-US" });
@@ -71,10 +73,38 @@ test("l'utente autenticato su / vede la dashboard; l'anonimo su /projects va al 
   expect(new URL(page.url()).pathname).toBe("/");
   // impacted-by: T-2305 (AC-1801-2 emendato: la home dell'app ha l'intestazione «I tuoi progetti», non più Panoramica)
   await expect(page.getByRole("heading", { name: "I tuoi progetti" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Dalle seed alle keyword pronte da esportare" })).toHaveCount(0);
+  // impacted-by: T-5801 (AC-1801-2 emendato: la landing ha il nuovo H1 sul percorso completo)
+  await expect(page.getByRole("heading", { level: 1, name: MESSAGES.it.marketing.landing.title })).toHaveCount(0);
 
   const anonymous = await request.get("/projects", { maxRedirects: 0 });
   expect(anonymous.status()).toBe(307);
   const location = new URL(anonymous.headers().location, "http://localhost");
   expect(location.pathname + location.search).toBe("/login?next=%2Fprojects");
+});
+
+// Testi di marketing.meta.home per lingua dai cataloghi a livelli dell'app (es-419 eredita da es-ES le chiavi che non ridefinisce).
+const HOME_PAGES = [
+  { path: "/it", pricing: "/it/pricing", meta: MESSAGES.it.marketing.meta.home },
+  { path: "/en", pricing: "/en/pricing", meta: MESSAGES.en.marketing.meta.home },
+  { path: "/es", pricing: "/es/pricing", meta: MESSAGES["es-ES"].marketing.meta.home },
+  { path: "/es-419", pricing: "/es-419/pricing", meta: MESSAGES["es-419"].marketing.meta.home },
+];
+
+// covers: AC-5801-3
+test("/it, /en, /es e /es-419 hanno title e description della lingua, i link a registrazione, prezzi e accesso e nessun link dell'app", async ({
+  page,
+}) => {
+  for (const { path, pricing, meta } of HOME_PAGES) {
+    const response = await page.goto(path);
+    expect(response?.status(), path).toBe(200);
+
+    expect(await page.title(), path).toBe(`${meta.title} · Titan SEO`);
+    await expect(page.locator('meta[name="description"]'), path).toHaveAttribute("content", meta.description);
+
+    const main = page.locator("main");
+    expect(await main.locator('a[href="/register"]').count(), path).toBeGreaterThan(0);
+    expect(await main.locator(`a[href="${pricing}"]`).count(), path).toBeGreaterThan(0);
+    expect(await main.locator('a[href="/login"]').count(), path).toBeGreaterThan(0);
+    expect(await page.locator('a[href^="/projects"]').count(), path).toBe(0);
+  }
 });
