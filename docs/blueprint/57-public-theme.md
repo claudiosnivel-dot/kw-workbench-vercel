@@ -102,3 +102,34 @@ Oggi chi non ha fatto l'accesso vede sempre il tema scuro (`themeMode` di defaul
 - Modulo dal brainstorming del 2026-10-24 con l'utente (D-53): «vorrei farla anche per il tema chiaro», poi «segue il dispositivo e interruttore nella pagina».
 - Gate umani: gli screenshot delle pagine pubbliche (/it, /it/pricing, /login, /register) nel tema chiaro e nello scuro, da computer (1280 px) e da telefono (390 px), approvati dall'utente prima del merge; le baseline visive di T-103 restano scure (colorScheme dark nei test) e non si rigenerano.
 - Ordine: dipende da 18, 23, 29 e 49, già chiusi; viene prima del 58 e del 59.
+- Note di costruzione (2026-10-24, scelte dell'agente da confermare):
+  - i token del tema chiaro stanno una volta sola nel blocco `@variant theme-light` di `app/globals.css`: la variante
+    `@custom-variant theme-light` di Tailwind 4 ha due rami, `&[data-theme="LIGHT"]` e, dentro
+    `@media (prefers-color-scheme: light)`, `&[data-theme="SYSTEM"]`, e Tailwind scrive i token nel CSS sotto i due
+    selettori; con SYSTEM e un dispositivo scuro restano i token di `:root`. Il test dei colori di stato di T-2605
+    (`tests/unit/status-colors.test.ts`, AC-2605-2) legge ora il blocco `@variant theme-light` al posto di
+    `html[data-theme="LIGHT"]`: emendamento dichiarato, stesse asserzioni;
+  - l'interruttore è l'ultima voce della barra degli anonimi, un pulsante di 40×40 px senza fondo come i link della
+    barra, con l'icona del tema di arrivo (il sole per passare al chiaro, la luna per lo scuro) e il `title` uguale
+    all'etichetta; nel menu da telefono è largo quanto il menu e mostra anche l'etichetta scritta; nelle pagine di
+    accesso sta accanto al marchio, solo per chi non ha una sessione;
+  - con SYSTEM il primo render (server e idratazione) vale per il tema scuro, come i token di `:root`; dopo il
+    montaggio `matchMedia("(prefers-color-scheme: light)")` porta logo e interruttore al tema del dispositivo. Su un
+    dispositivo chiaro l'icona del sole diventa la luna durante il caricamento; i colori della pagina non cambiano,
+    perché li decide il CSS;
+  - etichette: «Passa al tema chiaro» e «Passa al tema scuro», «Switch to light theme» e «Switch to dark theme»,
+    «Cambiar al tema claro» e «Cambiar al tema oscuro» (tema come nelle preferenze dell'account, «Accesibilidad y tema»);
+  - il cookie lo scrive `themeCookie` di `lib/ui/theme.ts`, puro come `resolveThemeMode`; lo legge il layout radice con
+    `cookies()` di Next. Il test dell'inventario dei cookie di T-1803 (`tests/tooling/cookie-inventory.test.ts`,
+    AC-1803-3) aspetta ora anche kwb_theme fra i nomi trovati: emendamento dichiarato, con il nuovo caso di AC-5702-3;
+  - la baseline visiva di login (T-103) ha in più l'icona dell'interruttore in alto a destra: non si rigenera, la
+    differenza resta nella tolleranza di `maxDiffPixelRatio: 0.01` dei test visivi;
+  - test in più oltre agli AC: nel test unitario i valori DARK e LIGHT esatti del cookie, minuscole, SYSTEM e un valore
+    con le virgolette che diventano SYSTEM, la sessione che prevale sul cookie e la stringa del cookie (Secure solo su
+    https); nel test del componente il clic con il cookie e il logo, le pagine di accesso, il menu da telefono e SYSTEM
+    con il dispositivo che cambia tema a pagina aperta; nell'E2E il fondo chiaro dopo il clic e il pulsante «Passa al
+    tema scuro» dopo il ricaricamento.
+- Copertura non verificata (dichiarata): l'E2E `tests/e2e/public-theme.spec.ts` non è stato visto rosso prima del
+  codice (i test unitario, del componente e dell'inventario sì); le baseline visive di T-103 non sono state rieseguite
+  su Linux (le esegue la CI dopo il push); nessuna prova con Safari, Firefox o un telefono vero; il potere delle
+  asserzioni (AT-1 Fase C) non è eseguito.
