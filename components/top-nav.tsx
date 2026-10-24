@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { UserMenu, type WorkspaceOption } from "@/components/user-menu";
 import { findMarketingRoute, marketingPath } from "@/lib/marketing/routes";
+import { themeCookie, type ChosenThemeMode, type ThemeMode } from "@/lib/ui/theme";
 
 // Pagine di accesso e dei link delle email (T-1403…T-1405): la navbar mostra solo il marchio.
 const AUTH_ROUTE_PREFIXES = [
@@ -30,11 +31,70 @@ function isAuthRoute(pathname: string): boolean {
 export const PROJECT_NAV_SLOT_ID = "project-nav-slot";
 
 /**
+ * Interruttore sole/luna degli anonimi (T-5702): passa subito all'altro tema senza ricaricare e il browser lo ricorda
+ * nel cookie kwb_theme, che il layout legge alla richiesta successiva (T-5701). L'icona è quella del tema di arrivo.
+ */
+function ThemeToggle({
+  theme,
+  onChoose,
+  mobile = false,
+}: {
+  theme: ChosenThemeMode;
+  onChoose: (next: ChosenThemeMode) => void;
+  mobile?: boolean;
+}) {
+  const t = useTranslations("nav");
+  const next = theme === "DARK" ? "LIGHT" : "DARK";
+  const label = next === "LIGHT" ? t("themeToLight") : t("themeToDark");
+
+  return (
+    <button
+      type="button"
+      className={`top-nav-link inline-flex h-10 items-center justify-center gap-2 rounded-xl text-sm font-medium transition ${
+        mobile ? "top-nav-link-mobile w-full px-4" : "w-10 shrink-0"
+      }`}
+      onClick={() => onChoose(next)}
+      aria-label={label}
+      title={label}
+    >
+      {next === "LIGHT" ? (
+        <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden="true">
+          <circle cx="10" cy="10" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+          <path
+            d="M10 2v1.5M10 16.5V18M2 10h1.5M16.5 10H18M4.34 4.34l1.06 1.06M14.6 14.6l1.06 1.06M4.34 15.66l1.06-1.06M14.6 5.4l1.06-1.06"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden="true">
+          <path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        </svg>
+      )}
+      {mobile && <span>{label}</span>}
+    </button>
+  );
+}
+
+/**
  * Voci della barra per gli anonimi (T-1801): prezzi, accesso, registrazione e lingua; nessun link dell'app né logout.
  * Sulle pagine pubbliche il selettore della lingua porta alla stessa pagina nella lingua scelta (URL per lingua, D-28
- * emendata; quattro lingue da T-4902), altrove salva la lingua nel cookie di T-1301.
+ * emendata; quattro lingue da T-4902), altrove salva la lingua nel cookie di T-1301. Ultimo l'interruttore del tema.
  */
-function AnonymousNavItems({ pathname, linkClassName, mobile = false }: { pathname: string; linkClassName: string; mobile?: boolean }) {
+function AnonymousNavItems({
+  pathname,
+  linkClassName,
+  theme,
+  onChooseTheme,
+  mobile = false,
+}: {
+  pathname: string;
+  linkClassName: string;
+  theme: ChosenThemeMode;
+  onChooseTheme: (next: ChosenThemeMode) => void;
+  mobile?: boolean;
+}) {
   const t = useTranslations("nav");
   const locale = useLocale();
   const alternates = findMarketingRoute(pathname)?.alternates;
@@ -51,6 +111,7 @@ function AnonymousNavItems({ pathname, linkClassName, mobile = false }: { pathna
         {t("register")}
       </Link>
       <LocaleSwitcher className={mobile ? "w-full" : undefined} alternates={alternates} />
+      <ThemeToggle theme={theme} onChoose={onChooseTheme} mobile={mobile} />
     </>
   );
 }
@@ -59,16 +120,19 @@ function normalizeLogoUrl(value: string | null | undefined): string {
   return String(value ?? "").trim();
 }
 
-function normalizeThemeMode(value: string | null | undefined): "DARK" | "LIGHT" | null {
-  if (value === "DARK" || value === "LIGHT") {
+function normalizeThemeMode(value: string | null | undefined): ThemeMode | null {
+  if (value === "DARK" || value === "LIGHT" || value === "SYSTEM") {
     return value;
   }
 
   return null;
 }
 
+// Stessa condizione del CSS (T-5701): con SYSTEM vale il chiaro solo se il dispositivo lo preferisce.
+const PREFERS_LIGHT_QUERY = "(prefers-color-scheme: light)";
+
 function resolveLogoUrl(input: {
-  themeMode: "DARK" | "LIGHT";
+  themeMode: ChosenThemeMode;
   dark?: string;
   light?: string;
   legacy?: string;
@@ -99,7 +163,8 @@ export function TopNav({
   brandLogoUrlDark?: string;
   brandLogoUrlLight?: string;
   brandLogoUrlLegacy?: string;
-  themeMode: "DARK" | "LIGHT";
+  /** Tema dell'elemento html (T-5701): SYSTEM per l'anonimo che non ha scelto con l'interruttore. */
+  themeMode: ThemeMode;
   showAdminLink?: boolean;
   user?: { displayName: string; email: string | null } | null;
   /** Workspace dell'utente (T-1504): il selettore compare solo se ce n'è più d'uno tra cui scegliere. */
@@ -109,7 +174,11 @@ export function TopNav({
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeThemeMode, setActiveThemeMode] = useState<"DARK" | "LIGHT">(themeMode);
+  const [activeThemeMode, setActiveThemeMode] = useState<ThemeMode>(themeMode);
+  // Preferenza del dispositivo letta dopo il montaggio: al primo render vale scuro, come i token di :root.
+  const [prefersLight, setPrefersLight] = useState(false);
+  const effectiveThemeMode: ChosenThemeMode =
+    activeThemeMode === "SYSTEM" ? (prefersLight ? "LIGHT" : "DARK") : activeThemeMode;
 
   const normalizedBrandName = useMemo(() => {
     const clean = brandName.trim();
@@ -119,12 +188,12 @@ export function TopNav({
   const resolvedLogoUrl = useMemo(
     () =>
       resolveLogoUrl({
-        themeMode: activeThemeMode,
+        themeMode: effectiveThemeMode,
         dark: brandLogoUrlDark,
         light: brandLogoUrlLight,
         legacy: brandLogoUrlLegacy,
       }),
-    [activeThemeMode, brandLogoUrlDark, brandLogoUrlLight, brandLogoUrlLegacy]
+    [effectiveThemeMode, brandLogoUrlDark, brandLogoUrlLight, brandLogoUrlLegacy]
   );
 
   const hasCustomLogo = resolvedLogoUrl.length > 0;
@@ -166,6 +235,24 @@ export function TopNav({
 
     return () => observer.disconnect();
   }, []);
+
+  // Con SYSTEM il logo e l'interruttore seguono il dispositivo, anche quando cambia tema a pagina aperta (T-5701).
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+
+    const query = window.matchMedia(PREFERS_LIGHT_QUERY);
+    const syncPreference = () => setPrefersLight(query.matches);
+    syncPreference();
+    query.addEventListener("change", syncPreference);
+
+    return () => query.removeEventListener("change", syncPreference);
+  }, []);
+
+  const chooseTheme = (next: ChosenThemeMode) => {
+    document.documentElement.setAttribute("data-theme", next);
+    document.cookie = themeCookie(next, window.location.protocol === "https:");
+    setActiveThemeMode(next);
+  };
 
   const appBar = Boolean(user) && !authView;
   // Nella barra dell'app, sotto i 640 px, il nome del marchio lascia spazio al progetto e al menu (T-2304).
@@ -213,6 +300,9 @@ export function TopNav({
             <div className="flex items-center justify-between gap-4">
               {brand}
 
+              {/* Nelle pagine di accesso c'è solo il marchio e, per l'anonimo, l'interruttore del tema (T-5702). */}
+              {authView && !user && <ThemeToggle theme={effectiveThemeMode} onChoose={chooseTheme} />}
+
               {!authView && (
                 <>
                   <button
@@ -232,6 +322,8 @@ export function TopNav({
                     <AnonymousNavItems
                       pathname={pathname}
                       linkClassName="top-nav-link inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition"
+                      theme={effectiveThemeMode}
+                      onChooseTheme={chooseTheme}
                     />
                   </nav>
                 </>
@@ -243,6 +335,8 @@ export function TopNav({
                 <AnonymousNavItems
                   pathname={pathname}
                   linkClassName="top-nav-link top-nav-link-mobile inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition"
+                  theme={effectiveThemeMode}
+                  onChooseTheme={chooseTheme}
                   mobile
                 />
               </nav>

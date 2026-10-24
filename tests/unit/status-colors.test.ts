@@ -1,5 +1,7 @@
 // Gate di T-2605 (AC-2605-2): i colori di stato del percorso (--status-done, --status-progress, --status-danger) hanno
 // un contrasto WCAG di almeno 4,5:1 sul fondo di ciascun tema, nei due estremi del gradiente (--bg-0 e --bg-1).
+// impacted-by: T-5701 (i token del tema chiaro stanno nel blocco @variant theme-light, che vale con data-theme LIGHT e
+// con SYSTEM su un dispositivo chiaro)
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -8,7 +10,7 @@ const CSS = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
 const STATUS_VARIABLES = ["--status-done", "--status-progress", "--status-danger"];
 const BACKGROUNDS = ["--bg-0", "--bg-1"];
 
-/** Dichiarazioni del blocco del tema: il primo blocco il cui selettore termina con quello indicato. */
+/** Dichiarazioni del blocco del tema: il primo blocco il cui selettore (o variante) termina con quello indicato. */
 function themeBlock(selector: string): Map<string, string> {
   const start = CSS.indexOf(`${selector} {`);
   expect(start, selector).toBeGreaterThan(-1);
@@ -40,7 +42,7 @@ describe("colori di stato del percorso", () => {
   // covers: AC-2605-2
   it.each([
     ["scuro", 'html[data-theme="DARK"]'],
-    ["chiaro", 'html[data-theme="LIGHT"]'],
+    ["chiaro", "@variant theme-light"],
   ])("nel tema %s ogni colore di stato ha contrasto almeno 4,5 sul fondo", (_name, selector) => {
     const block = themeBlock(selector);
     const ratios = STATUS_VARIABLES.flatMap((variable) =>

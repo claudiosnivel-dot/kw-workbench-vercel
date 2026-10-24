@@ -91,6 +91,9 @@ export default defineConfig({
     viewport: { width: 1280, height: 800 },
     locale: "it-IT",
     timezoneId: "Europe/Rome",
+    // Dispositivo sul tema scuro (T-5701): l'anonimo vede il tema del dispositivo, così le baseline visive di T-103
+    // restano quelle approvate; i test del tema chiaro lo chiedono esplicitamente.
+    colorScheme: "dark",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } }],
   webServer: {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Manrope, Sora } from "next/font/google";
+import { cookies } from "next/headers";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { PastDueBanner } from "@/components/past-due-banner";
 import { PlanLimitNotice } from "@/components/plan-limit-notice";
@@ -13,6 +14,7 @@ import { canPerform } from "@/lib/authz/permissions";
 import { getPageWorkspace } from "@/lib/authz/workspace";
 import { getPastDueGraceEnd } from "@/lib/billing/summary";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
+import { resolveThemeMode, THEME_COOKIE } from "@/lib/ui/theme";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -39,10 +41,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [branding, currentUser, locale] = await Promise.all([
+  const [branding, currentUser, locale, cookieStore] = await Promise.all([
     getBrandingSnapshot(),
     getOptionalAuthenticatedUserFromCookies(),
     getLocale(),
+    cookies(),
   ]);
 
   // Workspace attivo ed elenco per il selettore (T-1504): stessa query della pagina (cache di React).
@@ -50,7 +53,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Pagamento scaduto del workspace attivo (T-1604): solo con il lancio commerciale attivo.
   const pastDueUntil = workspaceContext ? await getPastDueGraceEnd(workspaceContext.workspace.id) : null;
   const canManageBilling = workspaceContext ? canPerform(workspaceContext.workspace.role, "billing.manage") : false;
-  const themeMode = currentUser?.themeMode ?? "DARK";
+  // Tema delle preferenze per chi ha una sessione, altrimenti la scelta dell'interruttore o il dispositivo (T-5701).
+  const themeMode = resolveThemeMode({ userTheme: currentUser?.themeMode, cookieTheme: cookieStore.get(THEME_COOKIE)?.value });
   const fontScaleMode = currentUser?.fontScaleMode ?? "NORMAL";
   const colorVisionMode = currentUser?.colorVisionMode ?? "NONE";
 
