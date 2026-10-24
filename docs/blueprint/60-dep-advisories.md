@@ -51,3 +51,17 @@ Il checkpoint del modulo 57 è NON-VERDE solo per `tests/tooling/dependency-audi
 - Modulo dalla risposta dell'utente del 2026-10-24 («confermo tutte e tre le scelte») al riepilogo del 57: aggiornamento delle dipendenze in un modulo apposito, come il 53 (D-54).
 - Gate umani: nessuno nuovo; l'aggiornamento di next tocca tutta l'app, quindi la CI esegue tutti gli E2E, con le baseline visive di T-103, prima del merge.
 - Ordine: dipende da 04, 53 e 54, già chiusi; si costruisce prima di chiudere il 57, il cui checkpoint aspetta il test delle dipendenze verde.
+- Note di costruzione (2026-10-24, scelte dell'agente da confermare):
+  - aggiornamento con `npm install --save-exact next@16.4.3 undici@8.12.3 zod@4.6.7` e
+    `npm install --save-dev --save-exact eslint-config-next@16.4.3`; nel lockfile una sola next (anche sotto
+    @sentry/nextjs e next-intl), una sola undici (anche sotto jsdom), una sola zod (anche sotto eslint-plugin-react-hooks
+    e knip), sharp 0.35.5 sotto next come prima;
+  - dopo l'aggiornamento `npm audit` riporta solo tre avvisi moderati (exceljs, fast-uri, uuid), sotto la soglia del
+    test: nessun critical, nessun high; l'allowlist è `[]`;
+  - la guida `version-16.md` di next 16.4.3 non elenca cambi incompatibili per la 16.4 (aggiunte come `ensureStatic` e
+    `navigation`, eslint-config-next 16.4 che accetta anche ESLint 10): ESLint resta 9.39.x come da D-03;
+  - test: il caso AC-401-1 vuole next 16.4.x (emendamento dichiarato, prima 16.3.x); due casi nuovi per AC-6001-1 e
+    AC-6001-2, scritti prima dell'aggiornamento e visti rossi con i tre casi dell'audit già rossi.
+- Copertura non verificata (dichiarata): E2E locali solo su una parte delle spec (smoke, landing, header di sicurezza,
+  accessibilità, pagine d'errore, editor degli articoli, home, keyword: 31 test verdi con il build di next 16.4.3); il
+  resto e le baseline visive li esegue la CI; potere delle asserzioni (AT-1 Fase C) non eseguito.
