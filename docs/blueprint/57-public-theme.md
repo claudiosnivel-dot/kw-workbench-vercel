@@ -102,7 +102,7 @@ Oggi chi non ha fatto l'accesso vede sempre il tema scuro (`themeMode` di defaul
 - Modulo dal brainstorming del 2026-10-24 con l'utente (D-53): «vorrei farla anche per il tema chiaro», poi «segue il dispositivo e interruttore nella pagina».
 - Gate umani: gli screenshot delle pagine pubbliche (/it, /it/pricing, /login, /register) nel tema chiaro e nello scuro, da computer (1280 px) e da telefono (390 px), approvati dall'utente prima del merge; le baseline visive di T-103 restano scure (colorScheme dark nei test) e non si rigenerano.
 - Ordine: dipende da 18, 23, 29 e 49, già chiusi; viene prima del 58 e del 59.
-- Note di costruzione (2026-10-24, scelte dell'agente da confermare):
+- Note di costruzione (2026-10-24, scelte dell'agente confermate dall'utente il 2026-10-24, D-54; screenshot del gate umano approvati lo stesso giorno):
   - i token del tema chiaro stanno una volta sola nel blocco `@variant theme-light` di `app/globals.css`: la variante
     `@custom-variant theme-light` di Tailwind 4 ha due rami, `&[data-theme="LIGHT"]` e, dentro
     `@media (prefers-color-scheme: light)`, `&[data-theme="SYSTEM"]`, e Tailwind scrive i token nel CSS sotto i due
