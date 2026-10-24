@@ -1,4 +1,6 @@
 // Gate di T-1803 (AC-1803-3): ogni cookie impostato dal codice dell'app è nell'inventario, e sono tutti tecnici.
+// Gate di T-5702 (AC-5702-3): il cookie kwb_theme dell'interruttore del tema è nell'inventario, tecnico.
+// impacted-by: T-5702 (AC-1803-3: la scansione vede anche kwb_theme)
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -56,9 +58,17 @@ describe("inventario dei cookie", () => {
     const inventory = new Set(COOKIE_INVENTORY.map((entry) => entry.name));
 
     expect(unresolved).toEqual([]);
-    // La scansione vede davvero i cookie: sessione, workspace, lingua e stato OAuth di Google Sheets.
-    expect([...names].sort()).toEqual(["kwb_google_sheets_oauth_state", "kwb_locale", "kwb_session", "kwb_workspace"]);
+    // La scansione vede davvero i cookie: sessione, workspace, lingua, tema e stato OAuth di Google Sheets.
+    expect([...names].sort()).toEqual(["kwb_google_sheets_oauth_state", "kwb_locale", "kwb_session", "kwb_theme", "kwb_workspace"]);
     expect([...names].filter((name) => !inventory.has(name))).toEqual([]);
     expect(COOKIE_INVENTORY.every((entry) => entry.category === "technical")).toBe(true);
+  });
+
+  // covers: AC-5702-3
+  it("la scansione trova il cookie kwb_theme e l'inventario lo ha come tecnico", () => {
+    const { names } = scanCookieNames();
+
+    expect(names.has("kwb_theme")).toBe(true);
+    expect(COOKIE_INVENTORY.find((entry) => entry.name === "kwb_theme")?.category).toBe("technical");
   });
 });

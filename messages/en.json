@@ -108,6 +108,8 @@
     "yourAccount": "Your account",
     "admin": "Administration",
     "openMenu": "Open menu",
+    "themeToLight": "Switch to light theme",
+    "themeToDark": "Switch to dark theme",
     "pricing": "Pricing",
     "login": "Sign in",
     "register": "Sign up",
