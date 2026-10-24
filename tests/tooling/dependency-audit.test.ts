@@ -80,18 +80,19 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
 
   // covers: AC-401-1
   // impacted-by: T-404 (next 15.5.27 era la patch sul ramo 15; dal macrotask 04 next è 16.3.x).
-  it("npm ls riporta next 16.3.x e react/react-dom 19.3.x senza dipendenze invalid o missing", () => {
+  // impacted-by: T-6001 (D-03 emendata da D-54: next 16.4.x per gli avvisi critical fino alla 16.4.0).
+  it("npm ls riporta next 16.4.x e react/react-dom 19.3.x senza dipendenze invalid o missing", () => {
     expect(ls.error).toBeUndefined();
     expect(ls.status, ls.stderr).toBe(0);
     const tree = JSON.parse(ls.stdout) as LsOutput;
     expect(tree.problems ?? []).toEqual([]);
     expect(ls.stdout).not.toMatch(/"(invalid|missing)"/);
-    expect(tree.dependencies?.next?.version).toMatch(/^16\.3\.\d+$/);
+    expect(tree.dependencies?.next?.version).toMatch(/^16\.4\.\d+$/);
     expect(tree.dependencies?.react?.version).toMatch(/^19\.3\.\d+$/);
     expect(tree.dependencies?.["react-dom"]?.version).toMatch(/^19\.3\.\d+$/);
 
     const pkg = readJson<{ dependencies: Record<string, string> }>("package.json");
-    expect(pkg.dependencies.next).toMatch(/^16\.3\.\d+$/);
+    expect(pkg.dependencies.next).toMatch(/^16\.4\.\d+$/);
   });
 
   // covers: AC-401-2
@@ -145,6 +146,32 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
     expect(new Set(versions).size).toBe(1);
     expect(readJson<{ devDependencies: Record<string, string> }>("package.json").devDependencies.vite).toBe(versions[0]);
   }, COMMAND_TIMEOUT_MS);
+
+  // covers: AC-6001-1
+  it("next è almeno alla 16.4.3, ogni undici almeno alla 8.12.2 e ogni zod almeno alla 4.6.6", () => {
+    const ls = run("npm ls next undici zod --json");
+    expect(ls.status, ls.stderr).toBe(0);
+    const tree = JSON.parse(ls.stdout) as LsNode;
+    const next = tree.dependencies?.next?.version ?? "";
+    const undici = versionsOf("undici", tree);
+    const zod = versionsOf("zod", tree);
+
+    expect(next).toMatch(/^16\.4\.\d+$/);
+    expect(atLeast(next, "16.4.3")).toBe(true);
+    expect(undici.length).toBeGreaterThan(0);
+    expect(undici.filter((version) => !atLeast(version, "8.12.2"))).toEqual([]);
+    expect(zod.length).toBeGreaterThan(0);
+    expect(zod.filter((version) => !atLeast(version, "4.6.6"))).toEqual([]);
+  }, COMMAND_TIMEOUT_MS);
+
+  // covers: AC-6001-2
+  it("npm audit non ha critical né avvisi per next, undici e zod, e l'allowlist è vuota", () => {
+    const report = JSON.parse(audit.stdout) as AuditOutput;
+
+    expect(report.metadata.vulnerabilities.critical).toBe(0);
+    expect(Object.keys(report.vulnerabilities).filter((name) => ["next", "undici", "zod"].includes(name))).toEqual([]);
+    expect(readJson<AllowlistEntry[]>("tests/tooling/audit-allowlist.json")).toEqual([]);
+  });
 
   // covers: AC-406-4
   it("xlsx non è nell'albero delle dipendenze e nessun sorgente lo importa", () => {

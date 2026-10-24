@@ -104,11 +104,12 @@ describe("lint e typecheck come comandi", () => {
   }, COMMAND_TIMEOUT_MS);
 
   // covers: AC-404-3
-  it("npm ls riporta next 16.3, lint e build escono 0 e package.json non contiene next lint", () => {
+  // impacted-by: T-6001 (D-03 emendata da D-54: next 16.4.x al posto di 16.3.x)
+  it("npm ls riporta next 16.4, lint e build escono 0 e package.json non contiene next lint", () => {
     const ls = run("npm ls next --json");
     const tree = JSON.parse(ls.stdout) as { dependencies?: { next?: { version?: string } } };
     expect(ls.status, ls.stderr).toBe(0);
-    expect(tree.dependencies?.next?.version).toMatch(/^16\.3\.\d+$/);
+    expect(tree.dependencies?.next?.version).toMatch(/^16\.4\.\d+$/);
 
     expect(lint.status, lint.stdout + lint.stderr).toBe(0);
     expect(readFileSync(join(process.cwd(), "package.json"), "utf8")).not.toContain("next lint");
