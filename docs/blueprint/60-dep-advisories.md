@@ -61,7 +61,9 @@ Il checkpoint del modulo 57 è NON-VERDE solo per `tests/tooling/dependency-audi
   - la guida `version-16.md` di next 16.4.3 non elenca cambi incompatibili per la 16.4 (aggiunte come `ensureStatic` e
     `navigation`, eslint-config-next 16.4 che accetta anche ESLint 10): ESLint resta 9.39.x come da D-03;
   - test: il caso AC-401-1 vuole next 16.4.x (emendamento dichiarato, prima 16.3.x); due casi nuovi per AC-6001-1 e
-    AC-6001-2, scritti prima dell'aggiornamento e visti rossi con i tre casi dell'audit già rossi.
+    AC-6001-2, scritti prima dell'aggiornamento e visti rossi con i tre casi dell'audit già rossi;
+  - anche `tests/tooling/lint-typecheck.test.ts` (AC-404-3) voleva next 16.3.x: emendato a 16.4.x dopo la prima
+    esecuzione del checkpoint, NON-VERDE solo per questo caso (fuori dal testo del DoD, emendamento dichiarato).
 - Copertura non verificata (dichiarata): E2E locali solo su una parte delle spec (smoke, landing, header di sicurezza,
   accessibilità, pagine d'errore, editor degli articoli, home, keyword: 31 test verdi con il build di next 16.4.3); il
   resto e le baseline visive li esegue la CI; potere delle asserzioni (AT-1 Fase C) non eseguito.
