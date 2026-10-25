@@ -97,7 +97,7 @@ La landing di T-1801 parla solo della ricerca delle keyword («Dalle seed alle k
 - Gate umani: gli screenshot della pagina principale da computer (1280 px) e da telefono (390 px), nel tema scuro e nel chiaro, in it, en, es-ES ed es-419, e il link all'anteprima di Vercel, approvati dall'utente prima del merge (il merge va subito in produzione).
 - Emendamenti prevedibili: AC-1801-2 in tests/e2e/landing.spec.ts cerca il vecchio H1 «Dalle seed alle keyword pronte da esportare»: l'asserzione passa al nuovo H1 (impacted-by T-5801).
 - Ordine: dipende da 18, 49 e 57; viene prima del 59.
-- Note di costruzione (2026-10-25, scelte dell'agente da confermare):
+- Note di costruzione (2026-10-25, scelte dell'agente confermate dall'utente il 2026-10-25, D-55; screenshot del gate umano e anteprima di Vercel approvati lo stesso giorno):
   - testi dalla struttura approvata nel brainstorming (D-53): H1 «Dalla prima parola all'articolo pubblicato» in due
     chiavi (`title` e `titleAccent`, la seconda nel colore verde del tema), occhiello «Keyword research e contenuti SEO»,
     H2 «Il percorso guidato, in sei tappe» con una frase che dice che le proposte dell'AI le rivede sempre l'utente,
