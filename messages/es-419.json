@@ -215,10 +215,68 @@
   },
   "marketing": {
     "landing": {
-      "steps": {
-        "seeds": "Agrega las palabras clave semilla en un tema e inicia la búsqueda."
+      "journey": {
+        "intro": "Cada paso parte de lo que elegiste en el anterior. Las propuestas de la IA siempre las revisas tú antes de usarlas.",
+        "steps": {
+          "keywords": {
+            "body": "Titan SEO amplía cada palabra con las sugerencias de búsqueda de Google, detecta la intención y el tipo de cada palabra clave y aparta las que llevan las marcas que indiques. Agrega el volumen de búsqueda desde el Planificador de palabras clave o desde el proveedor de métricas, si tu plan lo incluye, y decide qué conservar y qué descartar."
+          }
+        }
       },
-      "closing": "Empieza con tu primer proyecto."
+      "closing": "Tu primer artículo empieza con una palabra.",
+      "scenes": {
+        "start": {
+          "seed": "tenis para correr",
+          "targeting": "Búsquedas en español · México"
+        },
+        "keywords": {
+          "rows": {
+            "one": {
+              "term": "tenis para correr hombre"
+            },
+            "two": {
+              "term": "mejores tenis para correr"
+            },
+            "three": {
+              "term": "cómo elegir tenis para correr"
+            },
+            "four": {
+              "term": "tenis para correr nike"
+            },
+            "five": {
+              "term": "tenis para correr usados"
+            }
+          }
+        },
+        "plan": {
+          "pillar": "Tenis para correr: guía para elegir",
+          "articles": {
+            "one": {
+              "title": "Tenis para correr si estás empezando"
+            },
+            "three": {
+              "title": "Tenis de trail o para pavimento"
+            }
+          }
+        },
+        "titles": {
+          "h1": "Tenis para correr: cómo elegir el modelo adecuado",
+          "h2two": "Tu pisada y el tenis adecuado",
+          "h2three": "Cuándo cambiar tus tenis para correr"
+        },
+        "article": {
+          "heading": "Cómo elegir tenis para correr",
+          "text": "Los tenis para correr se eligen según tu pisada y los kilómetros que haces cada semana. <ai>En el panorama actual, la oferta es más amplia que nunca.</ai> Un tenis de entrenamiento dura en promedio <verify>entre 600 y 800 km</verify>; después, la amortiguación pierde eficacia."
+        },
+        "publish": {
+          "title": "Cómo elegir tenis para correr"
+        }
+      }
+    },
+    "meta": {
+      "home": {
+        "description": "Empieza con una palabra: Titan SEO encuentra las palabras clave, crea el plan de contenidos y te propone títulos y borradores SEO con IA para revisar y publicar."
+      }
     }
   },
   "account": {

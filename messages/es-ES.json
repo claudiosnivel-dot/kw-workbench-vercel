@@ -1059,8 +1059,8 @@
   "marketing": {
     "meta": {
       "home": {
-        "title": "Investigación de palabras clave, de la semilla a la exportación",
-        "description": "Amplía tus palabras clave semilla con las sugerencias de búsqueda, clasifícalas por intención y tipo y expórtalas a CSV, Excel o Google Sheets."
+        "title": "Palabras clave, plan de contenidos y artículos SEO",
+        "description": "Empieza por una palabra: Titan SEO encuentra las palabras clave, crea el plan de contenidos y te propone títulos y borradores SEO con IA para revisar y publicar."
       },
       "pricing": {
         "title": "Precios",
@@ -1084,38 +1084,150 @@
       }
     },
     "landing": {
-      "eyebrow": "Investigación de palabras clave",
-      "title": "De unas pocas semillas a palabras clave listas para exportar",
-      "intro": "Amplía tus palabras clave semilla con las sugerencias de búsqueda, clasifícalas por intención y tipo y organízalas en proyectos y temas, listas para exportar.",
+      "eyebrow": "Palabras clave y contenidos SEO",
+      "title": "De la primera palabra",
+      "titleAccent": "al artículo publicado",
+      "intro": "Palabras clave, plan de contenidos, títulos y artículos SEO en un solo recorrido guiado. Tú eliges y Titan SEO hace el resto.",
       "register": "Crear una cuenta",
       "pricing": "Ver los precios",
       "login": "Iniciar sesión",
-      "features": {
-        "title": "Qué hace",
-        "expansion": {
-          "title": "Ampliación de las semillas",
-          "body": "Cada palabra clave semilla se amplía con las sugerencias de búsqueda, con variantes alfabéticas, numéricas y por patrones."
-        },
-        "classification": {
-          "title": "Clasificación automática",
-          "body": "La intención de búsqueda, el tipo de palabra clave y el filtro de marcas separan las palabras clave útiles de las que hay que descartar."
-        },
-        "metrics": {
-          "title": "Volumen de búsqueda",
-          "body": "Importa el volumen de búsqueda desde el CSV de tu Planificador de palabras clave de Google o usa un proveedor de métricas con licencia si tu plan lo incluye."
-        },
-        "export": {
-          "title": "Exportación y trabajo en equipo",
-          "body": "Exporta a CSV, Excel o Google Sheets y trabaja con tu equipo en espacios de trabajo compartidos."
+      "journey": {
+        "eyebrow": "Cómo funciona",
+        "title": "El recorrido guiado, en seis pasos",
+        "intro": "Cada paso parte de lo que has elegido en el anterior. Las propuestas de la IA siempre las revisas tú antes de usarlas.",
+        "steps": {
+          "start": {
+            "title": "Escribe la palabra clave semilla",
+            "body": "Escribe de qué trata tu sitio web, hasta 5 palabras clave semilla separadas por comas, y elige el idioma y el país de las búsquedas. El proyecto y el tema se crean solos."
+          },
+          "keywords": {
+            "title": "Encuentra las palabras clave que busca la gente",
+            "body": "Titan SEO amplía cada palabra con las sugerencias de búsqueda de Google, detecta la intención y el tipo de cada palabra clave y aparta las que llevan las marcas que indiques. Añade el volumen de búsqueda desde el Planificador de palabras clave o desde el proveedor de métricas, si tu plan lo incluye, y decide qué conservar y qué descartar."
+          },
+          "plan": {
+            "title": "El plan de contenidos toma forma",
+            "body": "Las palabras clave parecidas van a la misma página: páginas pilar y artículos satélite, con enlaces internos entre ellos. De cada página sigues el estado de redacción: por escribir, en redacción, publicada."
+          },
+          "titles": {
+            "title": "Títulos SEO propuestos por la IA",
+            "body": "Para cada página la IA propone un H1 y los H2 con la palabra clave principal. Los usas, los descartas o los corriges: en el plan solo entra lo que eliges."
+          },
+          "article": {
+            "title": "El borrador del artículo, con sus revisiones",
+            "body": "La IA escribe el borrador a partir del esquema, bloque a bloque, con preguntas frecuentes y tablas. La revisión SEO indica qué corregir, las fórmulas típicas de la IA aparecen resaltadas y los datos por verificar, señalados; puedes reescribir un solo bloque cuando quieras."
+          },
+          "publish": {
+            "title": "La publicación, donde tú quieras",
+            "body": "Cuando el artículo te convenza, envíalo como borrador a tu sitio de WordPress o descárgalo en Word, HTML o Markdown; el HTML ya incluye los datos estructurados."
+          }
         }
       },
-      "steps": {
-        "title": "Cómo funciona",
-        "project": "Crea un proyecto con el idioma y el país de referencia.",
-        "seeds": "Añade las palabras clave semilla en un tema e inicia la búsqueda.",
-        "review": "Revisa, filtra y exporta las palabras clave."
+      "more": {
+        "title": "Todo lo que necesitas alrededor",
+        "cards": {
+          "languages": {
+            "title": "Idiomas y mercados",
+            "body": "La aplicación y las búsquedas en italiano, inglés, español de España y español de Latinoamérica, cada una con el país de referencia del proyecto."
+          },
+          "team": {
+            "title": "Trabajo en equipo",
+            "body": "Un espacio de trabajo compartido con tu equipo, con los roles de propietario, administrador y miembro e invitaciones por correo electrónico; el número de miembros depende del plan."
+          },
+          "volumes": {
+            "title": "Volumen de búsqueda",
+            "body": "Importa el CSV de tu Planificador de palabras clave de Google o usa un proveedor de métricas con licencia, si tu plan lo incluye."
+          },
+          "export": {
+            "title": "Exportación",
+            "body": "Palabras clave y plan de contenidos en CSV y Excel, también en Google Sheets si tu plan lo incluye, y el plan en PDF para compartir."
+          }
+        }
       },
-      "closing": "Empieza por tu primer proyecto."
+      "closing": "Tu primer artículo empieza por una palabra.",
+      "scenes": {
+        "start": {
+          "window": "Nuevo proyecto",
+          "label": "¿De qué trata tu sitio web?",
+          "seed": "zapatillas de running",
+          "targeting": "Búsquedas en español · España",
+          "button": "Buscar palabras clave",
+          "created": "Proyecto y tema creados"
+        },
+        "keywords": {
+          "window": "Palabras clave",
+          "heading": "Palabras clave encontradas",
+          "rows": {
+            "one": {
+              "term": "zapatillas de running hombre",
+              "tag": "para comprar"
+            },
+            "two": {
+              "term": "mejores zapatillas de running",
+              "tag": "para comparar"
+            },
+            "three": {
+              "term": "cómo elegir zapatillas de running",
+              "tag": "para informarse"
+            },
+            "four": {
+              "term": "zapatillas de running nike",
+              "tag": "marca descartada"
+            },
+            "five": {
+              "term": "zapatillas de running segunda mano",
+              "tag": "Descartada"
+            }
+          }
+        },
+        "plan": {
+          "window": "Plan de contenidos",
+          "pillarLabel": "Página pilar",
+          "pillar": "Zapatillas de running: guía para elegir",
+          "articles": {
+            "one": {
+              "title": "Zapatillas de running para principiantes",
+              "status": "Publicada"
+            },
+            "two": {
+              "title": "Amortiguación y drop explicados",
+              "status": "En redacción"
+            },
+            "three": {
+              "title": "Zapatillas de trail o de asfalto",
+              "status": "Por escribir"
+            }
+          }
+        },
+        "titles": {
+          "window": "Títulos SEO",
+          "label": "Propuesta de la IA",
+          "h1": "Zapatillas de running: cómo elegir el modelo adecuado",
+          "h2one": "Amortiguación, drop y peso: qué mirar",
+          "h2two": "Tu pisada y la zapatilla adecuada",
+          "h2three": "Cuándo cambiar las zapatillas de running",
+          "use": "Usar estos títulos",
+          "discard": "Descartar"
+        },
+        "article": {
+          "window": "Artículo",
+          "heading": "Cómo elegir zapatillas de running",
+          "text": "Las zapatillas de running se eligen según tu pisada y los kilómetros que haces cada semana. <ai>En el panorama actual, la oferta es más amplia que nunca.</ai> Una zapatilla de entrenamiento dura de media <verify>entre 600 y 800 km</verify>; después, la amortiguación pierde eficacia.",
+          "aiLabel": "Fórmula típica de la IA",
+          "verifyLabel": "Por verificar",
+          "seoTitle": "Revisión SEO",
+          "checkH1": "Palabra clave principal en el H1",
+          "checkOpening": "Palabra clave en las primeras 100 palabras",
+          "checkVerify": "1 dato por verificar",
+          "rewrite": "Reescribir este bloque"
+        },
+        "publish": {
+          "window": "Publicación",
+          "wordpress": "Borrador en WordPress",
+          "status": "Borrador guardado",
+          "title": "Cómo elegir zapatillas de running",
+          "download": "O descarga el archivo"
+        }
+      }
     }
   },
   "pricing": {

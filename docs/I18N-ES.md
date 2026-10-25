@@ -123,12 +123,16 @@ Termini approvati con il modulo 47; dove le varianti coincidono la forma vale pe
 | pagine legali | entrambe | Política de privacidad, Términos del servicio, Política de cookies | titoli abituali dei siti in spagnolo; «Términos del servicio» come il footer |
 | percorsi del sito pubblico | es-ES / es-419 | /es / /es-419 | scelta approvata con il modulo 49; x-default verso /en |
 | og:locale | es-ES / es-419 | es_ES / es_LA | og:locale vuole lingua_TERRITORIO: es_LA è il codice dello spagnolo d'America Latina usato da Facebook |
-| titolo della landing | entrambe | «De unas pocas semillas a palabras clave listas para exportar» | evita «palabras clave semilla a palabras clave listas», ripetitivo |
+| titolo della landing | entrambe | «De la primera palabra al artículo publicado» | modulo 58 (prima «De unas pocas semillas a palabras clave listas para exportar»): la pagina racconta il percorso intero |
 | Inizia dal tuo primo progetto | es-ES / es-419 | Empieza por / Empieza con | reggenza abituale in ciascun mercato, come «empiezan por / con» |
 | ninguno terminado (Job falliti, nessun job concluso) | entrambe | ninguno terminado | passata sulle schermate: «ningún trabajo terminado» andava su due righe nel riquadro grande della Panoramica |
-| occhiello della landing | entrambe | Investigación de palabras clave | passata sulle schermate: con «para SEO» a 390 px l'ultima parola andava da sola sulla seconda riga |
+| occhiello della landing | entrambe | Palabras clave y contenidos SEO | modulo 58 (prima «Investigación de palabras clave»); «keyword research» non si traduce parola per parola |
 | tono amichevole (scheda «Per gli articoli», modulo 40) | es-ES / es-419 | Cercano / Amigable | «cercano» è il tono di marca abituale in Spagna, «amigable» in America Latina |
 | Chi siete e cosa offrite / A chi vi rivolgete | entrambe | Quién eres y qué ofreces / A quién te diriges | tú come nel resto dell'app, mai vosotros |
+| percorso guidato (landing) | entrambe | recorrido guiado, en seis pasos | «recorrido» è il percorso che si segue; «tappa» diventa «paso», come nelle guide dei prodotti in spagnolo |
+| esempio delle scene della landing | es-ES / es-419 | zapatillas de running (España) / tenis para correr (México) | come «zapatillas / tenis» dell'avvio rapido; ogni scena con il paese della sua variante |
+| Controllo SEO (landing) | entrambe | Revisión SEO | come `article.seo.title` |
+| proposte che rivedi tu | es-ES / es-419 | lo que has elegido / lo que elegiste | pretérito perfecto in Spagna, indefinido in America Latina (guida di stile, punto 7) |
 
 ## Passata sulle schermate (modulo 49)
 

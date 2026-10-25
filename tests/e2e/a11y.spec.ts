@@ -5,6 +5,7 @@
 // impacted-by: T-2803 (Personalizza è la sezione Preferenze dell'account: AC-1104-3 apre /account/preferences)
 // impacted-by: T-2901 (le preferenze si salvano a ogni scelta: AC-1104-3 emendato, il tema Chiaro resta tornando alla home
 // e il test usa un utente dedicato)
+// Gate di T-5802 (AC-5802-3): la pagina principale con le scene, senza sessione, nel tema chiaro e nello scuro del dispositivo.
 import { randomBytes } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
@@ -101,6 +102,20 @@ test.describe("accessibilità di base", () => {
       // Il tema torna DARK anche se un passo fallisce.
       const response = await page.request.patch("/api/user/preferences", { data: { themeMode: "DARK" } });
       expect(response.status()).toBe(200);
+    }
+  });
+
+  // covers: AC-5802-3
+  test("/it e /es senza sessione non hanno violazioni axe serious o critical con il dispositivo chiaro e con lo scuro", async ({
+    page,
+  }) => {
+    for (const colorScheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme });
+      for (const path of ["/it", "/es"]) {
+        await page.goto(path);
+        await expect(page.locator("html"), path).toHaveAttribute("data-theme", "SYSTEM");
+        expect(await seriousViolations(page), `${path} ${colorScheme}`).toEqual([]);
+      }
     }
   });
 

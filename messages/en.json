@@ -1059,8 +1059,8 @@
   "marketing": {
     "meta": {
       "home": {
-        "title": "Keyword research from seeds to export",
-        "description": "Expand your seed keywords with search suggestions, classify them by intent and type and export them to CSV, Excel or Google Sheets."
+        "title": "Keywords, content plan and SEO articles",
+        "description": "Start from one word: Titan SEO finds the keywords, builds the content plan and suggests SEO headings and article drafts with AI, for you to review and publish."
       },
       "pricing": {
         "title": "Pricing",
@@ -1084,38 +1084,150 @@
       }
     },
     "landing": {
-      "eyebrow": "Keyword research for SEO",
-      "title": "From seed keywords to keywords ready to export",
-      "intro": "Expand your seed keywords with search suggestions, classify them by intent and type and organize them in projects and sections, ready to export.",
+      "eyebrow": "Keyword research and SEO content",
+      "title": "From the first word",
+      "titleAccent": "to the published article",
+      "intro": "Keywords, content plan, SEO headings and articles in one guided path. You choose, Titan SEO does the rest.",
       "register": "Create an account",
       "pricing": "See pricing",
       "login": "Sign in",
-      "features": {
-        "title": "What it does",
-        "expansion": {
-          "title": "Seed expansion",
-          "body": "Every seed is expanded with search suggestions, with alphabetical, numeric and pattern variants."
-        },
-        "classification": {
-          "title": "Automatic classification",
-          "body": "Search intent, keyword type and the brand filter separate useful keywords from the ones to discard."
-        },
-        "metrics": {
-          "title": "Search volumes",
-          "body": "Import volumes from the CSV of your Google Keyword Planner, or use a licensed metrics provider where your plan includes it."
-        },
-        "export": {
-          "title": "Export and teamwork",
-          "body": "Export to CSV, Excel or Google Sheets and work with your team in shared workspaces."
+      "journey": {
+        "eyebrow": "How it works",
+        "title": "The guided path, in six steps",
+        "intro": "Each step builds on what you chose in the previous one. You always review the AI suggestions before using them.",
+        "steps": {
+          "start": {
+            "title": "Write your starting keyword",
+            "body": "Write what your site is about, up to 5 starting keywords separated by commas, and pick the search language and country. The project and the topic are created for you."
+          },
+          "keywords": {
+            "title": "Find the keywords people search for",
+            "body": "Titan SEO expands each word with Google search suggestions, detects the intent and type of every keyword and sets aside the ones with the brands you list. Add volumes from Keyword Planner or from the metrics provider, where your plan includes it, and decide what to keep and what to discard."
+          },
+          "plan": {
+            "title": "Your content plan takes shape",
+            "body": "Similar keywords end up on the same page: pillar pages and linked articles, with internal links between them. Track the writing status of every page: to write, writing, published."
+          },
+          "titles": {
+            "title": "SEO headings suggested by AI",
+            "body": "For every page AI suggests an H1 and the H2s with the main keyword. Use them, discard them or edit them: only what you choose goes into the plan."
+          },
+          "article": {
+            "title": "The article draft, with checks",
+            "body": "AI writes the draft from the outline, one block at a time, with FAQs and tables. The SEO check shows what to fix, typical AI phrases are highlighted and facts to verify are flagged; you can rewrite a single block whenever you want."
+          },
+          "publish": {
+            "title": "Publishing, wherever you want",
+            "body": "When the article works for you, send it as a draft to your WordPress site or download it as Word, HTML or Markdown; the HTML already includes structured data."
+          }
         }
       },
-      "steps": {
-        "title": "How it works",
-        "project": "Create a project with its target language and country.",
-        "seeds": "Add seeds to a section and start the extraction.",
-        "review": "Review, filter and export the keywords."
+      "more": {
+        "title": "Everything else you need",
+        "cards": {
+          "languages": {
+            "title": "Languages and markets",
+            "body": "The app and the searches in Italian, English, Spanish from Spain and Latin American Spanish, each with the project's target country."
+          },
+          "team": {
+            "title": "Teamwork",
+            "body": "A workspace shared with your team, with owner, admin and member roles and email invitations; the number of members depends on your plan."
+          },
+          "volumes": {
+            "title": "Search volumes",
+            "body": "Import the CSV of your Google Keyword Planner or use a licensed metrics provider, where your plan includes it."
+          },
+          "export": {
+            "title": "Export",
+            "body": "Keywords and content plan in CSV and Excel, also to Google Sheets where your plan includes it, and the plan as a PDF to share."
+          }
+        }
       },
-      "closing": "Start with your first project."
+      "closing": "Your first article starts from one word.",
+      "scenes": {
+        "start": {
+          "window": "New project",
+          "label": "What is your site about?",
+          "seed": "running shoes",
+          "targeting": "Searches in English · United Kingdom",
+          "button": "Find keywords",
+          "created": "Project and topic created"
+        },
+        "keywords": {
+          "window": "Keywords",
+          "heading": "Keywords found",
+          "rows": {
+            "one": {
+              "term": "running shoes for men",
+              "tag": "to buy"
+            },
+            "two": {
+              "term": "best running shoes",
+              "tag": "to compare"
+            },
+            "three": {
+              "term": "how to choose running shoes",
+              "tag": "to learn"
+            },
+            "four": {
+              "term": "nike running shoes",
+              "tag": "brand discarded"
+            },
+            "five": {
+              "term": "used running shoes",
+              "tag": "Discarded"
+            }
+          }
+        },
+        "plan": {
+          "window": "Content plan",
+          "pillarLabel": "Pillar page",
+          "pillar": "Running shoes: the buying guide",
+          "articles": {
+            "one": {
+              "title": "Running shoes for beginners",
+              "status": "Published"
+            },
+            "two": {
+              "title": "Cushioning and drop explained",
+              "status": "Writing"
+            },
+            "three": {
+              "title": "Trail or road running shoes",
+              "status": "To write"
+            }
+          }
+        },
+        "titles": {
+          "window": "SEO headings",
+          "label": "AI suggestion",
+          "h1": "Running shoes: how to choose the right model",
+          "h2one": "Cushioning, drop and weight: what to look for",
+          "h2two": "Your gait and the right shoe",
+          "h2three": "When to replace your running shoes",
+          "use": "Use these headings",
+          "discard": "Discard"
+        },
+        "article": {
+          "window": "Article",
+          "heading": "How to choose running shoes",
+          "text": "Choose running shoes based on your gait and the miles you run each week. <ai>In today's fast-paced world, the choice is wider than ever.</ai> A training shoe lasts on average <verify>between 300 and 500 miles</verify>, then the cushioning wears out.",
+          "aiLabel": "Typical AI phrase",
+          "verifyLabel": "To verify",
+          "seoTitle": "SEO check",
+          "checkH1": "Main keyword in the H1",
+          "checkOpening": "Keyword in the first 100 words",
+          "checkVerify": "1 fact to verify",
+          "rewrite": "Rewrite this block"
+        },
+        "publish": {
+          "window": "Publishing",
+          "wordpress": "Draft on WordPress",
+          "status": "Draft saved",
+          "title": "How to choose running shoes",
+          "download": "Or download the file"
+        }
+      }
     }
   },
   "pricing": {

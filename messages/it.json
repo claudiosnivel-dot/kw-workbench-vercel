@@ -1059,8 +1059,8 @@
   "marketing": {
     "meta": {
       "home": {
-        "title": "Keyword research dalle seed all'export",
-        "description": "Espandi le keyword di partenza con i suggerimenti di ricerca, classificale per intento e tipo ed esportale in CSV, Excel o Google Sheets."
+        "title": "Keyword, piano editoriale e articoli SEO",
+        "description": "Parti da una parola: Titan SEO trova le keyword, costruisce il piano editoriale e propone titoli e bozze di articoli SEO con l'AI, da rivedere e pubblicare."
       },
       "pricing": {
         "title": "Prezzi",
@@ -1084,38 +1084,150 @@
       }
     },
     "landing": {
-      "eyebrow": "Keyword research per la SEO",
-      "title": "Dalle seed alle keyword pronte da esportare",
-      "intro": "Espandi le keyword di partenza con i suggerimenti di ricerca, classificale per intento e tipo e organizzale in progetti e sezioni, pronte per l'export.",
+      "eyebrow": "Keyword research e contenuti SEO",
+      "title": "Dalla prima parola",
+      "titleAccent": "all'articolo pubblicato",
+      "intro": "Keyword, piano editoriale, titoli e articoli SEO in un solo percorso guidato. Tu scegli, Titan SEO fa il resto.",
       "register": "Crea un account",
       "pricing": "Vedi i prezzi",
       "login": "Accedi",
-      "features": {
-        "title": "Cosa fa",
-        "expansion": {
-          "title": "Espansione delle seed",
-          "body": "Ogni seed viene espansa con i suggerimenti di ricerca, con varianti alfabetiche, numeriche e per pattern."
-        },
-        "classification": {
-          "title": "Classificazione automatica",
-          "body": "Intento di ricerca, tipo di keyword e filtro dei brand separano le keyword utili da quelle da scartare."
-        },
-        "metrics": {
-          "title": "Volumi di ricerca",
-          "body": "Importa i volumi dal CSV del tuo Keyword Planner di Google, oppure usa un fornitore di metriche con licenza dove il piano lo prevede."
-        },
-        "export": {
-          "title": "Export e lavoro in team",
-          "body": "Esporta in CSV, Excel o Google Sheets e lavora con il tuo team in workspace condivisi."
+      "journey": {
+        "eyebrow": "Come funziona",
+        "title": "Il percorso guidato, in sei tappe",
+        "intro": "Ogni tappa parte da quello che hai scelto nella precedente. Le proposte dell'AI le rivedi sempre tu prima di usarle.",
+        "steps": {
+          "start": {
+            "title": "Scrivi la parola di partenza",
+            "body": "Scrivi di cosa parla il sito, fino a 5 parole di partenza separate da virgola, e scegli lingua e paese delle ricerche. Progetto e argomento si creano da soli."
+          },
+          "keywords": {
+            "title": "Trova le keyword che la gente cerca",
+            "body": "Titan SEO allarga ogni parola con i suggerimenti di ricerca di Google, riconosce intento e tipo di ogni keyword e mette da parte quelle con i marchi che indichi. Aggiungi i volumi dal Keyword Planner o dal fornitore di metriche, dove il piano lo prevede, e decidi tu cosa tenere e cosa scartare."
+          },
+          "plan": {
+            "title": "Il piano editoriale prende forma",
+            "body": "Le keyword simili finiscono sulla stessa pagina: pagine pilastro e articoli collegati, con i link interni fra loro. Di ogni pagina segui lo stato di scrittura: da scrivere, in scrittura, pubblicata."
+          },
+          "titles": {
+            "title": "Titoli SEO proposti dall'AI",
+            "body": "Per ogni pagina l'AI propone un H1 e gli H2 con la keyword principale. Li usi, li scarti o li correggi: nel piano entra solo quello che scegli."
+          },
+          "article": {
+            "title": "La bozza dell'articolo, con i controlli",
+            "body": "L'AI scrive la bozza dalla scaletta, un blocco alla volta, con domande frequenti e tabelle. Il Controllo SEO indica cosa sistemare, le frasi tipiche dell'AI sono evidenziate e i dati da verificare segnalati; puoi riscrivere un solo blocco quando vuoi."
+          },
+          "publish": {
+            "title": "La pubblicazione, dove vuoi tu",
+            "body": "Quando l'articolo ti convince, invialo come bozza al tuo sito WordPress oppure scaricalo in Word, HTML o Markdown; l'HTML ha già i dati strutturati."
+          }
         }
       },
-      "steps": {
-        "title": "Come funziona",
-        "project": "Crea un progetto con lingua e paese di riferimento.",
-        "seeds": "Aggiungi le seed in una sezione e avvia l'estrazione.",
-        "review": "Rivedi, filtra ed esporta le keyword."
+      "more": {
+        "title": "Tutto quello che serve intorno",
+        "cards": {
+          "languages": {
+            "title": "Lingue e mercati",
+            "body": "App e ricerche in italiano, inglese, spagnolo di Spagna e spagnolo dell'America Latina, ognuna con il paese di riferimento del progetto."
+          },
+          "team": {
+            "title": "Lavoro in team",
+            "body": "Un workspace condiviso con il tuo team, con i ruoli di proprietario, amministratore e membro e gli inviti via email; il numero di membri dipende dal piano."
+          },
+          "volumes": {
+            "title": "Volumi di ricerca",
+            "body": "Importa il CSV del tuo Keyword Planner di Google oppure usa un fornitore di metriche con licenza, dove il piano lo prevede."
+          },
+          "export": {
+            "title": "Export",
+            "body": "Keyword e piano editoriale in CSV ed Excel, anche su Google Sheets dove il piano lo prevede, e il piano in PDF da condividere."
+          }
+        }
       },
-      "closing": "Inizia dal tuo primo progetto."
+      "closing": "Il tuo primo articolo parte da una parola.",
+      "scenes": {
+        "start": {
+          "window": "Nuovo progetto",
+          "label": "Di cosa parla il tuo sito?",
+          "seed": "scarpe running",
+          "targeting": "Ricerche in italiano · Italia",
+          "button": "Trova le keyword",
+          "created": "Progetto e argomento creati"
+        },
+        "keywords": {
+          "window": "Keyword",
+          "heading": "Keyword trovate",
+          "rows": {
+            "one": {
+              "term": "scarpe running uomo",
+              "tag": "per comprare"
+            },
+            "two": {
+              "term": "migliori scarpe running",
+              "tag": "per valutare"
+            },
+            "three": {
+              "term": "come scegliere le scarpe running",
+              "tag": "per informarsi"
+            },
+            "four": {
+              "term": "scarpe running nike",
+              "tag": "marchio scartato"
+            },
+            "five": {
+              "term": "scarpe running usate",
+              "tag": "Scartata"
+            }
+          }
+        },
+        "plan": {
+          "window": "Piano editoriale",
+          "pillarLabel": "Pagina pilastro",
+          "pillar": "Scarpe running: la guida per scegliere",
+          "articles": {
+            "one": {
+              "title": "Scarpe running per principianti",
+              "status": "Pubblicata"
+            },
+            "two": {
+              "title": "Ammortizzazione e drop spiegati",
+              "status": "In scrittura"
+            },
+            "three": {
+              "title": "Scarpe da trail o da strada",
+              "status": "Da scrivere"
+            }
+          }
+        },
+        "titles": {
+          "window": "Titoli SEO",
+          "label": "Proposta dell'AI",
+          "h1": "Scarpe running: come scegliere il modello giusto",
+          "h2one": "Ammortizzazione, drop e peso: cosa guardare",
+          "h2two": "Il tuo appoggio e la scarpa giusta",
+          "h2three": "Quando cambiare le scarpe running",
+          "use": "Usa questi titoli",
+          "discard": "Scarta"
+        },
+        "article": {
+          "window": "Articolo",
+          "heading": "Come scegliere le scarpe running",
+          "text": "Le scarpe running si scelgono in base all'appoggio e ai chilometri che fai ogni settimana. <ai>Nel panorama odierno, la scelta è più ampia che mai.</ai> Una scarpa da allenamento dura in media <verify>tra 600 e 800 km</verify>, poi l'ammortizzazione cala.",
+          "aiLabel": "Frase tipica dell'AI",
+          "verifyLabel": "Da verificare",
+          "seoTitle": "Controllo SEO",
+          "checkH1": "Keyword principale nell'H1",
+          "checkOpening": "Keyword nelle prime 100 parole",
+          "checkVerify": "1 dato da verificare",
+          "rewrite": "Riscrivi questo blocco"
+        },
+        "publish": {
+          "window": "Pubblicazione",
+          "wordpress": "Bozza su WordPress",
+          "status": "Bozza salvata",
+          "title": "Come scegliere le scarpe running",
+          "download": "Oppure scarica il file"
+        }
+      }
     }
   },
   "pricing": {
