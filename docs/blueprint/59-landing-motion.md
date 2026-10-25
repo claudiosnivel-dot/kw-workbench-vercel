@@ -90,7 +90,7 @@ Dopo il modulo 58 ogni tappa ha la sua scena accanto al testo, ferma. Dopo quest
 - Rispetto alla divisione presentata in chat, la finestra ferma passa dal 58 al 59: senza movimento una finestra ferma non può cambiare scena, quindi il 58 tiene ogni scena accanto alla sua tappa (anche la versione senza movimento del 59).
 - Gate umani: il link all'anteprima di Vercel per provare lo scorrimento e gli screenshot da computer e da telefono nei due temi, approvati dall'utente prima del merge.
 - Ordine: dipende dal 58.
-- Note di costruzione (2026-10-25, scelte dell'agente da confermare insieme agli screenshot e all'anteprima di Vercel):
+- Note di costruzione (2026-10-25, scelte dell'agente confermate dall'utente il 2026-10-25, D-56; screenshot del gate umano e anteprima di Vercel approvati lo stesso giorno):
   - «la finestra dell'apertura» è letta come la finestra ferma del percorso, la prima finestra dell'app che si incontra
     dopo l'apertura: sale dal basso con l'alone verde sulla stessa corsa della scena della prima tappa (stessa
     timeline di scorrimento, `view-timeline` con `timeline-scope`). L'apertura resta quella approvata nel 58, senza una
