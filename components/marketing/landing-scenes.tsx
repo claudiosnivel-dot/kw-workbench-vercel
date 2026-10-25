@@ -63,7 +63,7 @@ function StartScene({ t }: { t: SceneTranslator }) {
     <SceneWindow step="start" title={t("start.window")}>
       <div className="landing-scene-label">{t("start.label")}</div>
       <div className="landing-scene-field">
-        <span>{t("start.seed")}</span>
+        <span className="landing-scene-typed">{t("start.seed")}</span>
         <span className="landing-scene-caret" />
       </div>
       <div className="landing-scene-split">

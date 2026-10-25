@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { LandingJourney } from "@/components/marketing/landing-journey";
 import { LANDING_STEPS, LandingScene } from "@/components/marketing/landing-scenes";
 import type { AppLocale } from "@/lib/i18n/locale";
 import { marketingPath } from "@/lib/marketing/routes";
@@ -8,7 +9,7 @@ const CARDS = ["languages", "team", "volumes", "export"] as const;
 
 /**
  * Pagina principale pubblica (T-1801, T-5801): apertura sul percorso completo, le 6 tappe con la scena dell'app accanto
- * (T-5802), le 4 schede per il resto e la chiusura. Testi dai cataloghi della lingua del percorso, senza affermazioni su
+ * (T-5802) o nella finestra ferma (T-5901), le 4 schede per il resto e la chiusura. Testi dai cataloghi della lingua del percorso, senza affermazioni su
  * clienti, numeri o certificazioni; titoli e articoli sono proposte che l'utente rivede. Solo token del tema (T-5701).
  * Nessun link alle pagine dell'app: solo registrazione, accesso e prezzi.
  */
@@ -47,20 +48,21 @@ export async function Landing({ locale }: { locale: AppLocale }) {
           </h2>
           <p className="landing-lead">{t("journey.intro")}</p>
         </div>
-        <ol className="landing-steps">
-          {LANDING_STEPS.map((step, index) => (
-            <li key={step} className="landing-step">
-              <div className="landing-step-text">
+        <LandingJourney
+          steps={LANDING_STEPS.map((step, index) => ({
+            id: step,
+            text: (
+              <>
                 <p className="landing-step-number" aria-hidden="true">
                   {String(index + 1).padStart(2, "0")}
                 </p>
                 <h3 className="landing-step-title">{t(`journey.steps.${step}.title`)}</h3>
                 <p className="landing-step-body">{t(`journey.steps.${step}.body`)}</p>
-              </div>
-              <LandingScene step={step} t={tScenes} />
-            </li>
-          ))}
-        </ol>
+              </>
+            ),
+            scene: <LandingScene step={step} t={tScenes} />,
+          }))}
+        />
       </section>
 
       <section aria-labelledby="landing-more" className="landing-section">

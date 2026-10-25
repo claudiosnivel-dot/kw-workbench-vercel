@@ -2209,6 +2209,459 @@ input[type="checkbox"] {
   }
 }
 
+/*
+  Finestra ferma del percorso (T-5901): con data-motion="on" (da 1024 px, senza riduzione del movimento, impostato da
+  LandingJourney) le scene delle tappe tengono il loro posto invisibili, quindi il layout non cambia, e la finestra delle
+  scene sta nella stessa colonna, allineata alla scena della prima tappa, poi ferma a metà dello schermo finché le tappe
+  scorrono. Le scene si alternano in dissolvenza; l'indicatore segna la tappa in lettura.
+*/
+@media (min-width: 1024px) {
+  .landing-journey[data-motion="on"] {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    column-gap: 4rem;
+  }
+
+  .landing-journey[data-motion="on"] > .landing-steps {
+    grid-area: 1 / 1 / 2 / 3;
+  }
+
+  .landing-journey[data-motion="on"] .landing-step > .landing-scene {
+    visibility: hidden;
+  }
+
+  /* La linea fra le tappe resta nella colonna dei testi, senza passare dietro la finestra ferma. */
+  .landing-journey[data-motion="on"] .landing-step {
+    position: relative;
+    border-top-color: transparent;
+  }
+
+  .landing-journey[data-motion="on"] .landing-step:not(:first-child)::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: calc((100% - 4rem) * 5 / 11);
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .landing-stage {
+    grid-area: 1 / 2 / 2 / 3;
+    align-self: start;
+    position: sticky;
+    top: max(5rem, calc(50vh - 10.5rem));
+    z-index: 1;
+    padding-top: 0.5rem;
+  }
+}
+
+.landing-stage-window {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+}
+
+/* Alone della finestra ferma, dietro le scene. */
+.landing-stage-window::before {
+  content: "";
+  position: absolute;
+  inset: -14% -10%;
+  z-index: -1;
+  background: radial-gradient(closest-side, var(--glow-left-color), transparent);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.landing-stage-scene {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.45s ease,
+    visibility 0.45s;
+}
+
+.landing-stage-scene[data-active] {
+  opacity: 1;
+  visibility: visible;
+}
+
+.landing-progress {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-progress > li {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  font-family: var(--font-sora), var(--font-manrope), sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-600);
+}
+
+.landing-progress > li[aria-current="step"] {
+  border-color: var(--status-success-border);
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
+}
+
+/*
+  Movimento della pagina principale (T-5902), solo con le animazioni legate allo scorrimento e senza riduzione del
+  movimento: altrove ogni elemento resta nella sua posizione finale, visibile. Solo transform e opacity, quindi il layout
+  non si sposta. I testi delle tappe compaiono salendo, ogni scena sale dal basso al suo arrivo (sotto i 1024 px, o senza
+  la finestra ferma), la finestra ferma sale con l'alone sulla stessa corsa della scena della prima tappa (parallasse) e
+  le 4 schede entrano a velocità diverse.
+*/
+@keyframes landing-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4.5rem) scale(0.96);
+  }
+}
+
+@keyframes landing-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes landing-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--landing-card-shift));
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .landing-journey {
+      timeline-scope: --landing-first-scene;
+    }
+
+    .landing-step:first-child > .landing-scene {
+      view-timeline-name: --landing-first-scene;
+      view-timeline-axis: block;
+    }
+
+    .landing-step-text > *,
+    .landing-step > .landing-scene,
+    .landing-stage-window,
+    .landing-stage-window::before,
+    .landing-card {
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+    }
+
+    .landing-step-text > * {
+      animation-name: landing-reveal;
+    }
+
+    .landing-step-text > .landing-step-title {
+      animation-range: entry 10% entry 100%;
+    }
+
+    .landing-step-text > .landing-step-body {
+      animation-range: entry 25% entry 100%;
+    }
+
+    .landing-step > .landing-scene,
+    .landing-stage-window {
+      animation-name: landing-rise;
+    }
+
+    .landing-stage-window,
+    .landing-stage-window::before {
+      animation-timeline: --landing-first-scene;
+    }
+
+    .landing-stage-window::before {
+      animation-name: landing-fade;
+      animation-range: entry 0% cover 50%;
+    }
+
+    .landing-card {
+      --landing-card-shift: 2rem;
+      animation-name: landing-card-in;
+    }
+
+    .landing-card:nth-child(2) {
+      --landing-card-shift: 3.5rem;
+    }
+
+    .landing-card:nth-child(3) {
+      --landing-card-shift: 5rem;
+    }
+
+    .landing-card:nth-child(4) {
+      --landing-card-shift: 6.5rem;
+    }
+  }
+}
+
+/*
+  Animazioni della scena attiva nella finestra ferma (T-5901), solo transform e opacity e senza riduzione del movimento:
+  ripartono ogni volta che la scena torna attiva. Lo stato finale è quello della scena ferma. Nel campo dell'avvio e nella
+  pagina dell'editor il fondo è opaco (lo stesso colore sopra il fondo della pagina), così la copertura che scorre nasconde
+  davvero il testo ancora da scrivere.
+*/
+@keyframes landing-pop {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem) scale(0.97);
+  }
+}
+
+@keyframes landing-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
+}
+
+@keyframes landing-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes landing-uncover {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(101%);
+  }
+}
+
+@keyframes landing-fill {
+  from {
+    transform: scaleY(1);
+  }
+
+  to {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes landing-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes landing-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-1.25rem);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-stage-scene [data-scene="start"] .landing-scene-field,
+  .landing-stage-scene [data-scene="article"] .landing-scene-page {
+    background: linear-gradient(var(--input-bg), var(--input-bg)), var(--bg-0);
+  }
+
+  .landing-stage-scene[data-active] :is(.landing-scene-typed, .landing-scene-text) {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .landing-stage-scene[data-active] :is(.landing-scene-typed, .landing-scene-text)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(var(--input-bg), var(--input-bg)), var(--bg-0);
+  }
+
+  /* Avvio: la parola si scrive, poi arrivano il paese e la conferma. */
+  .landing-stage-scene[data-active] .landing-scene-typed::after {
+    box-shadow: inset 2px 0 0 var(--brand-500);
+    animation: landing-uncover 1.2s steps(16, end) 0.35s both;
+  }
+
+  /* Il cursore in fondo alla parola resta spento mentre si scrive, poi lampeggia. */
+  .landing-stage-scene[data-active] .landing-scene-caret {
+    animation:
+      landing-fade 0.01s linear 1.55s both,
+      landing-blink 1s steps(1, end) 1.6s infinite;
+  }
+
+  .landing-stage-scene[data-active] [data-scene="start"] :is(.landing-scene-split, .landing-scene-note) {
+    animation: landing-pop 0.45s ease 1.65s both;
+  }
+
+  .landing-stage-scene[data-active] [data-scene="start"] .landing-scene-note {
+    animation-delay: 2s;
+  }
+
+  /* Keyword: le righe compaiono una dopo l'altra e le barre dei volumi crescono. */
+  .landing-stage-scene[data-active] .landing-scene-keyword {
+    animation: landing-pop 0.4s ease both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-meter-fill {
+    transform-origin: left;
+    animation: landing-grow 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.25s both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-keyword:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-keyword:nth-child(2) .landing-scene-meter-fill {
+    animation-delay: 0.4s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-keyword:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-keyword:nth-child(3) .landing-scene-meter-fill {
+    animation-delay: 0.55s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-keyword:nth-child(4) {
+    animation-delay: 0.45s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-keyword:nth-child(4) .landing-scene-meter-fill {
+    animation-delay: 0.7s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-keyword:nth-child(5) {
+    animation-delay: 0.6s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-keyword:nth-child(5) .landing-scene-meter-fill {
+    animation-delay: 0.85s;
+  }
+
+  /* Piano: la pilastro, poi gli articoli collegati con le linee dei link che si disegnano. */
+  .landing-stage-scene[data-active] .landing-scene-pillar {
+    animation: landing-pop 0.45s ease both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-branch {
+    animation: landing-slide 0.45s ease 0.35s both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-branch::before {
+    transform-origin: left;
+    animation: landing-grow 0.35s ease 0.35s both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-branch:nth-child(2),
+  .landing-stage-scene[data-active] .landing-scene-branch:nth-child(2)::before {
+    animation-delay: 0.6s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-branch:nth-child(3),
+  .landing-stage-scene[data-active] .landing-scene-branch:nth-child(3)::before {
+    animation-delay: 0.85s;
+  }
+
+  /* Titoli: H1 e H2 compaiono uno alla volta, poi il pulsante «Usa questi titoli» si illumina. */
+  .landing-stage-scene[data-active] .landing-scene-heading {
+    animation: landing-pop 0.4s ease 0.2s both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-heading:nth-of-type(2) {
+    animation-delay: 0.45s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-heading:nth-of-type(3) {
+    animation-delay: 0.7s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-heading:nth-of-type(4) {
+    animation-delay: 0.95s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-actions {
+    animation: landing-fade 0.4s ease 1.2s both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-actions > .landing-scene-button:first-child {
+    position: relative;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-actions > .landing-scene-button:first-child::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    box-shadow:
+      0 0 0 4px var(--focus-ring),
+      0 0 22px var(--glow-left-color);
+    animation: landing-fade 0.6s ease 1.6s both;
+  }
+
+  /* Articolo: le righe dell'editor si riempiono con l'evidenziazione, poi le spunte del Controllo SEO. */
+  .landing-stage-scene[data-active] .landing-scene-text::after {
+    transform-origin: bottom;
+    animation: landing-fill 1.5s steps(5, end) 0.3s both;
+  }
+
+  .landing-stage-scene[data-active] [data-scene="article"] :is(.landing-scene-legend, .landing-scene-page > .landing-scene-button) {
+    animation: landing-fade 0.4s ease 1.8s both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-report > .landing-scene-note {
+    animation: landing-pop 0.4s ease 2s both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-report > .landing-scene-note:nth-child(3) {
+    animation-delay: 2.3s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-report > .landing-scene-note:nth-child(4) {
+    animation-delay: 2.6s;
+  }
+
+  /* Pubblicazione: la bozza arriva su WordPress, poi escono i file. */
+  .landing-stage-scene[data-active] .landing-scene-draft {
+    animation: landing-arrive 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .landing-stage-scene[data-active] [data-scene="publish"] > .landing-scene-body > .landing-scene-muted {
+    animation: landing-fade 0.4s ease 0.6s both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-file {
+    animation: landing-pop 0.4s ease 0.8s both;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-file:nth-child(2) {
+    animation-delay: 1s;
+  }
+
+  .landing-stage-scene[data-active] .landing-scene-file:nth-child(3) {
+    animation-delay: 1.2s;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
