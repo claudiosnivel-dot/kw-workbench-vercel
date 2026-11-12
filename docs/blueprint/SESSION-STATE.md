@@ -8,8 +8,8 @@
 |---|---|
 | **Progetto** | Titan SEO (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
-| **Ultimo aggiornamento** | 2026-10-25 |
-| **Sessione corrente** | 2026-10-25 (sessantaduesima) — BUILD, merge e verifica in produzione di `landing-motion` (59), con screenshot, anteprima e scelte approvati dall'utente (D-56) |
+| **Ultimo aggiornamento** | 2026-11-13 |
+| **Sessione corrente** | 2026-11-12/13 (sessantatreesima) — nessun macrotask all'avvio; prove in produzione con l'utente (titoli AI, articoli, WordPress da fare), brainstorming del piano per intento di ricerca (D-57) e moduli 61-63 |
 
 ---
 
@@ -77,6 +77,9 @@
 | `landing-story` (58) | chiuso | VERDE (2026-10-25, prima esecuzione) | T-5801…T-5802 costruiti (D-53, D-55): pagina principale con apertura sul percorso completo («Dalla prima parola all'articolo pubblicato»), 6 tappe con H3 e testo, 4 schede e chiusura, `marketing.landing` e `marketing.meta.home` riscritti in it, en, es-ES ed es-419 (solo differenze); 6 scene dell'app in `components/marketing/landing-scenes.tsx` con gli esempi del mercato della lingua, decorative e con i soli token del tema; note `f26073a`, build `e445265`, conferme `06fc6dc`; screenshot, anteprima e scelte approvati dall'utente (D-55); PR #144 mergiata (`3064971`), CI di `master` verde, produzione verde senza migrazioni |
 | `landing-motion` (59) | chiuso | VERDE (2026-10-25, prima esecuzione) | T-5901…T-5902 costruiti (D-53): `components/marketing/landing-journey.tsx`, da 1024 px e senza riduzione del movimento una sola finestra ferma (position sticky) con la scena della tappa in lettura (IntersectionObserver sugli elementi dell'elenco, linea a metà dello schermo), dissolvenza e indicatore da 1 a 6 con `aria-current="step"`, scene delle tappe al loro posto ma invisibili (layout invariato), animazioni della scena attiva solo con transform e opacity; animazioni CSS legate allo scorrimento dentro `@supports (animation-timeline: view())` e senza riduzione del movimento (testi delle tappe, scene al loro arrivo, finestra con l'alone sulla corsa della prima scena, schede a velocità diverse); nessuna dipendenza nuova; note `4083b3b`, build `42e6aff`, conferme `4bf8586`; screenshot, anteprima e scelte approvati dall'utente (D-56); PR #146 mergiata (`1022553`), CI di `master` verde, produzione verde senza migrazioni |
 | `dep-advisories` (60) | chiuso | VERDE (2026-10-25, seconda esecuzione; la prima NON-VERDE per il test di lint e typecheck che fissava next 16.3.x, §4) | T-6001 costruito (D-54): next ed eslint-config-next 16.4.3, undici 8.12.3, zod 4.6.7 con le correzioni degli avvisi critical e high del 2026-10-24, allowlist dell'audit vuota (braces non più riportata), D-03 emendata a Next 16.4.x, versioni minime nel test delle dipendenze; modulo `9a69c6f`, note `c7490c9`, build `98833b0`, fix `676e6ce`; PR #141 mergiata su `master` (`0e2a0b0`), CI verde, in produzione |
+| `plan-data` (61) | da fare | — | Piano per intento di ricerca (D-57), 1 di 3: risultati di Google salvati 30 giorni e volumi chiesti da soli |
+| `plan-runs` (62) | da fare | — | Piano per intento di ricerca (D-57), 2 di 3: piano come lavoro in background con l'avanzamento e il motore di oggi come riserva |
+| `serp-clusters` (63) | da fare | — | Piano per intento di ricerca (D-57), 3 di 3: una pagina per intento, hub, pagina locale, concorrenti |
 
 ## 2. Macrotask corrente
 
@@ -117,7 +120,7 @@
 - **Ultimo chiuso (2026-10-25, sessantesima sessione)**: `public-theme` (57), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE alla seconda esecuzione (dopo il merge di `master` con il 60), nessuna migrazione: chi non ha fatto l'accesso vede le pagine pubbliche nel tema del dispositivo e le cambia con l'interruttore sole/luna, ricordato dal cookie kwb_theme; chi ha fatto l'accesso usa il tema delle preferenze. Screenshot e scelte approvati dall'utente (D-54). PR #142 mergiata (`15107b9`), CI di `master` verde (anche le baseline visive di T-103), in produzione.
 - **Ultimo chiuso (2026-10-25, sessantunesima sessione)**: `landing-story` (58), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE alla prima esecuzione, nessuna migrazione: la pagina principale racconta il percorso intero in 6 tappe con le scene dell'app, quattro schede e la chiusura, nelle quattro lingue e nei due temi; screenshot, anteprima di Vercel e scelte approvati dall'utente («approvo procedi», D-55); PR #144 mergiata (`3064971`) e in produzione (`dpl_EQJGPxFRWMddSQJ3eizmsqDbzUqe`).
 - **Ultimo chiuso (2026-10-25, sessantaduesima sessione)**: `landing-motion` (59), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE alla prima esecuzione, nessuna migrazione: da 1024 px una sola finestra ferma cambia scena con la tappa in lettura, con l'indicatore da 1 a 6; testi, scene e schede compaiono con lo scorrimento; senza movimento resta la pagina del 58. Screenshot, anteprima di Vercel e scelte approvati dall'utente («approvo tutto procedi», D-56); PR #146 mergiata (`1022553`) e in produzione (`dpl_3QAJLdFMvTDnHnH1hCYv9zchjBVu`).
-- **Prossimo**: nessun macrotask da fare: i 60 moduli del blueprint sono costruiti e in produzione. Un lavoro nuovo parte da una richiesta dell'utente (nuovo modulo dal brainstorming). D-14 e D-15 restano in pausa.
+- **Prossimo**: `plan-data` (61) su comando dell'utente, poi 62 e 63 (un macrotask per sessione). D-14 e D-15 restano in pausa.
 - **Criteri/test di riferimento**: ultimo costruito e mergiato `docs/blueprint/59-landing-motion.md`.
 
 ## 3. Stato git
@@ -221,6 +224,17 @@
 - **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5, jsdom 30 e, da T-407, del progetto `24.x`: funziona con avviso; riferimento la CI su Node 24 da `.nvmrc`). E2E e Vitest su Linux con Node 24: container `mcr.microsoft.com/playwright:v1.63.0-noble` nella rete `kw-workbench-vercel_default`, copia del repo senza `node_modules`, `npm ci`, un proxy TCP in Node da `localhost:54329` a `postgres-test:5432` (la guardia ammette solo host locali), `CI=true`. Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
+
+### Sessione 2026-11-12/13 (sessantatreesima) — prove in produzione, brainstorming D-57, moduli 61-63
+
+- **Avvio**: prompt di inizio sessione; nessun macrotask da fare (60 su 60), nessun commit. Controlli: master allineato a origin, CI di master verde, `tests/tooling/dependency-audit.test.ts` 8/8, smoke di produzione (/it, /en, /es, /api/health 200).
+- **Segnalazione dell'utente**: piano a un solo cluster, titoli AI rotti, articoli e WordPress da provare. Prove fatte nel Chrome dell'utente (accesso fatto da lui; l'agente non inserisce password).
+- **Titoli AI**: l'unico modello salvato (`nvidia/nemotron-3-super-120b-a12b:free`) non era più gratuito, quindi segnato missing e saltato: nessun tentativo e AI_UNAVAILABLE. Corretto dalla card (PATCH /api/admin/ai-titles), senza codice: modelli `baidu/ernie-5.5-flash-preview:free`, `nvidia/nemotron-3-ultra-550b-a55b:free`, `google/gemma-4-31b-it:free`, `google/gemma-4-26b-a4b-it:free`, `nvidia/nemotron-3.5-super-vl:free`. Proposta di titoli verificata (log `ai_titles_suggest` ok, 11 s).
+- **Articoli**: accesi dalla card (articlesEnabled true). Il primo lavoro è fallito alla scaletta (AI_UNAVAILABLE in 120 s: ultra in timeout a 45 s, super-vl con finish_reason length perché il ragionamento consuma i 4000 max_tokens, ernie senza tempo residuo); con ernie primo l'articolo di «Noleggio magnetoterapia costo» (breve) è pronto in ~2 minuti. Difetti del codice da decidere con l'utente (possibile modulo): token del ragionamento, tempi per tentativo, elenco di modelli tutti spariti senza avviso evidente.
+- **Piano**: un hub per seed (D-33) e una sola seed per progetto, nessun volume (mai chiesti): 1 hub, 122 keyword su 125 confluite nella pilastro. Brainstorming con l'utente → design `docs/superpowers/specs/2026-11-12-plan-clustering-design.md` approvato («approvo»), D-57, moduli 61 `plan-data`, 62 `plan-runs`, 63 `serp-clusters` (7 task, 235 in tutto).
+- **Validatori del blueprint**: validate_blueprint OK (235 task), ac_observability_check OK; ac_assertion_trace_check segnala AC-6303-4 finché `tests/component/strategy-settings.test.tsx` non riceve il tag covers alla costruzione.
+- **WordPress**: da provare; l'utente deve inserire indirizzo, utente e password per le applicazioni nelle impostazioni del progetto.
+- **Utente**: cambiare la password di Titan SEO scritta in chat il 2026-11-12.
 
 ### Sessione 2026-10-25 (sessantaduesima, seguito) — approvazione, merge e verifica in produzione di `landing-motion` (59)
 
@@ -1310,7 +1324,7 @@
 
 ## 6. Prossimi passi
 
-- **Prossimo passo**: approvazione dei moduli 57-59 (D-53) da parte dell'utente, poi il 57 `public-theme` su suo comando. Il 56 è chiuso e in produzione dal 2026-10-22 (PR #137).
+- **Prossimo passo**: approvazione dei moduli 61-63 (D-57) da parte dell'utente sulla PR di sola documentazione, poi il 61 `plan-data` su suo comando. Da provare con l'utente l'invio di una bozza a WordPress.
 - **Gate umani dei moduli 57-59**: prima di ogni merge gli screenshot (computer 1280 px e telefono 390 px, tema scuro e chiaro, quattro lingue per 58 e 59) con `.trueline/ux-screens`, e per 58 e 59 il link all'anteprima di Vercel; il merge aspetta l'approvazione dell'utente.
 - **Scelte del macrotask 56**: confermate dall'utente il 2026-10-22 (D-52); note di costruzione nel Self-check del modulo 56 (allineamento come attributo `align` e non come `style`; celle mancanti vuote e in più tolte come in GFM; Markdown riscritto dalle celle solo per le tabelle del primo livello, con il `|` dell'indirizzo escapato nelle celle; tabella di Word a tutta larghezza con colonne uguali e bordi predefiniti di `docx`; anche le FAQ dei dati strutturati lette con le tabelle).
 - **Utente (facoltativo, dopo il merge del 56)**: aprire in Word il .docx di un articolo con una tabella e inviare a un sito WordPress vero una bozza con una tabella.
