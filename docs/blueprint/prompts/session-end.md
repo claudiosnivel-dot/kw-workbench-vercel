@@ -41,7 +41,7 @@ macrotask, senza chiedere conferme.
      52 article-polish · 53 dev-deps · 54 dns-pinning ·
      55 article-tables · 56 article-tables-export · 57 public-theme ·
      58 landing-story · 59 landing-motion · 60 dep-advisories ·
-     61 plan-data · 62 plan-runs · 63 serp-clusters
+     61 plan-data · 62 plan-runs · 63 serp-clusters · 64 ai-reliability
    • Baseline (.trueline/baseline.json, .trueline/hygiene-baseline.json) e budget
      consumato (MAX_RETRIES_PER_FINDING = 2, GLOBAL_WALL_CLOCK_MS = 242401).
    • Per ogni task chiuso: id, output prodotto, esito del gate (quale oracolo/test
