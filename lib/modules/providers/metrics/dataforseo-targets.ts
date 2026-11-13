@@ -1,4 +1,7 @@
-// Corrispondenze tra paese e lingua dell'app e i parametri dell'endpoint Google Ads di DataForSEO (T-902).
+import { getDataForSeoCredentials } from "@/lib/env";
+
+// Corrispondenze tra paese e lingua dell'app e i parametri dell'endpoint Google Ads di DataForSEO (T-902), usate anche
+// per i risultati di Google (T-6101): lingua e paese della SERP sono quelli dei volumi.
 //
 // location_code: location di primo livello (senza location_code_parent) del CSV
 // https://cdn.dataforseo.com/v3/locations/locations_kwrd_2026_09_01.csv (scaricato il 2026-10-06; 96.429 location,
@@ -53,4 +56,37 @@ export function toDataForSeoLocationCode(countryCode: string): number | null {
 export function toDataForSeoLanguageCode(languageCode: string): string | null {
   const code = languageCode.toLowerCase();
   return LANGUAGE_CODES.has(code) ? code : null;
+}
+
+/** Parametri di una richiesta a DataForSEO: lingua e paese dell'API e intestazione Basic con le credenziali dell'ambiente. */
+export type DataForSeoRequestTarget = {
+  authorization: string;
+  target: { location_code: number; language_code: string };
+};
+
+/**
+ * Credenziali, location e lingua della richiesta, oppure il motivo per cui non parte: PROVIDER_NOT_CONFIGURED senza
+ * credenziali (T-902), LOCATION_UNSUPPORTED o LANGUAGE_UNSUPPORTED senza corrispondenza. L'intestazione resta in
+ * memoria: mai nei log (CWE-532).
+ */
+export function resolveDataForSeoTarget(context: {
+  languageCode: string;
+  countryCode: string;
+}): DataForSeoRequestTarget | { notice: "PROVIDER_NOT_CONFIGURED" | "LOCATION_UNSUPPORTED" | "LANGUAGE_UNSUPPORTED" } {
+  const credentials = getDataForSeoCredentials();
+  if (!credentials) {
+    return { notice: "PROVIDER_NOT_CONFIGURED" };
+  }
+  const locationCode = toDataForSeoLocationCode(context.countryCode);
+  if (locationCode === null) {
+    return { notice: "LOCATION_UNSUPPORTED" };
+  }
+  const languageCode = toDataForSeoLanguageCode(context.languageCode);
+  if (languageCode === null) {
+    return { notice: "LANGUAGE_UNSUPPORTED" };
+  }
+  return {
+    authorization: `Basic ${Buffer.from(`${credentials.login}:${credentials.password}`).toString("base64")}`,
+    target: { location_code: locationCode, language_code: languageCode },
+  };
 }

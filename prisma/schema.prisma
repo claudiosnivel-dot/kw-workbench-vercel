@@ -561,6 +561,20 @@ model MetricsProviderRequest {
   @@map("metrics_provider_requests")
 }
 
+/// Primi 10 risultati organici di Google di una keyword (T-6101, D-57): solo gli URL nell'ordine dei risultati, per
+/// forma canonica, lingua e paese della ricerca; validi 30 giorni (SERP_MAX_AGE_DAYS), poi si chiedono di nuovo.
+model KeywordSerp {
+  id                String   @id @default(cuid())
+  language_code     String
+  country_code      String
+  canonical_keyword String
+  urls              String[]
+  fetched_at        DateTime @default(now())
+
+  @@unique([language_code, country_code, canonical_keyword])
+  @@map("keyword_serps")
+}
+
 // Funzione dell'app che chiama OpenRouter (T-3901, D-46): i titoli con l'AI e gli articoli.
 enum AiFeature {
   titles

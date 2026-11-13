@@ -49,6 +49,7 @@ function renderSettings(canEditArticleBrief: boolean) {
       initialValues={VALUES}
       initialArticleBrief={BRIEF}
       canEditAutocompleteProvider={false}
+      canUseLicensedMetrics={false}
       canEditArticleBrief={canEditArticleBrief}
       brands={null}
     />

@@ -15,7 +15,7 @@ import type { VolumesReason } from "@/lib/modules/volumes-reason";
 type AddVolumesProps = {
   projectId: string;
   topicId: string;
-  /** Il fornitore con licenza è ammesso per l'utente e il progetto (canChooseLicensedMetrics, T-2003). */
+  /** Il fornitore con licenza è ammesso per l'utente e il progetto (canUseLicensedMetrics, T-2003). */
   canAuto: boolean;
 };
 

@@ -118,6 +118,7 @@ Termini approvati con il modulo 47; dove le varianti coincidono la forma vale pe
 | subito | es-ES / es-419 | enseguida / de inmediato | uso di ciascun mercato |
 | Durata media | es-ES / es-419 | Duración media / Duración promedio | come «medio / promedio» degli export |
 | Fatto (fine di una finestra) | entrambe | Listo | parola dei pulsanti di chiusura in spagnolo |
+| qualche centesimo (costo di DataForSEO) | es-ES / es-419 | unos céntimos / unos centavos | moneta divisionale nominata in ciascun mercato (T-6103) |
 | job (indicatori dell'amministrazione) | entrambe | trabajo | «búsqueda» vale per la ricerca dell'utente; tra i job ci sono anche i volumi |
 | Titoli con l'AI | entrambe | Títulos con IA | come `plan.ai` («Mejorar los títulos con IA») |
 | pagine legali | entrambe | Política de privacidad, Términos del servicio, Política de cookies | titoli abituali dei siti in spagnolo; «Términos del servicio» come il footer |

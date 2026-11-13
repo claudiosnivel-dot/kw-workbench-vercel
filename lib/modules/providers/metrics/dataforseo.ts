@@ -1,7 +1,7 @@
-import { getDataForSeoCredentials, getIntEnv } from "@/lib/env";
+import { getIntEnv } from "@/lib/env";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import { dataForSeoSkipReason } from "@/lib/modules/providers/metrics/dataforseo-keywords";
-import { toDataForSeoLanguageCode, toDataForSeoLocationCode } from "@/lib/modules/providers/metrics/dataforseo-targets";
+import { resolveDataForSeoTarget } from "@/lib/modules/providers/metrics/dataforseo-targets";
 import {
   type BudgetNotice,
   recentProviderRequestTimes,
@@ -227,18 +227,11 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
   readonly id = "DATAFORSEO" as const;
 
   async enrichKeywords(items: MetricsItem[], context: MetricsContext): Promise<MetricsOutcome> {
-    const credentials = getDataForSeoCredentials();
-    if (!credentials) {
-      return missingOutcome(items, this.id, "PROVIDER_NOT_CONFIGURED");
+    const request = resolveDataForSeoTarget(context);
+    if ("notice" in request) {
+      return missingOutcome(items, this.id, request.notice);
     }
-    const locationCode = toDataForSeoLocationCode(context.countryCode);
-    if (locationCode === null) {
-      return missingOutcome(items, this.id, "LOCATION_UNSUPPORTED");
-    }
-    const languageCode = toDataForSeoLanguageCode(context.languageCode);
-    if (languageCode === null) {
-      return missingOutcome(items, this.id, "LANGUAGE_UNSUPPORTED");
-    }
+    const { authorization, target } = request;
     const { metrics } = missingOutcome(items, this.id);
 
     const skipped: Record<string, number> = {};
@@ -252,8 +245,6 @@ export class DataForSeoMetricsProvider implements MetricsProvider {
       }
     }
 
-    const authorization = `Basic ${Buffer.from(`${credentials.login}:${credentials.password}`).toString("base64")}`;
-    const target = { location_code: locationCode, language_code: languageCode };
     const run: RunLedger = { projectId: context.projectId, jobId: context.jobId, requestIds: [] };
     let notice: BudgetNotice | undefined;
     let providerError: MetricsProviderError | undefined;

@@ -18,6 +18,9 @@
     }
   },
   "projects": {
+    "fields": {
+      "metricsProviderLicensedHint": "Con DataForSEO, el volumen de búsqueda mensual llega al terminar cada búsqueda y cuesta unos centavos."
+    },
     "settings": {
       "title": "Configuración",
       "save": "Guardar la configuración",

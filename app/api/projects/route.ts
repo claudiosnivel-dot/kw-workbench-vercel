@@ -2,7 +2,13 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedUserFromRequest } from "@/lib/auth/current-user";
 import { requireRequestWorkspace, requireWorkspaceRole } from "@/lib/authz/workspace";
-import { assertLicensedMetricsChoice, assertWithinLimit, countLimitedProjects, loadPlanGuard } from "@/lib/billing/enforce";
+import {
+  assertLicensedMetricsChoice,
+  assertWithinLimit,
+  countLimitedProjects,
+  defaultMetricsProvider,
+  loadPlanGuard,
+} from "@/lib/billing/enforce";
 import { withApiErrors } from "@/lib/http/errors";
 import { parseProjectCreate } from "@/lib/modules/project-settings";
 import { prisma } from "@/lib/prisma";
@@ -21,7 +27,8 @@ function splitWorkspaceId(payload: unknown): { workspaceId: unknown; fields: unk
  * WORKSPACE_NOT_FOUND), altrimenti nel workspace attivo del cookie kwb_workspace riverificato; l'autore è l'utente.
  * Limiti del piano (T-1605): progetti del workspace (escluso il primo, creato dall'onboarding o dall'avvio rapido,
  * T-2004 e T-2301), sezione iniziale e sue seed, metriche con licenza; i conteggi stanno nella transazione della
- * scrittura, sotto il lock del workspace.
+ * scrittura, sotto il lock del workspace. Senza metrics_provider nel corpo il progetto nasce con DATAFORSEO per chi ha i
+ * dati con licenza nel workspace, altrimenti con NONE (T-6103).
  */
 export const POST = withApiErrors(async (request: NextRequest) => {
   const user = await requireAuthenticatedUserFromRequest(request);
@@ -33,6 +40,9 @@ export const POST = withApiErrors(async (request: NextRequest) => {
       ? await requireRequestWorkspace(user, request, "project.create")
       : await requireWorkspaceRole(user, workspaceId, "project.create");
 
+  if (input.metricsProviderDefaulted) {
+    input.data.metrics_provider = await defaultMetricsProvider(user, workspace.id);
+  }
   await assertLicensedMetricsChoice(user, workspace.id, input.data.metrics_provider, undefined);
   const plan = await loadPlanGuard(workspace.id);
 

@@ -158,6 +158,7 @@
       "autocompleteMock": "Sugerencias de prueba",
       "metricsProvider": "Volumen de búsqueda",
       "metricsProviderHint": "De dónde sale el volumen de búsqueda mensual de cada palabra clave.",
+      "metricsProviderLicensedHint": "Con DataForSEO, el volumen de búsqueda mensual llega al terminar cada búsqueda y cuesta unos céntimos.",
       "metricsNone": "Sin volumen",
       "metricsMock": "Volumen de prueba",
       "dataForSeo": "DataForSEO (de pago)",

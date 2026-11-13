@@ -158,6 +158,7 @@
       "autocompleteMock": "Test suggestions",
       "metricsProvider": "Search volumes",
       "metricsProviderHint": "Where each keyword's monthly searches come from.",
+      "metricsProviderLicensedHint": "With DataForSEO, search volumes arrive at the end of each search and cost a few cents.",
       "metricsNone": "No volumes",
       "metricsMock": "Test volumes",
       "dataForSeo": "DataForSEO (paid)",

@@ -6,6 +6,7 @@ import { ProjectSettingsForm } from "@/components/project-form";
 import { ProjectWordPress } from "@/components/project-wordpress";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { canPerform } from "@/lib/authz/permissions";
+import { canUseLicensedMetrics } from "@/lib/billing/enforce";
 import { readWordPressSettings } from "@/lib/integrations/wordpress";
 import { listProjectBrands } from "@/lib/modules/project-brands";
 import { requireProjectPage } from "@/lib/modules/project-pages";
@@ -23,9 +24,10 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
 
   const project = await requireProjectPage(user.id, id, {});
   const canUpdate = canPerform(project.role, "project.update");
-  const [brands, wordpress, t] = await Promise.all([
+  const [brands, wordpress, licensed, t] = await Promise.all([
     listProjectBrands(project.id),
     canUpdate ? readWordPressSettings(project.id) : null,
+    canUseLicensedMetrics(user, project.workspace_id),
     getTranslations("projects.settings"),
   ]);
 
@@ -35,6 +37,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
       <ProjectSettingsForm
         projectId={project.id}
         canEditAutocompleteProvider={user.isRootAdmin}
+        canUseLicensedMetrics={licensed}
         canEditArticleBrief={canUpdate}
         initialValues={{
           name: project.name,

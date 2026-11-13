@@ -238,6 +238,11 @@ export type ProjectCreateInput = {
   seeds: string[];
   initialSubprojectName: string;
   createInitialSection: boolean;
+  /**
+   * Richiesta senza metrics_provider (T-6103): la rotta lo sostituisce con defaultMetricsProvider di lib/billing/enforce.ts
+   * (DATAFORSEO per chi ha i dati con licenza); una scelta esplicita, anche NONE, resta quella.
+   */
+  metricsProviderDefaulted: boolean;
 };
 
 export function parseProjectCreate(payload: unknown, actor: Actor): ProjectCreateInput {
@@ -263,6 +268,7 @@ export function parseProjectCreate(payload: unknown, actor: Actor): ProjectCreat
     seeds: input.seeds ?? [],
     initialSubprojectName: input.initial_subproject_name ?? "Generale",
     createInitialSection: input.createInitialSection ?? true,
+    metricsProviderDefaulted: input.metrics_provider === undefined,
   };
 }
 
