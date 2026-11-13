@@ -1,14 +1,15 @@
 # 61-plan-data — Macrotask `plan-data`
 
-> Piano per intento di ricerca (D-57), 1 di 3: i dati che servono al nuovo raggruppamento. I primi 10 risultati di Google di ogni keyword, salvati per 30 giorni, e i volumi chiesti da soli a DataForSEO per le keyword del perimetro che non li hanno.
+> Piano per intento di ricerca (D-57), 1 di 3: i dati che servono al nuovo raggruppamento. I primi 10 risultati di Google di ogni keyword, salvati per 30 giorni; i volumi alla fine di ogni ricerca per chi ha i dati con licenza; e, come rete di sicurezza, i volumi chiesti da soli a DataForSEO per le keyword del perimetro che non li hanno ancora.
 
 ## Obiettivo del macrotask
 Oggi il piano lavora solo sulle parole delle keyword e i volumi arrivano solo se l'utente preme «Aggiungi i volumi» (verificato il 2026-11-12: nessuna keyword dei tre progetti dell'utente ha il volume). Dopo questo modulo:
 
 - **Risultati di Google**: una funzione chiede a DataForSEO (Google Organic SERP, coda priority) i primi 10 risultati organici delle keyword, nella lingua e nel paese del perimetro, e li salva per 30 giorni; una keyword con risultati recenti non si paga di nuovo.
-- **Volumi da soli**: una funzione chiede a DataForSEO i volumi delle keyword tenute del perimetro che non li hanno e li salva sulle keyword, come l'estrazione.
+- **Volumi alla fine della ricerca**: per chi ha i dati con licenza i progetti nuovi usano DataForSEO come fornitore dei volumi, quindi ogni ricerca finisce con i volumi e l'utente sceglie tieni/scarta vedendo quanto sono cercate le keyword (scelta dell'utente del 2026-11-13: «alla fine della ricerca»).
+- **Volumi da soli prima del piano**: una funzione chiede a DataForSEO i volumi delle keyword tenute del perimetro che non li hanno ancora (progetti esistenti, keyword importate) e li salva sulle keyword, come l'estrazione.
 - **Stessi tetti**: ogni richiesta passa dal registro e dai tetti di spesa di T-903 e dalla regola dei dati con licenza (D-30, T-1605): chi non può usare DataForSEO non spende nulla e riceve il motivo.
-- Le due funzioni non sono ancora chiamate dal piano: le usa il lavoro di piano del modulo 62.
+- Le funzioni dei risultati e dei volumi del perimetro non sono ancora chiamate dal piano: le usa il lavoro di piano del modulo 62.
 
 ## Task atomici
 
@@ -99,10 +100,49 @@ Oggi il piano lavora solo sulle parole delle keyword e i volumi arrivano solo se
   out_of_scope:
     - "Aggiornare volumi già presenti o vecchi."
     - "Cambiare il fornitore di metriche dell'argomento (resta quello scelto dall'utente)."
+
+- id: T-6103
+  title: "Volumi alla fine di ogni ricerca per chi ha i dati con licenza"
+  macrotask: "plan-data"
+  depends_on: [T-6102, T-3701]
+
+  objective: >
+    Far scegliere le keyword da tenere vedendo già quanto sono cercate, senza dover premere «Aggiungi i volumi».
+
+  definition_of_done:
+    - "Creazione del progetto (POST /api/projects, parseProjectCreate) e avvio rapido (POST /api/projects/quick-start): senza metrics_provider nella richiesta, il progetto nasce con DATAFORSEO se canUseLicensedMetrics (T-6102) è vero per chi lo crea nel suo workspace, altrimenti con NONE come oggi; una scelta esplicita (anche NONE) resta quella. Gli argomenti nuovi ereditano dal progetto come oggi, quindi la ricerca arricchisce le keyword trovate con la fase metrics esistente (tetti di spesa, quota mensile, motivi)."
+    - "components/project-form.tsx e project-advanced-fields.tsx: per chi ha i dati con licenza il fornitore dei volumi proposto è DataForSEO, con il testo d'aiuto che dice che i volumi arrivano alla fine della ricerca e costano qualche centesimo; testi nei cataloghi it, en, es-ES ed es-419."
+    - "I progetti esistenti non cambiano: per loro restano «Aggiungi i volumi» e i volumi chiesti prima del piano (T-6102)."
+
+  acceptance_criteria:
+    - id: AC-6103-1
+      given: "il root admin con DataForSEO simulato per i volumi e l'autocomplete simulato"
+      when: "invia POST /api/projects/quick-start con topic 'noleggio magnetoterapia' e la ricerca arriva in fondo"
+      then: "il progetto ha metrics_provider DATAFORSEO; le keyword trovate hanno avg_monthly_searches con metrics_provider DATAFORSEO; metrics_provider_requests ha le richieste della ricerca"
+    - id: AC-6103-2
+      given: "un MEMBER con email verificata e il lancio commerciale spento"
+      when: "invia POST /api/projects/quick-start con topic 'noleggio magnetoterapia'"
+      then: "il progetto ha metrics_provider NONE e fetch verso DataForSEO non è chiamato"
+    - id: AC-6103-3
+      given: "il root admin"
+      when: "invia POST /api/projects con metrics_provider NONE"
+      then: "il progetto ha metrics_provider NONE"
+
+  target_tests:
+    - file: "tests/integration/project-default-metrics.test.ts"
+      covers: [AC-6103-1, AC-6103-2, AC-6103-3]
+
+  security_notes:
+    - "A01 / CWE-285: la regola dei dati con licenza (D-30) resta lato server; il form propone, la rotta decide."
+    - "A06 / CWE-770: la spesa delle ricerche passa dai tetti e dalla quota mensile esistenti (T-903, T-1703)."
+
+  out_of_scope:
+    - "Cambiare il fornitore dei progetti esistenti."
 ```
 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal brainstorming del 2026-11-12 con l'utente (D-57, design in `docs/superpowers/specs/2026-11-12-plan-clustering-design.md`): «va bene pagare questi pochi centesimi», «fai in modo che titanseo prenda da solo i volumi da dataforseo».
-- Scelte dell'agente, nel design: coda priority, cache di 30 giorni, solo gli URL organic, volumi già presenti non richiesti, chi non ha i dati con licenza non spende.
+- T-6103 aggiunto il 2026-11-13 sulla scelta dell'utente «alla fine della ricerca» (volumi mentre si scelgono le keyword, non solo dopo); T-6102 resta come rete di sicurezza per i progetti esistenti e le keyword importate.
+- Scelte dell'agente, nel design: coda priority, cache di 30 giorni, solo gli URL organic, volumi già presenti non richiesti, chi non ha i dati con licenza non spende; DataForSEO predefinito solo per i progetti nuovi.
 - Ordine: dopo il 60; prepara il 62 e il 63.

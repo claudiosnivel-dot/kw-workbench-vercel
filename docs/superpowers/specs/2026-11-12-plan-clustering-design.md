@@ -27,7 +27,10 @@ metodo più affidabile per capirlo è la sovrapposizione dei risultati di Google
 - Titan SEO **non deve chiedere che tipo di sito è** (attività locale o sito di contenuti): le scelte devono
   andare bene per qualunque sito.
 - Accetta di **pagare qualche centesimo per piano** a DataForSEO per i risultati di Google.
-- Titan SEO **prende da solo i volumi** da DataForSEO quando crea il piano.
+- Titan SEO **prende da solo i volumi** da DataForSEO quando crea il piano; il 2026-11-13 l'utente ha precisato
+  che li vuole **alla fine della ricerca**, così sceglie tieni/scarta vedendo i volumi: DataForSEO diventa il
+  fornitore predefinito dei progetti nuovi per chi ha i dati con licenza, e i volumi chiesti prima del piano
+  restano come rete di sicurezza (progetti esistenti, keyword importate).
 - Ha approvato il flusso proposto (risultati di Google → gruppi → AI per i casi incerti → città in un'unica
   pagina → editor di sempre), con i risultati salvati per 30 giorni, il piano come lavoro in background e il
   motore di oggi come riserva.

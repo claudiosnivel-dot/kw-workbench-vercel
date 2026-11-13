@@ -48,7 +48,7 @@ ridiscute il design.
    54 dns-pinning (46) · 55 article-tables (42, 43, 44) ·
    56 article-tables-export (45, 46, 55) · 57 public-theme (18, 23, 29, 49) ·
    58 landing-story (18, 49, 57) · 59 landing-motion (58) ·
-   60 dep-advisories (04, 53, 54) · 61 plan-data (09, 16, 17, 19) ·
+   60 dep-advisories (04, 53, 54) · 61 plan-data (09, 16, 17, 19, 37) ·
    62 plan-runs (12, 25, 41, 61) · 63 serp-clusters (19, 25, 38, 39, 51, 61, 62) ·
    64 ai-reliability (38, 39, 41)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
