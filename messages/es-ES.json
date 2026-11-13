@@ -407,6 +407,7 @@
     "JOB_ALREADY_ACTIVE": "Ya hay una búsqueda en curso para este tema.",
     "JOB_NOT_FOUND": "Búsqueda no encontrada.",
     "JOB_NOT_CANCELABLE": "La búsqueda ya ha terminado.",
+    "PLAN_RUN_NOT_FOUND": "No se ha encontrado la preparación del plan.",
     "EXPORT_FORMAT_INVALID": "Formato de exportación no válido.",
     "EXPORT_DIALECT_INVALID": "Dialecto CSV no válido: usa excel-it o rfc4180.",
     "SHEETS_FILE_NAME_REQUIRED": "El nombre del archivo es obligatorio.",
@@ -1853,6 +1854,30 @@
     "progress": {
       "label": "Progreso de la redacción",
       "text": "{published, plural, one {# publicada} other {# publicadas}} · {writing, number} en redacción · {todo, number} por escribir"
+    },
+    "run": {
+      "title": "Preparando el plan",
+      "hint": "Tarda alrededor de un minuto. Puedes salir de la página: el plan se sigue preparando.",
+      "progressLabel": "Progreso de la preparación del plan",
+      "keywords": "{done, number} de {total, number} palabras clave",
+      "phase": {
+        "volumes": "Buscando el volumen de búsqueda",
+        "serps_post": "Leyendo los resultados de Google",
+        "serps_collect": "Leyendo los resultados de Google",
+        "cluster": "Agrupando las palabras clave",
+        "save": "Guardando el plan",
+        "done": "Guardando el plan"
+      },
+      "failed": "No se ha podido preparar el plan.",
+      "retry": "Reintentar"
+    },
+    "grouping": {
+      "title": "Agrupación de reserva",
+      "text": "Las palabras clave se agrupan por las palabras que comparten, sin los resultados de Google.",
+      "reason": {
+        "PROVIDER_ERROR": "DataForSEO no ha respondido para algunas palabras clave.",
+        "SERP_TIMEOUT": "Los resultados de Google no han llegado a tiempo."
+      }
     },
     "groupBy": "Agrupar por",
     "group": {

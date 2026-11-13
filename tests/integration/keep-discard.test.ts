@@ -3,7 +3,6 @@
 // scelta; il perimetro automatico delle strategie usa la regola unica; la PATCH dei risultati ha solo keep e discard.
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { POST as createStrategy } from "@/app/api/projects/[id]/strategies/route";
 import { PATCH as patchResults } from "@/app/api/projects/[id]/results/route";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { runExtractionPipeline } from "@/lib/modules/pipeline/extraction";
@@ -12,6 +11,7 @@ import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
 import { createTemporaryDatabase, type TemporaryDatabase } from "../helpers/migrations";
+import { generatePlan } from "../helpers/plan-run";
 
 const KEEP_DISCARD_MIGRATION = "0042_keep_discard";
 
@@ -183,17 +183,11 @@ describe("regola unica nel piano", () => {
     ]);
     await prisma.seed.create({ data: { project_id: projectId, subproject_id: sectionId, keyword: "scarpe running" } });
 
-    const response = await callRoute(createStrategy, {
-      method: "POST",
-      url: `/api/projects/${projectId}/strategies`,
-      cookie: owner.cookie,
-      params: { id: projectId },
-      body: { mode: "AUTO" },
-    });
+    // impacted-by: T-6201 (la POST avvia il lavoro di piano: 202 con runId, la strategia nasce a lavoro finito)
+    const { response, strategyId } = await generatePlan(owner.cookie, projectId, { mode: "AUTO" });
 
-    expect(response.status).toBe(201);
-    const { data } = (await response.json()) as { data: { id: string } };
-    const keywords = await prisma.strategyKeyword.findMany({ where: { strategy_id: data.id }, select: { canonical_keyword: true } });
+    expect(response.status).toBe(202);
+    const keywords = await prisma.strategyKeyword.findMany({ where: { strategy_id: strategyId! }, select: { canonical_keyword: true } });
     expect(keywords.map((row) => row.canonical_keyword).sort()).toEqual(
       ["scarpe running", "scarpe running donna", "scarpe running nike"].sort()
     );

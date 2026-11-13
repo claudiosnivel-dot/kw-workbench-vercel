@@ -2,6 +2,8 @@
 // perimetro e regole e la generazione da pannello aperto invia la modalità esperta con le impostazioni scelte.
 // impacted-by: T-2502 («Opzioni avanzate» e «Costruisci il piano» al posto di «Impostazioni avanzate» e «Genera
 // strategia»; dopo la generazione il browser va al piano del progetto; con regenerate il corpo porta regenerate true).
+// impacted-by: T-6201 e T-6202 (la POST avvia il lavoro di piano, 202 con runId: il browser va al piano quando la lettura
+// dello stato dice completed)
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StrategySettings } from "@/components/strategy/strategy-settings";
@@ -19,8 +21,10 @@ const fetchMock = vi.fn<typeof fetch>();
 beforeEach(() => {
   fetchMock.mockReset();
   router.push.mockReset();
-  fetchMock.mockResolvedValue(
-    new Response(JSON.stringify({ data: { id: "st1" } }), { status: 201, headers: { "Content-Type": "application/json" } })
+  const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+  const completed = { id: "run-1", status: "completed", phase: "done", progress: { done: 1, total: 1 }, strategyId: "st1", errorCode: null };
+  fetchMock.mockImplementation(async (url) =>
+    String(url).endsWith("/strategies") ? json(202, { data: { runId: "run-1" } }) : json(200, { data: completed })
   );
   vi.stubGlobal("fetch", fetchMock);
 });
@@ -98,10 +102,10 @@ describe("StrategySettings", () => {
       <StrategySettings projectId="p1" sections={[]} defaults={DEFAULT_RULES} limits={RULE_LIMITS} regenerate onCancel={() => undefined} />
     );
 
+    expect(screen.getByRole("button", { name: "Annulla" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Rigenera il piano" }));
 
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/projects/p1/plan"));
     expect(sentBody()).toEqual({ mode: "AUTO", regenerate: true });
-    expect(screen.getByRole("button", { name: "Annulla" })).toBeVisible();
   });
 });

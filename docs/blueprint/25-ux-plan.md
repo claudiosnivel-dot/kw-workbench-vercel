@@ -82,7 +82,7 @@ Oggi la pagina della strategia è alta circa 12.500 px, con gli strumenti di mod
     - id: AC-2502-2
       given: "un progetto con 20 strategie, l'ultima delle quali è il piano"
       when: "si rigenera il piano"
-      then: "la risposta è 201; il progetto ha ancora 20 strategie; la strategia più vecchia non esiste più e il piano precedente esiste tra le versioni"
+      then: "la risposta è 201 (202 con runId da T-6201, emendato il 2026-11-13: le versioni si eliminano quando il lavoro di piano salva la strategia); il progetto ha ancora 20 strategie; la strategia più vecchia non esiste più e il piano precedente esiste tra le versioni"
     - id: AC-2502-3
       given: "un progetto con una versione precedente V e il piano corrente"
       when: "si invia PATCH di una pagina di V e un'operazione move_keywords su V"
@@ -279,3 +279,4 @@ Oggi la pagina della strategia è alta circa 12.500 px, con gli strumenti di mod
 - Rimozioni della vecchia vista (DoD di T-2504): le due pagine della strategia, strategy-page-card.tsx, strategy-unassigned.tsx, keyword-mover.tsx (usato solo da queste), lib/client/use-strategy-action.ts (sostituito da components/plan/plan-requests.tsx), il tipo «strategy» di DeleteEntityButton e le chiavi dei cataloghi rimaste senza uso (strategy.ui della vecchia pagina e strategy.delete).
 - Scelte dell'agente e note di costruzione confermate dall'utente il 2026-10-14 (D-40).
 - Emendamento dichiarato (2026-10-19, macrotask 40 article-data, D-46): nella transazione di «Rigenera» (T-2502) gli articoli delle pagine copiate passano alle copie, con blocchi e lavori (T-4002, AC-4002-4); AC-2502-1…3 invariati.
+- Emendamento dichiarato (2026-11-13, macrotask 62 plan-runs, T-6201, D-57): «Rigenera» avvia il lavoro di piano (202 con runId) e la strategia nuova, con le pagine iniziate come ancore e le versioni più vecchie eliminate oltre 20, nasce quando il lavoro arriva in fondo; AC-2502-2 emendato.

@@ -19,6 +19,9 @@ const ids = { user: "", project: "", fresh: "" };
 const HUBS = 2;
 const PAGES = 11;
 const UNASSIGNED = 2;
+// Attesa della bacheca dopo «Costruisci il piano» (T-6202): il lavoro di piano gira in background e lo stato si legge
+// ogni 2 s.
+const PLAN_RUN_TIMEOUT_MS = 30_000;
 
 test.describe.configure({ mode: "serial" });
 test.use({ viewport: { width: 1280, height: 900 } });
@@ -111,7 +114,9 @@ test.describe("piano dei contenuti", () => {
     const empty = page.locator("section").filter({ has: page.getByRole("heading", { name: "Il piano non c'è ancora" }) });
     await empty.getByRole("button", { name: "Costruisci il piano" }).click();
 
-    await expect(hubColumns(page).first()).toBeVisible();
+    // impacted-by: T-6201 e T-6202 (il piano si prepara con un lavoro in background: la pagina ne segue l'avanzamento e
+    // si ricarica a lavoro finito, quindi la bacheca arriva dopo qualche lettura dello stato)
+    await expect(hubColumns(page).first()).toBeVisible({ timeout: PLAN_RUN_TIMEOUT_MS });
     await expect(hubColumns(page).first().getByTestId("plan-card").first()).toContainText("Pagina principale");
     await expect(page.getByTestId("plan-column-unassigned").getByRole("button", { name: /calzini tecnici/ })).toBeVisible();
   });
@@ -215,7 +220,7 @@ test.describe("la scrittura nel percorso", () => {
     await page.goto(planUrl(ids.fresh));
     const empty = page.locator("section").filter({ has: page.getByRole("heading", { name: "Il piano non c'è ancora" }) });
     await empty.getByRole("button", { name: "Costruisci il piano" }).click();
-    await expect(hubColumns(page).first()).toBeVisible();
+    await expect(hubColumns(page).first()).toBeVisible({ timeout: PLAN_RUN_TIMEOUT_MS });
     const [first, second] = await page.getByTestId("plan-card").getByRole("heading", { level: 3 }).allInnerTexts();
 
     const bar = page.getByRole("region", { name: "Prossimo passo" });

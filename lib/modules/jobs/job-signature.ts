@@ -20,6 +20,12 @@ function hmac(secret: string, jobId: string, expiresAt: number): string {
  */
 export const articleRunStepId = (runId: string): string => `article-run:${runId}`;
 
+/**
+ * Stringa firmata per il passo di un lavoro di piano (T-6201): il prefisso «plan-run:» la distingue dalle firme dei job
+ * delle ricerche e dei lavori degli articoli con lo stesso id.
+ */
+export const planRunStepId = (runId: string): string => `plan-run:${runId}`;
+
 /** Firma il passo del job con scadenza expiresAt (ms epoch); senza JOB_SIGNING_SECRET lancia un errore. */
 export function signJobStep(jobId: string, expiresAt: number): string {
   const secret = getJobSigningSecret();

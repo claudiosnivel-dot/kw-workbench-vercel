@@ -153,7 +153,9 @@ Oggi il piano lavora solo sulle parole delle keyword e i volumi arrivano solo se
     40602; prezzi invariati rispetto al design (0,0006 $ standard, 0,0012 $ priority, 0,002 $ live per SERP);
   - migrazione additiva `0053_keyword_serps` con RLS abilitata senza policy (T-205); la tabella non ha project_id:
     i risultati di Google di una keyword sono gli stessi per tutti, quindi la cache è unica per forma canonica, lingua
-    e paese e nessun progetto vede le keyword di un altro (la lettura è solo per chiave);
+    e paese e nessun progetto vede le keyword di un altro (la lettura è solo per chiave); **confermata dall'utente il
+    2026-11-13** («va bene così», dopo la spiegazione: le righe non si cancellano mai e le keyword dei progetti
+    cancellati restano senza collegamento a un progetto);
   - `lib/modules/providers/serp/dataforseo-serp.ts`: `postSerpTasks` con un tentativo per lotto (nessun nuovo tentativo:
     un lotto non riuscito lascia le sue keyword senza risultati e il piano del 62-63 usa il motore di riserva);
     `collectSerpTasks` legge tasks_ready e poi task_get/regular solo per i task richiesti e pronti, 10 in parallelo

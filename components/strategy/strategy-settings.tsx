@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useState } from "react";
 import { ClassificationSelect } from "@/components/classification-select";
 import { FormFeedback } from "@/components/form-feedback";
-import { messageOf, readApiResponse, sendJson } from "@/lib/client/http";
+import { PlanRunProgress } from "@/components/plan/plan-run-progress";
+import { messageOf } from "@/lib/client/http";
+import { startPlanRun } from "@/lib/client/plan-run";
 import { planHref } from "@/lib/modules/next-step";
 import type { StrategyRuleLimits, StrategyRules } from "@/lib/modules/strategy/types";
 
@@ -58,7 +60,8 @@ function requestBody(name: string, advanced: Advanced | null, regenerate: boolea
 /**
  * Costruzione del piano (T-1905, T-2502): un clic con le impostazioni predefinite (modalità automatica) o, aprendo le
  * opzioni avanzate, con nome, perimetro e regole scelti (modalità esperta). Con regenerate rigenera il piano (dialogo
- * «Rigenera il piano»). Dopo la generazione il browser va al piano del progetto.
+ * «Rigenera il piano»). L'invio avvia il lavoro di piano (T-6201) e ne mostra l'avanzamento (T-6202); a lavoro finito il
+ * browser va al piano del progetto, a lavoro non riuscito «Riprova» lo avvia di nuovo con le stesse scelte.
  */
 export function StrategySettings({ projectId, sections, defaults, limits, regenerate = false, onCancel }: StrategySettingsProps) {
   const t = useTranslations("strategy.ui");
@@ -71,6 +74,7 @@ export function StrategySettings({ projectId, sections, defaults, limits, regene
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [runId, setRunId] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState<Advanced>({
     sectionId: "",
     reviewStatus: "approved_pending",
@@ -86,24 +90,31 @@ export function StrategySettings({ projectId, sections, defaults, limits, regene
   const updateRule = (patch: Partial<Advanced["rules"]>) =>
     setAdvanced((current) => ({ ...current, rules: { ...current.rules, ...patch } }));
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const start = async () => {
     setPending(true);
     setError(null);
+    setRunId(null);
     try {
-      const response = await sendJson(
-        "POST",
-        `/api/projects/${projectId}/strategies`,
-        requestBody(name.trim(), open ? advanced : null, regenerate)
-      );
-      await readApiResponse<{ data: { id: string } }>(response, tErrors);
-      router.push(planHref(projectId));
-      router.refresh();
+      setRunId(await startPlanRun(projectId, requestBody(name.trim(), open ? advanced : null, regenerate), tErrors));
     } catch (submitError) {
       setError(messageOf(submitError, tCommon("unexpectedError")));
       setPending(false);
     }
   };
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void start();
+  };
+
+  const openPlan = () => {
+    router.push(planHref(projectId));
+    router.refresh();
+  };
+
+  if (runId) {
+    return <PlanRunProgress projectId={projectId} runId={runId} onCompleted={openPlan} onRetry={() => void start()} />;
+  }
 
   return (
     <form className="space-y-4" onSubmit={submit}>

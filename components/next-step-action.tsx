@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { readApiResponse, sendJson } from "@/lib/client/http";
+import { startPlanRun } from "@/lib/client/plan-run";
 import { useTopicSearch } from "@/lib/client/run-extraction";
 import { usePendingAction } from "@/lib/client/use-pending-action";
 import { type NextStep, planHref } from "@/lib/modules/next-step";
@@ -21,7 +22,8 @@ type NextStepActionProps = {
 /**
  * Il solo pulsante del prossimo passo di un progetto (T-2302, T-2305), uguale nella barra del progetto e nelle schede
  * della home: add_topic apre il dialogo Nuovo argomento, run_topic avvia la ricerca dell'argomento e porta ai suoi
- * risultati, build_plan genera il piano in modalità automatica e lo apre, open_plan e writing aprono il piano,
+ * risultati, build_plan avvia il lavoro di piano in modalità automatica e apre il piano, dove se ne segue l'avanzamento
+ * (T-6201, T-6202), open_plan e writing aprono il piano,
  * write_next mette in scrittura la prossima pagina e ne apre il pannello (T-2506), plan_done apre il dialogo Nuovo
  * argomento, searching porta ai risultati dell'argomento che si sta cercando.
  */
@@ -48,8 +50,7 @@ export function NextStepAction({ projectId, next, onAddTopic, primary = true }: 
 
   const buildPlan = () =>
     perform(async () => {
-      const response = await sendJson("POST", `/api/projects/${projectId}/strategies`, { mode: "AUTO" });
-      await readApiResponse<{ data: { id: string } }>(response, tErrors);
+      await startPlanRun(projectId, { mode: "AUTO" }, tErrors);
       return planHref(projectId);
     });
 

@@ -4,11 +4,11 @@
 import { randomUUID } from "node:crypto";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH as patchPage } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/route";
-import { POST as generate } from "@/app/api/projects/[id]/strategies/route";
 import { prisma } from "@/lib/prisma";
 import { memberWithPlan, type PlanPage, type Session, strategyVersion } from "../helpers/ai-titles";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
+import { generatePlan } from "../helpers/plan-run";
 
 beforeAll(() => {
   vi.stubEnv("APP_AUTH_ENABLED", "true");
@@ -75,14 +75,9 @@ describe("indirizzo della pagina pubblicata", () => {
     const version = await strategyVersion(spoke.strategyId);
     expect((await sendPatch(member, spoke, { version, status: "PUBLISHED", publishedUrl: "https://www.esempio.it/noleggio/" })).status).toBe(200);
 
-    const regenerated = await callRoute(generate, {
-      method: "POST",
-      url: `/api/projects/${plan.projectId}/strategies`,
-      cookie: owner.cookie,
-      params: { id: plan.projectId },
-      body: { mode: "AUTO", regenerate: true },
-    });
-    expect(regenerated.status).toBe(201);
+    // impacted-by: T-6201 (la POST avvia il lavoro di piano: 202 con runId, la copia nasce a lavoro finito)
+    const regenerated = await generatePlan(owner.cookie, plan.projectId, { mode: "AUTO", regenerate: true });
+    expect([regenerated.response.status, regenerated.run?.status]).toEqual([202, "completed"]);
 
     const copies = await prisma.strategyPage.findMany({
       where: { strategy: { project_id: plan.projectId }, NOT: { strategy_id: spoke.strategyId }, status: "PUBLISHED" },

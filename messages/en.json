@@ -407,6 +407,7 @@
     "JOB_ALREADY_ACTIVE": "A search is already running for this topic.",
     "JOB_NOT_FOUND": "Extraction not found.",
     "JOB_NOT_CANCELABLE": "The extraction has already finished.",
+    "PLAN_RUN_NOT_FOUND": "Plan preparation not found.",
     "EXPORT_FORMAT_INVALID": "Invalid export format.",
     "EXPORT_DIALECT_INVALID": "Invalid CSV dialect: use excel-it or rfc4180.",
     "SHEETS_FILE_NAME_REQUIRED": "A file name is required.",
@@ -1853,6 +1854,30 @@
     "progress": {
       "label": "Writing progress",
       "text": "{published, number} published · {writing, number} in progress · {todo, number} to write"
+    },
+    "run": {
+      "title": "Preparing the plan",
+      "hint": "It takes about a minute. You can leave this page: the plan keeps being prepared.",
+      "progressLabel": "Plan preparation progress",
+      "keywords": "{done, number} of {total, number} keywords",
+      "phase": {
+        "volumes": "Getting search volumes",
+        "serps_post": "Reading Google results",
+        "serps_collect": "Reading Google results",
+        "cluster": "Grouping keywords",
+        "save": "Saving the plan",
+        "done": "Saving the plan"
+      },
+      "failed": "The plan could not be prepared.",
+      "retry": "Try again"
+    },
+    "grouping": {
+      "title": "Fallback grouping",
+      "text": "Keywords are grouped by the words they share, without Google results.",
+      "reason": {
+        "PROVIDER_ERROR": "DataForSEO did not respond for some keywords.",
+        "SERP_TIMEOUT": "Google results did not arrive in time."
+      }
     },
     "groupBy": "Group by",
     "group": {

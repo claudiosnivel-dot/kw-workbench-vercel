@@ -86,7 +86,7 @@ Le pagine interne del progetto (risultati, strategia, impostazioni) restano quel
       when: "si chiama loadProjectProgress"
       then: "next vale searching con il topicId del secondo argomento e steps.keywords vale current"
     - id: AC-2302-3
-      given: "la barra resa con next build_plan e una risposta simulata 201 di POST strategies con id S"
+      given: "la barra resa con next build_plan e una risposta simulata 201 di POST strategies con id S (202 con runId da T-6201, emendato il 2026-11-13: il piano mostra l'avanzamento del lavoro)"
       when: "l'utente preme il pulsante della barra"
       then: "la richiesta inviata ha mode AUTO; il router naviga al piano del progetto /projects/<id>/plan, di cui S è la strategia più recente (emendato da T-2502 il 2026-10-14: prima la pagina della strategia S); la barra contiene esattamente un pulsante"
 
@@ -292,3 +292,4 @@ Le pagine interne del progetto (risultati, strategia, impostazioni) restano quel
 - Emendamento dichiarato (2026-10-15, costruzione del macrotask 28, T-2803, D-41): nel menu dell'utente «Il tuo account» (/account) sostituisce Personalizza e Account; AC-2304-1 lo verifica per MEMBER, OWNER e root admin. In AC-2304-2 la seconda voce raggiunta con le frecce è ora Workspace.
 - Emendamento dichiarato (2026-10-15, costruzione del macrotask 31, T-3103, D-41): la voce Fatturazione esce dal menu dell'utente (la fatturazione è la sezione Piano del workspace, T-3102), quindi in AC-2304-1 nessun menu contiene Fatturazione, nemmeno quello dell'OWNER; il resto del criterio è invariato.
 - Emendamento dichiarato (2026-10-18, costruzione del macrotask 37, T-3701, D-44): l'avvio rapido accetta fino a 5 voci separate da virgola, ognuna una seed dello stesso argomento, con il limite del piano maxSeedsPerSection sul numero di voci; il DoD di T-2301 e AC-2301-1 lo dichiarano (con una voce il comportamento non cambia). Resta fuori «Creazione di più argomenti in una volta»: le voci sono parole dello stesso argomento. Il campo compatto della home riceve il testo d'aiuto e il placeholder nuovo, quindi la baseline visiva della dashboard di T-2305 cambia (gate umano del modulo 37).
+- Emendamento dichiarato (2026-11-13, macrotask 62 plan-runs, T-6201, D-57): con build_plan il pulsante della barra avvia il lavoro di piano (202 con runId, o il lavoro già attivo del progetto con 409 JOB_ALREADY_ACTIVE) e apre il piano, che ne mostra l'avanzamento (T-6202); AC-2302-3 emendato.

@@ -407,6 +407,7 @@
     "JOB_ALREADY_ACTIVE": "C'è già una ricerca in corso per questo argomento.",
     "JOB_NOT_FOUND": "Estrazione non trovata.",
     "JOB_NOT_CANCELABLE": "L'estrazione è già terminata.",
+    "PLAN_RUN_NOT_FOUND": "Preparazione del piano non trovata.",
     "EXPORT_FORMAT_INVALID": "Formato di export non valido.",
     "EXPORT_DIALECT_INVALID": "Dialetto CSV non valido: usa excel-it o rfc4180.",
     "SHEETS_FILE_NAME_REQUIRED": "Nome file obbligatorio.",
@@ -1853,6 +1854,30 @@
     "progress": {
       "label": "Avanzamento della scrittura",
       "text": "{published, plural, one {# pubblicata} other {# pubblicate}} · {writing, number} in scrittura · {todo, number} da scrivere"
+    },
+    "run": {
+      "title": "Sto preparando il piano",
+      "hint": "Ci vuole circa un minuto. Puoi lasciare la pagina: il piano si prepara lo stesso.",
+      "progressLabel": "Avanzamento della preparazione del piano",
+      "keywords": "{done, number} di {total, number} keyword",
+      "phase": {
+        "volumes": "Cerco i volumi",
+        "serps_post": "Leggo i risultati di Google",
+        "serps_collect": "Leggo i risultati di Google",
+        "cluster": "Raggruppo le keyword",
+        "save": "Salvo il piano",
+        "done": "Salvo il piano"
+      },
+      "failed": "Il piano non è stato preparato.",
+      "retry": "Riprova"
+    },
+    "grouping": {
+      "title": "Raggruppamento di riserva",
+      "text": "Le keyword sono raggruppate per le parole che hanno in comune, senza i risultati di Google.",
+      "reason": {
+        "PROVIDER_ERROR": "DataForSEO non ha risposto per alcune keyword.",
+        "SERP_TIMEOUT": "I risultati di Google non sono arrivati in tempo."
+      }
     },
     "groupBy": "Raggruppa per",
     "group": {

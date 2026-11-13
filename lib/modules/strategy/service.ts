@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { expectOneRow, requireProjectAccess, type AuthorizedProject } from "@/lib/authz/workspace";
-import { Prisma } from "@/lib/generated/prisma/client";
+import { Prisma, type StrategyGroupingSource } from "@/lib/generated/prisma/client";
 import { AppError, ConflictError, ValidationError } from "@/lib/http/errors";
 import { KEPT_WHERE } from "@/lib/modules/keep-rule";
 import { SectionNotFoundError } from "@/lib/modules/project-access";
@@ -377,37 +377,83 @@ async function pruneOldestVersions(tx: Prisma.TransactionClient, project: Author
   });
 }
 
+/** Progetto autorizzato di una generazione con lingua e paese del piano (quelli della sezione del perimetro, se li cambia). */
+export type StrategyTarget = { project: AuthorizedProject; language: string; country: string };
+
+const noKeywordsError = () => new ConflictError("Nessuna keyword nel perimetro della strategia", "STRATEGY_NO_KEYWORDS");
+
 /**
- * Genera e salva una strategia (T-1903): perimetro, piano (T-1901), titoli (T-1902) e salvataggio in una transazione,
- * sotto il lock del workspace perché due generazioni contemporanee non superino il limite di 20 (CWE-362).
- * Con regenerate (T-2502) la strategia nuova diventa il piano senza perdere il lavoro iniziato: copia le pagine
- * bloccate del piano corrente (in scrittura, pubblicate e i loro hub) con titoli, tipo, stato e keyword, porta i loro
- * articoli sulle copie con blocchi e lavori (T-4002), ricostruisce le altre dalle keyword tenute meno quelle già
- * copiate e, oltre 20 strategie, elimina la versione più vecchia.
+ * Controlli di una generazione (T-1903): permesso strategy.write, limite di 20 strategie (la rigenerazione lo supera
+ * eliminando le più vecchie, T-2502) e sezione del perimetro del progetto; lingua e paese della sezione se li cambia.
  */
-export async function generateStrategy(
-  user: { id: string },
-  projectId: string,
-  request: GenerateRequest,
-  defaultName: string
-): Promise<string> {
+export async function resolveStrategyTarget(user: { id: string }, projectId: string, request: GenerateRequest): Promise<StrategyTarget> {
   const project = await requireProjectAccess(user, projectId, "strategy.write", { language_code: true, country_code: true });
   if (!request.regenerate && (await prisma.strategy.count({ where: { project_id: project.id } })) >= STRATEGY_LIMIT_PER_PROJECT) {
     throw strategyLimitError();
   }
-
-  const { settings } = request;
-  let language = project.language_code;
-  let country = project.country_code;
-  if (settings.sectionId) {
-    const section = await prisma.subproject.findFirst({
-      where: { id: settings.sectionId, project_id: project.id },
-      select: { language_code_override: true, country_code_override: true },
-    });
-    if (!section) throw new SectionNotFoundError();
-    language = section.language_code_override ?? language;
-    country = section.country_code_override ?? country;
+  const { sectionId } = request.settings;
+  if (!sectionId) {
+    return { project, language: project.language_code, country: project.country_code };
   }
+  const section = await prisma.subproject.findFirst({
+    where: { id: sectionId, project_id: project.id },
+    select: { language_code_override: true, country_code_override: true },
+  });
+  if (!section) throw new SectionNotFoundError();
+  return {
+    project,
+    language: section.language_code_override ?? project.language_code,
+    country: section.country_code_override ?? project.country_code,
+  };
+}
+
+/**
+ * Controlli dell'avvio del lavoro di piano (T-6201): quelli della generazione e il perimetro non vuoto (409
+ * STRATEGY_NO_KEYWORDS, salvo una rigenerazione con pagine iniziate). Il perimetro si conta senza il volume minimo,
+ * perché il lavoro chiede i volumi che mancano (T-6102); il perimetro con il volume minimo si ricontrolla al salvataggio.
+ */
+export async function checkStrategyStart(user: { id: string }, projectId: string, request: GenerateRequest): Promise<StrategyTarget> {
+  const target = await resolveStrategyTarget(user, projectId, request);
+  const perimeter = await prisma.keywordCandidate.count({ where: perimeterWhere(target.project.id, request.settings, { minVolume: false }) });
+  if (perimeter === 0 && (!request.regenerate || (await loadLockedPages(target.project.id)).pages.length === 0)) {
+    throw noKeywordsError();
+  }
+  return target;
+}
+
+/**
+ * Keyword del perimetro per priorità (T-6201), una per forma canonica, al massimo limit: le prime 1000 ricevono i
+ * risultati di Google del piano.
+ */
+export async function topPerimeterKeywords(projectId: string, settings: StrategySettings, limit: number): Promise<StrategyKeywordInput[]> {
+  return (await loadPerimeter(projectId, settings, new Set(), limit)).keywords;
+}
+
+/** Strategia pronta da salvare (T-1903, T-2502): righe di pagine e keyword, conteggi, richiesta e autore. */
+export type StrategyDraft = {
+  target: StrategyTarget;
+  user: { id: string };
+  request: GenerateRequest;
+  name: string;
+  strategyId: string;
+  pageRows: PageRow[];
+  keywordRows: KeywordRow[];
+  /** Copia di ogni pagina bloccata per id di origine: i loro articoli passano alle copie (T-4002). */
+  lockedCopies: Map<string, string>;
+  unassigned: number;
+  truncated: boolean;
+};
+
+/**
+ * Raggruppa il perimetro con il motore (T-1901) e prepara la strategia (T-1903): perimetro, piano, titoli (T-1902) e
+ * righe da salvare, con i controlli della generazione. Con regenerate (T-2502) la strategia nuova diventa il piano senza
+ * perdere il lavoro iniziato: copia le pagine bloccate del piano corrente (in scrittura, pubblicate e i loro hub) con
+ * titoli, tipo, stato e keyword e ricostruisce le altre dalle keyword tenute meno quelle già copiate.
+ */
+export async function draftStrategy(user: { id: string }, projectId: string, request: GenerateRequest, name: string): Promise<StrategyDraft> {
+  const target = await resolveStrategyTarget(user, projectId, request);
+  const { project, language, country } = target;
+  const { settings } = request;
 
   const locked: LockedPlan = request.regenerate ? await loadLockedPages(project.id) : { planId: null, pages: [], keywords: [] };
   const [{ keywords, truncated }, seeds] = await Promise.all([
@@ -423,7 +469,7 @@ export async function generateStrategy(
     }),
   ]);
   if (keywords.length === 0 && locked.pages.length === 0) {
-    throw new ConflictError("Nessuna keyword nel perimetro della strategia", "STRATEGY_NO_KEYWORDS");
+    throw noKeywordsError();
   }
 
   // Ogni hub bloccato è un'ancora: la sua keyword principale fa da seed e la pilastro accetta keyword solo da scrivere.
@@ -520,6 +566,36 @@ export async function generateStrategy(
     assignWorkOrder(pageRows, keywordRows);
   }
 
+  return {
+    target,
+    user,
+    request,
+    name,
+    strategyId,
+    pageRows,
+    keywordRows,
+    lockedCopies: new Map(locked.pages.map((page) => [page.id, idOf.get(page.id)!])),
+    unassigned: plan.unassigned.length,
+    truncated,
+  };
+}
+
+/** Fonte del raggruppamento salvata con la strategia (T-6201) e motivo del raggruppamento di riserva. */
+export type StrategyGrouping = { source: StrategyGroupingSource; notice: string | null };
+
+/**
+ * Salva la strategia preparata (T-1903) in una transazione, sotto il lock del workspace perché due salvataggi
+ * contemporanei non superino il limite di 20 (CWE-362): oltre 20 la rigenerazione elimina la versione più vecchia, mai
+ * il piano corrente, e gli articoli delle pagine copiate passano alle copie con blocchi e lavori (T-4002). onSaved gira
+ * nella stessa transazione: il lavoro di piano vi si chiude (T-6201), così una strategia non si salva due volte.
+ */
+export async function saveStrategyDraft(
+  draft: StrategyDraft,
+  grouping: StrategyGrouping,
+  onSaved?: (tx: Prisma.TransactionClient, strategyId: string) => Promise<void>
+): Promise<string> {
+  const { project, language } = draft.target;
+  const { request, strategyId, pageRows, keywordRows } = draft;
   await prisma.$transaction(
     async (tx) => {
       await lockWorkspaceRow(tx, project.workspace_id);
@@ -532,15 +608,17 @@ export async function generateStrategy(
         data: {
           id: strategyId,
           project_id: project.id,
-          name: request.name ?? defaultName,
-          created_by_user_id: user.id,
+          name: draft.name,
+          created_by_user_id: draft.user.id,
           mode: request.mode,
-          settings,
+          settings: request.settings,
           language,
           considered_count: keywordRows.length,
-          assigned_count: keywordRows.length - plan.unassigned.length,
-          unassigned_count: plan.unassigned.length,
-          truncated,
+          assigned_count: keywordRows.length - draft.unassigned,
+          unassigned_count: draft.unassigned,
+          truncated: draft.truncated,
+          grouping_source: grouping.source,
+          grouping_notice: grouping.notice,
         },
       });
       // Prima gli hub, poi gli spoke che li citano.
@@ -551,12 +629,13 @@ export async function generateStrategy(
       }
       // Gli articoli delle pagine copiate passano alle copie (T-4002): stessi blocchi e lavori, page_id resta unico.
       const articles = await tx.article.findMany({
-        where: { page_id: { in: locked.pages.map((page) => page.id) }, project_id: project.id },
+        where: { page_id: { in: [...draft.lockedCopies.keys()] }, project_id: project.id },
         select: { id: true, page_id: true },
       });
       for (const article of articles) {
-        await tx.article.updateMany({ where: { id: article.id, project_id: project.id }, data: { page_id: idOf.get(article.page_id)! } });
+        await tx.article.updateMany({ where: { id: article.id, project_id: project.id }, data: { page_id: draft.lockedCopies.get(article.page_id)! } });
       }
+      await onSaved?.(tx, strategyId);
     },
     { timeout: TRANSACTION_TIMEOUT_MS }
   );
@@ -609,6 +688,8 @@ const RECORD_SELECT = {
   ...SUMMARY_SELECT,
   project_id: true,
   settings: true,
+  grouping_source: true,
+  grouping_notice: true,
   pages: {
     select: {
       id: true,
@@ -725,6 +806,8 @@ function toView(record: StrategyRecord, current: boolean): StrategyView {
     ...toSummary(record),
     projectId: record.project_id,
     settings: record.settings,
+    groupingSource: record.grouping_source,
+    groupingNotice: record.grouping_notice,
     hubs: pages
       .filter((page) => page.kind === "HUB" || !page.hubPageId || !hubIds.has(page.hubPageId))
       .map((pillar) => ({

@@ -62,6 +62,7 @@
     "INVITE_INVALID": "La invitación no es válida: puede que haya vencido, que se haya revocado o que ya se haya usado.",
     "WORKSPACE_LIMIT": "Alcanzaste el número máximo de espacios de trabajo que puedes crear.",
     "JOB_NOT_CANCELABLE": "La búsqueda ya terminó.",
+    "PLAN_RUN_NOT_FOUND": "No se encontró la preparación del plan.",
     "SHEETS_OAUTH_CONFIG_MISSING": "Falta la configuración OAuth de Google Sheets. Comunícate con el administrador principal.",
     "SHEETS_TIMEOUT": "Google no respondió en 30 segundos o no está disponible.",
     "GOOGLE_SHEETS_EXPORT_ERROR": "No se pudo exportar a Google Sheets: Google devolvió un error. Vuelve a intentarlo.",
@@ -371,6 +372,15 @@
     },
     "versionsPage": {
       "empty": "No hay versiones anteriores: el plan todavía no se regeneró."
+    },
+    "run": {
+      "failed": "No se pudo preparar el plan."
+    },
+    "grouping": {
+      "reason": {
+        "PROVIDER_ERROR": "DataForSEO no respondió para algunas palabras clave.",
+        "SERP_TIMEOUT": "Los resultados de Google no llegaron a tiempo."
+      }
     }
   },
   "article": {
