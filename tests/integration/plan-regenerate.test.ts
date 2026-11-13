@@ -5,12 +5,12 @@ import { randomUUID } from "node:crypto";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH as patchPage } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/route";
 import { POST as operate } from "@/app/api/projects/[id]/strategies/[strategyId]/operations/route";
-import { POST as generate } from "@/app/api/projects/[id]/strategies/route";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
+import { generatePlan } from "../helpers/plan-run";
 import { type FixtureKeyword, insertStrategy, ITALIAN_FIXTURE } from "../helpers/strategy";
 
 type Session = Awaited<ReturnType<typeof createUserWithSession>>;
@@ -59,15 +59,11 @@ async function addKeywords(projectId: string, sectionId: string, keywords: Fixtu
   });
 }
 
+// impacted-by: T-6201 (la POST avvia il lavoro di piano e risponde 202 con runId, AC-2502-2 emendato: la strategia nasce
+// quando il lavoro arriva in fondo)
 async function postGenerate(session: Session, projectId: string, body: unknown) {
-  const response = await callRoute(generate, {
-    method: "POST",
-    url: `/api/projects/${projectId}/strategies`,
-    cookie: session.cookie,
-    params: { id: projectId },
-    body,
-  });
-  return { status: response.status, id: response.status === 201 ? ((await response.json()) as { data: { id: string } }).data.id : null };
+  const { response, strategyId } = await generatePlan(session.cookie, projectId, body);
+  return { status: response.status, id: strategyId };
 }
 
 function sendPagePatch(session: Session, projectId: string, strategyId: string, pageId: string, body: unknown) {
@@ -111,7 +107,7 @@ describe("rigenerazione del piano", () => {
     await addKeywords(projectId, sectionId, [extra("scarpe running saldi", 300), extra("scarpe running outlet", 150), extra("fascia cardio", 100)]);
     const second = await postGenerate(owner, projectId, { mode: "AUTO", regenerate: true });
 
-    expect([writing.status, rewritten.status, second.status]).toEqual([200, 200, 201]);
+    expect([writing.status, rewritten.status, second.status]).toEqual([200, 200, 202]);
     const after = await pagesOf(second.id!);
     const copied = after.find((page) => page.main === "scarpe running offerte")!;
     const hub = after.find((page) => page.id === copied.hub_page_id)!;
@@ -125,7 +121,7 @@ describe("rigenerazione del piano", () => {
   });
 
   // covers: AC-2502-2
-  it("con 20 strategie la rigenerazione risponde 201, elimina la più vecchia e tiene il piano precedente", async () => {
+  it("con 20 strategie la rigenerazione risponde 202, elimina la più vecchia e tiene il piano precedente", async () => {
     const owner = await createUserWithSession({ displayName: `t2502-limit-${randomUUID().slice(0, 8)}` });
     const { projectId } = await projectWithKeywords(owner);
     const ids: string[] = [];
@@ -141,7 +137,8 @@ describe("rigenerazione del piano", () => {
 
     const response = await postGenerate(owner, projectId, { mode: "AUTO", regenerate: true });
 
-    expect(response.status).toBe(201);
+    expect(response.status).toBe(202);
+    expect(response.id).not.toBeNull();
     expect(await prisma.strategy.count({ where: { project_id: projectId } })).toBe(20);
     expect(await prisma.strategy.count({ where: { id: ids[0] } })).toBe(0);
     expect(await prisma.strategy.count({ where: { id: ids[19] } })).toBe(1);

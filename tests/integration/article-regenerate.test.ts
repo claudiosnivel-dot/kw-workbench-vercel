@@ -2,12 +2,11 @@
 // nel nuovo piano, con gli stessi blocchi e lo stesso lavoro.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { POST as generate } from "@/app/api/projects/[id]/strategies/route";
 import { prisma } from "@/lib/prisma";
 import { memberWithPlan, stubOpenRouterEnv } from "../helpers/ai-titles";
 import { saveArticleSettings, startArticle } from "../helpers/articles";
 import { resetDatabase } from "../helpers/db";
-import { callRoute } from "../helpers/http";
+import { generatePlan } from "../helpers/plan-run";
 
 type StartBody = { data: { articleId: string; runId: string } };
 
@@ -39,16 +38,11 @@ describe("articolo e «Rigenera»", () => {
     });
     const sectionsBefore = await prisma.articleSection.findMany({ where: { article_id: started.data.articleId }, orderBy: { position: "asc" } });
 
-    const response = await callRoute(generate, {
-      method: "POST",
-      url: `/api/projects/${spoke.projectId}/strategies`,
-      cookie: owner.cookie,
-      params: { id: spoke.projectId },
-      body: { mode: "AUTO", regenerate: true },
-    });
+    // impacted-by: T-6201 (la POST avvia il lavoro di piano: 202 con runId, il piano nuovo nasce a lavoro finito)
+    const { response, strategyId } = await generatePlan(owner.cookie, spoke.projectId, { mode: "AUTO", regenerate: true });
 
-    expect(response.status).toBe(201);
-    const { data } = (await response.json()) as { data: { id: string } };
+    expect(response.status).toBe(202);
+    const data = { id: strategyId! };
     expect(data.id).not.toBe(plan.strategyId);
     const copy = await prisma.strategyPage.findFirstOrThrow({ where: { strategy_id: data.id, status: "WRITING" }, select: { id: true, h1: true } });
     expect(copy.h1).toBe("H1 spoke");

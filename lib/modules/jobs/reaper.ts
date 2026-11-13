@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * Job bloccati: attivi, senza lease valido e con heartbeat (o creazione, se mai partiti) più vecchio della soglia. Vale
- * anche per i lavori degli articoli (T-4101), che hanno le stesse colonne di stato, lease e battito.
+ * anche per i lavori degli articoli (T-4101) e di piano (T-6201), che hanno le stesse colonne di stato, lease e battito.
  */
 export function staleWhere(now: Date) {
   const staleBefore = new Date(now.getTime() - getIntEnv("JOB_STALE_AFTER_MS"));
@@ -14,7 +14,7 @@ export function staleWhere(now: Date) {
     status: { in: ACTIVE_JOB_STATUSES },
     OR: [{ locked_until: null }, { locked_until: { lt: now } }],
     AND: [{ OR: [{ heartbeat_at: { lt: staleBefore } }, { heartbeat_at: null, created_at: { lt: staleBefore } }] }],
-  } satisfies Prisma.JobWhereInput & Prisma.ArticleRunWhereInput;
+  } satisfies Prisma.JobWhereInput & Prisma.ArticleRunWhereInput & Prisma.PlanRunWhereInput;
 }
 
 /**

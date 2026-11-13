@@ -1,7 +1,9 @@
 // Gate di T-1903 (AC-1903-1…5): generazione automatica ed esperta con il perimetro giusto, autorizzazione per
 // workspace, limiti di D-35 (20 strategie, 5000 keyword) e validazione delle regole.
+// impacted-by: T-6201 (la POST avvia il lavoro di piano e risponde 202 con runId, AC-1903-1, AC-1903-4 e AC-1903-5
+// emendati: la strategia nasce quando il lavoro arriva in fondo; i 409 e il 400 restano risposte della POST)
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET as listStrategies, POST as createStrategy } from "@/app/api/projects/[id]/strategies/route";
+import { GET as listStrategies } from "@/app/api/projects/[id]/strategies/route";
 import {
   DELETE as deleteStrategy,
   GET as getStrategy,
@@ -12,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
+import { generatePlan } from "../helpers/plan-run";
 
 type Session = Awaited<ReturnType<typeof createUserWithSession>>;
 type KeywordData = Partial<Prisma.KeywordCandidateCreateManyInput> & { keyword: string };
@@ -54,15 +57,8 @@ async function insertKeywords(projectId: string, sectionId: string, rows: Keywor
   });
 }
 
-function generate(session: Session, projectId: string, body: unknown) {
-  return callRoute(createStrategy, {
-    method: "POST",
-    url: `/api/projects/${projectId}/strategies`,
-    cookie: session.cookie,
-    params: { id: projectId },
-    body,
-  });
-}
+/** POST della generazione con il lavoro di piano portato in fondo: risposta della POST e id della strategia salvata. */
+const generate = (session: Session, projectId: string, body: unknown) => generatePlan(session.cookie, projectId, body);
 
 async function strategyKeywords(strategyId: string): Promise<string[]> {
   const rows = await prisma.strategyKeyword.findMany({ where: { strategy_id: strategyId }, select: { canonical_keyword: true } });
@@ -98,10 +94,10 @@ describe("API delle strategie", () => {
     ]);
     await prisma.seed.create({ data: { project_id: projectId, subproject_id: sectionId, keyword: "scarpe running" } });
 
-    const response = await generate(member, projectId, { mode: "AUTO" });
+    const { response, strategyId } = await generate(member, projectId, { mode: "AUTO" });
 
-    expect(response.status).toBe(201);
-    const { data } = (await response.json()) as { data: { id: string } };
+    expect(response.status).toBe(202);
+    const data = { id: strategyId! };
     expect(await strategyKeywords(data.id)).toEqual(["calzini tecnici", "scarpe running", "scarpe running donna"]);
     const strategy = await prisma.strategy.findUniqueOrThrow({ where: { id: data.id } });
     expect(strategy.mode).toBe("AUTO");
@@ -116,14 +112,13 @@ describe("API delle strategie", () => {
     const { member, workspaceId, projectId, sectionId } = await teamProject();
     const outsider = await createUserWithSession({ displayName: "t1903-outsider" });
     await insertKeywords(projectId, sectionId, [{ keyword: "scarpe running", avg_monthly_searches: 100 }]);
-    const created = await generate(member, projectId, { mode: "AUTO" });
-    const { data } = (await created.json()) as { data: { id: string } };
+    const data = { id: (await generate(member, projectId, { mode: "AUTO" })).strategyId! };
     const otherProject = await prisma.project.create({ data: { name: "P2", workspace_id: workspaceId } });
 
     const itemParams = { id: projectId, strategyId: data.id };
     const itemUrl = `/api/projects/${projectId}/strategies/${data.id}`;
     const responses = [
-      await generate(outsider, projectId, { mode: "AUTO" }),
+      (await generate(outsider, projectId, { mode: "AUTO" })).response,
       await callRoute(listStrategies, { url: `/api/projects/${projectId}/strategies`, cookie: outsider.cookie, params: { id: projectId } }),
       await callRoute(getStrategy, { url: itemUrl, cookie: outsider.cookie, params: itemParams }),
       await callRoute(renameStrategy, { method: "PATCH", url: itemUrl, cookie: outsider.cookie, params: itemParams, body: { name: "X", version: 0 } }),
@@ -148,9 +143,9 @@ describe("API delle strategie", () => {
     await emptyStrategies(projectId, 20);
     const emptyProject = await prisma.project.create({ data: { name: "Vuoto", workspace_id: workspaceId } });
 
-    const full = await generate(member, projectId, { mode: "AUTO" });
-    const empty = await generate(member, emptyProject.id, { mode: "AUTO" });
-    const invalid = await generate(member, emptyProject.id, { mode: "EXPERT", settings: { rules: { maxSpokesPerHub: 0 } } });
+    const { response: full } = await generate(member, projectId, { mode: "AUTO" });
+    const { response: empty } = await generate(member, emptyProject.id, { mode: "AUTO" });
+    const { response: invalid } = await generate(member, emptyProject.id, { mode: "EXPERT", settings: { rules: { maxSpokesPerHub: 0 } } });
 
     expect([full.status, empty.status, invalid.status]).toEqual([409, 409, 400]);
     expect(((await full.json()) as { code: string }).code).toBe("STRATEGY_LIMIT");
@@ -158,6 +153,7 @@ describe("API delle strategie", () => {
     expect(((await invalid.json()) as { code: string }).code).toBe("VALIDATION_ERROR");
     expect(await prisma.strategy.count({ where: { project_id: projectId } })).toBe(20);
     expect(await prisma.strategy.count({ where: { project_id: emptyProject.id } })).toBe(0);
+    expect(await prisma.planRun.count()).toBe(0);
   });
 
   // covers: AC-1903-4
@@ -172,10 +168,10 @@ describe("API delle strategie", () => {
       }))
     );
 
-    const response = await generate(member, projectId, { mode: "AUTO" });
+    const { response, strategyId } = await generate(member, projectId, { mode: "AUTO" });
 
-    expect(response.status).toBe(201);
-    const { data } = (await response.json()) as { data: { id: string } };
+    expect(response.status).toBe(202);
+    const data = { id: strategyId! };
     const strategy = await prisma.strategy.findUniqueOrThrow({ where: { id: data.id } });
     expect(strategy.considered_count).toBe(5000);
     expect(strategy.truncated).toBe(true);
@@ -197,13 +193,13 @@ describe("API delle strategie", () => {
       ]);
     }
 
-    const response = await generate(member, projectId, {
+    const { response, strategyId } = await generate(member, projectId, {
       mode: "EXPERT",
       settings: { sectionId, reviewStatus: "approved", minVolume: 100 },
     });
 
-    expect(response.status).toBe(201);
-    const { data } = (await response.json()) as { data: { id: string } };
+    expect(response.status).toBe(202);
+    const data = { id: strategyId! };
     expect(await strategyKeywords(data.id)).toEqual(["uno approvata alta", "uno approvata soglia"]);
     const strategy = await prisma.strategy.findUniqueOrThrow({ where: { id: data.id } });
     expect(strategy.mode).toBe("EXPERT");
@@ -213,7 +209,7 @@ describe("API delle strategie", () => {
   it("rinomina con la version corrente, 409 con una version superata, ed elimina", async () => {
     const { member, projectId, sectionId } = await teamProject();
     await insertKeywords(projectId, sectionId, [{ keyword: "scarpe running", avg_monthly_searches: 100 }]);
-    const { data } = (await (await generate(member, projectId, { mode: "AUTO" })).json()) as { data: { id: string } };
+    const data = { id: (await generate(member, projectId, { mode: "AUTO" })).strategyId! };
     const params = { id: projectId, strategyId: data.id };
     const url = `/api/projects/${projectId}/strategies/${data.id}`;
 
@@ -251,10 +247,10 @@ describe("API delle strategie", () => {
     ]);
     await prisma.seed.create({ data: { project_id: projectId, subproject_id: sectionId, keyword: "cama de hospital" } });
 
-    const response = await generate(member, projectId, { mode: "AUTO" });
+    const { response, strategyId } = await generate(member, projectId, { mode: "AUTO" });
 
-    expect(response.status).toBe(201);
-    const { data } = (await response.json()) as { data: { id: string } };
+    expect(response.status).toBe(202);
+    const data = { id: strategyId! };
     const keywords = await prisma.strategyKeyword.findMany({ where: { strategy_id: data.id }, select: { canonical_keyword: true, page_id: true } });
     const pageOf = (canonical: string) => keywords.find((row) => row.canonical_keyword === canonical)?.page_id;
     const pages = await prisma.strategyPage.findMany({ where: { strategy_id: data.id }, select: { id: true, kind: true, h1: true } });

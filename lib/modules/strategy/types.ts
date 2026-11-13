@@ -152,6 +152,10 @@ export type StrategySummaryView = {
 export type StrategyView = StrategySummaryView & {
   projectId: string;
   settings: unknown;
+  /** Fonte del raggruppamento (T-6201): risultati di Google o motore di riserva. */
+  groupingSource: "SERP" | "ENGINE";
+  /** Motivo del raggruppamento di riserva (T-6201, codici di lib/modules/plan-runs/types.ts); null senza avviso. */
+  groupingNotice: string | null;
   hubs: StrategyHubView[];
   unassigned: StrategyKeywordView[];
 };

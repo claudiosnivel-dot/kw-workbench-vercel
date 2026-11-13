@@ -1,5 +1,6 @@
 // Gate di T-2302 (AC-2302-3): la barra del prossimo passo ha un solo pulsante; con build_plan genera la strategia in
 // modalità automatica e porta alla sua pagina.
+// impacted-by: T-6201 (la POST avvia il lavoro di piano, 202 con runId; il piano ne mostra l'avanzamento)
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextStepBar } from "@/components/next-step-bar";
@@ -36,7 +37,7 @@ function progress(next: ProjectProgressData["next"]): Pick<ProjectProgressData, 
 describe("NextStepBar", () => {
   // covers: AC-2302-3
   it("con build_plan ha un solo pulsante che genera la strategia AUTO e porta alla sua pagina", async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ data: { id: "S" } }), { status: 201 }));
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ data: { runId: "R" } }), { status: 202 }));
     renderWithIntl(<NextStepBar projectId="P" progress={progress({ kind: "build_plan" })} onAddTopic={vi.fn()} />);
     const bar = screen.getByRole("region", { name: "Prossimo passo" });
 

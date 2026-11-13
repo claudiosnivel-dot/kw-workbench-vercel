@@ -8,6 +8,8 @@ export type SectionParams = { id: string; subprojectId: string };
 /** Parametri delle rotte /api/projects/[id]/strategies/[strategyId] e delle sue pagine (T-1903, T-1904). */
 export type StrategyParams = { id: string; strategyId: string };
 export type StrategyPageParams = StrategyParams & { pageId: string };
+/** Parametri della rotta /api/projects/[id]/plan-runs/[runId] (T-6202). */
+export type PlanRunParams = { id: string; runId: string };
 /** Parametri della rotta /api/projects/[id]/brands/[brandId] (T-2601). */
 export type BrandParams = { id: string; brandId: string };
 

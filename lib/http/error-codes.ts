@@ -72,6 +72,8 @@ export const API_ERROR_CODES = [
   "JOB_ALREADY_ACTIVE",
   "JOB_NOT_FOUND",
   "JOB_NOT_CANCELABLE",
+  // Lavori di piano (T-6202).
+  "PLAN_RUN_NOT_FOUND",
   // Export dei risultati.
   "EXPORT_FORMAT_INVALID",
   "EXPORT_DIALECT_INVALID",

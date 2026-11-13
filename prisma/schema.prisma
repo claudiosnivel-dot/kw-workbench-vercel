@@ -190,6 +190,8 @@ model User {
   created_strategies        Strategy[]               @relation("StrategyCreator")
   /// Articoli avviati dall'utente (T-4002): alla sua eliminazione restano, senza autore.
   created_articles          Article[]                @relation("ArticleCreator")
+  /// Lavori di piano avviati dall'utente (T-6201): alla sua eliminazione restano, senza autore.
+  requested_plan_runs       PlanRun[]                @relation("PlanRunRequester")
 
   // Indice unico parziale users_single_root_admin_idx (migrazione 0005): un solo root admin. Prisma non esprime
   // gli indici parziali: c'è solo nella migrazione e tests/integration/schema-indexes.test.ts ne verifica la presenza.
@@ -216,6 +218,7 @@ model Workspace {
   usage_counters       UsageCounter[]
   ai_requests          AiRequest[]
   article_runs         ArticleRun[]
+  plan_runs            PlanRun[]
 
   @@index([created_by_user_id])
   @@map("workspaces")
@@ -316,6 +319,7 @@ model Project {
   metrics_provider_requests MetricsProviderRequest[]
   strategies                Strategy[]
   articles                  Article[]
+  plan_runs                 PlanRun[]
 
   @@index([workspace_id])
   @@index([default_subproject_id])
@@ -799,6 +803,13 @@ enum StrategyMode {
   EXPERT
 }
 
+/// Fonte del raggruppamento del piano (T-6201, D-57): SERP con i risultati di Google (modulo 63), ENGINE con il motore
+/// delle parole in comune (T-1901), anche come riserva quando i risultati o i volumi mancano.
+enum StrategyGroupingSource {
+  SERP
+  ENGINE
+}
+
 /// Pagina del piano (T-1901): HUB è la pagina pilastro, SPOKE l'articolo satellite di un hub.
 enum StrategyPageKind {
   HUB
@@ -832,9 +843,9 @@ enum StrategyContentType {
 /// Strategia hub and spoke di un progetto (T-1901, D-33): fotografia delle keyword al momento della generazione, le
 /// estrazioni successive non la cambiano. version cresce a ogni modifica e respinge le modifiche concorrenti (T-1904).
 model Strategy {
-  id                 String            @id @default(cuid())
+  id                 String                 @id @default(cuid())
   project_id         String
-  name               String            @db.VarChar(120)
+  name               String                 @db.VarChar(120)
   created_by_user_id String?
   mode               StrategyMode
   /// Perimetro e regole usati per generarla (lib/modules/strategy/rules.ts): li riporta l'appendice del PDF.
@@ -844,14 +855,20 @@ model Strategy {
   assigned_count     Int
   unassigned_count   Int
   /// true se il perimetro superava 5000 keyword e sono state prese le 5000 a priorità più alta (D-35).
-  truncated          Boolean           @default(false)
-  version            Int               @default(0)
-  created_at         DateTime          @default(now())
-  updated_at         DateTime          @updatedAt
-  project            Project           @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  created_by         User?             @relation("StrategyCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
+  truncated          Boolean                @default(false)
+  version            Int                    @default(0)
+  /// Fonte del raggruppamento (T-6201): ENGINE finché il modulo 63 non raggruppa con i risultati di Google.
+  grouping_source    StrategyGroupingSource @default(ENGINE)
+  /// Motivo del raggruppamento di riserva (T-6201): un codice di MetricsNotice, PROVIDER_ERROR o SERP_TIMEOUT; null se
+  /// i dati del piano sono arrivati tutti.
+  grouping_notice    String?
+  created_at         DateTime               @default(now())
+  updated_at         DateTime               @updatedAt
+  project            Project                @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  created_by         User?                  @relation("StrategyCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
   pages              StrategyPage[]
   keywords           StrategyKeyword[]
+  plan_runs          PlanRun[]
 
   @@index([project_id, created_at])
   @@map("strategies")
@@ -1031,4 +1048,42 @@ model ArticleRun {
   @@index([status, locked_until])
   @@index([workspace_id])
   @@map("article_runs")
+}
+
+/// Lavoro di piano in background (T-6201, D-57): volumi delle keyword tenute, risultati di Google, raggruppamento e
+/// salvataggio della strategia, a passi con lease e battito come i lavori degli articoli (T-4101). request è la
+/// GenerateRequest della POST (modalità, nome, impostazioni, regenerate); notice il motivo per cui un dato è mancato.
+model PlanRun {
+  id             String    @id @default(cuid())
+  project_id     String
+  workspace_id   String
+  requested_by   String?
+  request        Json
+  status         JobStatus @default(pending)
+  phase          String    @default("volumes")
+  cursor         Json      @default("{}")
+  progress_total Int       @default(0)
+  progress_done  Int       @default(0)
+  attempts       Int       @default(0)
+  locked_until   DateTime?
+  heartbeat_at   DateTime?
+  strategy_id    String?
+  notice         String?
+  error_code     String?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  project        Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  workspace      Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  requester      User?     @relation("PlanRunRequester", fields: [requested_by], references: [id], onDelete: SetNull)
+  strategy       Strategy? @relation(fields: [strategy_id], references: [id], onDelete: SetNull)
+
+  // Indice unico parziale plan_runs_one_active_per_project (migrazione 0054): al massimo un lavoro pending o running per
+  // progetto. Prisma non esprime gli indici parziali: c'è solo nella migrazione e tests/integration/plan-run.test.ts ne
+  // prova l'effetto.
+  @@index([project_id, status])
+  @@index([status, locked_until])
+  @@index([workspace_id])
+  @@index([requested_by])
+  @@index([strategy_id])
+  @@map("plan_runs")
 }

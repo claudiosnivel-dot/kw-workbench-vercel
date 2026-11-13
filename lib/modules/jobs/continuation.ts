@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { getInternalBaseUrl, getProtectionBypassSecret } from "@/lib/env";
-import { articleRunStepId, JOB_SIGNATURE_TTL_MS, signJobStep } from "@/lib/modules/jobs/job-signature";
+import { articleRunStepId, JOB_SIGNATURE_TTL_MS, planRunStepId, signJobStep } from "@/lib/modules/jobs/job-signature";
 import { logger } from "@/lib/observability/logger";
 
 /** Pianificazione del passo successivo di un job, eseguito in un'altra invocazione (T-1203, D-10). */
@@ -64,13 +64,24 @@ export function scheduleJobContinuation(jobId: string): void {
   httpJobContinuation.schedule(jobId);
 }
 
+/** Passo successivo di un lavoro a fasi verso /api/internal/{segment}/{id}/advance, con la stringa firmata del suo tipo. */
+function scheduleRunStep(segment: "article-runs" | "plan-runs", runId: string, signed: string): void {
+  after(() => postContinuation({ path: `/api/internal/${segment}/${encodeURIComponent(runId)}/advance`, signed, fields: { runId } }));
+}
+
 /**
  * Passo successivo di un lavoro di articolo (T-4101): come scheduleJobContinuation, verso
  * /api/internal/article-runs/{id}/advance con la firma di articleRunStepId; se la consegna fallisce il lavoro resta
  * fermo finché il cron reap-jobs non lo riprende.
  */
 export function scheduleArticleRunContinuation(runId: string): void {
-  after(() =>
-    postContinuation({ path: `/api/internal/article-runs/${encodeURIComponent(runId)}/advance`, signed: articleRunStepId(runId), fields: { runId } })
-  );
+  scheduleRunStep("article-runs", runId, articleRunStepId(runId));
+}
+
+/**
+ * Passo successivo di un lavoro di piano (T-6201): verso /api/internal/plan-runs/{id}/advance con la firma di
+ * planRunStepId; se la consegna fallisce il lavoro riparte dalla lettura del suo stato o dal cron reap-jobs.
+ */
+export function schedulePlanRunContinuation(runId: string): void {
+  scheduleRunStep("plan-runs", runId, planRunStepId(runId));
 }
