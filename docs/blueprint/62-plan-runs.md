@@ -113,7 +113,7 @@ Oggi POST /strategies genera e salva il piano nella stessa richiesta (T-1903). C
 - Emendamento dichiarato: T-1903 (POST /strategies 202 con runId invece di 201 con id).
 - Scelte dell'agente: un solo lavoro di piano attivo per progetto; prime 1000 keyword per i risultati di Google; 10 minuti al massimo per la raccolta dei task; nessun annullamento dall'interfaccia.
 - Ordine: dipende dal 61; il 63 cambia solo la fase cluster.
-- Note di costruzione (2026-11-13, scelte dell'agente da confermare):
+- Note di costruzione (2026-11-13, scelte dell'agente confermate dall'utente lo stesso giorno con AskUserQuestion, D-59):
   - «Crea il piano» del modulo è il pulsante di oggi «Costruisci il piano» (e «Rigenera il piano» nel dialogo): i testi
     dei pulsanti non cambiano, così le baseline visive restano quelle approvate;
   - tabella propria `plan_runs` (migrazione additiva `0054_plan_runs`, RLS abilitata senza policy) con l'indice unico
