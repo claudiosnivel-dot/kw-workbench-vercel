@@ -151,3 +151,34 @@ Dopo il modulo 62 il lavoro di piano ha volumi e risultati di Google, ma raggrup
 - Scelte dell'agente, nel design: soglie 3 (pagina) e 1 (hub) come regole della modalità esperta; classificazione a lotti di 300 con riconoscimenti fissi prima del modello; motore SERP solo con risultati per almeno metà delle prime 1000 keyword.
 - La fixture it-magnetoterapia-serp.json nasce alla costruzione dalle keyword reali del progetto dell'utente (175 keyword, 2026-11-12), con risultati e classi scritti a mano o registrati da una chiamata vera, senza dati personali.
 - Ordine: dipende dal 61 e dal 62.
+- Emendamento dichiarato (T-6303): il given di AC-6201-1 (modulo 62) ha la funzione AI attiva con OpenRouter simulato,
+  perché con i risultati di Google la strategia ha grouping_source SERP e senza AI avrebbe il motivo AI_NOT_CONFIGURED;
+  il test (`tests/integration/plan-run.test.ts`) attende SERP al posto di ENGINE.
+- Note di costruzione (2026-11-13, scelte dell'agente da confermare):
+  - la fixture `it-magnetoterapia-serp.json` è scritta a mano (40 keyword sul tema del progetto dell'utente, risultati
+    su domini `.example`): l'agente non legge il DB di produzione; le keyword reali del 2026-11-12 restano da provare
+    con l'utente;
+  - classificazione: migrazione additiva `0055_ai_feature_plan` (valore `plan` dell'enum `AiFeature`); fase nuova
+    `classify` fra `serps_collect` e `cluster`, solo con i risultati di Google per almeno metà delle prime 1000
+    keyword; 300 keyword per passo della fase, classi place e competitor nel cursore del lavoro; il modello riceve le
+    forme canoniche e risponde con le sole keyword place o competitor (le altre sono other), `temperature` 0,
+    `max_tokens` 4000; nome di dominio di almeno 4 caratteri; con il tetto della piattaforma raggiunto (non root admin)
+    nessuna richiesta e AI_CLASSIFY_UNAVAILABLE; un lavoro ripreso alla fase cluster senza classi usa i soli
+    riconoscimenti fissi; dettagli in `docs/AI-TITLES.md`;
+  - «contiene, senza spazi e senza punti, il nome del dominio» letto come: la keyword senza punti contiene il nome del
+    dominio scritto unito; «noleggio magnetoterapia» con primo risultato `noleggiomagnetoterapia.it` resta other (un
+    dominio con le parole della ricerca non fa della ricerca un concorrente);
+  - motore: le pagine aprono un hub confrontandosi con la keyword principale della pagina che l'ha aperto (o
+    dell'ancora), poi la pilastro è scelta fra le pagine del gruppo; una domanda sotto soglia va nelle FAQ e una pagina
+    sotto soglia o oltre il massimo confluisce nella pagina dello stesso hub con più URL in comune (fra tutti gli URL
+    delle sue keyword), altrimenti nella pilastro, o nella pagina ancorata se aperta, altrimenti tra le non assegnate;
+    contenuto degli spoke dal modificatore della keyword principale come oggi; motivi HUB_SERP con la keyword
+    principale, SPOKE_SERP e SPOKE_LOCAL con il numero di keyword;
+  - il motivo COMPETITOR resta nel piano del motore (`unassignedReasons`): le keyword non assegnate non hanno una
+    colonna per il motivo, quindi la pagina del piano le mostra come oggi; il testo è nei cataloghi;
+  - avviso della pagina del piano: con SERP e un motivo il titolo è «Raggruppamento con i risultati di Google» con il
+    motivo (AI_CLASSIFY_UNAVAILABLE, AI_NOT_CONFIGURED o un dato mancato), con ENGINE resta «Raggruppamento di riserva»
+    anche per SERP_TOO_FEW; fase «Riconosco luoghi e concorrenti»; due campi nuovi della modalità esperta con il testo
+    d'aiuto legato da aria-describedby; testi in it, en, es-ES ed es-419 (registro in `docs/I18N-ES.md`).
+- Copertura non verificata (dichiarata): nessuna chiamata reale a DataForSEO né a OpenRouter; il piano vero del progetto
+  dell'utente e il prompt con un modello vero restano da provare con il suo accesso.
