@@ -1,18 +1,16 @@
 import { compareKeywordPriority, keywordWords } from "@/lib/modules/strategy/cluster";
 import { modifierCategoryOfStem, sequenceModifierCategories } from "@/lib/modules/strategy/modifiers";
-import {
-  type KeywordClass,
-  MODIFIER_CATEGORIES,
-  type ModifierCategory,
-  type PlanAnchor,
-  type PlanPage,
-  type PlanReason,
-  type ReasonParams,
-  type StrategyContentType,
-  type StrategyKeywordInput,
-  type StrategyPlan,
-  type StrategyReasonCode,
-  type StrategyRules,
+import { MODIFIER_CATEGORIES } from "@/lib/modules/strategy/types";
+import type {
+  KeywordClass,
+  ModifierCategory,
+  PlanAnchor,
+  PlanPage,
+  PlanReason,
+  StrategyContentType,
+  StrategyKeywordInput,
+  StrategyPlan,
+  StrategyRules,
 } from "@/lib/modules/strategy/types";
 
 /*
@@ -140,7 +138,7 @@ function contentTypeOf(draft: Draft, pillar: boolean, language: string): Strateg
 }
 
 /** Motivo di una pagina: codice di STRATEGY_REASON_CODES e parametri del testo tradotto. */
-const reasonFor = (code: StrategyReasonCode, params: ReasonParams): PlanReason => ({ code, params });
+const reasonFor = (code: PlanReason["code"], params: PlanReason["params"]): PlanReason => ({ code, params });
 
 function reasonOf(draft: Draft, pillar: boolean): PlanReason {
   const faq = draft.faq.length;
