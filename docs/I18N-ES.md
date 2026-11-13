@@ -119,6 +119,8 @@ Termini approvati con il modulo 47; dove le varianti coincidono la forma vale pe
 | Durata media | es-ES / es-419 | Duración media / Duración promedio | come «medio / promedio» degli export |
 | Fatto (fine di una finestra) | entrambe | Listo | parola dei pulsanti di chiusura in spagnolo |
 | qualche centesimo (costo di DataForSEO) | es-ES / es-419 | unos céntimos / unos centavos | moneta divisionale nominata in ciascun mercato (T-6103) |
+| raggruppamento di riserva (piano, T-6202) | entrambe | Agrupación de reserva | «de reserva» come nei prodotti in spagnolo per ciò che entra quando manca il principale; le fasi al gerundio («Buscando…», «Leyendo…») come gli stati in corso |
+| piano non preparato, DataForSEO non ha risposto (T-6202) | es-ES / es-419 | no se ha podido / no se pudo, no ha respondido / no respondió | pretérito perfecto in Spagna, indefinido in America Latina (guida di stile, punto 7) |
 | job (indicatori dell'amministrazione) | entrambe | trabajo | «búsqueda» vale per la ricerca dell'utente; tra i job ci sono anche i volumi |
 | Titoli con l'AI | entrambe | Títulos con IA | come `plan.ai` («Mejorar los títulos con IA») |
 | pagine legali | entrambe | Política de privacidad, Términos del servicio, Política de cookies | titoli abituali dei siti in spagnolo; «Términos del servicio» come il footer |

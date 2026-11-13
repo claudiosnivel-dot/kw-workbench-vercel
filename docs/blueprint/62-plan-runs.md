@@ -113,3 +113,41 @@ Oggi POST /strategies genera e salva il piano nella stessa richiesta (T-1903). C
 - Emendamento dichiarato: T-1903 (POST /strategies 202 con runId invece di 201 con id).
 - Scelte dell'agente: un solo lavoro di piano attivo per progetto; prime 1000 keyword per i risultati di Google; 10 minuti al massimo per la raccolta dei task; nessun annullamento dall'interfaccia.
 - Ordine: dipende dal 61; il 63 cambia solo la fase cluster.
+- Note di costruzione (2026-11-13, scelte dell'agente da confermare):
+  - «Crea il piano» del modulo è il pulsante di oggi «Costruisci il piano» (e «Rigenera il piano» nel dialogo): i testi
+    dei pulsanti non cambiano, così le baseline visive restano quelle approvate;
+  - tabella propria `plan_runs` (migrazione additiva `0054_plan_runs`, RLS abilitata senza policy) con l'indice unico
+    parziale `plan_runs_one_active_per_project` per il lavoro attivo; colonne additive `strategies.grouping_source`
+    (enum `StrategyGroupingSource`, default ENGINE) e `strategies.grouping_notice`; in `plan_runs.request` la richiesta
+    con il nome già scelto all'avvio (il nome predefinito si traduce nella POST, dove c'è la lingua dell'utente);
+  - `generateStrategy` diviso in `resolveStrategyTarget` (permesso, limite, sezione), `checkStrategyStart` (più il
+    perimetro non vuoto), `draftStrategy` (perimetro, motore, titoli, righe) e `saveStrategyDraft` (la transazione di
+    oggi con `grouping_source` e `grouping_notice`); il lavoro si chiude a completed nella stessa transazione del
+    salvataggio, così un passo che ha perso la lease non salva una strategia doppia;
+  - all'avvio il perimetro vuoto si conta senza il volume minimo (i volumi mancanti arrivano nel lavoro); con il volume
+    minimo il perimetro si ricontrolla al salvataggio, dove un perimetro vuoto porta il lavoro a failed con
+    STRATEGY_NO_KEYWORDS;
+  - fasi `volumes`, `serps_post`, `serps_collect`, `cluster` (prepara la strategia con il motore di oggi) e `save`;
+    la strategia preparata passa da cluster a save nello stesso passo, e se il passo si interrompe save la prepara di
+    nuovo; un AppError di una fase (accesso perso, limite di 20, perimetro vuoto) porta il lavoro a failed con il suo
+    codice, ogni altra eccezione conta un tentativo; il lavoro usa i permessi di chi l'ha avviato (requested_by);
+  - risultati di Google con lingua e paese del piano (quelli della sezione del perimetro, se li cambia); raccolta ogni
+    10 s, con un passo che rilascia la lease se non restano 60 s; l'avanzamento conta le keyword da leggere (fino a
+    1000) e quelle già lette, cioè con i risultati recenti, raccolte o rimaste senza task; un task non riuscito dà PROVIDER_ERROR, oltre i 10 minuti
+    SERP_TIMEOUT; nel registro della spesa le richieste del lavoro hanno `job_id` uguale all'id del lavoro, così
+    `METRICS_RUN_BUDGET_USD` vale per lavoro di piano;
+  - il primo motivo resta (`notice` del lavoro, poi `grouping_notice`); con volumi e risultati arrivati la fonte resta
+    ENGINE senza avviso fino al modulo 63;
+  - la lettura dello stato (GET .../plan-runs/{runId}) e la pagina del piano con un lavoro attivo riprendono un lavoro
+    fermo, come il polling dei job (T-1203): il cron reap-jobs gira una volta al giorno; 404 con il codice nuovo
+    PLAN_RUN_NOT_FOUND (it, en, es-ES, es-419);
+  - 409 JOB_ALREADY_ACTIVE con il runId del lavoro attivo: il browser segue quel lavoro invece di mostrare un errore;
+  - pagina del piano: con un lavoro attivo l'avanzamento sta al posto di «Costruisci il piano» o sopra la bacheca; a
+    lavoro non riuscito, nella pagina «Riprova» la ricarica (si torna al pulsante), nel modulo delle impostazioni avvia
+    di nuovo il lavoro con le stesse scelte; il pulsante «Annulla» del dialogo «Rigenera il piano» c'è solo prima
+    dell'invio;
+  - testi: fasi «Cerco i volumi», «Leggo i risultati di Google», «Raggruppo le keyword», «Salvo il piano», l'avviso
+    «Raggruppamento di riserva» con i motivi di «Aggiungi i volumi» e i due nuovi (DataForSEO che non risponde,
+    risultati non arrivati in tempo), es-419 con il pretérito indefinido nelle sole differenze.
+- Copertura non verificata (dichiarata): nessuna chiamata reale a DataForSEO né alle rotte interne su Vercel; E2E e
+  baseline visive li esegue la CI.
