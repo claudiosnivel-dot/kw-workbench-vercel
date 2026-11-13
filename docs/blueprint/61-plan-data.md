@@ -146,7 +146,7 @@ Oggi il piano lavora solo sulle parole delle keyword e i volumi arrivano solo se
 - T-6103 aggiunto il 2026-11-13 sulla scelta dell'utente «alla fine della ricerca» (volumi mentre si scelgono le keyword, non solo dopo); T-6102 resta come rete di sicurezza per i progetti esistenti e le keyword importate.
 - Scelte dell'agente, nel design: coda priority, cache di 30 giorni, solo gli URL organic, volumi già presenti non richiesti, chi non ha i dati con licenza non spende; DataForSEO predefinito solo per i progetti nuovi.
 - Ordine: dopo il 60; prepara il 62 e il 63.
-- Note di costruzione (2026-11-13, scelte dell'agente da confermare):
+- Note di costruzione (2026-11-13, scelte dell'agente confermate dall'utente lo stesso giorno con AskUserQuestion, D-59):
   - fatti della SERP API riletti il 2026-11-13 e registrati in `docs/METRICS-PROVIDERS.md`: 100 task per chiamata a
     task_post (prima si scriveva «entro il massimo della documentazione»), fino a 10000 chiamate al minuto, tasks_ready
     fino a 20 chiamate al minuto e 1000 task per chiamata, risultati leggibili per 30 giorni, codici 20100, 40601 e

@@ -154,7 +154,7 @@ Dopo il modulo 62 il lavoro di piano ha volumi e risultati di Google, ma raggrup
 - Emendamento dichiarato (T-6303): il given di AC-6201-1 (modulo 62) ha la funzione AI attiva con OpenRouter simulato,
   perché con i risultati di Google la strategia ha grouping_source SERP e senza AI avrebbe il motivo AI_NOT_CONFIGURED;
   il test (`tests/integration/plan-run.test.ts`) attende SERP al posto di ENGINE.
-- Note di costruzione (2026-11-13, scelte dell'agente da confermare):
+- Note di costruzione (2026-11-13, scelte dell'agente confermate dall'utente lo stesso giorno con AskUserQuestion, D-59):
   - la fixture `it-magnetoterapia-serp.json` è scritta a mano (40 keyword sul tema del progetto dell'utente, risultati
     su domini `.example`): l'agente non legge il DB di produzione; le keyword reali del 2026-11-12 restano da provare
     con l'utente;
