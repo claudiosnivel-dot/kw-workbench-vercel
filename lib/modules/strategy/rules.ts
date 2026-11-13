@@ -5,7 +5,8 @@ import type { StrategyRuleLimits, StrategyRules } from "@/lib/modules/strategy/t
 /**
  * Regole predefinite della modalità automatica (T-1901), approvate dall'utente il 2026-10-09: uno spoke nasce con
  * almeno 2 keyword o 100 ricerche al mese, al massimo 12 spoke per hub, una domanda diventa uno spoke da 200 ricerche
- * in su e altrimenti va nella FAQ della pagina più vicina.
+ * in su e altrimenti va nella FAQ della pagina più vicina. Per il motore per risultati di Google (T-6302, D-57): stessa
+ * pagina con almeno 3 dei primi 10 risultati in comune, stesso hub con almeno 1.
  */
 export const DEFAULT_RULES: StrategyRules = {
   minKeywordsPerSpoke: 2,
@@ -13,6 +14,8 @@ export const DEFAULT_RULES: StrategyRules = {
   maxSpokesPerHub: 12,
   questionSpokeVolume: 200,
   questionsAs: "faq",
+  serpPageOverlap: 3,
+  serpHubOverlap: 1,
 };
 
 /** Limiti ammessi per le regole della modalità esperta: oltre, 400 VALIDATION_ERROR. */
@@ -21,6 +24,8 @@ export const RULE_LIMITS = {
   minSpokeVolume: { min: 0, max: 1_000_000 },
   maxSpokesPerHub: { min: 1, max: 30 },
   questionSpokeVolume: { min: 0, max: 1_000_000 },
+  serpPageOverlap: { min: 1, max: 10 },
+  serpHubOverlap: { min: 1, max: 10 },
 } as const satisfies StrategyRuleLimits;
 
 const intIn = (limits: { min: number; max: number }) => z.number().int().min(limits.min).max(limits.max);
@@ -32,6 +37,8 @@ export const strategyRulesSchema = z
     maxSpokesPerHub: intIn(RULE_LIMITS.maxSpokesPerHub),
     questionSpokeVolume: intIn(RULE_LIMITS.questionSpokeVolume),
     questionsAs: z.enum(["faq", "spokes"]),
+    serpPageOverlap: intIn(RULE_LIMITS.serpPageOverlap),
+    serpHubOverlap: intIn(RULE_LIMITS.serpHubOverlap),
   })
   .strict();
 

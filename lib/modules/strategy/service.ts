@@ -38,6 +38,8 @@ import {
   type StrategyKeywordView,
   type StrategyMode,
   type StrategyPageView,
+  type StrategyPlan,
+  type StrategyRules,
   type StrategySummaryView,
   type StrategyView,
 } from "@/lib/modules/strategy/types";
@@ -444,13 +446,28 @@ export type StrategyDraft = {
   truncated: boolean;
 };
 
+/** Motore che raggruppa il perimetro: buildStrategyPlan (T-1901) o, dal lavoro di piano, quello per risultati di Google (T-6303). */
+export type PlanBuilder = (input: {
+  keywords: StrategyKeywordInput[];
+  seeds: string[];
+  language: string;
+  rules: StrategyRules;
+  anchors: PlanAnchor[];
+}) => StrategyPlan;
+
 /**
- * Raggruppa il perimetro con il motore (T-1901) e prepara la strategia (T-1903): perimetro, piano, titoli (T-1902) e
+ * Raggruppa il perimetro con il motore (T-1901, o quello indicato da planner, T-6303) e prepara la strategia (T-1903): perimetro, piano, titoli (T-1902) e
  * righe da salvare, con i controlli della generazione. Con regenerate (T-2502) la strategia nuova diventa il piano senza
  * perdere il lavoro iniziato: copia le pagine bloccate del piano corrente (in scrittura, pubblicate e i loro hub) con
  * titoli, tipo, stato e keyword e ricostruisce le altre dalle keyword tenute meno quelle già copiate.
  */
-export async function draftStrategy(user: { id: string }, projectId: string, request: GenerateRequest, name: string): Promise<StrategyDraft> {
+export async function draftStrategy(
+  user: { id: string },
+  projectId: string,
+  request: GenerateRequest,
+  name: string,
+  planner: PlanBuilder = buildStrategyPlan
+): Promise<StrategyDraft> {
   const target = await resolveStrategyTarget(user, projectId, request);
   const { project, language, country } = target;
   const { settings } = request;
@@ -477,7 +494,7 @@ export async function draftStrategy(user: { id: string }, projectId: string, req
   const anchors: PlanAnchor[] = locked.pages
     .filter((page) => page.kind === "HUB" && lockedMain.has(page.id))
     .map((page) => ({ ref: page.id, main: lockedMain.get(page.id)!, open: page.status === "TODO" }));
-  const plan = buildStrategyPlan({ keywords, seeds: seeds.map((seed) => seed.keyword), language, rules: settings.rules, anchors });
+  const plan = planner({ keywords, seeds: seeds.map((seed) => seed.keyword), language, rules: settings.rules, anchors });
   const byCanonical = new Map(keywords.map((keyword) => [keyword.canonical, keyword]));
   const asTitle = (canonical: string): TitleKeyword => {
     const keyword = byCanonical.get(canonical)!;

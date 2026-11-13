@@ -379,7 +379,9 @@
     "grouping": {
       "reason": {
         "PROVIDER_ERROR": "DataForSEO no respondió para algunas palabras clave.",
-        "SERP_TIMEOUT": "Los resultados de Google no llegaron a tiempo."
+        "SERP_TIMEOUT": "Los resultados de Google no llegaron a tiempo.",
+        "SERP_TOO_FEW": "Los resultados de Google llegaron para menos de la mitad de las palabras clave.",
+        "AI_CLASSIFY_UNAVAILABLE": "La IA no respondió: los lugares y la competencia solo se reconocen por palabras como «cerca de mí» y por el nombre del sitio en los resultados."
       }
     }
   },

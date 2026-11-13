@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { KeywordType, SearchIntent } from "@/lib/generated/prisma/enums";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import type {
+  KeywordClass,
   PlanReason,
   StrategyContentType,
   StrategyKeywordInput,
@@ -11,6 +12,7 @@ import type {
 } from "@/lib/modules/strategy/types";
 import { prisma } from "@/lib/prisma";
 import english from "../fixtures/strategy/en-running-gear.json";
+import magnetotherapy from "../fixtures/strategy/it-magnetoterapia-serp.json";
 import italian from "../fixtures/strategy/it-scarpe-running.json";
 
 /** Keyword di una fixture di tests/fixtures/strategy (T-1901). */
@@ -75,6 +77,24 @@ export function describePlan(plan: StrategyPlan): StrategyFixture["expected"] {
     })),
     unassigned: plan.unassigned,
   };
+}
+
+/** Keyword della fixture per risultati di Google (T-6302): i primi 10 URL organici e la classe di T-6301. */
+export type SerpFixtureKeyword = FixtureKeyword & { urls: string[]; class: KeywordClass };
+export type SerpFixture = { language: string; seeds: string[]; keywords: SerpFixtureKeyword[] };
+
+export const MAGNETOTHERAPY_SERP_FIXTURE = magnetotherapy as unknown as SerpFixture;
+
+/** Ingresso di buildSerpPlan dalla fixture: keyword, risultati (solo quelli con URL) e classi per forma canonica. */
+export function serpFixtureInputs(fixture: SerpFixture = MAGNETOTHERAPY_SERP_FIXTURE) {
+  const keywords = fixtureInputs(fixture);
+  const serps = new Map<string, string[]>();
+  const classes = new Map<string, KeywordClass>();
+  fixture.keywords.forEach((item, index) => {
+    if (item.urls.length > 0) serps.set(keywords[index].canonical, item.urls);
+    classes.set(keywords[index].canonical, item.class);
+  });
+  return { keywords, serps, classes, language: fixture.language };
 }
 
 export type PlanKeywordSpec = { text: string; volume: number | null };

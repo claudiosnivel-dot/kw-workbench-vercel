@@ -4,12 +4,14 @@
  */
 
 /** Fasi del lavoro di piano nell'ordine in cui si eseguono; done quando la strategia è salvata. */
-export const PLAN_RUN_PHASES = ["volumes", "serps_post", "serps_collect", "cluster", "save"] as const;
+export const PLAN_RUN_PHASES = ["volumes", "serps_post", "serps_collect", "classify", "cluster", "save"] as const;
 export type PlanRunPhase = (typeof PLAN_RUN_PHASES)[number] | "done";
 
 /**
- * Motivi del raggruppamento di riserva salvati in grouping_notice (T-6201): quelli dei volumi (MetricsNotice), un
- * errore del fornitore e la raccolta dei risultati di Google oltre i 10 minuti.
+ * Motivi salvati in grouping_notice (T-6201, T-6303): quelli dei volumi (MetricsNotice), un errore del fornitore, la
+ * raccolta dei risultati di Google oltre i 10 minuti e i risultati per meno di metà delle keyword (raggruppamento di
+ * riserva); l'AI che non ha risposto o non è attiva (luoghi e concorrenti dai soli riconoscimenti fissi, anche con i
+ * risultati di Google come fonte).
  */
 export const PLAN_NOTICES = [
   "PLAN_NO_LICENSED_METRICS",
@@ -21,6 +23,9 @@ export const PLAN_NOTICES = [
   "LICENSED_METRICS_QUOTA_EXCEEDED",
   "PROVIDER_ERROR",
   "SERP_TIMEOUT",
+  "SERP_TOO_FEW",
+  "AI_CLASSIFY_UNAVAILABLE",
+  "AI_NOT_CONFIGURED",
 ] as const;
 export type PlanNotice = (typeof PLAN_NOTICES)[number];
 
