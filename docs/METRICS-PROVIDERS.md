@@ -47,3 +47,33 @@ modulo Google Ads nel sorgente).
   `/admin` mostra al root admin «DataForSEO ha rifiutato N richieste nelle ultime 24 ore» con il motivo dell'ultima,
   gli stessi testi del riquadro «Aggiungi i volumi» (credenziali 40100, account da verificare 40104, il codice per gli
   altri, nessuna risposta senza codice).
+
+## Risultati di Google: SERP API di DataForSEO (T-6101, D-57)
+
+Fatti letti nella documentazione di DataForSEO il 2026-11-13 (il design del 2026-11-12 li riportava da riverificare):
+
+| Fatto | Fonte |
+|---|---|
+| `POST https://api.dataforseo.com/v3/serp/google/organic/task_post`: al massimo 100 task per chiamata (oltre: 40006), fino a 10000 chiamate al minuto; `priority` 1 normale (predefinita), 2 alta con sovrapprezzo; `depth` predefinita 10 (massimo 700), il prezzo è per pagina di 10 risultati; `language_code` e `location_code` come negli endpoint Google Ads; un task creato ha `status_code` 20100 e `result` null; `cost` della risposta e del task in USD; si paga solo l'invio del task; le keyword con operatori di ricerca (`site:`, `intitle:`) costano 5 volte | https://docs.dataforseo.com/v3/serp/google/organic/task_post/ |
+| `GET .../serp/google/organic/tasks_ready`: fino a 20 chiamate al minuto, fino a 1000 task completati negli ultimi tre giorni per chiamata, ognuno nell'elenco finché non viene raccolto; senza costo; un task con `postback_url` non compare | https://docs.dataforseo.com/v3/serp/google/organic/tasks_ready/ |
+| `GET .../serp/google/organic/task_get/regular/{id}`: risultati disponibili per 30 giorni, senza costo; `result[].items[]` con `type` (`organic`, `paid`, `featured_snippet`…), `rank_group`, `rank_absolute`, `url`, `domain` | https://docs.dataforseo.com/v3/serp/google/organic/task_get/regular/ |
+| Codici: 20100 task creato, 40601 task ricevuto e non ancora in coda, 40602 task in coda, 40006 più di 100 task, 40209 più di 30 richieste simultanee, 40401 task inesistente, 40403 risultati scaduti (task di oltre un mese) | https://docs.dataforseo.com/v3/appendix/errors |
+| Prezzo per SERP (10 risultati): coda standard 0,0006 $ (in media ~5 minuti), priority 0,0012 $ (in media fino a 1 minuto), live 0,002 $ (in media fino a 6 secondi) | https://dataforseo.com/pricing/serp/google-organic-serp-api |
+
+Uso in Titan SEO (`lib/modules/providers/serp/dataforseo-serp.ts`, `lib/modules/plan-data/serps.ts`):
+
+- Coda priority (`priority` 2), `depth` 10, lingua e paese della ricerca come per i volumi (`dataforseo-targets.ts`);
+  lotti da 100 task, un tentativo per lotto: un lotto non riuscito lascia le sue keyword senza risultati.
+- Spesa: ogni chiamata a `task_post` è una riga di `metrics_provider_requests` (fornitore DATAFORSEO, `keyword_count`
+  = task del lotto), prenotata con la stima 0,0012 $ per task e chiusa con il `cost` restituito; valgono
+  `METRICS_MONTHLY_BUDGET_USD` e `METRICS_RUN_BUDGET_USD` come per i volumi e la spesa compare nella card «Spesa
+  fornitore metriche». Raccogliere i risultati non costa e non passa dal registro.
+- Raccolta: `tasks_ready`, poi `task_get/regular` (al massimo 10 richieste in parallelo) per i soli task richiesti e
+  pronti; 40601 e 40602 restano in attesa. Si salvano in `keyword_serps` solo gli URL dei risultati `organic`, al
+  massimo 10 nell'ordine di `rank_absolute`: dati esterni salvati come testo, mai seguiti dal server né resi come HTML.
+- Cache: i risultati di una keyword (forma canonica, lingua, paese) valgono 30 giorni (`SERP_MAX_AGE_DAYS`); entro i
+  30 giorni la keyword non si invia di nuovo.
+- Solo chi può usare i dati con licenza (`canUseLicensedMetrics`: root admin, o diritto `licensedMetrics` con il lancio
+  attivo) fa partire richieste; gli altri ricevono `PLAN_NO_LICENSED_METRICS` senza chiamate. Senza credenziali:
+  `PROVIDER_NOT_CONFIGURED`.
+- Il ritmo delle raccolte (al massimo 20 `tasks_ready` al minuto) lo decide il lavoro di piano del modulo 62.

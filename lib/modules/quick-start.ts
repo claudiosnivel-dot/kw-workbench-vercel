@@ -2,7 +2,7 @@ import type { AuthUser } from "@/lib/auth/credentials";
 import { requireVerifiedEmail } from "@/lib/auth/verified-email";
 import type { WorkspaceSummary } from "@/lib/authz/workspace";
 import { canPerform } from "@/lib/authz/permissions";
-import { assertWithinLimit, countLimitedProjects, loadPlanGuard } from "@/lib/billing/enforce";
+import { assertWithinLimit, countLimitedProjects, defaultMetricsProvider, loadPlanGuard } from "@/lib/billing/enforce";
 import { AppError, JOB_ERROR_CODES } from "@/lib/http/errors";
 import { scheduleJobContinuation } from "@/lib/modules/jobs/continuation";
 import { startExtractionJob } from "@/lib/modules/jobs/job-runner";
@@ -44,6 +44,8 @@ export async function createQuickStartProject(
     },
     user
   );
+  // Senza scelta del fornitore: DataForSEO per chi ha i dati con licenza, così la ricerca finisce con i volumi (T-6103).
+  data.metrics_provider = await defaultMetricsProvider(user, workspaceId);
   const plan = await loadPlanGuard(workspaceId);
 
   return prisma.$transaction(async (tx) => {

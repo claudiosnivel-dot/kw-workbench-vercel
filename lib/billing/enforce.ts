@@ -109,15 +109,25 @@ export async function assertLicensedMetricsChoice(
 }
 
 /**
- * true se assertLicensedMetricsChoice ammette DATAFORSEO per chi non lo ha ancora: root admin, oppure diritto
- * licensedMetrics del piano con il lancio attivo. La finestra «Aggiungi i volumi» (T-2405) mostra l'opzione automatica
- * solo così; la scelta resta verificata lato server dalla PATCH dell'argomento (D-30).
+ * true se chi agisce può usare i dati con licenza (DataForSEO, D-30) nel workspace, con la regola di
+ * assertLicensedMetricsChoice: root admin, oppure diritto licensedMetrics del piano con il lancio attivo. La finestra
+ * «Aggiungi i volumi» (T-2405) mostra l'opzione automatica solo così (la scelta resta verificata dalla PATCH
+ * dell'argomento); i risultati di Google e i volumi del piano partono solo così (T-6101, T-6102); i progetti nuovi
+ * nascono con DataForSEO solo così (T-6103).
  */
-export async function canChooseLicensedMetrics(actor: { isRootAdmin: boolean }, workspaceId: string): Promise<boolean> {
+export async function canUseLicensedMetrics(actor: { isRootAdmin: boolean }, workspaceId: string): Promise<boolean> {
   if (actor.isRootAdmin) {
     return true;
   }
   return (await isCommercialLive()) && (await getEntitlements(workspaceId)).limits.licensedMetrics;
+}
+
+/**
+ * Fornitore dei volumi di un progetto nuovo creato senza sceglierlo (T-6103): DataForSEO per chi può usare i dati con
+ * licenza, così ogni ricerca finisce con i volumi; NONE per gli altri, come prima.
+ */
+export async function defaultMetricsProvider(actor: { isRootAdmin: boolean }, workspaceId: string): Promise<MetricsProvider> {
+  return (await canUseLicensedMetrics(actor, workspaceId)) ? "DATAFORSEO" : "NONE";
 }
 
 /**

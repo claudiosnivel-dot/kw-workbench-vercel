@@ -7,7 +7,7 @@ import { TopicActions } from "@/components/keywords/topic-actions";
 import { SearchProgress } from "@/components/search-progress";
 import { requirePageUser } from "@/lib/auth/page-guard";
 import { canPerform } from "@/lib/authz/permissions";
-import { canChooseLicensedMetrics } from "@/lib/billing/enforce";
+import { canUseLicensedMetrics } from "@/lib/billing/enforce";
 import type { SearchParams } from "@/lib/http/search-params";
 import { findActiveJobId } from "@/lib/modules/jobs/job-api";
 import { keywordsBoardProps, loadKeywordsView, loadLastCompletedSearch } from "@/lib/modules/keywords-page";
@@ -66,7 +66,7 @@ export default async function TopicKeywordsPage({ params, searchParams }: TopicK
   const [view, activeJobId, canAuto, lastSearch] = await Promise.all([
     loadKeywordsView(project.id, topic.id, resolvedSearchParams),
     findActiveJobId(topic.id),
-    canChooseLicensedMetrics(user, project.workspace_id),
+    canUseLicensedMetrics(user, project.workspace_id),
     loadLastCompletedSearch(project.id, topic.id),
   ]);
   const seedKeywords = seeds.map((seed) => seed.keyword);

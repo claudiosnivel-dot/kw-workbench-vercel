@@ -89,7 +89,8 @@ type AdvancedProjectFieldsProps = {
 
 /**
  * Parametri tecnici del progetto nel blocco Avanzate (T-2602): fonte dei suggerimenti (solo per il root admin), volumi
- * di ricerca, volume minimo, profilo del punteggio e i parametri sì/no, ciascuno con una riga di spiegazione.
+ * di ricerca, volume minimo, profilo del punteggio e i parametri sì/no, ciascuno con una riga di spiegazione. Per chi ha
+ * i dati con licenza la riga dei volumi propone DataForSEO: i volumi arrivano alla fine di ogni ricerca (T-6103).
  */
 export function AdvancedProjectFields({ values, update, canEditAutocompleteProvider, showLicensedProvider }: AdvancedProjectFieldsProps) {
   const t = useTranslations("projects.fields");
@@ -119,7 +120,11 @@ export function AdvancedProjectFields({ values, update, canEditAutocompleteProvi
           </SettingField>
         )}
 
-        <SettingField id="metrics_provider" label={t("metricsProvider")} hint={t("metricsProviderHint")}>
+        <SettingField
+          id="metrics_provider"
+          label={t("metricsProvider")}
+          hint={t(showLicensedProvider ? "metricsProviderLicensedHint" : "metricsProviderHint")}
+        >
           <select
             id="metrics_provider"
             className="select"

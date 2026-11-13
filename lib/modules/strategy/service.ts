@@ -158,6 +158,32 @@ const PERIMETER_SELECT = {
 } satisfies Prisma.KeywordCandidateSelect;
 
 /**
+ * Clausole del perimetro della strategia (T-1903): le keyword tenute del progetto (o le sole approvate nella modalità
+ * esperta), con sezione, volume minimo, intento e tipo come i filtri dei risultati. Con minVolume false il volume minimo
+ * non conta: i volumi chiesti prima del piano (T-6102) servono proprio alle keyword che non lo hanno ancora.
+ */
+export function perimeterWhere(
+  projectId: string,
+  settings: StrategySettings,
+  options: { minVolume?: boolean } = {}
+): Prisma.KeywordCandidateWhereInput {
+  return {
+    AND: [
+      ...buildResultsClauses(
+        projectId,
+        {
+          minVolume: options.minVolume === false ? undefined : (settings.minVolume ?? undefined),
+          searchIntent: settings.searchIntent ?? undefined,
+          keywordType: settings.keywordType ?? undefined,
+        },
+        settings.sectionId
+      ),
+      settings.reviewStatus === "approved" ? { review_status: "approved" } : KEPT_WHERE,
+    ],
+  };
+}
+
+/**
  * Keyword del perimetro (T-1903): le tenute (regola unica di T-2401, quindi anche una keyword di marchio tenuta a mano),
  * oppure le sole approvate nella modalità esperta, mai le scartate; sezione, volume minimo, intento e tipo con le
  * clausole dei filtri dei risultati. Ordinate per priorità, una per forma canonica, al massimo limit (5000, D-35, meno
@@ -165,20 +191,7 @@ const PERIMETER_SELECT = {
  */
 async function loadPerimeter(projectId: string, settings: StrategySettings, exclude: Set<string>, limit: number) {
   const rows = await prisma.keywordCandidate.findMany({
-    where: {
-      AND: [
-        ...buildResultsClauses(
-          projectId,
-          {
-            minVolume: settings.minVolume ?? undefined,
-            searchIntent: settings.searchIntent ?? undefined,
-            keywordType: settings.keywordType ?? undefined,
-          },
-          settings.sectionId
-        ),
-        settings.reviewStatus === "approved" ? { review_status: "approved" } : KEPT_WHERE,
-      ],
-    },
+    where: perimeterWhere(projectId, settings),
     select: PERIMETER_SELECT,
   });
 

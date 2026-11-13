@@ -39,7 +39,9 @@ async function spent(client: Client, where: Prisma.MetricsProviderRequestWhereIn
 
 /**
  * Prenota una richiesta se lo speso del mese UTC e quello dell'estrazione (le richieste già prenotate da questa
- * estrazione) più il costo stimato restano entro i tetti; altrimenti nessuna riga e il motivo del blocco.
+ * estrazione) più il costo stimato restano entro i tetti; altrimenti nessuna riga e il motivo del blocco. Il costo
+ * stimato è METRICS_COST_PER_REQUEST_USD (volumi), oppure estimatedCostUsd quando il prezzo dipende dal numero di task
+ * (risultati di Google, T-6101).
  */
 export async function reserveProviderRequest(input: {
   provider: MetricsProvider;
@@ -47,8 +49,9 @@ export async function reserveProviderRequest(input: {
   jobId?: string;
   keywordCount: number;
   runRequestIds: string[];
+  estimatedCostUsd?: number;
 }): Promise<Reservation> {
-  const estimate = getUsdEnv("METRICS_COST_PER_REQUEST_USD");
+  const estimate = input.estimatedCostUsd ?? getUsdEnv("METRICS_COST_PER_REQUEST_USD");
   const monthlyBudget = getUsdEnv("METRICS_MONTHLY_BUDGET_USD");
   const runBudget = getUsdEnv("METRICS_RUN_BUDGET_USD");
 

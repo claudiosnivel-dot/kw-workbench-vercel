@@ -17,6 +17,8 @@ type ProjectSettingsFormProps = {
   /** Scheda «Per gli articoli» (T-4001), salvata con lo stesso Salva. */
   initialArticleBrief: ArticleBriefValues;
   canEditAutocompleteProvider: boolean;
+  /** Chi apre la pagina può usare i dati con licenza nel workspace (canUseLicensedMetrics, T-6103): vede DataForSEO. */
+  canUseLicensedMetrics: boolean;
   /** Permesso project.update (T-4001): senza, la scheda «Per gli articoli» è in sola lettura. */
   canEditArticleBrief: boolean;
   /** Blocco dei marchi dei concorrenti (T-2601), tra «Il progetto» e le Avanzate: si salva da solo. */
@@ -33,6 +35,7 @@ export function ProjectSettingsForm({
   initialValues,
   initialArticleBrief,
   canEditAutocompleteProvider,
+  canUseLicensedMetrics,
   canEditArticleBrief,
   brands,
 }: ProjectSettingsFormProps) {
@@ -41,8 +44,9 @@ export function ProjectSettingsForm({
   const tCommon = useTranslations("common");
   const router = useRouter();
   const formId = useId();
-  // DataForSEO ha un costo per richiesta: lo sceglie solo il root admin, chi lo ha già lo vede selezionato (T-902).
-  const showLicensedProvider = canEditAutocompleteProvider || initialValues.metrics_provider === "DATAFORSEO";
+  // DataForSEO ha un costo per richiesta: lo vede chi ha i dati con licenza, chi lo ha già lo vede selezionato (T-902,
+  // T-6103); la PATCH lo riverifica (D-30).
+  const showLicensedProvider = canUseLicensedMetrics || initialValues.metrics_provider === "DATAFORSEO";
   const { values, update } = useFormValues<ProjectSettingsValues>(initialValues)
   const articleBrief = useFormValues<ArticleBriefValues>(initialArticleBrief);
   const { saving, error, success, save } = useSaveAction();
