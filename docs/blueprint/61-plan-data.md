@@ -146,3 +146,36 @@ Oggi il piano lavora solo sulle parole delle keyword e i volumi arrivano solo se
 - T-6103 aggiunto il 2026-11-13 sulla scelta dell'utente «alla fine della ricerca» (volumi mentre si scelgono le keyword, non solo dopo); T-6102 resta come rete di sicurezza per i progetti esistenti e le keyword importate.
 - Scelte dell'agente, nel design: coda priority, cache di 30 giorni, solo gli URL organic, volumi già presenti non richiesti, chi non ha i dati con licenza non spende; DataForSEO predefinito solo per i progetti nuovi.
 - Ordine: dopo il 60; prepara il 62 e il 63.
+- Note di costruzione (2026-11-13, scelte dell'agente da confermare):
+  - fatti della SERP API riletti il 2026-11-13 e registrati in `docs/METRICS-PROVIDERS.md`: 100 task per chiamata a
+    task_post (prima si scriveva «entro il massimo della documentazione»), fino a 10000 chiamate al minuto, tasks_ready
+    fino a 20 chiamate al minuto e 1000 task per chiamata, risultati leggibili per 30 giorni, codici 20100, 40601 e
+    40602; prezzi invariati rispetto al design (0,0006 $ standard, 0,0012 $ priority, 0,002 $ live per SERP);
+  - migrazione additiva `0053_keyword_serps` con RLS abilitata senza policy (T-205); la tabella non ha project_id:
+    i risultati di Google di una keyword sono gli stessi per tutti, quindi la cache è unica per forma canonica, lingua
+    e paese e nessun progetto vede le keyword di un altro (la lettura è solo per chiave);
+  - `lib/modules/providers/serp/dataforseo-serp.ts`: `postSerpTasks` con un tentativo per lotto (nessun nuovo tentativo:
+    un lotto non riuscito lascia le sue keyword senza risultati e il piano del 62-63 usa il motore di riserva);
+    `collectSerpTasks` legge tasks_ready e poi task_get/regular solo per i task richiesti e pronti, 10 in parallelo
+    (il massimo dell'account è 30 richieste simultanee), e salva solo gli URL `organic` fino a 2048 caratteri;
+  - `reserveProviderRequest` accetta un costo stimato (`estimatedCostUsd`): per i risultati di Google è 0,0012 $ per
+    task, per i volumi resta `METRICS_COST_PER_REQUEST_USD`; le righe dei risultati contano anche nel limitatore dei
+    volumi (12 richieste al minuto), una scelta prudente;
+  - `resolveDataForSeoTarget` in `dataforseo-targets.ts` (credenziali, location e lingua) è condiviso da volumi e
+    risultati: il provider dei volumi lo usa senza cambiare comportamento;
+  - `lib/modules/plan-data/serps.ts`: `requestSerps` (risultati recenti riusati, una richiesta per forma canonica) e
+    `collectSerps`, entrambi con la regola dei dati con licenza, per il lavoro di piano del 62;
+  - T-6102: `canChooseLicensedMetrics` rinominata `canUseLicensedMetrics` (stessa regola, usata anche da «Aggiungi i
+    volumi»), invece di una seconda funzione uguale; `perimeterWhere` estratta da `loadPerimeter` del piano;
+    `fillPerimeterVolumes` non applica il volume minimo del perimetro (servirebbe proprio il volume mancante), scrive
+    solo le keyword che ricevono un volume (un lotto rifiutato lascia le altre come sono, senza `failed`), raggruppa per
+    lingua e paese effettivi della sezione e ricalcola il punteggio con il profilo della sezione; la quota mensile del
+    fornitore con licenza si riserva per tutte le keyword in una volta, prima della chiamata;
+  - T-6103: `defaultMetricsProvider` in `lib/billing/enforce.ts`, chiamato da POST /api/projects (solo senza
+    `metrics_provider` nel corpo) e dall'avvio rapido (che non ha il campo); nella pagina delle impostazioni del
+    progetto DataForSEO compare per chi ha i dati con licenza (prima solo per il root admin) con il testo d'aiuto
+    «Con DataForSEO i volumi arrivano alla fine di ogni ricerca e costano qualche centesimo»; la finestra delle
+    impostazioni dell'argomento resta com'è (fuori dal DoD); es-419 «unos centavos» contro «unos céntimos» di es-ES
+    (registro di `docs/I18N-ES.md`).
+- Copertura non verificata (dichiarata): nessuna chiamata reale a DataForSEO (credenziali dell'utente, D-30); E2E e
+  baseline visive li esegue la CI; potere delle asserzioni (AT-1 Fase C) non eseguito.
