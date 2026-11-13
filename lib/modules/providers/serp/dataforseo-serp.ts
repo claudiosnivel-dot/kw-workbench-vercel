@@ -177,12 +177,10 @@ type Collected = { kind: "saved" | "pending" | "failed"; task: SerpTask; error?:
  */
 export async function collectSerpTasks(tasks: SerpTask[], context: MetricsContext): Promise<SerpCollectOutcome> {
   const outcome: SerpCollectOutcome = { saved: [], pending: [], failed: [] };
-  if (tasks.length === 0) {
-    return outcome;
-  }
-  const request = resolveDataForSeoTarget(context);
-  if ("notice" in request) {
-    return { ...outcome, pending: tasks, notice: request.notice };
+  // Nessun task: nessuna chiamata. Senza credenziali o target i task restano in attesa con il motivo.
+  const request = tasks.length > 0 ? resolveDataForSeoTarget(context) : null;
+  if (request === null || "notice" in request) {
+    return request === null ? outcome : { ...outcome, pending: tasks, notice: request.notice };
   }
   const ready = await readyTaskIds(request.authorization);
   if ("error" in ready) {

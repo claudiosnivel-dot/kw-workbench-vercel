@@ -111,18 +111,23 @@ function updateValues(candidate: Candidate, metric: KeywordMetric, scoringProfil
   )`;
 }
 
+// SQL statico dell'aggiornamento, come la scrittura dei risultati dell'estrazione (candidates.ts): nessun valore dentro
+// questi frammenti, i dati entrano solo come parametri legati (updateValues e l'id del progetto).
+const UPDATE_METRICS = Prisma.sql`
+  UPDATE "keyword_candidates" AS k SET
+    "metrics_status" = v.status, "metrics_provider" = v.provider, "avg_monthly_searches" = v.volume,
+    "competition" = v.competition, "low_top_of_page_bid_micros" = v.low_bid, "high_top_of_page_bid_micros" = v.high_bid,
+    "metrics_precision" = v.precision, "score" = v.score, "score_source" = v.score_source,
+    "metrics_updated_at" = v.at, "updated_at" = v.at
+  FROM (VALUES`;
+const UPDATE_METRICS_ROWS = Prisma.sql`) AS v(id, status, provider, volume, competition, low_bid, high_bid, precision, score, score_source, at)
+  WHERE k."id" = v.id AND k."project_id" =`;
+
 /** Scrive metriche e punteggio sulle keyword del progetto (project_id nel where, CWE-639); review_status non si tocca. */
 async function writeMetrics(projectId: string, values: Prisma.Sql[]): Promise<void> {
   for (let start = 0; start < values.length; start += UPDATE_CHUNK_SIZE) {
     const part = Prisma.join(values.slice(start, start + UPDATE_CHUNK_SIZE));
-    await prisma.$executeRaw`
-      UPDATE "keyword_candidates" AS k SET
-        "metrics_status" = v.status, "metrics_provider" = v.provider, "avg_monthly_searches" = v.volume,
-        "competition" = v.competition, "low_top_of_page_bid_micros" = v.low_bid, "high_top_of_page_bid_micros" = v.high_bid,
-        "metrics_precision" = v.precision, "score" = v.score, "score_source" = v.score_source,
-        "metrics_updated_at" = v.at, "updated_at" = v.at
-      FROM (VALUES ${part}) AS v(id, status, provider, volume, competition, low_bid, high_bid, precision, score, score_source, at)
-      WHERE k."id" = v.id AND k."project_id" = ${projectId}`;
+    await prisma.$executeRaw`${UPDATE_METRICS} ${part} ${UPDATE_METRICS_ROWS} ${projectId}`;
   }
 }
 
