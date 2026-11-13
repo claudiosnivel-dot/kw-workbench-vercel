@@ -11,7 +11,12 @@ import { startPlanRun } from "@/lib/client/plan-run";
 import { planHref } from "@/lib/modules/next-step";
 import type { StrategyRuleLimits, StrategyRules } from "@/lib/modules/strategy/types";
 
-const NUMERIC_RULES = ["minKeywordsPerSpoke", "minSpokeVolume", "maxSpokesPerHub", "questionSpokeVolume"] as const;
+const NUMERIC_RULES = ["minKeywordsPerSpoke", "minSpokeVolume", "maxSpokesPerHub", "questionSpokeVolume", "serpPageOverlap", "serpHubOverlap"] as const;
+/** Regole del raggruppamento per risultati di Google (T-6303): testo d'aiuto sotto il campo, legato con aria-describedby. */
+const RULE_HELP: Partial<Record<(typeof NUMERIC_RULES)[number], "serpPageOverlapHelp" | "serpHubOverlapHelp">> = {
+  serpPageOverlap: "serpPageOverlapHelp",
+  serpHubOverlap: "serpHubOverlapHelp",
+};
 
 type StrategySettingsProps = {
   projectId: string;
@@ -184,20 +189,32 @@ export function StrategySettings({ projectId, sections, defaults, limits, regene
 
           <fieldset className="grid gap-3 md:col-span-2 md:grid-cols-2">
             <legend className="label">{t("rules")}</legend>
-            {NUMERIC_RULES.map((rule) => (
-              <label key={rule} className="block">
-                <span className="label">{t(rule)}</span>
-                <input
-                  className="input"
-                  type="number"
-                  required
-                  min={limits[rule].min}
-                  max={limits[rule].max}
-                  value={advanced.rules[rule]}
-                  onChange={(event) => updateRule({ [rule]: event.target.value })}
-                />
-              </label>
-            ))}
+            {NUMERIC_RULES.map((rule) => {
+              const help = RULE_HELP[rule];
+              const helpId = `${panelId}-${rule}-help`;
+              return (
+                <div key={rule}>
+                  <label className="block">
+                    <span className="label">{t(rule)}</span>
+                    <input
+                      className="input"
+                      type="number"
+                      required
+                      min={limits[rule].min}
+                      max={limits[rule].max}
+                      value={advanced.rules[rule]}
+                      aria-describedby={help ? helpId : undefined}
+                      onChange={(event) => updateRule({ [rule]: event.target.value })}
+                    />
+                  </label>
+                  {help && (
+                    <p id={helpId} className="mt-1 text-xs text-slate-600">
+                      {t(help)}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
             <label className="block">
               <span className="label">{t("questionsAs")}</span>
               <select

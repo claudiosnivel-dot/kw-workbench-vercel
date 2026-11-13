@@ -113,7 +113,7 @@ prima e dopo (per l'elenco `models` anche quando cambia solo l'ordine).
 ## Registro delle richieste e uso dei modelli
 
 - **Registro** (T-3901, tabella `ai_requests`, migrazione `0047_ai_requests`): `requestWithFallback` scrive una riga
-  per ogni tentativo verso un modello appena chiuso, con funzione (`titles` o `article`), modello, esito (`ok`,
+  per ogni tentativo verso un modello appena chiuso, con funzione (`titles`, `article` o, dal modulo 63, `plan`), modello, esito (`ok`,
   `provider_busy`, `account_daily_limit`, `account_rate_limit`, `unavailable`, `timeout`, `invalid_response`, `auth`),
   status HTTP (null senza risposta), durata della chiamata, workspace del progetto e se è il root admin. Nessuna
   colonna per testi, keyword o messaggi del fornitore. Una scrittura non riuscita non ferma la proposta e lascia nel log
@@ -324,3 +324,23 @@ utenti»); senza la chiave di OpenRouter restano spenti.
   caratteri crea un lavoro con scope `SECTION`; il tetto della piattaforma deve avere posto per 3 richieste, poi il
   limite `sectionRewritesPerWorkspaceDaily` del workspace nelle ultime 24 ore (429 `RATE_LIMITED`), root admin escluso.
   L'avvio fa crescere la version dell'articolo e il blocco riscritto torna `edited` false.
+
+## Luoghi e concorrenti del piano (modulo 63)
+
+- **Quando** (T-6301, T-6303): nella fase `classify` del lavoro di piano, dopo i risultati di Google e solo se ci sono
+  per almeno metà delle prime 1000 keyword del perimetro; altrimenti il piano usa il motore di oggi e il modello non si
+  chiama. Le keyword si classificano a gruppi di 300, uno per passo della fase, con al più una richiesta con i modelli di
+  riserva ciascuno (45 s per modello, 100 s per richiesta, entro la lease del passo).
+- **Prima del modello**: una keyword con un modificatore locale («vicino a me», «zona», `modifiers.ts`) è `place`; una
+  keyword che contiene, senza punti, il nome del dominio del primo risultato organico (senza www e senza dominio di
+  primo livello, almeno 4 caratteri) è `competitor`. Le altre vanno al modello.
+- **Cosa parte**: istruzioni in italiano, in spagnolo con la variante del paese o in inglese con la lingua del piano, e
+  nel messaggio dell'utente solo `{"keywords": [...]}` con le forme canoniche; nessun volume, progetto o utente.
+  `temperature` 0 e `max_tokens` 4000.
+- **Risposta**: un oggetto JSON con le sole keyword `place` o `competitor`; forme non inviate e classi sconosciute non
+  contano, quelle mancanti sono `other`. Testo non JSON: `invalid_response` e il modello successivo. Un gruppo senza
+  risposta valida tiene i soli riconoscimenti fissi e lascia `AI_CLASSIFY_UNAVAILABLE` in `grouping_notice`.
+- **Spenta o al tetto**: con la funzione spenta o senza chiave nessuna richiesta e `AI_NOT_CONFIGURED`; con il tetto
+  della piattaforma raggiunto (chi non è root admin) nessuna richiesta e `AI_CLASSIFY_UNAVAILABLE`. Ogni tentativo
+  scrive la sua riga di `ai_requests` con funzione `plan` (migrazione additiva `0055_ai_feature_plan`); nel log
+  `plan_classify` solo conteggi, durata, modello ed esiti.

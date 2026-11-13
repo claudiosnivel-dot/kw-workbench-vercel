@@ -4,6 +4,8 @@
 // progetto; il cron reap-jobs riprende un lavoro fermo dalla sua fase; lo stato si legge solo dal proprio progetto. In
 // più la raccolta oltre i 10 minuti (SERP_TIMEOUT) e il tetto dei tentativi. La continuazione è sostituita da un
 // registratore: nessuna chiamata HTTP verso le rotte interne.
+// impacted-by: T-6303 (con i risultati di Google per almeno metà delle keyword la strategia ha grouping_source SERP; in
+// AC-6201-1 l'AI è attiva con OpenRouter simulato, così luoghi e concorrenti non lasciano il motivo AI_NOT_CONFIGURED)
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as reapJobsCron } from "@/app/api/cron/reap-jobs/route";
@@ -17,6 +19,7 @@ import { resetDataForSeoLimiterForTests } from "@/lib/modules/providers/metrics/
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
+import { saveAiSettings, stubOpenRouterEnv } from "../helpers/ai-titles";
 import { callRoute } from "../helpers/http";
 import { finishPlanRun } from "../helpers/plan-run";
 
@@ -47,6 +50,10 @@ const api = vi.hoisted(() => ({
 /** DataForSEO simulato: volumi (search_volume/live) e risultati di Google in coda priority (task_post, tasks_ready, task_get). */
 const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
   const url = String(input);
+  if (url.startsWith("https://openrouter.test/")) {
+    // OpenRouter simulato: nessun luogo e nessun concorrente fra le keyword inviate.
+    return Response.json({ model: "autore/modello-prova:free", choices: [{ message: { content: "{}" } }] });
+  }
   if (url.includes("/keywords_data/google_ads/search_volume/live")) {
     const [task] = JSON.parse(String(init?.body)) as { keywords: string[] }[];
     const result = task.keywords.map((keyword, index) => ({ keyword, spell: null, search_volume: 100 + index * 10, competition_index: 30 }));
@@ -95,6 +102,8 @@ beforeEach(async () => {
   vi.stubEnv("METRICS_COST_PER_REQUEST_USD", "0.09");
   vi.stubEnv("METRICS_MONTHLY_BUDGET_USD", "10");
   vi.stubEnv("METRICS_RUN_BUDGET_USD", "10");
+  vi.stubEnv("APP_ENCRYPTION_KEY", randomBytes(32).toString("hex"));
+  stubOpenRouterEnv();
   resetEnvForTests();
   resetDataForSeoLimiterForTests();
   vi.stubGlobal("fetch", fetchMock);
@@ -146,6 +155,7 @@ describe("lavoro di piano", () => {
   it("per il root admin chiede volumi e risultati di Google, salva la strategia e chiude il lavoro senza avviso", async () => {
     const admin = await createUserWithSession({ isRootAdmin: true });
     const projectId = await projectWithKeywords(admin);
+    await saveAiSettings();
 
     const runId = await startedRun(admin, projectId);
 
@@ -158,7 +168,7 @@ describe("lavoro di piano", () => {
     expect(keywords.map((row) => typeof row.avg_monthly_searches)).toEqual(KEYWORDS.map(() => "number"));
     expect(await prisma.keywordSerp.count()).toBe(6);
     const strategy = await prisma.strategy.findUniqueOrThrow({ where: { id: run.strategy_id! } });
-    expect(strategy).toMatchObject({ project_id: projectId, grouping_source: "ENGINE", grouping_notice: null, considered_count: 6 });
+    expect(strategy).toMatchObject({ project_id: projectId, grouping_source: "SERP", grouping_notice: null, considered_count: 6 });
     expect((await prisma.strategyKeyword.findMany({ where: { strategy_id: strategy.id } })).every((row) => row.volume !== null)).toBe(true);
   });
 

@@ -22,7 +22,9 @@ export type ModifierCategory = (typeof MODIFIER_CATEGORIES)[number];
 
 /**
  * Motivi del piano (T-1901): i primi cinque spiegano perché esiste una pagina (reason_code), MERGED_INTO_PILLAR le
- * keyword confluite nella pagina pilastro e UNASSIGNED le keyword senza hub. Ognuno ha il testo in strategy.reasons.
+ * keyword confluite nella pagina pilastro e UNASSIGNED le keyword senza hub. Il motore per risultati di Google (T-6302)
+ * aggiunge HUB_SERP (pilastro), SPOKE_SERP (pagina per intento), SPOKE_LOCAL (pagina locale) e COMPETITOR (keyword di un
+ * concorrente tra le non assegnate). Ognuno ha il testo in strategy.reasons.
  */
 export const STRATEGY_REASON_CODES = [
   "HUB_SEED",
@@ -32,20 +34,36 @@ export const STRATEGY_REASON_CODES = [
   "SPOKE_QUESTION",
   "MERGED_INTO_PILLAR",
   "UNASSIGNED",
+  "HUB_SERP",
+  "SPOKE_SERP",
+  "SPOKE_LOCAL",
+  "COMPETITOR",
 ] as const;
 export type StrategyReasonCode = (typeof STRATEGY_REASON_CODES)[number];
 
 export type ReasonParams = Record<string, string | number>;
 export type PlanReason = { code: StrategyReasonCode; params: ReasonParams };
 
-/** Regole del raggruppamento (lib/modules/strategy/rules.ts). */
+/**
+ * Regole del raggruppamento (lib/modules/strategy/rules.ts); serpPageOverlap e serpHubOverlap valgono solo per il motore
+ * per risultati di Google (T-6302): URL in comune per la stessa pagina e per lo stesso hub.
+ */
 export type StrategyRules = {
   minKeywordsPerSpoke: number;
   minSpokeVolume: number;
   maxSpokesPerHub: number;
   questionSpokeVolume: number;
   questionsAs: "faq" | "spokes";
+  serpPageOverlap: number;
+  serpHubOverlap: number;
 };
+
+/**
+ * Classe di una keyword per il piano (T-6301): place nomina un luogo, competitor cerca un altro sito o un'altra attività,
+ * other tutte le altre.
+ */
+export const KEYWORD_CLASSES = ["place", "competitor", "other"] as const;
+export type KeywordClass = (typeof KEYWORD_CLASSES)[number];
 
 /** Limiti ammessi delle regole numeriche nella modalità esperta (lib/modules/strategy/rules.ts). */
 export type StrategyRuleLimits = Record<Exclude<keyof StrategyRules, "questionsAs">, { min: number; max: number }>;
@@ -86,9 +104,15 @@ export type PlanAnchor = { ref: string; main: string; open: boolean };
 
 /**
  * Piano restituito da buildStrategyPlan: pagine nell'ordine di lavoro e keyword non assegnate per priorità; con le
- * ancore, le keyword nuove che vanno nella pagina pilastro di un hub ancorato (anchored, per ref dell'ancora).
+ * ancore, le keyword nuove che vanno nella pagina pilastro di un hub ancorato (anchored, per ref dell'ancora). Il motore
+ * per risultati di Google (T-6302) dà anche il motivo di ogni keyword non assegnata, per forma canonica.
  */
-export type StrategyPlan = { pages: PlanPage[]; unassigned: string[]; anchored: { ref: string; secondary: string[] }[] };
+export type StrategyPlan = {
+  pages: PlanPage[];
+  unassigned: string[];
+  anchored: { ref: string; secondary: string[] }[];
+  unassignedReasons?: Record<string, Extract<StrategyReasonCode, "COMPETITOR" | "UNASSIGNED">>;
+};
 
 /** Keyword di una strategia salvata, come la leggono pagina, export e PDF. */
 export type StrategyKeywordView = {

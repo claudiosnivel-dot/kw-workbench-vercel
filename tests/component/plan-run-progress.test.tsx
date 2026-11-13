@@ -136,4 +136,18 @@ describe("avviso del raggruppamento di riserva", () => {
     renderWithIntl(<PlanGroupingNotice grouping={{ source: "ENGINE", notice: "SERP_TIMEOUT" }} />);
     expect(screen.getByRole("status")).toHaveTextContent("I risultati di Google non sono arrivati in tempo.");
   });
+
+  // impacted-by: T-6303 (motivi SERP_TOO_FEW e dell'AI; con SERP come fonte il titolo dice che il raggruppamento usa i
+  // risultati di Google e non c'è il testo del raggruppamento per parole)
+  it("con SERP e l'AI che non ha risposto dice perché luoghi e concorrenti sono riconosciuti in parte; SERP_TOO_FEW ha il suo testo", () => {
+    const { unmount } = renderWithIntl(<PlanGroupingNotice grouping={{ source: "SERP", notice: "AI_CLASSIFY_UNAVAILABLE" }} />);
+    const notice = screen.getByRole("status");
+    expect(notice).toHaveTextContent("Raggruppamento con i risultati di Google");
+    expect(notice).toHaveTextContent("L'AI non ha risposto: luoghi e concorrenti sono riconosciuti solo da parole come «vicino a me»");
+    expect(notice).not.toHaveTextContent("Le keyword sono raggruppate per le parole che hanno in comune");
+    unmount();
+
+    renderWithIntl(<PlanGroupingNotice grouping={{ source: "ENGINE", notice: "SERP_TOO_FEW" }} />);
+    expect(screen.getByRole("status")).toHaveTextContent("I risultati di Google sono arrivati per meno di metà delle keyword.");
+  });
 });

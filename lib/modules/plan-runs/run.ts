@@ -99,7 +99,7 @@ export async function advancePlanRun(runId: string, deadlineMs: number): Promise
     if (!phase) throw new Error(`Lavoro di piano ${runId}: fase sconosciuta ${run.phase}`);
     let outcome: Awaited<ReturnType<typeof phase>>;
     try {
-      outcome = await phase({ run, lease, memo });
+      outcome = await phase({ run, lease, memo, deadlineMs });
     } catch (error) {
       if (error instanceof PlanRunLeaseLostError) continue;
       if (!(error instanceof AppError)) throw error;

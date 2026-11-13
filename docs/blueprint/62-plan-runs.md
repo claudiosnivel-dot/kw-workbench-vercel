@@ -30,7 +30,7 @@ Oggi POST /strategies genera e salva il piano nella stessa richiesta (T-1903). C
 
   acceptance_criteria:
     - id: AC-6201-1
-      given: "un progetto del root admin con 6 keyword tenute senza volume e DataForSEO simulato per volumi e risultati"
+      given: "un progetto del root admin con 6 keyword tenute senza volume, DataForSEO simulato per volumi e risultati e, dal modulo 63, la funzione AI attiva con OpenRouter simulato"
       when: "invia POST /api/projects/{id}/strategies con mode AUTO e il lavoro arriva in fondo"
       then: "la risposta è 202 con runId; il lavoro è completed con strategy_id della strategia nuova; le 6 keyword hanno il volume e 6 righe in keyword_serps; la strategia ha grouping_notice null"
     - id: AC-6201-2

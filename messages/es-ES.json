@@ -1398,7 +1398,11 @@
       "SPOKE_WORD": "Artículo satélite para las búsquedas que añaden «{word}» al tema de la página pilar.",
       "SPOKE_QUESTION": "Pregunta con {volume, number} búsquedas al mes: merece un artículo propio.",
       "MERGED_INTO_PILLAR": "{count, plural, one {# palabra clave con muy pocas búsquedas para un artículo satélite está en la página pilar.} other {# palabras clave con muy pocas búsquedas para un artículo satélite están en la página pilar.}}",
-      "UNASSIGNED": "Estas palabras clave no contienen entera ninguna palabra clave semilla y no comparten términos con otras palabras clave: ninguna página pilar las reúne."
+      "UNASSIGNED": "Estas palabras clave no contienen entera ninguna palabra clave semilla y no comparten términos con otras palabras clave: ninguna página pilar las reúne.",
+      "HUB_SERP": "Página pilar de «{keyword}», la búsqueda más amplia del grupo: las demás páginas del tema contienen sus palabras o comparten resultados de Google con ella.",
+      "SPOKE_SERP": "Artículo satélite para una sola intención de búsqueda: {count, plural, one {# palabra clave con sus resultados de Google} other {# palabras clave con los mismos resultados de Google}}.",
+      "SPOKE_LOCAL": "Página local: reúne {count, plural, one {# búsqueda con un lugar} other {# búsquedas con un lugar}} en una sola página, en lugar de una página por ciudad.",
+      "COMPETITOR": "Estas palabras clave buscan otro sitio o negocio: quedan fuera del plan."
     },
     "ui": {
       "defaultName": "Estrategia {mode, select, AUTO {automática} other {experta}} del {date, date, short}",
@@ -1425,6 +1429,10 @@
       "questionsAs": "Preguntas por debajo del umbral",
       "questionsAsFaq": "En las preguntas frecuentes de la página más cercana",
       "questionsAsSpokes": "Siempre como artículos satélite",
+      "serpPageOverlap": "Resultados en común para la misma página",
+      "serpPageOverlapHelp": "Dos palabras clave van en la misma página si comparten al menos este número de los 10 primeros resultados de Google.",
+      "serpHubOverlap": "Resultados en común para la misma página pilar",
+      "serpHubOverlapHelp": "Una página es un artículo satélite de una página pilar si contiene todas sus palabras o si sus palabras clave principales comparten al menos este número de resultados de Google.",
       "mode": {
         "AUTO": "Automática",
         "EXPERT": "Experta"
@@ -1864,6 +1872,7 @@
         "volumes": "Buscando el volumen de búsqueda",
         "serps_post": "Leyendo los resultados de Google",
         "serps_collect": "Leyendo los resultados de Google",
+        "classify": "Detectando lugares y competencia",
         "cluster": "Agrupando las palabras clave",
         "save": "Guardando el plan",
         "done": "Guardando el plan"
@@ -1873,10 +1882,14 @@
     },
     "grouping": {
       "title": "Agrupación de reserva",
+      "serpTitle": "Agrupación con los resultados de Google",
       "text": "Las palabras clave se agrupan por las palabras que comparten, sin los resultados de Google.",
       "reason": {
         "PROVIDER_ERROR": "DataForSEO no ha respondido para algunas palabras clave.",
-        "SERP_TIMEOUT": "Los resultados de Google no han llegado a tiempo."
+        "SERP_TIMEOUT": "Los resultados de Google no han llegado a tiempo.",
+        "SERP_TOO_FEW": "Los resultados de Google han llegado para menos de la mitad de las palabras clave.",
+        "AI_CLASSIFY_UNAVAILABLE": "La IA no ha respondido: los lugares y la competencia solo se reconocen por palabras como «cerca de mí» y por el nombre del sitio en los resultados.",
+        "AI_NOT_CONFIGURED": "La IA no está activa: los lugares y la competencia solo se reconocen por palabras como «cerca de mí» y por el nombre del sitio en los resultados."
       }
     },
     "groupBy": "Agrupar por",

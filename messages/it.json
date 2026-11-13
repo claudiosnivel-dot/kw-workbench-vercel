@@ -1398,7 +1398,11 @@
       "SPOKE_WORD": "Articolo satellite per le ricerche che aggiungono «{word}» al tema dell'hub.",
       "SPOKE_QUESTION": "Domanda con {volume, number} ricerche al mese: merita un articolo dedicato.",
       "MERGED_INTO_PILLAR": "{count, plural, one {# keyword con troppe poche ricerche per uno spoke è nella pagina pilastro.} other {# keyword con troppe poche ricerche per uno spoke sono nella pagina pilastro.}}",
-      "UNASSIGNED": "Queste keyword non contengono per intero nessuna parola di partenza e non condividono termini con altre keyword: nessuna pagina pilastro le raccoglie."
+      "UNASSIGNED": "Queste keyword non contengono per intero nessuna parola di partenza e non condividono termini con altre keyword: nessuna pagina pilastro le raccoglie.",
+      "HUB_SERP": "Pagina pilastro su «{keyword}», la ricerca più ampia del gruppo: le altre pagine dell'hub ne contengono le parole o hanno risultati di Google in comune con lei.",
+      "SPOKE_SERP": "Articolo satellite per un solo intento di ricerca: {count, plural, one {# keyword con i suoi risultati di Google} other {# keyword con gli stessi risultati di Google}}.",
+      "SPOKE_LOCAL": "Pagina locale: raccoglie {count, plural, one {# ricerca con un luogo} other {# ricerche con un luogo}} in un'unica pagina, invece di una pagina per ogni città.",
+      "COMPETITOR": "Queste keyword cercano un altro sito o un'altra attività: restano fuori dal piano."
     },
     "ui": {
       "defaultName": "Strategia {mode, select, AUTO {automatica} other {esperta}} del {date, date, short}",
@@ -1425,6 +1429,10 @@
       "questionsAs": "Domande sotto la soglia",
       "questionsAsFaq": "Nella FAQ della pagina più vicina",
       "questionsAsSpokes": "Sempre come spoke",
+      "serpPageOverlap": "Risultati in comune per la stessa pagina",
+      "serpPageOverlapHelp": "Due keyword vanno nella stessa pagina se hanno almeno questo numero dei primi 10 risultati di Google in comune.",
+      "serpHubOverlap": "Risultati in comune per lo stesso hub",
+      "serpHubOverlapHelp": "Una pagina è uno spoke di una pagina pilastro se contiene tutte le sue parole o se le loro keyword principali hanno almeno questo numero di risultati di Google in comune.",
       "mode": {
         "AUTO": "Automatica",
         "EXPERT": "Esperta"
@@ -1864,6 +1872,7 @@
         "volumes": "Cerco i volumi",
         "serps_post": "Leggo i risultati di Google",
         "serps_collect": "Leggo i risultati di Google",
+        "classify": "Riconosco luoghi e concorrenti",
         "cluster": "Raggruppo le keyword",
         "save": "Salvo il piano",
         "done": "Salvo il piano"
@@ -1873,10 +1882,14 @@
     },
     "grouping": {
       "title": "Raggruppamento di riserva",
+      "serpTitle": "Raggruppamento con i risultati di Google",
       "text": "Le keyword sono raggruppate per le parole che hanno in comune, senza i risultati di Google.",
       "reason": {
         "PROVIDER_ERROR": "DataForSEO non ha risposto per alcune keyword.",
-        "SERP_TIMEOUT": "I risultati di Google non sono arrivati in tempo."
+        "SERP_TIMEOUT": "I risultati di Google non sono arrivati in tempo.",
+        "SERP_TOO_FEW": "I risultati di Google sono arrivati per meno di metà delle keyword.",
+        "AI_CLASSIFY_UNAVAILABLE": "L'AI non ha risposto: luoghi e concorrenti sono riconosciuti solo da parole come «vicino a me» e dal nome del sito nei risultati.",
+        "AI_NOT_CONFIGURED": "L'AI non è attiva: luoghi e concorrenti sono riconosciuti solo da parole come «vicino a me» e dal nome del sito nei risultati."
       }
     },
     "groupBy": "Raggruppa per",

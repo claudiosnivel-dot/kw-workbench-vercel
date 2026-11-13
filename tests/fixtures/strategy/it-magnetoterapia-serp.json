@@ -1,0 +1,800 @@
+{
+  "description": "Fixture di T-6302 e T-6303 (AC-6302-1, AC-6302-2, AC-6302-4, AC-6303-1, AC-6303-2): progetto con la sola seed 'noleggio magnetoterapia'. Keyword scritte a mano sul tema del progetto dell'utente del 2026-11-12, risultati di Google inventati su domini .example (nessun dato personale) e classi di T-6301: costi e prezzi con gli stessi risultati, detrazione e 730 con gli stessi risultati, 20 città place e 'vicino a me', 2 concorrenti e una keyword senza risultati.",
+  "language": "it",
+  "seeds": [
+    "noleggio magnetoterapia"
+  ],
+  "keywords": [
+    {
+      "keyword": "noleggio magnetoterapia",
+      "volume": 1900,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.medicale-beta.example/noleggio",
+        "https://www.portale-salute.example/magnetoterapia",
+        "https://www.ortopedia-gamma.example/noleggio",
+        "https://www.noleggio-elettromedicali.example/magnetoterapia",
+        "https://www.centro-fisio.example/noleggio",
+        "https://www.salute-casa.example/magnetoterapia-noleggio",
+        "https://www.elettromedicali-delta.example/noleggio",
+        "https://www.guida-terapie.example/magnetoterapia"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "noleggio apparecchio magnetoterapia",
+      "volume": 320,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.apparecchi-1.example/pagina",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.apparecchi-2.example/pagina",
+        "https://www.medicale-beta.example/noleggio",
+        "https://www.apparecchi-3.example/pagina",
+        "https://www.noleggio-elettromedicali.example/magnetoterapia",
+        "https://www.apparecchi-4.example/pagina",
+        "https://www.apparecchi-5.example/pagina",
+        "https://www.apparecchi-6.example/pagina"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "magnetoterapia noleggio",
+      "volume": 210,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.noleggi-1.example/pagina",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.noleggi-2.example/pagina",
+        "https://www.medicale-beta.example/noleggio",
+        "https://www.noleggi-3.example/pagina",
+        "https://www.portale-salute.example/magnetoterapia",
+        "https://www.noleggi-4.example/pagina",
+        "https://www.ortopedia-gamma.example/noleggio",
+        "https://www.noleggio-elettromedicali.example/magnetoterapia"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "noleggio magnetoterapia a domicilio",
+      "volume": 140,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.portale-salute.example/magnetoterapia",
+        "https://www.domicilio-1.example/pagina",
+        "https://www.centro-fisio.example/noleggio",
+        "https://www.domicilio-2.example/pagina",
+        "https://www.salute-casa.example/magnetoterapia-noleggio",
+        "https://www.domicilio-3.example/pagina",
+        "https://www.domicilio-4.example/pagina",
+        "https://www.domicilio-5.example/pagina",
+        "https://www.domicilio-6.example/pagina",
+        "https://www.domicilio-7.example/pagina"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "noleggio magnetoterapia costo",
+      "volume": 390,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.prezzi-sanitari.example/magnetoterapia-costo",
+        "https://www.costo-1.example/pagina",
+        "https://www.sanitaria-alfa.example/listino",
+        "https://www.costo-2.example/pagina",
+        "https://www.quanto-costa.example/magnetoterapia",
+        "https://www.medicale-beta.example/prezzi",
+        "https://www.risparmio-salute.example/noleggio-costi",
+        "https://www.offerte-elettromedicali.example/magnetoterapia",
+        "https://www.rent-a.example/noleggio",
+        "https://www.portale-salute.example/magnetoterapia"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "noleggio magnetoterapia prezzi",
+      "volume": 260,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.prezzi-sanitari.example/magnetoterapia-costo",
+        "https://www.prezzi-1.example/pagina",
+        "https://www.sanitaria-alfa.example/listino",
+        "https://www.prezzi-2.example/pagina",
+        "https://www.quanto-costa.example/magnetoterapia",
+        "https://www.prezzi-3.example/pagina",
+        "https://www.medicale-beta.example/prezzi",
+        "https://www.prezzi-4.example/pagina",
+        "https://www.risparmio-salute.example/noleggio-costi",
+        "https://www.offerte-elettromedicali.example/magnetoterapia"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "noleggio magnetoterapia quanto costa",
+      "volume": 140,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.prezzi-sanitari.example/magnetoterapia-costo",
+        "https://www.quanto-1.example/pagina",
+        "https://www.quanto-costa.example/magnetoterapia",
+        "https://www.quanto-2.example/pagina",
+        "https://www.risparmio-salute.example/noleggio-costi",
+        "https://www.quanto-3.example/pagina",
+        "https://www.offerte-elettromedicali.example/magnetoterapia",
+        "https://www.quanto-4.example/pagina",
+        "https://www.quanto-5.example/pagina",
+        "https://www.quanto-6.example/pagina"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "noleggio magnetoterapia detraibile",
+      "volume": 210,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.fisco-facile.example/detrazione-magnetoterapia",
+        "https://www.detraibile-1.example/pagina",
+        "https://www.agenzia-guide.example/spese-sanitarie-730",
+        "https://www.detraibile-2.example/pagina",
+        "https://www.sanitaria-alfa.example/detrazione",
+        "https://www.detraibile-3.example/pagina",
+        "https://www.caf-online.example/magnetoterapia-730",
+        "https://www.portale-fisco.example/detrazioni",
+        "https://www.risparmio-salute.example/detrazione-noleggio",
+        "https://www.rent-a.example/noleggio"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "noleggio magnetoterapia 730",
+      "volume": 170,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.fisco-facile.example/detrazione-magnetoterapia",
+        "https://www.settecentotrenta-1.example/pagina",
+        "https://www.agenzia-guide.example/spese-sanitarie-730",
+        "https://www.settecentotrenta-2.example/pagina",
+        "https://www.caf-online.example/magnetoterapia-730",
+        "https://www.settecentotrenta-3.example/pagina",
+        "https://www.portale-fisco.example/detrazioni",
+        "https://www.settecentotrenta-4.example/pagina",
+        "https://www.risparmio-salute.example/detrazione-noleggio",
+        "https://www.settecentotrenta-5.example/pagina"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "magnetoterapia detrazione fiscale",
+      "volume": 90,
+      "score": 50,
+      "searchIntent": "informational",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.fisco-facile.example/detrazione-magnetoterapia",
+        "https://www.detrazione-1.example/pagina",
+        "https://www.agenzia-guide.example/spese-sanitarie-730",
+        "https://www.detrazione-2.example/pagina",
+        "https://www.sanitaria-alfa.example/detrazione",
+        "https://www.detrazione-3.example/pagina",
+        "https://www.portale-fisco.example/detrazioni",
+        "https://www.detrazione-4.example/pagina",
+        "https://www.detrazione-5.example/pagina",
+        "https://www.detrazione-6.example/pagina"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "magnetoterapia a casa",
+      "volume": 480,
+      "score": 50,
+      "searchIntent": "informational",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.salute-casa.example/magnetoterapia-a-casa",
+        "https://www.casa-1.example/pagina",
+        "https://www.guida-terapie.example/magnetoterapia-domiciliare",
+        "https://www.casa-2.example/pagina",
+        "https://www.fisio-online.example/casa",
+        "https://www.casa-3.example/pagina",
+        "https://www.apparecchi-casa.example/magnetoterapia",
+        "https://www.casa-4.example/pagina",
+        "https://www.benessere-oggi.example/terapie-a-casa",
+        "https://www.rent-a.example/noleggio"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "magnetoterapia domiciliare",
+      "volume": 170,
+      "score": 50,
+      "searchIntent": "informational",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.salute-casa.example/magnetoterapia-a-casa",
+        "https://www.domiciliare-1.example/pagina",
+        "https://www.guida-terapie.example/magnetoterapia-domiciliare",
+        "https://www.domiciliare-2.example/pagina",
+        "https://www.fisio-online.example/casa",
+        "https://www.domiciliare-3.example/pagina",
+        "https://www.apparecchi-casa.example/magnetoterapia",
+        "https://www.domiciliare-4.example/pagina",
+        "https://www.domiciliare-5.example/pagina",
+        "https://www.domiciliare-6.example/pagina"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "magnetoterapia per artrosi",
+      "volume": 590,
+      "score": 50,
+      "searchIntent": "informational",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.medicina-oggi.example/magnetoterapia-artrosi",
+        "https://www.artrosi-1.example/pagina",
+        "https://www.ortopedia-gamma.example/artrosi",
+        "https://www.artrosi-2.example/pagina",
+        "https://www.guida-terapie.example/artrosi",
+        "https://www.artrosi-3.example/pagina",
+        "https://www.reumatologia-info.example/magnetoterapia",
+        "https://www.artrosi-4.example/pagina",
+        "https://www.fisio-online.example/artrosi",
+        "https://www.portale-salute.example/magnetoterapia"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "magnetoterapia artrosi ginocchio",
+      "volume": 140,
+      "score": 50,
+      "searchIntent": "informational",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.medicina-oggi.example/magnetoterapia-artrosi",
+        "https://www.ginocchio-1.example/pagina",
+        "https://www.ortopedia-gamma.example/artrosi",
+        "https://www.ginocchio-2.example/pagina",
+        "https://www.guida-terapie.example/artrosi",
+        "https://www.ginocchio-3.example/pagina",
+        "https://www.reumatologia-info.example/magnetoterapia",
+        "https://www.ginocchio-4.example/pagina",
+        "https://www.ginocchio-5.example/pagina",
+        "https://www.ginocchio-6.example/pagina"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "come funziona la magnetoterapia",
+      "volume": 320,
+      "score": 50,
+      "searchIntent": "informational",
+      "keywordType": "question",
+      "isQuestion": true,
+      "urls": [
+        "https://www.medicina-oggi.example/come-funziona",
+        "https://www.guida-terapie.example/magnetoterapia",
+        "https://www.wiki-salute.example/magnetoterapia",
+        "https://www.funziona-1.example/pagina",
+        "https://www.funziona-2.example/pagina",
+        "https://www.funziona-3.example/pagina",
+        "https://www.funziona-4.example/pagina",
+        "https://www.funziona-5.example/pagina",
+        "https://www.funziona-6.example/pagina",
+        "https://www.funziona-7.example/pagina"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "quante sedute di magnetoterapia",
+      "volume": 90,
+      "score": 50,
+      "searchIntent": "informational",
+      "keywordType": "question",
+      "isQuestion": true,
+      "urls": [
+        "https://www.medicina-oggi.example/magnetoterapia-artrosi",
+        "https://www.portale-salute.example/magnetoterapia",
+        "https://www.domande-salute.example/sedute",
+        "https://www.sedute-1.example/pagina",
+        "https://www.sedute-2.example/pagina",
+        "https://www.sedute-3.example/pagina",
+        "https://www.sedute-4.example/pagina",
+        "https://www.sedute-5.example/pagina",
+        "https://www.sedute-6.example/pagina",
+        "https://www.sedute-7.example/pagina"
+      ],
+      "class": "other"
+    },
+    {
+      "keyword": "noleggio magnetoterapia milano",
+      "volume": 90,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-milano.example/noleggio",
+        "https://www.sanitaria-milano.example/magnetoterapia",
+        "https://www.elettromedicali-milano.example/noleggio",
+        "https://www.milano-1.example/pagina",
+        "https://www.milano-2.example/pagina",
+        "https://www.milano-3.example/pagina",
+        "https://www.milano-4.example/pagina",
+        "https://www.milano-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia roma",
+      "volume": 70,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-roma.example/noleggio",
+        "https://www.sanitaria-roma.example/magnetoterapia",
+        "https://www.elettromedicali-roma.example/noleggio",
+        "https://www.roma-1.example/pagina",
+        "https://www.roma-2.example/pagina",
+        "https://www.roma-3.example/pagina",
+        "https://www.roma-4.example/pagina",
+        "https://www.roma-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia torino",
+      "volume": 50,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-torino.example/noleggio",
+        "https://www.sanitaria-torino.example/magnetoterapia",
+        "https://www.elettromedicali-torino.example/noleggio",
+        "https://www.torino-1.example/pagina",
+        "https://www.torino-2.example/pagina",
+        "https://www.torino-3.example/pagina",
+        "https://www.torino-4.example/pagina",
+        "https://www.torino-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia napoli",
+      "volume": 40,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-napoli.example/noleggio",
+        "https://www.sanitaria-napoli.example/magnetoterapia",
+        "https://www.elettromedicali-napoli.example/noleggio",
+        "https://www.napoli-1.example/pagina",
+        "https://www.napoli-2.example/pagina",
+        "https://www.napoli-3.example/pagina",
+        "https://www.napoli-4.example/pagina",
+        "https://www.napoli-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia bologna",
+      "volume": 40,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-bologna.example/noleggio",
+        "https://www.sanitaria-bologna.example/magnetoterapia",
+        "https://www.elettromedicali-bologna.example/noleggio",
+        "https://www.bologna-1.example/pagina",
+        "https://www.bologna-2.example/pagina",
+        "https://www.bologna-3.example/pagina",
+        "https://www.bologna-4.example/pagina",
+        "https://www.bologna-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia firenze",
+      "volume": 30,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-firenze.example/noleggio",
+        "https://www.sanitaria-firenze.example/magnetoterapia",
+        "https://www.elettromedicali-firenze.example/noleggio",
+        "https://www.firenze-1.example/pagina",
+        "https://www.firenze-2.example/pagina",
+        "https://www.firenze-3.example/pagina",
+        "https://www.firenze-4.example/pagina",
+        "https://www.firenze-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia genova",
+      "volume": 30,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-genova.example/noleggio",
+        "https://www.sanitaria-genova.example/magnetoterapia",
+        "https://www.elettromedicali-genova.example/noleggio",
+        "https://www.genova-1.example/pagina",
+        "https://www.genova-2.example/pagina",
+        "https://www.genova-3.example/pagina",
+        "https://www.genova-4.example/pagina",
+        "https://www.genova-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia palermo",
+      "volume": 20,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-palermo.example/noleggio",
+        "https://www.sanitaria-palermo.example/magnetoterapia",
+        "https://www.elettromedicali-palermo.example/noleggio",
+        "https://www.palermo-1.example/pagina",
+        "https://www.palermo-2.example/pagina",
+        "https://www.palermo-3.example/pagina",
+        "https://www.palermo-4.example/pagina",
+        "https://www.palermo-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia bari",
+      "volume": 20,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-bari.example/noleggio",
+        "https://www.sanitaria-bari.example/magnetoterapia",
+        "https://www.elettromedicali-bari.example/noleggio",
+        "https://www.bari-1.example/pagina",
+        "https://www.bari-2.example/pagina",
+        "https://www.bari-3.example/pagina",
+        "https://www.bari-4.example/pagina",
+        "https://www.bari-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia verona",
+      "volume": 20,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-verona.example/noleggio",
+        "https://www.sanitaria-verona.example/magnetoterapia",
+        "https://www.elettromedicali-verona.example/noleggio",
+        "https://www.verona-1.example/pagina",
+        "https://www.verona-2.example/pagina",
+        "https://www.verona-3.example/pagina",
+        "https://www.verona-4.example/pagina",
+        "https://www.verona-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia padova",
+      "volume": 20,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-padova.example/noleggio",
+        "https://www.sanitaria-padova.example/magnetoterapia",
+        "https://www.elettromedicali-padova.example/noleggio",
+        "https://www.padova-1.example/pagina",
+        "https://www.padova-2.example/pagina",
+        "https://www.padova-3.example/pagina",
+        "https://www.padova-4.example/pagina",
+        "https://www.padova-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia brescia",
+      "volume": 20,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-brescia.example/noleggio",
+        "https://www.sanitaria-brescia.example/magnetoterapia",
+        "https://www.elettromedicali-brescia.example/noleggio",
+        "https://www.brescia-1.example/pagina",
+        "https://www.brescia-2.example/pagina",
+        "https://www.brescia-3.example/pagina",
+        "https://www.brescia-4.example/pagina",
+        "https://www.brescia-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia bergamo",
+      "volume": 20,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-bergamo.example/noleggio",
+        "https://www.sanitaria-bergamo.example/magnetoterapia",
+        "https://www.elettromedicali-bergamo.example/noleggio",
+        "https://www.bergamo-1.example/pagina",
+        "https://www.bergamo-2.example/pagina",
+        "https://www.bergamo-3.example/pagina",
+        "https://www.bergamo-4.example/pagina",
+        "https://www.bergamo-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia lodi",
+      "volume": 10,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-lodi.example/noleggio",
+        "https://www.sanitaria-lodi.example/magnetoterapia",
+        "https://www.elettromedicali-lodi.example/noleggio",
+        "https://www.lodi-1.example/pagina",
+        "https://www.lodi-2.example/pagina",
+        "https://www.lodi-3.example/pagina",
+        "https://www.lodi-4.example/pagina",
+        "https://www.lodi-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia monza",
+      "volume": 10,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-monza.example/noleggio",
+        "https://www.sanitaria-monza.example/magnetoterapia",
+        "https://www.elettromedicali-monza.example/noleggio",
+        "https://www.monza-1.example/pagina",
+        "https://www.monza-2.example/pagina",
+        "https://www.monza-3.example/pagina",
+        "https://www.monza-4.example/pagina",
+        "https://www.monza-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia cremona",
+      "volume": 10,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-cremona.example/noleggio",
+        "https://www.sanitaria-cremona.example/magnetoterapia",
+        "https://www.elettromedicali-cremona.example/noleggio",
+        "https://www.cremona-1.example/pagina",
+        "https://www.cremona-2.example/pagina",
+        "https://www.cremona-3.example/pagina",
+        "https://www.cremona-4.example/pagina",
+        "https://www.cremona-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia pavia",
+      "volume": 10,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-pavia.example/noleggio",
+        "https://www.sanitaria-pavia.example/magnetoterapia",
+        "https://www.elettromedicali-pavia.example/noleggio",
+        "https://www.pavia-1.example/pagina",
+        "https://www.pavia-2.example/pagina",
+        "https://www.pavia-3.example/pagina",
+        "https://www.pavia-4.example/pagina",
+        "https://www.pavia-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia varese",
+      "volume": 10,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-varese.example/noleggio",
+        "https://www.sanitaria-varese.example/magnetoterapia",
+        "https://www.elettromedicali-varese.example/noleggio",
+        "https://www.varese-1.example/pagina",
+        "https://www.varese-2.example/pagina",
+        "https://www.varese-3.example/pagina",
+        "https://www.varese-4.example/pagina",
+        "https://www.varese-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia como",
+      "volume": 10,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-como.example/noleggio",
+        "https://www.sanitaria-como.example/magnetoterapia",
+        "https://www.elettromedicali-como.example/noleggio",
+        "https://www.como-1.example/pagina",
+        "https://www.como-2.example/pagina",
+        "https://www.como-3.example/pagina",
+        "https://www.como-4.example/pagina",
+        "https://www.como-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia piacenza",
+      "volume": 10,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/noleggio",
+        "https://www.sanitaria-alfa.example/noleggio-magnetoterapia",
+        "https://www.ortopedia-piacenza.example/noleggio",
+        "https://www.sanitaria-piacenza.example/magnetoterapia",
+        "https://www.elettromedicali-piacenza.example/noleggio",
+        "https://www.piacenza-1.example/pagina",
+        "https://www.piacenza-2.example/pagina",
+        "https://www.piacenza-3.example/pagina",
+        "https://www.piacenza-4.example/pagina",
+        "https://www.piacenza-5.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggio magnetoterapia vicino a me",
+      "volume": 170,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "local",
+      "urls": [
+        "https://www.rent-a.example/vicino",
+        "https://www.centri-vicini.example/magnetoterapia",
+        "https://www.vicino-1.example/pagina",
+        "https://www.vicino-2.example/pagina",
+        "https://www.vicino-3.example/pagina",
+        "https://www.vicino-4.example/pagina",
+        "https://www.vicino-5.example/pagina",
+        "https://www.vicino-6.example/pagina",
+        "https://www.vicino-7.example/pagina",
+        "https://www.vicino-8.example/pagina"
+      ],
+      "class": "place"
+    },
+    {
+      "keyword": "noleggiomagnetoterapia it",
+      "volume": 110,
+      "score": 50,
+      "searchIntent": "navigational",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.noleggiomagnetoterapia.it/",
+        "https://www.noleggiomagnetoterapia.it/contatti",
+        "https://www.recensioni-negozi.example/noleggiomagnetoterapia",
+        "https://www.sito-1.example/pagina",
+        "https://www.sito-2.example/pagina",
+        "https://www.sito-3.example/pagina",
+        "https://www.sito-4.example/pagina",
+        "https://www.sito-5.example/pagina",
+        "https://www.sito-6.example/pagina",
+        "https://www.sito-7.example/pagina"
+      ],
+      "class": "competitor"
+    },
+    {
+      "keyword": "sanitaria rossi magnetoterapia noleggio",
+      "volume": 50,
+      "score": 50,
+      "searchIntent": "navigational",
+      "keywordType": "generic",
+      "urls": [
+        "https://www.sanitariarossi.example/",
+        "https://www.sanitariarossi.example/noleggio",
+        "https://www.pagine-attivita.example/sanitaria-rossi",
+        "https://www.rossi-1.example/pagina",
+        "https://www.rossi-2.example/pagina",
+        "https://www.rossi-3.example/pagina",
+        "https://www.rossi-4.example/pagina",
+        "https://www.rossi-5.example/pagina",
+        "https://www.rossi-6.example/pagina",
+        "https://www.rossi-7.example/pagina"
+      ],
+      "class": "competitor"
+    },
+    {
+      "keyword": "noleggio magnetoterapia mensile",
+      "volume": 20,
+      "score": 50,
+      "searchIntent": "commercial",
+      "keywordType": "generic",
+      "urls": [],
+      "class": "other"
+    }
+  ]
+}

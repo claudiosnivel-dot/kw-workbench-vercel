@@ -136,6 +136,7 @@ Termini approvati con il modulo 47; dove le varianti coincidono la forma vale pe
 | esempio delle scene della landing | es-ES / es-419 | zapatillas de running (España) / tenis para correr (México) | come «zapatillas / tenis» dell'avvio rapido; ogni scena con il paese della sua variante |
 | Controllo SEO (landing) | entrambe | Revisión SEO | come `article.seo.title` |
 | proposte che rivedi tu | es-ES / es-419 | lo que has elegido / lo que elegiste | pretérito perfecto in Spagna, indefinido in America Latina (guida di stile, punto 7) |
+| luoghi e concorrenti (piano, modulo 63) | entrambe | lugares y competencia | «la competencia» è il modo abituale dei prodotti in spagnolo per i concorrenti; «competidores» resta per le persone |
 
 ## Passata sulle schermate (modulo 49)
 

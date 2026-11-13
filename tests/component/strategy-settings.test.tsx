@@ -4,6 +4,7 @@
 // strategia»; dopo la generazione il browser va al piano del progetto; con regenerate il corpo porta regenerate true).
 // impacted-by: T-6201 e T-6202 (la POST avvia il lavoro di piano, 202 con runId: il browser va al piano quando la lettura
 // dello stato dice completed)
+// Gate di T-6303 (AC-6303-4): le regole del raggruppamento per risultati di Google, con il testo d'aiuto, vanno nel corpo.
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StrategySettings } from "@/components/strategy/strategy-settings";
@@ -86,6 +87,24 @@ describe("StrategySettings", () => {
         rules: DEFAULT_RULES,
       },
     });
+  });
+
+  // covers: AC-6303-4
+  it("con «Risultati in comune per la stessa pagina» a 4 il corpo della richiesta ha rules.serpPageOverlap 4", async () => {
+    renderSettings();
+    fireEvent.click(screen.getByRole("button", { name: "Opzioni avanzate" }));
+
+    const pageOverlap = screen.getByLabelText("Risultati in comune per la stessa pagina");
+    expect(pageOverlap).toHaveValue(DEFAULT_RULES.serpPageOverlap);
+    expect(pageOverlap).toHaveAccessibleDescription(
+      "Due keyword vanno nella stessa pagina se hanno almeno questo numero dei primi 10 risultati di Google in comune."
+    );
+    expect(screen.getByLabelText("Risultati in comune per lo stesso hub")).toHaveValue(DEFAULT_RULES.serpHubOverlap);
+    fireEvent.change(pageOverlap, { target: { value: "4" } });
+    fireEvent.click(screen.getByRole("button", { name: "Costruisci il piano" }));
+
+    await waitFor(() => expect(router.push).toHaveBeenCalled());
+    expect(sentBody()).toMatchObject({ mode: "EXPERT", settings: { rules: { ...DEFAULT_RULES, serpPageOverlap: 4 } } });
   });
 
   it("senza aprire il pannello invia la modalità automatica", async () => {

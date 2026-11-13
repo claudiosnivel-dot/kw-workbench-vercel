@@ -579,10 +579,12 @@ model KeywordSerp {
   @@map("keyword_serps")
 }
 
-// Funzione dell'app che chiama OpenRouter (T-3901, D-46): i titoli con l'AI e gli articoli.
+// Funzione dell'app che chiama OpenRouter (T-3901, D-46): i titoli con l'AI, gli articoli e i luoghi e concorrenti del
+// piano (T-6301).
 enum AiFeature {
   titles
   article
+  plan
 }
 
 // Esito di un tentativo verso un modello, con i valori di T-3802.

@@ -1398,7 +1398,11 @@
       "SPOKE_WORD": "Cluster article for the searches that add “{word}” to the hub topic.",
       "SPOKE_QUESTION": "A question with {volume, number} monthly searches: it deserves its own article.",
       "MERGED_INTO_PILLAR": "{count, plural, one {# keyword with too few searches for a spoke is on the pillar page.} other {# keywords with too few searches for a spoke are on the pillar page.}}",
-      "UNASSIGNED": "These keywords do not fully contain any starting keyword and share no terms with other keywords: no pillar page gathers them."
+      "UNASSIGNED": "These keywords do not fully contain any starting keyword and share no terms with other keywords: no pillar page gathers them.",
+      "HUB_SERP": "Pillar page for “{keyword}”, the broadest search in the group: the other pages of the hub contain its words or share Google results with it.",
+      "SPOKE_SERP": "Spoke for a single search intent: {count, plural, one {# keyword with its Google results} other {# keywords with the same Google results}}.",
+      "SPOKE_LOCAL": "Local page: it gathers {count, plural, one {# search with a place} other {# searches with a place}} on one page instead of one page per city.",
+      "COMPETITOR": "These keywords look for another website or business: they stay out of the plan."
     },
     "ui": {
       "defaultName": "{mode, select, AUTO {Automatic} other {Expert}} strategy of {date, date, short}",
@@ -1425,6 +1429,10 @@
       "questionsAs": "Questions below the threshold",
       "questionsAsFaq": "In the FAQ of the closest page",
       "questionsAsSpokes": "Always as spokes",
+      "serpPageOverlap": "Shared results for the same page",
+      "serpPageOverlapHelp": "Two keywords go on the same page when they share at least this many of the top 10 Google results.",
+      "serpHubOverlap": "Shared results for the same hub",
+      "serpHubOverlapHelp": "A page is a spoke of a pillar page when it contains all of its words or when their main keywords share at least this many Google results.",
       "mode": {
         "AUTO": "Automatic",
         "EXPERT": "Expert"
@@ -1864,6 +1872,7 @@
         "volumes": "Getting search volumes",
         "serps_post": "Reading Google results",
         "serps_collect": "Reading Google results",
+        "classify": "Finding places and competitors",
         "cluster": "Grouping keywords",
         "save": "Saving the plan",
         "done": "Saving the plan"
@@ -1873,10 +1882,14 @@
     },
     "grouping": {
       "title": "Fallback grouping",
+      "serpTitle": "Grouping with Google results",
       "text": "Keywords are grouped by the words they share, without Google results.",
       "reason": {
         "PROVIDER_ERROR": "DataForSEO did not respond for some keywords.",
-        "SERP_TIMEOUT": "Google results did not arrive in time."
+        "SERP_TIMEOUT": "Google results did not arrive in time.",
+        "SERP_TOO_FEW": "Google results arrived for fewer than half of the keywords.",
+        "AI_CLASSIFY_UNAVAILABLE": "The AI did not respond: places and competitors are recognized only from words such as “near me” and from the site name in the results.",
+        "AI_NOT_CONFIGURED": "The AI is not active: places and competitors are recognized only from words such as “near me” and from the site name in the results."
       }
     },
     "groupBy": "Group by",
