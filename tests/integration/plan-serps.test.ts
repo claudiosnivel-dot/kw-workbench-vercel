@@ -1,6 +1,8 @@
 // Gate di T-6101 (AC-6101-1…AC-6101-4, D-57): i primi 10 risultati organici di Google delle keyword chiesti a DataForSEO
 // in coda priority, salvati per 30 giorni in keyword_serps, con i tetti di spesa del registro (T-903). Fetch di
 // DataForSEO simulato, nessuna chiamata reale (D-30).
+// Gate di T-6504 (AC-6504-1, AC-6504-2, D-60 emendata): i task chiedono resolve_goto_urls, i link google.com/goto rimasti
+// non si salvano e le righe salvate con i link goto non valgono come risultati recenti.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetEnvForTests } from "@/lib/env";
@@ -14,12 +16,14 @@ const MAIN = "noleggio magnetoterapia";
 const COST = "noleggio magnetoterapia costo";
 const DAY_MS = 86_400_000;
 
-type PostedTask = { keyword: string; language_code: string; location_code: number; priority: number; depth: number };
+type PostedTask = { keyword: string; language_code: string; location_code: number; priority: number; depth: number; resolve_goto_urls: boolean };
 
 const api = vi.hoisted(() => ({
-  posted: [] as { keyword: string; language_code: string; location_code: number; priority: number; depth: number }[][],
+  posted: [] as { keyword: string; language_code: string; location_code: number; priority: number; depth: number; resolve_goto_urls: boolean }[][],
   /** Keyword di ogni task creato, per id. */
   taskKeywords: new Map<string, string>(),
+  /** Risultati di una keyword al posto di quelli di serpItems. */
+  items: new Map<string, unknown[]>(),
 }));
 
 /** 12 risultati in ordine sparso: 11 organic e 1 people_also_ask al rank 3. */
@@ -65,7 +69,7 @@ const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit
     return Response.json({
       status_code: 20000,
       cost: 0,
-      tasks: [{ id, status_code: 20000, cost: 0, result: [{ keyword, items: serpItems(keyword) }] }],
+      tasks: [{ id, status_code: 20000, cost: 0, result: [{ keyword, items: api.items.get(keyword) ?? serpItems(keyword) }] }],
     });
   }
   return new Response("{}", { status: 404 });
@@ -100,11 +104,13 @@ beforeEach(async () => {
   resetEnvForTests();
   api.posted.length = 0;
   api.taskKeywords.clear();
+  api.items.clear();
   fetchMock.mockClear();
 });
 
 describe("risultati di Google delle keyword", () => {
   // covers: AC-6101-1
+  // impacted-by: T-6504 (il corpo di task_post ha anche resolve_goto_urls true, AC-6101-1 emendato)
   it("invia i task in coda priority, salva i primi 10 URL organic e registra la spesa", async () => {
     const context = await rootAdminContext();
 
@@ -113,8 +119,8 @@ describe("risultati di Google delle keyword", () => {
 
     expect(api.posted).toHaveLength(1);
     expect(api.posted[0]).toEqual([
-      { keyword: MAIN, language_code: "it", location_code: 2380, priority: 2, depth: 10 },
-      { keyword: COST, language_code: "it", location_code: 2380, priority: 2, depth: 10 },
+      { keyword: MAIN, language_code: "it", location_code: 2380, priority: 2, depth: 10, resolve_goto_urls: true },
+      { keyword: COST, language_code: "it", location_code: 2380, priority: 2, depth: 10, resolve_goto_urls: true },
     ]);
     expect(requested.tasks).toHaveLength(2);
     expect(collected).toMatchObject({ pending: [], failed: [] });
@@ -202,5 +208,54 @@ describe("risultati di Google delle keyword", () => {
     expect(waiting).toMatchObject({ saved: [], pending: [task], failed: [] });
     expect(unlicensed.notice).toBe("PLAN_NO_LICENSED_METRICS");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+/** Link di reindirizzamento di Google come quelli salvati in produzione il 2026-11-14: un codice diverso per ogni risultato. */
+const gotoUrl = (code: string) => `https://google.com/goto?url=CAES${code}`;
+
+describe("link google.com/goto nei risultati (T-6504)", () => {
+  // covers: AC-6504-1
+  it("chiede resolve_goto_urls e salva solo i 7 indirizzi diretti su 10 risultati organic", async () => {
+    const context = await rootAdminContext();
+    const goto = new Set([2, 5, 9]);
+    api.items.set(
+      MAIN,
+      Array.from({ length: 10 }, (_, index) => {
+        const rank = index + 1;
+        const url = goto.has(rank) ? gotoUrl(`codice-${rank}`) : `https://sito-${rank}.example/noleggio`;
+        return { type: "organic", rank_group: rank, rank_absolute: rank, url, domain: `sito-${rank}.example` };
+      }).reverse()
+    );
+
+    const requested = await requestSerps([item(MAIN)], context);
+    await collectSerps(requested.tasks, context);
+
+    expect(api.posted[0]).toEqual([{ keyword: MAIN, language_code: "it", location_code: 2380, priority: 2, depth: 10, resolve_goto_urls: true }]);
+    const rows = await prisma.keywordSerp.findMany();
+    expect(rows.map((row) => row.urls)).toEqual([[1, 3, 4, 6, 7, 8, 10].map((rank) => `https://sito-${rank}.example/noleggio`)]);
+  });
+
+  // covers: AC-6504-2
+  it("una riga salvata con i link goto non vale come risultato recente e la sua keyword si chiede di nuovo", async () => {
+    const context = await rootAdminContext();
+    const twoDaysAgo = new Date(Date.now() - 2 * DAY_MS);
+    await prisma.keywordSerp.createMany({
+      data: [
+        { language_code: "it", country_code: "IT", canonical_keyword: item(MAIN).canonical, urls: [gotoUrl("a1"), gotoUrl("a2")], fetched_at: twoDaysAgo },
+        { language_code: "it", country_code: "IT", canonical_keyword: item(COST).canonical, urls: ["https://b.example/costo"], fetched_at: twoDaysAgo },
+      ],
+    });
+
+    const fresh = await readFreshSerps([item(MAIN).canonical, item(COST).canonical], context);
+    const requested = await requestSerps([item(MAIN), item(COST)], context);
+
+    expect([...fresh.entries()]).toEqual([[item(COST).canonical, ["https://b.example/costo"]]]);
+    expect(api.posted).toHaveLength(1);
+    expect(api.posted[0].map((task) => task.keyword)).toEqual([MAIN]);
+    await collectSerps(requested.tasks, context);
+    const saved = await prisma.keywordSerp.findFirstOrThrow({ where: { canonical_keyword: item(MAIN).canonical } });
+    expect(saved.urls).toEqual(expectedUrls(MAIN));
+    expect(saved.fetched_at.getTime()).toBeGreaterThan(twoDaysAgo.getTime());
   });
 });

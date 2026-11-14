@@ -2,6 +2,7 @@ import { canUseLicensedMetrics } from "@/lib/billing/enforce";
 import type { MetricsContext, MetricsItem } from "@/lib/modules/providers/metrics/types";
 import {
   collectSerpTasks,
+  isGoogleGotoUrl,
   postSerpTasks,
   type SerpCollectOutcome,
   type SerpPostOutcome,
@@ -25,7 +26,10 @@ export type SerpRequestOutcome = SerpPostOutcome & {
   fresh: Map<string, string[]>;
 };
 
-/** Risultati salvati da meno di SERP_MAX_AGE_DAYS giorni per le forme canoniche, nella lingua e nel paese indicati. */
+/**
+ * Risultati salvati da meno di SERP_MAX_AGE_DAYS giorni per le forme canoniche, nella lingua e nel paese indicati. Le righe
+ * con link goto di Google, salvate prima di T-6504, non valgono: le loro keyword si chiedono di nuovo.
+ */
 export async function readFreshSerps(
   canonicals: string[],
   context: Pick<MetricsContext, "languageCode" | "countryCode">,
@@ -43,7 +47,7 @@ export async function readFreshSerps(
     },
     select: { canonical_keyword: true, urls: true },
   });
-  return new Map(rows.map((row) => [row.canonical_keyword, row.urls]));
+  return new Map(rows.filter((row) => !row.urls.some(isGoogleGotoUrl)).map((row) => [row.canonical_keyword, row.urls]));
 }
 
 /**
