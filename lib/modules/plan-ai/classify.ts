@@ -1,6 +1,7 @@
 import { type AttemptOutcome, requestWithFallback } from "@/lib/ai/openrouter";
 import type { AiRequestContext } from "@/lib/ai/requests";
 import { AiTitlesError } from "@/lib/ai/errors";
+import type { ModelCatalog } from "@/lib/ai/models";
 import { languageName, spanishMarket, type TitlesRequest } from "@/lib/ai/titles-prompt";
 import { firstJsonObject } from "@/lib/ai/titles-response";
 import { logger } from "@/lib/observability/logger";
@@ -25,14 +26,17 @@ const MIN_DOMAIN_NAME_LENGTH = 4;
 
 export type ClassifyNotice = "AI_CLASSIFY_UNAVAILABLE" | "AI_NOT_CONFIGURED";
 
-/** Modelli, chiave e tempi delle richieste al modello, con la funzione e il workspace delle righe di ai_requests. */
+/**
+ * Modelli, chiave e tempi delle richieste al modello, il catalogo salvato (modelli assenti e modelli che ragionano,
+ * T-6401) e la funzione e il workspace delle righe di ai_requests.
+ */
 export type ClassifyAi = {
   models: string[];
   apiKey: string;
   baseUrl: string;
   deadlineMs: number;
   attemptTimeoutMs: number;
-  skip?: (model: string) => boolean;
+  catalog?: ModelCatalog | null;
   record: AiRequestContext;
 };
 
@@ -184,7 +188,7 @@ export async function classifyKeywords(keywords: ClassifyKeyword[], serps: Map<s
       deadlineMs: ai.deadlineMs,
       attemptTimeoutMs: ai.attemptTimeoutMs,
       validate: (content) => parseClassifyResponse(content, batch),
-      skip: ai.skip,
+      catalog: ai.catalog,
       record: ai.record,
     });
     requests += result.attempts.length;

@@ -451,6 +451,7 @@
     "AI_MODEL_NOT_FREE": "Il modello deve essere gratuito: un ID come autore/modello:free.",
     "AI_BUSY": "I modelli gratuiti sono tutti occupati: riprova tra qualche minuto.",
     "AI_DAILY_LIMIT": "Le richieste all'AI di oggi sono finite: riprova domani.",
+    "AI_NO_MODELS": "Nessun modello AI gratuito disponibile: l'elenco dei modelli va aggiornato.",
     "ARTICLE_NOT_FOUND": "Articolo non trovato.",
     "ARTICLE_VERSION_CONFLICT": "Questo articolo è stato modificato altrove: ricarica la pagina.",
     "WP_NOT_CONFIGURED": "Collega prima il progetto a WordPress nelle impostazioni del progetto.",
@@ -757,6 +758,8 @@
       "off": "Spenta",
       "models": "Modelli, dal primo da provare",
       "modelsHint": "Solo modelli gratuiti (ID che finisce con :free), da 1 a 8. Se un modello è occupato o risponde male si prova il successivo.",
+      "fallbackInUse": "Nessun modello dell'elenco è più gratuito: titoli e articoli usano i modelli predefiniti ancora gratuiti ({models}). Aggiorna l'elenco.",
+      "fallbackNone": "Nessun modello dell'elenco né dei predefiniti è più gratuito: titoli e articoli non funzionano finché non aggiorni l'elenco.",
       "up": "Su",
       "down": "Giù",
       "remove": "Togli",
@@ -1992,6 +1995,7 @@
       "use": "Usa questi titoli",
       "discard": "Scarta",
       "rateLimited": "Hai raggiunto il limite delle proposte: potrai chiederne un'altra dalle {time}.",
+      "openCard": "Apri «Titoli con l'AI»",
       "droppedH2": "{count, plural, one {Un altro titolo proposto non è stato tenuto.} other {Altri # titoli proposti non sono stati tenuti.}}"
     },
     "regenerateDialog": {
@@ -2166,6 +2170,7 @@
       "AI_UNAVAILABLE": "Il servizio dell'AI non è raggiungibile: scrivi di nuovo l'articolo tra poco.",
       "AI_INVALID_RESPONSE": "I modelli hanno dato risposte non utilizzabili: scrivi di nuovo l'articolo.",
       "AI_NOT_CONFIGURED": "Gli articoli con l'AI non sono attivi in questo momento.",
+      "AI_NO_MODELS": "Nessun modello AI gratuito disponibile: l'elenco dei modelli va aggiornato prima di scrivere di nuovo l'articolo.",
       "JOB_ALREADY_ACTIVE": "C'è già un lavoro in corso per questo articolo: aspetta che finisca.",
       "CANCELED": "La scrittura è stata fermata prima della fine.",
       "INTERNAL_ERROR": "La scrittura si è interrotta per un errore: scrivi di nuovo l'articolo."

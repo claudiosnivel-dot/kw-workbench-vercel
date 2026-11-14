@@ -39,16 +39,59 @@ prima e dopo (per l'elenco `models` anche quando cambia solo l'ordine).
 
 - **Ordine**: una proposta prova i modelli dell'elenco dal primo. Si passa al successivo quando il fornitore è
   occupato (429 con il fornitore nei metadati dell'errore), il modello non è raggiungibile o risponde senza testo
-  (errore di rete, 403, 404, 5xx), non risponde entro il suo tempo, o la risposta non supera i controlli qui sotto. Ci
-  si ferma subito quando finiscono le richieste gratuite del giorno dell'account (`AI_DAILY_LIMIT`), quando l'account
-  supera le richieste al minuto (`AI_BUSY`) o quando OpenRouter non accetta la chiave (401 o 402, `AI_UNAVAILABLE`).
-  Nessun nuovo tentativo sullo stesso modello e nessuna attesa fra un modello e l'altro.
+  (errore di rete, 403, 404, 5xx), non risponde entro il suo tempo, la risposta è tagliata (`finish_reason` `length`,
+  esito `truncated`, T-6401: il testo non si analizza) o non supera i controlli qui sotto. Ci si ferma subito quando
+  finiscono le richieste gratuite del giorno dell'account (`AI_DAILY_LIMIT`), quando l'account supera le richieste al
+  minuto (`AI_BUSY`) o quando OpenRouter non accetta la chiave (401 o 402, `AI_UNAVAILABLE`). Nessun nuovo tentativo
+  sullo stesso modello e nessuna attesa fra un modello e l'altro.
+- **Modelli in pausa** (T-6402, D-58): un modello con almeno 2 tentativi non riusciti (`timeout`, `truncated`,
+  `invalid_response`, `provider_busy`, `unavailable`) negli ultimi 30 minuti e nessun `ok` dopo l'ultimo è «in pausa»:
+  ogni richiesta (titoli, articoli, classificazione del piano) prova prima gli altri, nell'ordine dell'elenco, e poi
+  quelli in pausa, nello stesso ordine. Il registro si legge solo per modello, esito e orario; i limiti dell'account e
+  la chiave non valida non mettono in pausa un modello. L'elenco salvato non cambia; una lettura non riuscita del
+  registro lascia l'ordine dell'elenco (log `ai_model_pause_read_failed`).
+- **Modelli che ragionano** (T-6401): il catalogo salva per ogni modello gratuito se `supported_parameters` contiene
+  `reasoning`; a quei modelli ogni richiesta (titoli, scaletta, blocchi, FAQ, classificazione del piano) manda
+  `max_tokens` con 8000 token in più (`REASONING_TOKEN_ALLOWANCE`), agli altri quello di sempre. Nessun parametro
+  `reasoning` nel corpo: le prove del 2026-11-12 (sotto) mostrano che nessun valore va bene per tutti i modelli. Più
+  token non cambiano il numero di richieste né i tetti del registro. Nel catalogo del 2026-11-14 tutti i 14 modelli
+  gratuiti dichiarano `reasoning`. Un catalogo salvato prima del modulo 64 non ha l'informazione: nessun token in più
+  finché non si rilegge (cron notturno o apertura della card).
+- **Elenco tutto fuori dal catalogo** (T-6403): se tutti i modelli dell'elenco sono «non più nel catalogo», la
+  richiesta usa i modelli predefiniti (sotto) ancora gratuiti, nell'ordine, senza cambiare l'elenco salvato, con il log
+  `ai_models_fallback` che dice solo quanti sono; con il catalogo mai letto l'elenco resta com'è. Se non c'è nessun
+  modello utilizzabile la proposta risponde 503 `AI_NO_MODELS` senza chiamare OpenRouter né consumare i limiti, gli
+  articoli falliscono con lo stesso codice e la classificazione del piano lascia `AI_CLASSIFY_UNAVAILABLE`. Nella card,
+  sopra l'elenco, un avviso rosso dice quali modelli predefiniti si stanno usando o che non ce n'è nessuno.
 - **Tempi**: ogni modello ha al massimo 20 secondi e tutti i tentativi insieme 25 secondi, dentro i 30 della rotta; il
   modello successivo riceve il tempo che resta.
 - **Limiti dell'account**: il 429 senza fornitore nei metadati è un limite dell'account; è il limite giornaliero se il
   messaggio lo dice (`free-models-per-day`) o se `X-RateLimit-Reset` è lontano più di due minuti, altrimenti è il
   limite al minuto. Il messaggio di OpenRouter serve solo a questa scelta e non finisce nei log.
-- **Elenco predefinito**, dalla prova del 2026-10-19 con `buildTitlesRequest` e `parseTitlesResponse` dell'app su due
+- **Elenco predefinito** (rivisto il 2026-11-14, T-6403): `baidu/ernie-5.5-flash-preview:free`,
+  `nvidia/nemotron-3-ultra-550b-a55b:free`, `nvidia/nemotron-3.5-super-vl:free`, `google/gemma-4-31b-it:free` e
+  `google/gemma-4-26b-a4b-it:free`, cioè i modelli provati in produzione il 2026-11-12 con i titoli e la scaletta
+  (sotto) e ancora gratuiti nel catalogo del 2026-11-14; dei sei predefiniti del 2026-10-19 solo ultra e Gemma 31B
+  erano ancora gratuiti. La prova con la scaletta su tutti i modelli gratuiti non è stata ripetuta il 2026-11-14: la
+  chiave di OpenRouter su Vercel è cifrata e non si scarica. Per ripeterla: `OPENROUTER_API_KEY` in `.env`, poi
+  `npm run ai:probe` (`scripts/ai-models-probe.ts`: per ogni modello gratuito del catalogo pubblico la richiesta della
+  scaletta del motore, con i token in più per i modelli che ragionano e 90 s, poi il controllo della scaletta; stampa
+  modello, secondi ed esito, mai la chiave né il testo).
+- **Prove del 2026-11-12** (produzione e locale, stessa richiesta della scaletta, D-58): l'elenco della card aveva un
+  solo modello non più gratuito (saltato, nessun tentativo, titoli fermi); `nvidia/nemotron-3.5-super-vl:free` con 4000
+  `max_tokens` finiva lo spazio nel ragionamento (`finish_reason` `length`, JSON tagliato o vuoto);
+  `nvidia/nemotron-3-ultra-550b-a55b:free` superava i 45 s del tentativo in produzione (36 s in locale);
+  `baidu/ernie-5.5-flash-preview:free` primo dell'elenco ha scritto l'articolo breve in circa 2 minuti. Il parametro
+  `reasoning` di OpenRouter:
+
+  | Valore | super-vl | ultra | ernie |
+  |---|---|---|---|
+  | `{ enabled: false }` | scaletta valida in 8 s | risposta vuota | 400 «Reasoning is mandatory» |
+  | `{ effort: "low" }` | nessun cambiamento (tagliata) | — | — |
+  | `{ max_tokens: 1000 }` | — | scaletta valida | non va |
+
+  Regola scelta: nessun parametro `reasoning`, `max_tokens` più alto di 8000 token per i modelli che ragionano.
+- **Elenco predefinito del 2026-10-19**, dalla prova con `buildTitlesRequest` e `parseTitlesResponse` dell'app su due
   pagine (uno spoke in italiano con 6 secondarie e una pilastro in inglese con 3 secondarie e 3 spoke) e sui 16 modelli
   `:free` del catalogo di quel giorno, dal migliore:
 
@@ -114,7 +157,8 @@ prima e dopo (per l'elenco `models` anche quando cambia solo l'ordine).
 
 - **Registro** (T-3901, tabella `ai_requests`, migrazione `0047_ai_requests`): `requestWithFallback` scrive una riga
   per ogni tentativo verso un modello appena chiuso, con funzione (`titles`, `article` o, dal modulo 63, `plan`), modello, esito (`ok`,
-  `provider_busy`, `account_daily_limit`, `account_rate_limit`, `unavailable`, `timeout`, `invalid_response`, `auth`),
+  `provider_busy`, `account_daily_limit`, `account_rate_limit`, `unavailable`, `timeout`, `invalid_response`, `auth` e,
+  dal modulo 64, `truncated` con la migrazione additiva `0056_ai_outcome_truncated`),
   status HTTP (null senza risposta), durata della chiamata, workspace del progetto e se è il root admin. Nessuna
   colonna per testi, keyword o messaggi del fornitore. Una scrittura non riuscita non ferma la proposta e lascia nel log
   `ai_request_record_failed`. RLS abilitata senza policy: la legge solo il server. Conservazione: 30 giorni (cron del
@@ -156,7 +200,8 @@ modello successivo dell'elenco.
 | `RATE_LIMITED` | 429 | limite del workspace o tetto della piattaforma raggiunto, con i secondi d'attesa in `retryAfter` e nell'header `Retry-After` |
 | `AI_BUSY` | 503 | nessuna risposta valida con almeno un fornitore occupato, oppure l'account ha superato le richieste al minuto: «I modelli gratuiti sono tutti occupati: riprova tra qualche minuto.» |
 | `AI_DAILY_LIMIT` | 429 | finite le richieste gratuite del giorno dell'account OpenRouter: «Le richieste all'AI di oggi sono finite: riprova domani.» |
-| `AI_UNAVAILABLE` | 502 | nessuna risposta valida da tutto l'elenco (rete, status non riusciti, risposte senza testo, tempo scaduto o controlli non superati) oppure chiave non accettata |
+| `AI_UNAVAILABLE` | 502 | nessuna risposta valida da tutto l'elenco (rete, status non riusciti, risposte senza testo o tagliate, tempo scaduto o controlli non superati) oppure chiave non accettata |
+| `AI_NO_MODELS` | 503 | nessun modello dell'elenco né dei predefiniti è più gratuito (T-6403): «Nessun modello AI gratuito disponibile: l'elenco dei modelli va aggiornato.»; per il root admin il corpo ha anche `cardHref` e il pannello mostra il link alla card «Titoli con l'AI» |
 
 `AI_TIMEOUT` e `AI_INVALID_RESPONSE` restano gli esiti di un singolo tentativo (`requestCompletion` e
 `parseTitlesResponse`); la rotta, che prova tutto l'elenco, risponde con i codici della tabella.
@@ -220,15 +265,18 @@ modulo 40 prepara i dati e l'avvio; il lavoro che scrive l'articolo arriva con i
   `/api/internal/article-runs/{id}/advance` (fuori dal controllo di sessione del proxy; firma HMAC di `article-run:`
   più l'id, quindi la firma di un job delle ricerche non vale: 401 `JOB_SIGNATURE_INVALID`), che risponde 202 e fa il
   passo in `after()`. Un passo prende la lease (`locked_until`) e il battito come i job, esegue le fasi finché restano
-  120 s per un'altra richiesta, entro 270 s, e salva fase e avanzamento dopo ogni richiesta; poi programma il passo
+  180 s per un'altra richiesta (120 s prima del modulo 64), entro 270 s, e salva fase e avanzamento dopo ogni
+  richiesta; poi programma il passo
   successivo. Le fasi sono `outline`, `sections` e `faq` (modulo 42) e poi `done`: un lavoro senza fasi rimaste è
   `completed` e l'articolo `READY`.
-- **Richieste**: modelli delle impostazioni in ordine con le riserve (T-3802), 45 s per tentativo e 120 s per tutta la
-  richiesta, una riga di `ai_requests` per tentativo con funzione `article`, il workspace del lavoro e il root admin se
-  l'ha avviato lui (righe fuori dal tetto). Nel log `article_run_request` solo id, fase, modello, esito e tentativi.
+- **Richieste**: modelli delle impostazioni in ordine con le riserve (T-3802), 90 s per tentativo e 180 s per tutta la
+  richiesta (T-6402; prima 45 s e 120 s, troppo pochi per i modelli gratuiti grandi), una riga di `ai_requests` per
+  tentativo con funzione `article`, il workspace del lavoro e il root admin se l'ha avviato lui (righe fuori dal
+  tetto). Il passo di 270 s, dentro la `maxDuration` di 300 s della rotta interna (il massimo del piano Hobby), supera
+  i 180 s di una richiesta: la prima richiesta di un passo ha sempre il suo tempo intero. Nel log `article_run_request` solo id, fase, modello, esito e tentativi.
 - **Errori**: un errore dell'AI porta il lavoro a `failed` e l'articolo a `FAILED` con `error_code` `AI_BUSY`,
-  `AI_DAILY_LIMIT`, `AI_UNAVAILABLE` (anche senza chiave) o `AI_INVALID_RESPONSE` (tutte le risposte scartate dal
-  controllo); un'eccezione conta un tentativo e riprova, e al tetto `JOB_MAX_ATTEMPTS` (5) è `INTERNAL_ERROR`. Il cron
+  `AI_DAILY_LIMIT`, `AI_UNAVAILABLE` (anche senza chiave), `AI_INVALID_RESPONSE` (tutte le risposte scartate dal
+  controllo o tagliate) o `AI_NO_MODELS` (nessun modello gratuito utilizzabile, T-6403); un'eccezione conta un tentativo e riprova, e al tetto `JOB_MAX_ATTEMPTS` (5) è `INTERNAL_ERROR`. Il cron
   `reap-jobs` riprende anche i lavori fermi (lease scaduta e nessun battito da `JOB_STALE_AFTER_MS`), con i conteggi
   sommati a quelli dei job. Un lavoro annullato perde la lease e il passo si ferma senza salvare.
 - **Scaletta** (T-4102, `lib/articles/outline-*.ts`): istruzioni in italiano, in spagnolo con la variante del paese o

@@ -21,13 +21,17 @@ import { prisma } from "@/lib/prisma";
  * richiesta; la continuazione è una POST firmata verso la rotta interna, e il cron reap-jobs riprende i lavori fermi.
  */
 
-/** Un passo dura al massimo 270 s e la lease scade 30 s dopo: dentro la maxDuration di 300 s della rotta interna. */
+/**
+ * Un passo dura al massimo 270 s e la lease scade 30 s dopo: dentro la maxDuration di 300 s della rotta interna, il
+ * massimo del piano Hobby di Vercel. Rivisto con T-6402: il budget supera REQUEST_DEADLINE_MS (180 s), quindi la prima
+ * richiesta di un passo ha sempre il suo tempo intero, e le successive partono solo se ne resta altrettanto.
+ */
 const STEP_BUDGET_MS = 270_000;
 const LEASE_GRACE_MS = 30_000;
 const DONE_PHASE = "done";
 
 /** Esiti salvati in error_code del lavoro e dell'articolo quando una fase fallisce. */
-export type ArticleRunErrorCode = "AI_BUSY" | "AI_DAILY_LIMIT" | "AI_UNAVAILABLE" | "AI_INVALID_RESPONSE" | "INTERNAL_ERROR";
+export type ArticleRunErrorCode = "AI_BUSY" | "AI_DAILY_LIMIT" | "AI_UNAVAILABLE" | "AI_INVALID_RESPONSE" | "AI_NO_MODELS" | "INTERNAL_ERROR";
 
 type Phase = { name: string; run: (context: PhaseContext) => Promise<void> };
 
@@ -77,8 +81,11 @@ function readRun(runId: string) {
 
 type RunRecord = NonNullable<Awaited<ReturnType<typeof readRun>>>;
 
+/** Esiti dell'AI salvati come sono; ogni altro diventa AI_UNAVAILABLE. */
+const KEPT_ERROR_CODES = new Set<string>(["AI_BUSY", "AI_DAILY_LIMIT", "AI_INVALID_RESPONSE", "AI_NO_MODELS"] satisfies ArticleRunErrorCode[]);
+
 const errorCodeOf = (error: AiTitlesError): ArticleRunErrorCode =>
-  error.code === "AI_BUSY" || error.code === "AI_DAILY_LIMIT" || error.code === "AI_INVALID_RESPONSE" ? error.code : "AI_UNAVAILABLE";
+  KEPT_ERROR_CODES.has(error.code) ? (error.code as ArticleRunErrorCode) : "AI_UNAVAILABLE";
 
 /**
  * Porta a failed un lavoro ancora attivo con l'esito e, se era la generazione dell'intero articolo, l'articolo in
@@ -133,7 +140,7 @@ function phaseContext(run: RunRecord, lease: RunLease, deadlineMs: number): Phas
 /**
  * Avanza il lavoro fino a deadlineMs (istante assoluto in ms epoch), come advanceJob (T-1202): lease con
  * compare-and-set (CWE-362), altrimenti skipped='lease_busy' senza lavoro. Esegue sempre almeno una fase; prima di ogni
- * fase successiva, se non restano 120 s per una richiesta, rilascia la lease e ritorna more=true. Un lavoro annullato
+ * fase successiva, se non restano 180 s per una richiesta (REQUEST_DEADLINE_MS), rilascia la lease e ritorna more=true. Un lavoro annullato
  * (DELETE .../article/run) fa perdere la lease: il passo si ferma senza scrivere. Un errore dell'AI porta il lavoro a
  * failed e l'articolo a FAILED; ogni altra eccezione esce, e la conta runArticleStep.
  */

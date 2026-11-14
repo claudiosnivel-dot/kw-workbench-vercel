@@ -451,6 +451,7 @@
     "AI_MODEL_NOT_FREE": "El modelo tiene que ser gratuito: un ID como autor/modelo:free.",
     "AI_BUSY": "Todos los modelos gratuitos están ocupados: vuelve a intentarlo dentro de unos minutos.",
     "AI_DAILY_LIMIT": "Se han agotado las solicitudes a la IA de hoy: vuelve a intentarlo mañana.",
+    "AI_NO_MODELS": "No hay ningún modelo de IA gratuito disponible: hay que actualizar la lista de modelos.",
     "ARTICLE_NOT_FOUND": "No se ha encontrado el artículo.",
     "ARTICLE_VERSION_CONFLICT": "Este artículo se ha modificado en otro lugar: recarga la página.",
     "WP_NOT_CONFIGURED": "Primero conecta el proyecto a WordPress en los ajustes del proyecto.",
@@ -757,6 +758,8 @@
       "off": "Desactivada",
       "models": "Modelos, por orden de prueba",
       "modelsHint": "Solo modelos gratuitos (ID que termina en :free), de 1 a 8. Si un modelo está ocupado o responde mal, se prueba el siguiente.",
+      "fallbackInUse": "Ningún modelo de la lista sigue siendo gratuito: los títulos y los artículos usan los modelos predeterminados que aún son gratuitos ({models}). Actualiza la lista.",
+      "fallbackNone": "Ningún modelo de la lista ni de los predeterminados sigue siendo gratuito: los títulos y los artículos no funcionarán hasta que actualices la lista.",
       "up": "Subir",
       "down": "Bajar",
       "remove": "Quitar",
@@ -1992,6 +1995,7 @@
       "use": "Usar estos títulos",
       "discard": "Descartar",
       "rateLimited": "Has alcanzado el límite de propuestas: podrás pedir otra a partir de las {time}.",
+      "openCard": "Abrir «Títulos con IA»",
       "droppedH2": "{count, plural, one {No se ha conservado otro título propuesto.} other {No se han conservado otros # títulos propuestos.}}"
     },
     "regenerateDialog": {
@@ -2166,6 +2170,7 @@
       "AI_UNAVAILABLE": "No se puede acceder al servicio de IA: vuelve a escribir el artículo dentro de poco.",
       "AI_INVALID_RESPONSE": "Los modelos dieron respuestas que no se pueden usar: vuelve a escribir el artículo.",
       "AI_NOT_CONFIGURED": "Los artículos con IA no están activos en este momento.",
+      "AI_NO_MODELS": "No hay ningún modelo de IA gratuito disponible: hay que actualizar la lista de modelos antes de volver a escribir el artículo.",
       "JOB_ALREADY_ACTIVE": "Este artículo ya tiene un trabajo en curso: espera a que termine.",
       "CANCELED": "La redacción se detuvo antes del final.",
       "INTERNAL_ERROR": "La redacción se interrumpió por un error: vuelve a escribir el artículo."

@@ -6,7 +6,8 @@ import { logger } from "@/lib/observability/logger";
 /*
  * Catalogo dei modelli gratuiti di OpenRouter (T-3803, D-46): GET {base}/models, pubblico e senza chiave, con la base
  * fissa di OpenRouter (lib/env.ts, mai presa da una richiesta: CWE-918). Si salvano in app_settings i soli modelli ':free'
- * a prezzo 0; una lettura non riuscita lascia il catalogo salvato com'era.
+ * a prezzo 0, ciascuno con reasoning se supported_parameters lo contiene (T-6401); una lettura non riuscita lascia il
+ * catalogo salvato com'era.
  */
 
 const CATALOG_KEY = "AI_MODEL_CATALOG";
@@ -14,7 +15,7 @@ const CATALOG_TIMEOUT_MS = 10_000;
 // Il catalogo di oggi ha qualche decina di modelli gratuiti: il limite protegge app_settings da una risposta anomala.
 const MAX_CATALOG_MODELS = 200;
 
-type RawModel = { id?: unknown; name?: unknown; context_length?: unknown; pricing?: unknown };
+type RawModel = { id?: unknown; name?: unknown; context_length?: unknown; pricing?: unknown; supported_parameters?: unknown };
 
 function isCatalogModel(value: unknown): value is CatalogModel {
   if (!value || typeof value !== "object") return false;
@@ -58,6 +59,7 @@ function toCatalogModel(model: RawModel): CatalogModel | null {
     id: model.id,
     name: typeof model.name === "string" ? model.name.slice(0, 200) : model.id,
     contextLength: typeof model.context_length === "number" && Number.isFinite(model.context_length) ? model.context_length : null,
+    reasoning: Array.isArray(model.supported_parameters) && model.supported_parameters.includes("reasoning"),
   };
 }
 

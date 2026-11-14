@@ -1,12 +1,16 @@
 // Gate di T-3801 (AC-3801-1, AC-3801-2): elenco ordinato dei modelli gratuiti nelle impostazioni dei titoli con l'AI.
 // Un valore salvato con il solo model si legge come elenco di un modello; la PATCH accetta da 1 a 8 ID ':free' distinti
 // e registra l'elenco prima e dopo nella riga ai.update.
+// Gate di T-6403 (AC-6403-1, AC-6403-2): con tutti i modelli dell'elenco assenti dal catalogo la proposta usa i modelli
+// predefiniti ancora gratuiti; senza nessuno risponde 503 AI_NO_MODELS senza chiamare OpenRouter.
 import { randomBytes } from "node:crypto";
 import { UserRole } from "@/lib/generated/prisma/enums";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as readAiTitles, PATCH as updateAiTitles } from "@/app/api/admin/ai-titles/route";
+import { DEFAULT_AI_MODELS } from "@/lib/ai/models";
 import { upsertSettingValue } from "@/lib/integrations/app-settings";
 import { prisma } from "@/lib/prisma";
+import { completion, insertPlan, memberWithPlan, pageRow, saveAiSettings, stubOpenRouterEnv, suggest } from "../helpers/ai-titles";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
@@ -91,5 +95,61 @@ describe("elenco dei modelli dei titoli con l'AI", () => {
     const rows = await prisma.adminAuditLog.findMany({ where: { action: "ai.update" }, orderBy: { created_at: "asc" } });
     expect(rows).toHaveLength(2);
     expect(rows[1].metadata).toEqual({ models: { before: ["autore/a:free", "autore/b:free"], after: ["autore/b:free", "autore/a:free"] } });
+  });
+});
+
+describe("elenco con tutti i modelli spariti dal catalogo gratuito", () => {
+  const X = "autore/sparito:free";
+  const [P, Q] = DEFAULT_AI_MODELS;
+  const fetchMock = vi.fn<typeof fetch>();
+  const sentModels = () => fetchMock.mock.calls.map(([, init]) => (JSON.parse(String(init?.body)) as { model: string }).model);
+
+  beforeEach(() => {
+    stubOpenRouterEnv();
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    return () => vi.unstubAllGlobals();
+  });
+
+  /** Catalogo salvato come lo salva refreshModelCatalog, con i soli modelli indicati. */
+  async function saveCatalog(ids: string[]) {
+    const free = ids.map((id) => ({ id, name: id, contextLength: 131072, reasoning: false }));
+    await upsertSettingValue({ key: "AI_MODEL_CATALOG", value: JSON.stringify({ checkedAt: new Date().toISOString(), free }) });
+  }
+
+  // covers: AC-6403-1
+  it("usa i modelli predefiniti ancora nel catalogo, nell'ordine, senza chiamare quelli spariti", async () => {
+    await saveAiSettings({ models: [X] });
+    await saveCatalog([Q, "autore/altro:free"]);
+    const { member, spoke } = await memberWithPlan("t6403");
+    fetchMock.mockResolvedValueOnce(completion({ h1: "Scarpe running donna: come sceglierle", h2: ["Ammortizzazione"] }, Q));
+
+    const response = await suggest(member.cookie, spoke);
+
+    expect(response.status).toBe(200);
+    expect((await pageRow(spoke.pageId)).ai_proposal).toMatchObject({ model: Q });
+    expect(sentModels()).toEqual([Q]);
+    expect(sentModels()).not.toContain(X);
+    expect(sentModels()).not.toContain(P);
+  });
+
+  // covers: AC-6403-2
+  it("senza modelli predefiniti nel catalogo risponde 503 AI_NO_MODELS senza chiamare OpenRouter; il root admin ha il link alla card", async () => {
+    await saveAiSettings({ models: [X] });
+    await saveCatalog(["autore/altro:free"]);
+    const { member, spoke } = await memberWithPlan("t6403");
+    const root = await createUserWithSession({ displayName: "t6403-root", role: UserRole.ADMIN, isRootAdmin: true });
+    const rootPlan = await insertPlan(root);
+
+    const response = await suggest(member.cookie, spoke);
+    const body = (await response.json()) as { code?: string; cardHref?: string };
+    const rootResponse = await suggest(root.cookie, { projectId: rootPlan.projectId, strategyId: rootPlan.strategyId, pageId: rootPlan.pageIds.spoke });
+
+    expect([response.status, body.code]).toEqual([503, "AI_NO_MODELS"]);
+    expect(body).not.toHaveProperty("cardHref");
+    expect(rootResponse.status).toBe(503);
+    expect(await rootResponse.json()).toMatchObject({ code: "AI_NO_MODELS", cardHref: "/admin/settings#ai-titles" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await prisma.aiRequest.count()).toBe(0);
   });
 });

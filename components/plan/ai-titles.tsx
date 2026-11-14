@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { type AiTitlesResult, type PlanRequestResult, usePlanRequests } from "@/components/plan/plan-requests";
+import { AI_TITLES_CARD_HREF } from "@/lib/ai/models";
 import type { StrategyAiProposal, StrategyPageView } from "@/lib/modules/strategy/types";
 
 export type AiTitlesProps = {
@@ -15,8 +17,8 @@ export type AiTitlesProps = {
  * «Migliora i titoli con l'AI» nel pannello della pagina (T-3603, D-42 emendata da D-43): la proposta arriva in una card
  * con «Usa questi titoli» (PATCH dei titoli, poi DELETE della proposta) e «Scarta» (DELETE). La proposta salvata nella
  * pagina compare all'apertura senza richieste; una nuova la sostituisce. Gli errori lasciano titoli e proposta com'erano.
- * La card dice quanti H2 validi oltre il massimo non sono stati tenuti (T-3802, D-48). Titoli e modello sono resi come
- * testo (CWE-79).
+ * La card dice quanti H2 validi oltre il massimo non sono stati tenuti (T-3802, D-48). Con il 503 AI_NO_MODELS il root
+ * admin ha sotto l'errore il link alla card «Titoli con l'AI» (T-6403). Titoli e modello sono resi come testo (CWE-79).
  */
 export function AiTitles({ page, onUse }: AiTitlesProps) {
   const t = useTranslations("plan.ai");
@@ -26,6 +28,7 @@ export function AiTitles({ page, onUse }: AiTitlesProps) {
   const [proposal, setProposal] = useState(page.aiProposal);
   const [busy, setBusy] = useState<"suggest" | "card" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCardLink, setErrorCardLink] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
 
   const failureMessage = (result: Extract<AiTitlesResult, { ok: false }>) =>
@@ -38,11 +41,16 @@ export function AiTitles({ page, onUse }: AiTitlesProps) {
   const suggest = async () => {
     setBusy("suggest");
     setError(null);
+    setErrorCardLink(false);
     setCardError(null);
     const result = await requests.suggestTitles(page.id);
     setBusy(null);
-    if (result.ok) setProposal(result.proposal);
-    else setError(failureMessage(result));
+    if (result.ok) {
+      setProposal(result.proposal);
+    } else {
+      setError(failureMessage(result));
+      setErrorCardLink(result.cardLink);
+    }
   };
 
   const discard = async (): Promise<void> => {
@@ -73,6 +81,11 @@ export function AiTitles({ page, onUse }: AiTitlesProps) {
         <p className="text-sm text-red-700" role="alert">
           {error}
         </p>
+      )}
+      {error && errorCardLink && (
+        <Link href={AI_TITLES_CARD_HREF} className="btn-secondary">
+          {t("openCard")}
+        </Link>
       )}
       {proposal && (
         <section aria-labelledby={cardId} className="plan-ai-card space-y-2">

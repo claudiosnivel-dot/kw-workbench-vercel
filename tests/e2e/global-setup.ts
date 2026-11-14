@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
-import { DEFAULT_AI_MODELS } from "@/lib/ai/settings";
+import { DEFAULT_AI_MODELS } from "@/lib/ai/models";
 import { prisma } from "@/lib/prisma";
 import { assertLocalTestDatabase } from "../helpers/db-guard";
 import { resetDatabase } from "../helpers/db";

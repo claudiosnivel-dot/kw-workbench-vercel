@@ -1,6 +1,9 @@
 // Gate di T-3802 (AC-3802-1…5): la proposta dei titoli con l'AI prova i modelli dell'elenco in ordine, passa al
 // successivo quando il fornitore è occupato o la risposta non supera il controllo, si ferma al limite giornaliero
 // dell'account, risponde 503 AI_BUSY con i modelli tutti occupati e conta gli H2 tenuti fuori oltre il massimo.
+// Gate di T-6401 (AC-6401-1) e T-6402 (AC-6402-1, AC-6402-2): una risposta tagliata (finish_reason length) è l'esito
+// truncated e passa al modello successivo; un modello fallito due volte negli ultimi 30 minuti senza un ok dopo va in
+// fondo all'elenco.
 import { randomBytes } from "node:crypto";
 import { createTranslator } from "next-intl";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -157,5 +160,81 @@ describe("proposta con i modelli di riserva", () => {
     expect(body.data).toMatchObject({ h2: fourteen.slice(0, 12), droppedH2: 2 });
     expect(saved.h2).toEqual(fourteen.slice(0, 12));
     expect(saved.droppedH2).toBe(2);
+  });
+});
+
+describe("risposte tagliate e modelli in pausa", () => {
+  // covers: AC-6401-1
+  it("una risposta 200 con finish_reason length è truncated e risponde il modello successivo", async () => {
+    await saveAiSettings({ models: [A, B] });
+    const { member, spoke } = await memberWithPlan("t6401");
+    const cut = Response.json({ model: A, choices: [{ finish_reason: "length", message: { content: '{"h1": "Scarpe running donna: come' } }] });
+    fetchMock.mockResolvedValueOnce(cut).mockResolvedValueOnce(completion({ h1: H1, h2: ["Ammortizzazione"] }, B));
+
+    const { response, body, attempts } = await suggestWithLog(member.cookie, spoke);
+
+    expect(response.status).toBe(200);
+    expect(body.data).toMatchObject({ h1: H1, model: B });
+    expect(attempts).toEqual([
+      { model: A, outcome: "truncated", httpStatus: 200 },
+      { model: B, outcome: "ok", httpStatus: 200 },
+    ]);
+    const rows = await prisma.aiRequest.findMany({ orderBy: { created_at: "asc" }, select: { model: true, outcome: true } });
+    expect(rows).toEqual([
+      { model: A, outcome: "truncated" },
+      { model: B, outcome: "ok" },
+    ]);
+  });
+
+  /** Righe di ai_requests di tentativi passati del modello, minutesAgo minuti fa. */
+  async function pastAttempts(model: string, outcomes: ("timeout" | "ok")[], minutesAgo: number) {
+    await prisma.aiRequest.createMany({
+      data: outcomes.map((outcome, index) => ({
+        feature: "titles" as const,
+        model,
+        outcome,
+        http_status: outcome === "ok" ? 200 : null,
+        duration_ms: 20_000,
+        created_at: new Date(Date.now() - (minutesAgo * 60_000 - index * 1000)),
+      })),
+    });
+  }
+
+  // covers: AC-6402-1
+  it("un modello con due timeout negli ultimi 10 minuti e nessun ok dopo passa in fondo all'elenco", async () => {
+    await saveAiSettings({ models: [A, B] });
+    const { member, spoke } = await memberWithPlan("t6402");
+    await pastAttempts(A, ["timeout", "timeout"], 10);
+    fetchMock.mockResolvedValueOnce(completion({ h1: H1, h2: ["Ammortizzazione"] }, B));
+
+    const { response, body } = await suggestWithLog(member.cookie, spoke);
+
+    expect(response.status).toBe(200);
+    expect(body.data?.model).toBe(B);
+    expect(sentModels()).toEqual([B]);
+  });
+
+  // covers: AC-6402-2
+  it("due timeout di 40 minuti fa non mettono il modello in pausa", async () => {
+    await saveAiSettings({ models: [A, B] });
+    const { member, spoke } = await memberWithPlan("t6402");
+    await pastAttempts(A, ["timeout", "timeout"], 40);
+    fetchMock.mockResolvedValueOnce(completion({ h1: H1, h2: ["Ammortizzazione"] }, A));
+
+    const { response } = await suggestWithLog(member.cookie, spoke);
+
+    expect(response.status).toBe(200);
+    expect(sentModels()[0]).toBe(A);
+  });
+
+  it("un ok dopo l'ultimo timeout toglie la pausa", async () => {
+    await saveAiSettings({ models: [A, B] });
+    const { member, spoke } = await memberWithPlan("t6402");
+    await pastAttempts(A, ["timeout", "timeout", "ok"], 10);
+    fetchMock.mockResolvedValueOnce(completion({ h1: H1, h2: ["Ammortizzazione"] }, A));
+
+    await suggestWithLog(member.cookie, spoke);
+
+    expect(sentModels()).toEqual([A]);
   });
 });

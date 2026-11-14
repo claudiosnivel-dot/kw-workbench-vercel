@@ -1,9 +1,8 @@
 import { readModelCatalog } from "@/lib/ai/catalog";
-import { AiTitlesError } from "@/lib/ai/errors";
-import { modelStatus } from "@/lib/ai/models";
+import { AiTitlesError, noModelsError } from "@/lib/ai/errors";
 import { type Attempt, requestWithFallback } from "@/lib/ai/openrouter";
 import { enforcePlatformRequestCap } from "@/lib/ai/requests";
-import { type AiTitlesSettings, getAiTitlesSettings } from "@/lib/ai/settings";
+import { type AiTitlesSettings, getAiTitlesSettings, modelsForRequest } from "@/lib/ai/settings";
 import { buildTitlesRequest } from "@/lib/ai/titles-prompt";
 import { parseTitlesResponse } from "@/lib/ai/titles-response";
 import { requireProjectAccess } from "@/lib/authz/workspace";
@@ -40,9 +39,10 @@ async function consumeLimits(actor: Actor, workspaceId: string, settings: AiTitl
 /**
  * Proposta di H1 e H2 per una pagina del piano corrente (T-3601, D-42 emendata da D-43): permessi di modifica del
  * piano e pagina (404, 409 STRATEGY_READ_ONLY), poi funzione accesa e chiave presente (503 AI_NOT_CONFIGURED senza
- * consumare i limiti), poi i limiti e la richiesta con i modelli di riserva (T-3802), saltando quelli assenti dal
- * catalogo (T-3803), con la lingua e il paese del piano (T-5102) e parseTitlesResponse come controllo della risposta; ogni tentativo scrive la sua riga di
- * ai_requests con il workspace del progetto (T-3901). La proposta riuscita riporta il modello che ha risposto e
+ * consumare i limiti), poi i modelli della richiesta (T-6403: l'elenco senza i modelli assenti dal catalogo, o i
+ * predefiniti ancora gratuiti; nessuno → 503 AI_NO_MODELS senza consumare i limiti), poi i limiti e la richiesta con i
+ * modelli di riserva (T-3802), con la lingua e il paese del piano (T-5102) e parseTitlesResponse come controllo della
+ * risposta; ogni tentativo scrive la sua riga di ai_requests con il workspace del progetto (T-3901). La proposta riuscita riporta il modello che ha risposto e
  * sostituisce quella salvata nella pagina; titoli e version del piano non cambiano. Nel log solo id, modello, durata,
  * esito e per ogni tentativo modello, esito e status HTTP; mai keyword o messaggi del fornitore (CWE-532).
  */
@@ -55,17 +55,19 @@ export async function suggestPageTitles(actor: Actor, projectId: string, strateg
     throw new AiTitlesError("AI_NOT_CONFIGURED", "I titoli con l'AI non sono attivi");
   }
   const [{ language, country, page }, catalog] = await Promise.all([readPlanTitlePage(project, strategyId, pageId), readModelCatalog()]);
+  const models = modelsForRequest(settings, catalog);
+  if (models.length === 0) throw noModelsError(actor.isRootAdmin);
   await consumeLimits(actor, project.workspace_id, settings);
 
   const startedAt = Date.now();
   const log = (fields: { model: string | null; outcome: string; attempts: Attempt[] }) =>
     logger.info("ai_titles_suggest", { workspaceId: project.workspace_id, pageId, durationMs: Date.now() - startedAt, ...fields });
-  const result = await requestWithFallback(buildTitlesRequest(page, { language, country, model: settings.models[0] }), settings.models, {
+  const result = await requestWithFallback(buildTitlesRequest(page, { language, country, model: models[0] }), models, {
     ...openRouter,
     deadlineMs: DEADLINE_MS,
     attemptTimeoutMs: ATTEMPT_TIMEOUT_MS,
     validate: (content) => parseTitlesResponse(content, page, language),
-    skip: (model) => modelStatus(model, catalog) === "missing",
+    catalog,
     record: { feature: "titles", workspaceId: project.workspace_id, byRootAdmin: actor.isRootAdmin },
   }).catch((error: unknown) => {
     log({ model: null, outcome: "INTERNAL_ERROR", attempts: [] });

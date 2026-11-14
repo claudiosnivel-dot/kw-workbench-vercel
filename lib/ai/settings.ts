@@ -3,11 +3,13 @@ import { readModelCatalog } from "@/lib/ai/catalog";
 import {
   addableModels,
   type CatalogModel,
+  DEFAULT_AI_MODELS,
   FREE_MODEL_ID,
   MAX_MODELS,
   type ModelCatalog,
   type ModelStatus,
   modelStatuses,
+  requestModels,
   sameModel,
 } from "@/lib/ai/models";
 import { countCountedRequests, readModelUsage } from "@/lib/ai/requests";
@@ -15,6 +17,7 @@ import { AI_LIMIT_MAX, type AiUsage } from "@/lib/ai/usage";
 import { getOpenRouterSettings } from "@/lib/env";
 import { AppError, ValidationError } from "@/lib/http/errors";
 import { getManySettingValues, upsertSettingValue } from "@/lib/integrations/app-settings";
+import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -40,19 +43,6 @@ type AiTitlesView = AiSettings & {
 };
 
 const SETTINGS_KEY = "AI_TITLES_SETTINGS";
-
-/**
- * Elenco predefinito (T-3801): i modelli ':free' del catalogo che il 2026-10-19 hanno risposto al prompt dei titoli con
- * H1 e H2 validi, dal migliore (prova e criteri in docs/AI-TITLES.md).
- */
-export const DEFAULT_AI_MODELS: readonly string[] = [
-  "nvidia/nemotron-3-ultra-550b-a55b:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-  "poolside/laguna-xs-2.1:free",
-  "liquid/lfm-2.5-2.6b:free",
-  "google/gemma-4-31b-it:free",
-  "poolside/laguna-s-2.1:free",
-];
 
 /**
  * Default: funzione spenta, l'elenco predefinito, 900 richieste al giorno per la piattaforma (circa le 1000 dei modelli
@@ -119,6 +109,19 @@ function parseSettings(raw: string | undefined): AiSettings {
 export async function getAiTitlesSettings(): Promise<AiSettings> {
   const values = await getManySettingValues([SETTINGS_KEY]);
   return parseSettings(values[SETTINGS_KEY]);
+}
+
+/**
+ * Modelli di una richiesta di titoli, articoli o classificazione del piano (T-6403): quelli dell'elenco non assenti dal
+ * catalogo; con l'elenco tutto assente i modelli predefiniti ancora gratuiti, con il log ai_models_fallback che dice
+ * solo quanti sono (CWE-532). Vuoto se non c'è nessun modello utilizzabile: chi chiama risponde AI_NO_MODELS.
+ */
+export function modelsForRequest(settings: Pick<AiSettings, "models">, catalog: ModelCatalog | null): string[] {
+  const { models, fallback } = requestModels(settings.models, catalog);
+  if (fallback) {
+    logger.warn("ai_models_fallback", { models: models.length });
+  }
+  return models;
 }
 
 /** Funzione accesa e chiave presente (T-3603): la pagina del piano mostra «Migliora i titoli con l'AI». */

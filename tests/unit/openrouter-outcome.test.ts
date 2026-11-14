@@ -10,7 +10,9 @@ import { canonicalizeKeyword } from "@/lib/modules/normalization";
 
 // impacted-by: T-3901 (ogni tentativo scrive una riga di ai_requests): qui il registro è simulato, il test unitario non
 // ha il DB; la scrittura vera la provano tests/integration/ai-requests.test.ts.
-vi.mock("@/lib/ai/requests", () => ({ recordAiRequest: vi.fn(async () => {}) }));
+// impacted-by: T-6402 (i modelli in pausa si leggono dal registro): nessun modello in pausa; la lettura vera la prova
+// tests/integration/ai-fallback.test.ts.
+vi.mock("@/lib/ai/requests", () => ({ recordAiRequest: vi.fn(async () => {}), recentModelFailures: vi.fn(async () => new Set<string>()) }));
 
 const NOW = Date.parse("2026-10-19T10:00:00.000Z");
 
@@ -107,14 +109,19 @@ describe("richiesta con i modelli di riserva", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  // impacted-by: T-6401 (i modelli assenti si saltano con il catalogo passato a requestWithFallback, non con skip)
   it("salta i modelli assenti dal catalogo e dà a ogni tentativo il tempo che resta alla scadenza", async () => {
     vi.useFakeTimers();
     try {
       fetchMock.mockImplementation(() => new Promise<Response>(() => undefined));
-      const pending = requestWithFallback(request, ["a/assente:free", "a/uno:free", "a/due:free"], {
-        ...options,
-        skip: (model) => model === "a/assente:free",
-      });
+      const catalog = {
+        checkedAt: new Date(NOW).toISOString(),
+        free: [
+          { id: "a/uno:free", name: "Uno", contextLength: null },
+          { id: "a/due:free", name: "Due", contextLength: null },
+        ],
+      };
+      const pending = requestWithFallback(request, ["a/assente:free", "a/uno:free", "a/due:free"], { ...options, catalog });
       await vi.advanceTimersByTimeAsync(25_000);
       const result = await pending;
 

@@ -11,6 +11,7 @@ import {
   type ModelCatalog,
   type ModelStatus,
   modelStatus,
+  requestModels,
   sameModel,
 } from "@/lib/ai/models";
 import { AI_LIMIT_MAX, type AiUsage, type UsageCounts } from "@/lib/ai/usage";
@@ -143,9 +144,10 @@ function SwitchRow({ id, label, on, disabled, onToggle }: { id: string; label: s
  * dell'ultimo controllo e i modelli gratuiti nuovi da aggiungere (T-3803), tetto della piattaforma in richieste e limite
  * per workspace in proposte, con lo stato della chiave (solo sì o no), le richieste delle ultime 24 ore contate dal tetto
  * e la tabella «Uso dei modelli» sulle ultime 24 ore e sugli ultimi 7 giorni (T-3902); in fondo gli articoli con
- * l'AI (T-4002) con il loro interruttore e i limiti per workspace in articoli e in sezioni riscritte. All'apertura il
- * catalogo si rilegge se ha più di un'ora. Il salvataggio manda interruttori, elenco e limiti; la rotta riverifica
- * ruolo, modelli e limiti.
+ * l'AI (T-4002) con il loro interruttore e i limiti per workspace in articoli e in sezioni riscritte. Con tutti i modelli
+ * dell'elenco non più nel catalogo, sopra l'elenco un avviso rosso dice quali modelli predefiniti usano le richieste,
+ * o che non ce n'è nessuno (T-6403). All'apertura il catalogo si rilegge se ha più di un'ora. Il salvataggio manda
+ * interruttori, elenco e limiti; la rotta riverifica ruolo, modelli e limiti.
  */
 export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
   const t = useTranslations("admin.aiTitles");
@@ -196,6 +198,7 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
     </div>
   );
   const addable = addableModels(models, view.catalog);
+  const requested = requestModels(models, view.catalog);
 
   const add = (id: string): boolean => {
     if (full) return false;
@@ -251,6 +254,11 @@ export function AiTitlesSettingsCard({ initial }: { initial: AiTitlesView }) {
         <p id={`${listId}-hint`} className="text-xs text-slate-500">
           {t("modelsHint")}
         </p>
+        {requested.fallback && (
+          <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert" data-testid="ai-models-fallback">
+            {requested.models.length > 0 ? t("fallbackInUse", { models: requested.models.join(", ") }) : t("fallbackNone")}
+          </p>
+        )}
         <ol aria-labelledby={`${listId}-label`} aria-describedby={`${listId}-hint`} className="space-y-1.5">
           {models.map((id, index) => {
             const status = modelStatus(id, view.catalog);

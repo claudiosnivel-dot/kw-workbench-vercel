@@ -2,6 +2,7 @@
 // una card con «Usa questi titoli» (PATCH dei titoli con la version, poi DELETE della proposta) e «Scarta» (solo il
 // DELETE); il limite raggiunto mostra l'ora in cui la proposta torna disponibile; la proposta salvata compare
 // all'apertura del pannello senza richieste. Con T-3802 (AC-3802-5) la card dice quanti H2 non sono stati tenuti.
+// Con T-6403 il 503 AI_NO_MODELS del root admin ha sotto l'errore il link alla card «Titoli con l'AI».
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PagePanel, type PagePanelProps } from "@/components/plan/page-panel";
@@ -179,5 +180,24 @@ describe("titoli con l'AI nel pannello della pagina", () => {
     view.unmount();
     renderWithIntl(panel({ page: { ...PAGE, aiProposal: PROPOSAL } }));
     expect(screen.getByRole("region", { name: "Proposta dell'AI" })).not.toHaveTextContent("non sono stati tenuti");
+  });
+
+  it("con AI_NO_MODELS mostra il testo per tutti e il link alla card solo con cardHref della risposta", async () => {
+    const noModels = (fields: Record<string, string> = {}) => () =>
+      json(503, { code: "AI_NO_MODELS", error: "Nessun modello AI gratuito disponibile", ...fields });
+    routeFetch({ suggest: noModels() });
+    const view = renderWithIntl(panel());
+
+    fireEvent.click(screen.getByRole("button", { name: "Migliora i titoli con l'AI" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Nessun modello AI gratuito disponibile: l'elenco dei modelli va aggiornato.");
+    expect(screen.queryByRole("link", { name: "Apri «Titoli con l'AI»" })).toBeNull();
+
+    view.unmount();
+    routeFetch({ suggest: noModels({ cardHref: "/admin/settings#ai-titles" }) });
+    renderWithIntl(panel());
+    fireEvent.click(screen.getByRole("button", { name: "Migliora i titoli con l'AI" }));
+
+    expect(await screen.findByRole("link", { name: "Apri «Titoli con l'AI»" })).toHaveAttribute("href", "/admin/settings#ai-titles");
   });
 });

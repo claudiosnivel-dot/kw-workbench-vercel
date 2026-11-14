@@ -1,15 +1,18 @@
 import { AiTitlesError } from "@/lib/ai/errors";
-import { type AiRequestContext, recordAiRequest } from "@/lib/ai/requests";
+import { isReasoningModel, type ModelCatalog, modelStatus, REASONING_TOKEN_ALLOWANCE } from "@/lib/ai/models";
+import { type AiRequestContext, recentModelFailures, recordAiRequest } from "@/lib/ai/requests";
 import type { TitlesRequest } from "@/lib/ai/titles-prompt";
 import { getPublicAppUrl } from "@/lib/env";
 import { AppError } from "@/lib/http/errors";
+import { logger } from "@/lib/observability/logger";
 
 type CompletionOptions = { apiKey: string; baseUrl: string; timeoutMs: number };
-type CompletionPayload = { model?: unknown; choices?: { message?: { content?: unknown } }[] };
+type CompletionPayload = { model?: unknown; choices?: { finish_reason?: unknown; message?: { content?: unknown } }[] };
 
 /**
  * Esito di un tentativo verso un modello (T-3802): provider_busy è il 429 del fornitore sovraccarico, account_daily_limit
- * e account_rate_limit i 429 dei limiti dell'account sui modelli gratuiti (al giorno e al minuto), auth un 401 o 402.
+ * e account_rate_limit i 429 dei limiti dell'account sui modelli gratuiti (al giorno e al minuto), auth un 401 o 402;
+ * truncated una risposta 200 con finish_reason length, tagliata al limite di max_tokens (T-6401).
  */
 export type AttemptOutcome =
   | "ok"
@@ -19,17 +22,21 @@ export type AttemptOutcome =
   | "unavailable"
   | "timeout"
   | "invalid_response"
+  | "truncated"
   | "auth";
-type FailureOutcome = Exclude<AttemptOutcome, "ok" | "invalid_response" | "timeout">;
+type FailureOutcome = Exclude<AttemptOutcome, "ok" | "invalid_response" | "timeout" | "truncated">;
 export type Attempt = { model: string; outcome: AttemptOutcome; httpStatus: number | null };
 
-/** Tentativo non riuscito: per requestCompletion AI_TIMEOUT o AI_UNAVAILABLE, per le riserve anche esito e status. */
+/**
+ * Tentativo non riuscito: per requestCompletion AI_TIMEOUT, AI_INVALID_RESPONSE (risposta tagliata) o AI_UNAVAILABLE,
+ * per le riserve anche esito e status.
+ */
 class AttemptError extends AiTitlesError {
-  readonly outcome: FailureOutcome | "timeout";
+  readonly outcome: FailureOutcome | "timeout" | "truncated";
   readonly httpStatus: number | null;
 
-  constructor(outcome: FailureOutcome | "timeout", httpStatus: number | null, message: string) {
-    super(outcome === "timeout" ? "AI_TIMEOUT" : "AI_UNAVAILABLE", message);
+  constructor(outcome: FailureOutcome | "timeout" | "truncated", httpStatus: number | null, message: string) {
+    super(outcome === "timeout" ? "AI_TIMEOUT" : outcome === "truncated" ? "AI_INVALID_RESPONSE" : "AI_UNAVAILABLE", message);
     this.outcome = outcome;
     this.httpStatus = httpStatus;
   }
@@ -90,6 +97,10 @@ async function callOpenRouter(body: TitlesRequest, options: CompletionOptions, s
     throw new AttemptError(failureOutcome(response.status, error, response.headers), response.status, `OpenRouter ha risposto ${response.status}`);
   }
   const payload = (await response.json().catch(() => null)) as CompletionPayload | null;
+  // Testo tagliato al limite di max_tokens (T-6401): non si analizza, qualunque cosa contenga.
+  if (payload?.choices?.[0]?.finish_reason === "length") {
+    throw new AttemptError("truncated", response.status, "La risposta del modello è stata tagliata al limite di max_tokens");
+  }
   const content = payload?.choices?.[0]?.message?.content;
   if (typeof content !== "string") {
     throw new AttemptError("unavailable", response.status, "La risposta di OpenRouter non contiene il testo del modello");
@@ -117,7 +128,8 @@ async function attemptCompletion(body: TitlesRequest, options: CompletionOptions
 /**
  * Una chiamata a OpenRouter (T-3502): POST {baseUrl}/chat/completions con la chiave come Bearer. Oltre timeoutMs la
  * richiesta si interrompe con AI_TIMEOUT, anche se il server non risponde all'abort; rete, status non 2xx o risposta
- * senza testo → AI_UNAVAILABLE. Nessun nuovo tentativo; né la chiave né il contenuto finiscono nei log (CWE-532).
+ * senza testo → AI_UNAVAILABLE; risposta tagliata → AI_INVALID_RESPONSE (T-6401). Nessun nuovo tentativo; né la chiave
+ * né il contenuto finiscono nei log (CWE-532).
  */
 export async function requestCompletion(body: TitlesRequest, options: CompletionOptions): Promise<{ content: string; model: string }> {
   const { content, model } = await attemptCompletion(body, options);
@@ -132,8 +144,11 @@ type FallbackOptions<T> = {
   attemptTimeoutMs: number;
   /** Controllo del testo del modello: un AppError lanciato vale invalid_response e si passa al modello successivo. */
   validate: (content: string) => T;
-  /** Modelli segnati come assenti dal catalogo (T-3803): si saltano senza richiesta. */
-  skip?: (model: string) => boolean;
+  /**
+   * Catalogo salvato (T-3803, T-6401): i modelli assenti si saltano senza richiesta, quelli che ragionano ricevono
+   * REASONING_TOKEN_ALLOWANCE token in più di max_tokens. Senza catalogo nessun modello si salta né riceve token in più.
+   */
+  catalog?: ModelCatalog | null;
   /** Funzione, workspace e root admin delle righe di ai_requests, una per tentativo (T-3901). */
   record: AiRequestContext;
 };
@@ -148,29 +163,48 @@ const STOP_ERRORS: Partial<Record<AttemptOutcome, () => AiTitlesError>> = {
 };
 
 /**
- * Richiesta con i modelli di riserva (T-3802, D-46): prova i modelli in ordine, saltando quelli assenti dal catalogo;
- * ogni tentativo ha come tempo massimo il minore fra attemptTimeoutMs e il tempo che resta alla scadenza. Dopo
- * provider_busy, unavailable, timeout e invalid_response si passa al successivo; dopo un limite dell'account o un errore
- * di autenticazione ci si ferma. Senza una risposta valida: AI_BUSY se almeno un fornitore era occupato, altrimenti
- * AI_UNAVAILABLE. Nessun nuovo tentativo sullo stesso modello e nessuna attesa fra un tentativo e l'altro. Ogni
- * tentativo scrive appena chiuso la sua riga di ai_requests con la durata della chiamata (T-3901).
+ * Ordine dei tentativi (T-6402): prima i modelli non in pausa nell'ordine dell'elenco, poi quelli in pausa (falliti di
+ * recente, recentModelFailures) nello stesso ordine. Una lettura non riuscita del registro lascia l'ordine dell'elenco.
+ */
+async function attemptOrder(models: string[]): Promise<string[]> {
+  if (models.length < 2) return models;
+  let paused: Set<string>;
+  try {
+    paused = await recentModelFailures(models);
+  } catch {
+    logger.warn("ai_model_pause_read_failed", { models: models.length });
+    return models;
+  }
+  return [...models.filter((model) => !paused.has(model)), ...models.filter((model) => paused.has(model))];
+}
+
+/**
+ * Richiesta con i modelli di riserva (T-3802, D-46): prova i modelli, saltando quelli assenti dal catalogo, prima quelli
+ * non in pausa (T-6402); ogni tentativo ha come tempo massimo il minore fra attemptTimeoutMs e il tempo che resta alla
+ * scadenza, e ai modelli che ragionano max_tokens aumentato di REASONING_TOKEN_ALLOWANCE, senza il parametro reasoning
+ * (T-6401). Dopo provider_busy, unavailable, timeout, truncated e invalid_response si passa al successivo; dopo un
+ * limite dell'account o un errore di autenticazione ci si ferma. Senza una risposta valida: AI_BUSY se almeno un
+ * fornitore era occupato, altrimenti AI_UNAVAILABLE. Nessun nuovo tentativo sullo stesso modello e nessuna attesa fra
+ * un tentativo e l'altro. Ogni tentativo scrive appena chiuso la sua riga di ai_requests con la durata della chiamata
+ * (T-3901).
  */
 export async function requestWithFallback<T>(request: TitlesRequest, models: string[], options: FallbackOptions<T>): Promise<FallbackResult<T>> {
   const startedAt = Date.now();
   const attempts: Attempt[] = [];
+  const catalog = options.catalog ?? null;
   const settle = async (attempt: Attempt, durationMs: number) => {
     attempts.push(attempt);
     await recordAiRequest(options.record, { ...attempt, durationMs });
   };
-  for (const model of models) {
-    if (options.skip?.(model)) continue;
+  for (const model of await attemptOrder(models.filter((model) => modelStatus(model, catalog) !== "missing"))) {
     const remainingMs = options.deadlineMs - (Date.now() - startedAt);
     if (remainingMs <= 0) break;
+    const maxTokens = request.max_tokens + (isReasoningModel(model, catalog) ? REASONING_TOKEN_ALLOWANCE : 0);
     const attemptStartedAt = Date.now();
     let completion: Awaited<ReturnType<typeof attemptCompletion>>;
     try {
       completion = await attemptCompletion(
-        { ...request, model },
+        { ...request, model, max_tokens: maxTokens },
         { apiKey: options.apiKey, baseUrl: options.baseUrl, timeoutMs: Math.min(options.attemptTimeoutMs, remainingMs) }
       );
     } catch (error) {

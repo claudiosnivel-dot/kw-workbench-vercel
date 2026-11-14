@@ -587,7 +587,8 @@ enum AiFeature {
   plan
 }
 
-// Esito di un tentativo verso un modello, con i valori di T-3802.
+// Esito di un tentativo verso un modello, con i valori di T-3802; truncated (T-6401) è la risposta tagliata al limite
+// di max_tokens (finish_reason length).
 enum AiRequestOutcome {
   ok
   provider_busy
@@ -597,6 +598,7 @@ enum AiRequestOutcome {
   timeout
   invalid_response
   auth
+  truncated
 }
 
 /// Registro delle richieste a OpenRouter (T-3901, D-46): una riga per tentativo, con i soli metadati (mai testi,
