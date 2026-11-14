@@ -121,13 +121,49 @@ Dopo questo modulo la classificazione lavora a lotti di 100 con più tempo, il r
 
   out_of_scope:
     - "Scrivere gli H2 proposti nel piano (strategy_pages.h2)."
+
+- id: T-6504
+  title: "URL veri dei risultati di Google al posto dei link google.com/goto"
+  macrotask: "plan-tuning"
+  depends_on: [T-6101]
+
+  objective: >
+    Salvare per ogni keyword gli indirizzi veri delle pagine che Google mostra, così due keyword con le stesse pagine hanno
+    URL in comune e il raggruppamento per risultati funziona.
+
+  definition_of_done:
+    - "lib/modules/providers/serp/dataforseo-serp.ts: il corpo di task_post ha resolve_goto_urls true (per i task con priority 2 il valore predefinito è false, documentazione di DataForSEO letta il 2026-11-15); gli URL organic che sono ancora link di reindirizzamento di Google (host google.<dominio> con o senza www e percorso /goto) non si salvano, gli altri restano nell'ordine di rank_absolute, al massimo 10."
+    - "lib/modules/plan-data/serps.ts: readFreshSerps non restituisce le righe di keyword_serps che contengono link goto (salvate prima di questo task), così le loro keyword si chiedono di nuovo a DataForSEO."
+    - "docs/METRICS-PROVIDERS.md (sezione SERP): i link goto di Google (dal 2026-08-26), resolve_goto_urls e i dati di produzione del 2026-11-14 (1655 URL su 1655 erano link goto)."
+
+  acceptance_criteria:
+    - id: AC-6504-1
+      given: "fetch simulato di DataForSEO che risponde a un task con 10 risultati organic, di cui 3 link https://google.com/goto?url=... e 7 indirizzi diretti"
+      when: "si inviano e si raccolgono i task di 'noleggio magnetoterapia' in it-IT"
+      then: "il corpo di task_post ha resolve_goto_urls true e keyword_serps ha una riga con i soli 7 indirizzi diretti nell'ordine di rank_absolute"
+    - id: AC-6504-2
+      given: "una riga di keyword_serps di 2 giorni fa con link goto per 'noleggio magnetoterapia' e una di 2 giorni fa con indirizzi diretti per 'noleggio magnetoterapia costo'"
+      when: "si chiedono i risultati delle due keyword"
+      then: "readFreshSerps restituisce solo 'noleggio magnetoterapia costo' e task_post riceve solo 'noleggio magnetoterapia'"
+
+  target_tests:
+    - file: "tests/integration/plan-serps.test.ts"
+      covers: [AC-6504-1, AC-6504-2]
+
+  security_notes:
+    - "A06 / CWE-770: le keyword salvate con i link goto si richiedono una volta, dentro i tetti di spesa di T-903; resolve_goto_urls non ha un prezzo a parte nella documentazione (aggiunge fino a 40 s al tempo del task)."
+    - "A03 / CWE-20: gli URL restano dati esterni salvati come testo, con la lunghezza massima di oggi."
+
+  out_of_scope:
+    - "Seguire i link goto rimasti per scoprire la pagina di arrivo."
+    - "Cambiare la coda di DataForSEO (priority 2)."
 ```
 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo su richiesta dell'utente del 2026-11-14 («si facciamo queste correzioni»), dalle prove in produzione dello stesso giorno, con le scelte prese con AskUserQuestion: diagnosi del raggruppamento sui dati veri del progetto (con la fixture nel repository) e H2 proposti dalla scaletta (D-60).
 - Scelte dell'agente da confermare: lotti di 100 keyword; 90 s e 180 s nella classificazione come negli articoli; soglia di AC-6502-1 (pilastro con meno della metà delle keyword e almeno 4 spoke); da 2 a 4 H2 proposti, ids NEW_n dopo gli H2 della pagina; H2 proposti solo nell'articolo e non nel piano.
-- Ordine: dopo il 64; i tre task sono indipendenti tra loro.
+- Ordine: dopo il 64; i tre task sono indipendenti tra loro. T-6504 (aggiunto il 2026-11-15, D-60 emendata) va costruito e messo in produzione prima della fixture di T-6502, che nasce dai risultati riletti con gli URL veri.
 - Note di costruzione (2026-11-14, sessantottesima sessione), scelte dell'agente da confermare:
   - T-6501: `CLASSIFY_BATCH_SIZE` 100, 90 s per tentativo e 180 s per richiesta. In più `CLASSIFY_PHASE_MS` (190 s, la richiesta intera più il margine di 10 s) in `lib/modules/plan-runs/run.ts`: una fase classify che non è la prima del passo parte solo con 190 s davanti, altrimenti il passo rilascia la lease e il successivo riparte da lì, come i lavori degli articoli con REQUEST_DEADLINE_MS; senza, il secondo gruppo di un passo di 270 s partiva con circa 80 s. I due test nuovi sono rossi con il codice di prima (una richiesta con 250 keyword; la risposta dopo 60 s oltre i 45 s del tentativo).
   - T-6502, costruito in parte: `mergeTarget` in `lib/modules/strategy/serp-cluster.ts` confronta la keyword principale della pagina sotto soglia con quella di ogni spoke tenuto, con il DoD letto alla lettera: la pagina va nella pilastro solo se nessuno spoke ha almeno 1 URL in comune, anche quando la principale della pilastro ne ha di più; la regola vale anche per gli spoke oltre maxSpokesPerHub. Le domande sotto questionSpokeVolume verso le FAQ restano sull'unione degli URL (fuori dal DoD). AC-6502-2 verde, rosso con il codice di prima. **Non costruiti**: la fixture `it-magnetoterapia-real-serp.json`, la diagnosi e AC-6502-1, perché la lettura in sola SELECT dalla produzione (`supabase db query --linked`, link in una cartella dello scratchpad fuori dal repository) è stata negata dal controllo dei permessi di Claude Code: serve l'autorizzazione dell'utente nella sessione, oppure la query lanciata da lui.
@@ -135,3 +171,8 @@ Dopo questo modulo la classificazione lavora a lotti di 100 con più tempo, il r
   - Emendamento dichiarato della security note A06 di T-6503: i blocchi proposti si scrivono uno per richiesta (T-4201), quindi fino a 4 richieste in più per articolo; `estimateArticleRequests` conta i 4 H2 possibili quando la pagina ne ha meno di 2 (posto nel tetto della piattaforma all'avvio e stima nella finestra di avvio).
   - Emendamento dichiarato di AC-6301-3 e del DoD di T-6301 (modulo 63): 101 keyword in 2 richieste da 100 e da 1 (prima 301, 300 e 1), con `tests/unit/plan-classify.test.ts` aggiornato (`impacted-by: T-6501`).
   - Test toccati senza cambiare gli AC: `tests/helpers/articles.ts` (outlineReply propone NEW_1 e NEW_2 per una pagina con meno di 2 H2), `tests/integration/article-run.test.ts` (AC-4101-1, AC-6402-3) e `tests/integration/article-faq.test.ts` (AC-4202-1) con `impacted-by: T-6503`: lo spoke dei test ha un solo H2 e l'articolo ha 2 blocchi e 2 richieste in più.
+- Note di costruzione di T-6504 (2026-11-15, sessantottesima sessione, seguito), scelte dell'agente da confermare:
+  - La causa della pilastro piena l'ha mostrata l'esportazione in sola SELECT lanciata dall'utente: 175 keyword tenute di «Noleggio magnetoterapia», tutte con 8-10 risultati, 1655 URL su 1655 link `google.com/goto` (1654 diversi), 123 keyword senza volume. La chiamata reale a DataForSEO approvata dall'utente non è partita dall'agente (credenziali di produzione non leggibili per il controllo dei permessi di Claude Code): la fa la produzione, rigenerando il piano dopo il deploy di T-6504.
+  - `resolve_goto_urls: true` con la coda priority di oggi (fuori dal task cambiare coda); i link goto rimasti si scartano invece di salvarli o di sostituirli con il solo dominio (`domain`), che darebbe URL in comune fra pagine diverse dello stesso sito. Con circa metà dei link risolti per pagina una keyword può avere meno di 10 URL: lo dirà la fixture.
+  - Le righe salvate prima con i link goto si riconoscono in `readFreshSerps` (nessuna migrazione dei dati): al prossimo piano le loro keyword si richiedono, dentro i tetti di spesa.
+  - Emendamento dichiarato di AC-6101-1 (modulo 61): il corpo di task_post ha anche `resolve_goto_urls` true; `tests/integration/plan-serps.test.ts` con `impacted-by: T-6504`.

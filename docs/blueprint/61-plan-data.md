@@ -34,7 +34,7 @@ Oggi il piano lavora solo sulle parole delle keyword e i volumi arrivano solo se
     - id: AC-6101-1
       given: "credenziali DataForSEO presenti, tetti di spesa sufficienti e fetch simulato che risponde ai task con 12 risultati di cui 11 organic e 1 people_also_ask"
       when: "si inviano e si raccolgono i task di 'noleggio magnetoterapia' e 'noleggio magnetoterapia costo' in it-IT"
-      then: "keyword_serps ha 2 righe con language_code 'it' e country_code 'IT', ognuna con i primi 10 URL organic nell'ordine di rank_absolute; il corpo di task_post ha priority 2 e depth 10; metrics_provider_requests ha le richieste chiuse con il costo restituito"
+      then: "keyword_serps ha 2 righe con language_code 'it' e country_code 'IT', ognuna con i primi 10 URL organic nell'ordine di rank_absolute; il corpo di task_post ha priority 2, depth 10 e resolve_goto_urls true (emendato da T-6504); metrics_provider_requests ha le richieste chiuse con il costo restituito"
     - id: AC-6101-2
       given: "una riga di keyword_serps per 'noleggio magnetoterapia' in it-IT con fetched_at di 10 giorni fa e una per 'noleggio magnetoterapia costo' di 31 giorni fa"
       when: "si chiedono i risultati delle due keyword"

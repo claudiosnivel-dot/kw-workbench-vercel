@@ -77,3 +77,21 @@ Uso in Titan SEO (`lib/modules/providers/serp/dataforseo-serp.ts`, `lib/modules/
   attivo) fa partire richieste; gli altri ricevono `PLAN_NO_LICENSED_METRICS` senza chiamate. Senza credenziali:
   `PROVIDER_NOT_CONFIGURED`.
 - Il ritmo delle raccolte (al massimo 20 `tasks_ready` al minuto) lo decide il lavoro di piano del modulo 62.
+
+Link `google.com/goto` (T-6504, D-60 emendata, letti il 2026-11-15):
+
+- Dal 2026-08-26 Google mostra i risultati dietro link di reindirizzamento `https://google.com/goto?url=...`, con un
+  codice diverso per ogni ricerca, che non si possono decodificare
+  (https://dataforseo.com/update/googles-goto-rollout-we-already-resolve-99-99-of-urls).
+- `task_post` ha `resolve_goto_urls`: «set to true to resolve goto redirect URLs in SERPs for tasks with high execution
+  priority», predefinito `true` con `priority` 1 e `false` con `priority` 2; aggiunge fino a 40 s al tempo del task (al
+  massimo 260 s) e la documentazione non indica un prezzo a parte
+  (https://docs.dataforseo.com/v3/serp/google/organic/task_post/). Dal 2026-11-02, per limiti di Google, con la coda
+  priority e live DataForSEO risolve circa metà dei link di una pagina, con la coda standard tutti ma più lentamente
+  (https://dataforseo.com/update/new-goto-url-limits-and-how-this-affects-your-results).
+- Prima di T-6504 i task non chiedevano `resolve_goto_urls`: nei risultati di «Noleggio magnetoterapia» salvati il
+  2026-11-14 tutti i 1655 URL erano link goto (1654 diversi), quindi nessun URL in comune fra le keyword e la pilastro
+  con quasi tutte le keyword.
+- Ora i task chiedono `resolve_goto_urls: true`, i link goto rimasti non si salvano (`isGoogleGotoUrl`: host
+  `google.<dominio>`, con o senza www, e percorso `/goto`) e una riga di `keyword_serps` con link goto non vale come
+  risultato recente: la keyword si chiede di nuovo.

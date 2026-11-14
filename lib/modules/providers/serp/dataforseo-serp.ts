@@ -9,6 +9,9 @@ import { prisma } from "@/lib/prisma";
 // Primi 10 risultati organici di Google con la SERP API di DataForSEO (T-6101, D-57), in coda priority: i task si
 // inviano con task_post e si raccolgono quando compaiono in tasks_ready, con task_get/regular. Fatti della documentazione
 // (endpoint, 100 task per chiamata, priority 2, prezzi, codici 40601/40602) in docs/METRICS-PROVIDERS.md.
+// Dal 2026-08-26 Google mostra i risultati dietro link di reindirizzamento google.com/goto con un codice proprio per
+// ricerca: i task chiedono resolve_goto_urls (falso per priority 2 se non si chiede) e i link rimasti non si salvano,
+// perché non corrispondono mai fra due keyword (T-6504).
 
 const API_BASE = "https://api.dataforseo.com/v3/serp/google/organic";
 export const DATAFORSEO_SERP_TASK_POST_URL = `${API_BASE}/task_post`;
@@ -29,6 +32,20 @@ const NOT_READY_CODES = new Set([40601, 40602]);
 // Raccolte in parallelo: DataForSEO ammette al massimo 30 richieste simultanee per account (40209).
 const COLLECT_CONCURRENCY = 10;
 const MAX_URL_LENGTH = 2048;
+
+/**
+ * true per un link di reindirizzamento di Google (https://google.com/goto?url=..., anche con www o un altro dominio di
+ * Google): non dice la pagina di arrivo e ha un codice diverso a ogni ricerca (T-6504).
+ */
+export function isGoogleGotoUrl(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  return /^(www\.)?google\.[a-z]{2,3}(\.[a-z]{2})?$/i.test(url.hostname) && url.pathname === "/goto";
+}
 
 /** Un task inviato: la forma canonica della keyword e l'id del task restituito da DataForSEO. */
 export type SerpTask = { canonical: string; taskId: string };
@@ -84,17 +101,27 @@ function errorOf(call: Call<unknown>): MetricsProviderError {
   return { httpStatus: call.httpStatus, code: typeof call.body.status_code === "number" ? call.body.status_code : null };
 }
 
-/** URL dei soli risultati organic nell'ordine di rank_absolute, al massimo 10: dati esterni salvati come testo. */
+/**
+ * URL dei soli risultati organic nell'ordine di rank_absolute, al massimo 10, senza i link goto di Google rimasti
+ * (T-6504): dati esterni salvati come testo.
+ */
 function organicUrls(items: SerpItem[]): string[] {
   return items
-    .filter((item) => item.type === "organic" && typeof item.url === "string" && item.url.length > 0 && item.url.length <= MAX_URL_LENGTH)
+    .filter(
+      (item) =>
+        item.type === "organic" &&
+        typeof item.url === "string" &&
+        item.url.length > 0 &&
+        item.url.length <= MAX_URL_LENGTH &&
+        !isGoogleGotoUrl(item.url)
+    )
     .sort((left, right) => (left.rank_absolute ?? Number.MAX_SAFE_INTEGER) - (right.rank_absolute ?? Number.MAX_SAFE_INTEGER))
     .slice(0, SERP_MAX_URLS)
     .map((item) => item.url as string);
 }
 
 /**
- * Invia i task delle keyword a task_post in coda priority (priority 2, depth 10), lingua e paese come per i volumi, a
+ * Invia i task delle keyword a task_post in coda priority (priority 2, depth 10, resolve_goto_urls, T-6504), lingua e paese come per i volumi, a
  * lotti da 100. Ogni chiamata è prenotata sui tetti di spesa (T-903) con il prezzo della coda priority per il numero di
  * task e chiusa con il costo restituito; oltre un tetto non parte e le keyword rimaste restano senza task. Senza
  * credenziali nessuna chiamata e PROVIDER_NOT_CONFIGURED. Nei log solo conteggi, codici e costo (CWE-532).
@@ -129,7 +156,7 @@ export async function postSerpTasks(items: MetricsItem[], context: MetricsContex
     const call = await callApi<never>(
       DATAFORSEO_SERP_TASK_POST_URL,
       request.authorization,
-      batch.map((item) => ({ keyword: item.displayKeyword, ...request.target, priority: PRIORITY_HIGH, depth: SERP_MAX_URLS }))
+      batch.map((item) => ({ keyword: item.displayKeyword, ...request.target, priority: PRIORITY_HIGH, depth: SERP_MAX_URLS, resolve_goto_urls: true }))
     );
     const cost = typeof call.body.cost === "number" ? call.body.cost : 0;
     await settleProviderRequest(reservation.id, cost, call.ok, errorOf(call).code);
