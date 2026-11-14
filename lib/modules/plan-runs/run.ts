@@ -8,6 +8,7 @@ import { planRunStepId, verifyJobStep } from "@/lib/modules/jobs/job-signature";
 import { ACTIVE_JOB_STATUSES } from "@/lib/modules/jobs/job-state";
 import { staleWhere } from "@/lib/modules/jobs/reaper";
 import {
+  CLASSIFY_PHASE_MS,
   PLAN_PHASES,
   PLAN_RUN_SELECT,
   type PlanRunLease,
@@ -31,6 +32,8 @@ const PLAN_STEP_MS = 270_000;
 const PLAN_LEASE_GRACE_MS = 30_000;
 /** Tempo lasciato a una fase che non è la prima del passo: le chiamate a DataForSEO con i loro tentativi. */
 const PHASE_MARGIN_MS = 60_000;
+/** Tempo che una fase vuole davanti se non è la prima del passo: alla classificazione la richiesta intera (T-6501). */
+const phaseMarginMs = (phase: string) => (phase === "classify" ? CLASSIFY_PHASE_MS : PHASE_MARGIN_MS);
 
 export type PlanStepResult = { status: JobStatus; phase: string; more: boolean; skipped?: "lease_busy" };
 
@@ -68,7 +71,7 @@ async function releaseLease(run: PlanRunRecord, lease: PlanRunLease): Promise<Pl
 /**
  * Avanza il lavoro fino a deadlineMs (istante assoluto in ms epoch): lease con compare-and-set, altrimenti
  * skipped='lease_busy' senza lavoro. Esegue sempre almeno una fase; prima di ogni fase successiva, o prima di attendere
- * una raccolta, se non restano 60 s rilascia la lease e ritorna more=true. Un AppError di una fase (accesso perso,
+ * una raccolta, se non restano 60 s (190 s prima della classificazione, T-6501) rilascia la lease e ritorna more=true. Un AppError di una fase (accesso perso,
  * limite di strategie, perimetro vuoto) porta il lavoro a failed con il suo codice; ogni altra eccezione esce, e la conta
  * runPlanStep.
  */
@@ -93,7 +96,7 @@ export async function advancePlanRun(runId: string, deadlineMs: number): Promise
       await writePlanRun(prisma, lease, { status: "completed", locked_until: null });
       return { status: "completed", phase: run.phase, more: false };
     }
-    if (ran > 0 && deadlineMs - Date.now() < PHASE_MARGIN_MS) return releaseLease(run, lease);
+    if (ran > 0 && deadlineMs - Date.now() < phaseMarginMs(run.phase)) return releaseLease(run, lease);
 
     const phase = PLAN_PHASES[run.phase as Exclude<PlanRunPhase, "done">];
     if (!phase) throw new Error(`Lavoro di piano ${runId}: fase sconosciuta ${run.phase}`);

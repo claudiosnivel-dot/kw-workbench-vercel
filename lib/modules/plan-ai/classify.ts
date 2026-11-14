@@ -12,13 +12,14 @@ import { KEYWORD_CLASSES, type KeywordClass } from "@/lib/modules/strategy/types
  * Luoghi e concorrenti del piano (T-6301, D-57). Prima i riconoscimenti fissi: una keyword con un modificatore locale
  * («vicino a me», «zona», modifiers.ts) è place; una keyword che contiene il nome del dominio del primo risultato
  * organico (senza www e senza dominio di primo livello, senza punti) è competitor. Le altre vanno al modello a lotti di
- * 300, con i modelli della card e una riga di ai_requests per tentativo (feature plan). Una risposta valida è un oggetto
+ * 100 (T-6501: con 171 keyword in un lotto i modelli gratuiti grandi rispondevano tagliati o fuori tempo), con i modelli
+ * della card e una riga di ai_requests per tentativo (feature plan). Una risposta valida è un oggetto
  * JSON: forme non inviate e classi sconosciute non contano, le forme mancanti sono other. Un lotto senza risposta valida
  * lascia le sue keyword con i soli riconoscimenti fissi e AI_CLASSIFY_UNAVAILABLE; nessun errore blocca il piano.
  */
 
-/** Keyword inviate al modello in una richiesta. */
-export const CLASSIFY_BATCH_SIZE = 300;
+/** Keyword inviate al modello in una richiesta (T-6501, prima 300). */
+export const CLASSIFY_BATCH_SIZE = 100;
 /** Oltre questa lunghezza la risposta non si analizza. */
 const MAX_CONTENT_LENGTH = 100_000;
 /** Nome di dominio più corto che vale come concorrente: evita che sigle di due o tre lettere colpiscano ogni keyword. */

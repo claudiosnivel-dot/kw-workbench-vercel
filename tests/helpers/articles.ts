@@ -89,11 +89,14 @@ export function sentBody(init: RequestInit | undefined): { model: string; messag
  * collegabile (così ci sono quello alla pilastro e quelli agli spoke), meta con la keyword principale e la copertina.
  */
 export function outlineReply(data: SentOutlineData) {
+  // Con meno di 2 H2 nella pagina la scaletta propone 2 H2 nuovi, NEW_1 e NEW_2 (T-6503).
+  const proposed = data.h2.length < 2 ? [1, 2].map((index) => ({ id: `NEW_${index}`, heading: `Sezione proposta ${index}` })) : [];
   return {
     metaTitle: data.mainKeyword,
     metaDescription: `Guida a ${data.mainKeyword}: cosa sapere prima di scegliere.`,
-    blocks: [{ id: "INTRO" }, ...data.h2].map((block, index) => ({
+    blocks: [{ id: "INTRO" }, ...data.h2, ...proposed].map((block, index) => ({
       id: block.id,
+      ...(block.id.startsWith("NEW_") ? { heading: (block as { heading: string }).heading } : {}),
       covers: `Argomento del blocco ${block.id}`,
       keywords: index === 0 ? [data.mainKeyword] : [],
       words: 100,

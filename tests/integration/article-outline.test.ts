@@ -3,12 +3,23 @@
 // segnaposto immagine e i blocchi vuoti nell'ordine del piano. In più le istruzioni in spagnolo con la variante del
 // paese e le pagine collegabili di una pilastro.
 // impacted-by: T-4201 (dopo la scaletta il lavoro scrive i blocchi: il test esegue la sola fase outline, AC-4102-1 emendato)
+// Gate di T-6503 (AC-6503-1, D-60): per una pagina senza H2 la scaletta propone gli H2, che diventano blocchi H2
+// dell'articolo nell'ordine della risposta, mentre gli H2 della pagina nel piano restano vuoti.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { advanceArticleRun } from "@/lib/articles/run";
 import { prisma } from "@/lib/prisma";
 import { memberWithPlan, stubOpenRouterEnv } from "../helpers/ai-titles";
-import { articleCompletion, saveArticleSettings, type SentOutlineData, sentBody, startArticle } from "../helpers/articles";
+import {
+  articleCompletion,
+  modelReply,
+  outlineReply,
+  saveArticleSettings,
+  type SentOutlineData,
+  sentBody,
+  sentData,
+  startArticle,
+} from "../helpers/articles";
 import { resetDatabase } from "../helpers/db";
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -121,5 +132,33 @@ describe("scaletta dell'articolo", () => {
     expect(article.status).toBe("GENERATING");
     expect(JSON.parse(sent.messages[1].content)).toMatchObject({ pageType: "pillar", maxWords: 2500, linkablePages: [{ id: "L1", role: "spoke", h1: "H1 spoke" }] });
     expect((article.outline as { blocks: { links: string[] }[] }).blocks[0].links).toEqual([plan.pageIds.spoke]);
+  });
+});
+
+describe("H2 proposti dalla scaletta (T-6503)", () => {
+  // covers: AC-6503-1
+  it("una pagina senza H2 riceve i 3 H2 proposti nell'ordine della risposta e strategy_pages.h2 resta vuoto", async () => {
+    const { member, spoke } = await planWithBrief("t6503-a");
+    await prisma.strategyPage.update({ where: { id: spoke.pageId }, data: { h2: [] } });
+    const proposed = ["Come scegliere la misura giusta", "Ammortizzazione e peso", "Quanto durano le scarpe"];
+    fetchMock.mockImplementation(async (_url, init) => {
+      const reply = outlineReply(sentData<SentOutlineData>(init));
+      const blocks = proposed.map((heading, index) => ({ id: `NEW_${index + 1}`, heading, covers: `Argomento della sezione ${index + 1}`, keywords: [], words: 200, links: [] }));
+      return modelReply({ ...reply, blocks: [reply.blocks[0], ...blocks] });
+    });
+
+    const { article, sent } = await generate(member, spoke, { length: "MEDIUM" });
+
+    expect(sent.messages[0].content).toContain("NEW_1, NEW_2...");
+    expect(JSON.parse(sent.messages[1].content)).toMatchObject({ h2: [] });
+    expect(article.sections.map((section) => [section.position, section.kind, section.heading])).toEqual([
+      [0, "INTRO", null],
+      [1, "H2", proposed[0]],
+      [2, "H2", proposed[1]],
+      [3, "H2", proposed[2]],
+    ]);
+    expect((article.outline as { blocks: { kind: string; heading: string | null }[] }).blocks.map((block) => block.heading)).toEqual([null, ...proposed]);
+    expect(await prisma.articleRun.findFirstOrThrow({ where: { article_id: article.id } })).toMatchObject({ progress_total: 6 });
+    expect(await prisma.strategyPage.findUniqueOrThrow({ where: { id: spoke.pageId }, select: { h2: true, h2_edited: true } })).toEqual({ h2: [], h2_edited: false });
   });
 });

@@ -4,12 +4,15 @@
 // motivo AI_CLASSIFY_UNAVAILABLE; una regola nuova fuori dai limiti è 400 senza lavoro. DataForSEO e OpenRouter sono
 // simulati con i dati della fixture it-magnetoterapia-serp.json: nessuna chiamata reale. In più: pochi risultati di
 // Google danno il motore di oggi con SERP_TOO_FEW, senza richieste al modello.
+// Gate di T-6501 (AC-6501-1, AC-6501-2, D-60): la classificazione manda al modello gruppi di al più 100 keyword, un
+// gruppo per volta, e aspetta un modello fino a 90 s, così una risposta che arriva dopo 60 s vale al primo tentativo.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as createStrategy } from "@/app/api/projects/[id]/strategies/route";
 import { resetEnvForTests } from "@/lib/env";
 import { schedulePlanRunContinuation } from "@/lib/modules/jobs/continuation";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
+import { advancePlanRun } from "@/lib/modules/plan-runs/run";
 import { resetDataForSeoLimiterForTests } from "@/lib/modules/providers/metrics/dataforseo";
 import { prisma } from "@/lib/prisma";
 import { saveAiSettings, stubOpenRouterEnv } from "../helpers/ai-titles";
@@ -38,16 +41,28 @@ const api = vi.hoisted(() => ({
   aiDown: false,
   /** Keyword con risultati di Google: le altre ricevono un elenco vuoto. */
   withResults: null as Set<string> | null,
+  /** Risultati di Google delle keyword generate dal test, fuori dalla fixture. */
+  generated: new Map<string, string[]>(),
+  /** OpenRouter risponde dopo questa attesa (timer finti). */
+  aiDelayMs: 0,
 }));
 
 /** DataForSEO simulato (risultati di Google della fixture) e OpenRouter simulato (classi della fixture). */
+/** Keyword del messaggio dell'utente di una richiesta a OpenRouter. */
+function sentKeywords(init: RequestInit | undefined): string[] {
+  const body = JSON.parse(String(init?.body)) as { messages: { role: string; content: string }[] };
+  return (JSON.parse(body.messages.find((message) => message.role === "user")!.content) as { keywords: string[] }).keywords;
+}
+
 const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
   const url = String(input);
   if (url.startsWith("https://openrouter.test/")) {
     if (api.aiDown) return new Response("{}", { status: 503 });
-    const body = JSON.parse(String(init?.body)) as { model: string; messages: { role: string; content: string }[] };
-    const { keywords } = JSON.parse(body.messages.find((message) => message.role === "user")!.content) as { keywords: string[] };
-    const answer = Object.fromEntries(keywords.filter((keyword) => classOf.get(keyword) !== "other").map((keyword) => [keyword, classOf.get(keyword)]));
+    if (api.aiDelayMs > 0) await new Promise((resolve) => setTimeout(resolve, api.aiDelayMs));
+    const body = JSON.parse(String(init?.body)) as { model: string };
+    const answer = Object.fromEntries(
+      sentKeywords(init).filter((keyword) => (classOf.get(keyword) ?? "other") !== "other").map((keyword) => [keyword, classOf.get(keyword)])
+    );
     return Response.json({ model: body.model, choices: [{ message: { content: JSON.stringify(answer) } }] });
   }
   if (url.endsWith("/v3/serp/google/organic/task_post")) {
@@ -63,7 +78,7 @@ const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit
   const id = url.match(/\/task_get\/regular\/([^/?]+)$/)?.[1];
   if (id && api.tasks.has(id)) {
     const keyword = api.tasks.get(id)!;
-    const urls = !api.withResults || api.withResults.has(keyword) ? (byKeyword.get(keyword)?.urls ?? []) : [];
+    const urls = !api.withResults || api.withResults.has(keyword) ? (byKeyword.get(keyword)?.urls ?? api.generated.get(keyword) ?? []) : [];
     const items = urls.map((link, index) => ({ type: "organic", rank_absolute: index + 1, url: link }));
     return Response.json({ status_code: 20000, cost: 0, tasks: [{ id, status_code: 20000, cost: 0, result: [{ keyword, items }] }] });
   }
@@ -102,6 +117,8 @@ beforeEach(async () => {
   api.tasks.clear();
   api.aiDown = false;
   api.withResults = null;
+  api.generated.clear();
+  api.aiDelayMs = 0;
 });
 
 type Session = Awaited<ReturnType<typeof createUserWithSession>>;
@@ -130,6 +147,37 @@ async function fixtureProject(session: Session) {
   return project.id;
 }
 
+/**
+ * Progetto it-IT del root admin con count keyword tenute generate, senza modificatori locali e senza il nome del dominio
+ * del primo risultato: nessuna ha un riconoscimento fisso e tutte hanno 10 risultati di Google.
+ */
+async function generatedProject(session: Session, count: number) {
+  const project = await prisma.project.create({
+    data: { name: "Magnetoterapia", workspace_id: session.workspaceId, language_code: "it", country_code: "IT" },
+  });
+  const section = await prisma.subproject.create({ data: { project_id: project.id, name: "Generale", position: 0 } });
+  const texts = Array.from({ length: count }, (_, index) => `magnetoterapia guida ${String(index + 1).padStart(3, "0")}`);
+  texts.forEach((text, index) => {
+    api.generated.set(text, Array.from({ length: 10 }, (_, rank) => `https://www.risorsa-${(index + rank) % 23}.example/pagina-${index}-${rank}`));
+  });
+  await prisma.keywordCandidate.createMany({
+    data: texts.map((text) => ({
+      project_id: project.id,
+      subproject_id: section.id,
+      keyword: text,
+      normalized_keyword: text,
+      canonical_keyword: canonical(text),
+      source: "seed",
+      source_query: "magnetoterapia",
+      score: 50,
+      avg_monthly_searches: 50,
+    })),
+  });
+  await prisma.seed.create({ data: { project_id: project.id, subproject_id: section.id, keyword: "magnetoterapia" } });
+  expect(new Set(texts.map(canonical)).size).toBe(count);
+  return project.id;
+}
+
 const postPlan = (session: Session, projectId: string, body: unknown = { mode: "AUTO" }) =>
   callRoute(createStrategy, { method: "POST", url: `/api/projects/${projectId}/strategies`, cookie: session.cookie, params: { id: projectId }, body });
 
@@ -148,6 +196,8 @@ async function planned(session: Session, projectId: string) {
 }
 
 const openRouterCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).startsWith("https://openrouter.test/"));
+
+const runRow = (id: string) => prisma.planRun.findUniqueOrThrow({ where: { id } });
 
 describe("lavoro di piano con i risultati di Google", () => {
   // covers: AC-6303-1
@@ -212,5 +262,62 @@ describe("lavoro di piano con i risultati di Google", () => {
 
     expect(strategy).toMatchObject({ grouping_source: "ENGINE", grouping_notice: "SERP_TOO_FEW" });
     expect(openRouterCalls()).toHaveLength(0);
+  });
+});
+
+describe("classificazione del piano a lotti di 100 (T-6501)", () => {
+  // covers: AC-6501-1
+  it("250 keyword senza riconoscimento fisso vanno al modello in 3 richieste da 100, 100 e 50", async () => {
+    const admin = await createUserWithSession({ isRootAdmin: true });
+    const projectId = await generatedProject(admin, 250);
+
+    const { strategy } = await planned(admin, projectId);
+
+    expect(strategy).toMatchObject({ grouping_source: "SERP", grouping_notice: null });
+    expect(openRouterCalls().map(([, init]) => sentKeywords(init).length)).toEqual([100, 100, 50]);
+    expect(await prisma.aiRequest.findMany({ select: { feature: true, outcome: true } })).toEqual([
+      { feature: "plan", outcome: "ok" },
+      { feature: "plan", outcome: "ok" },
+      { feature: "plan", outcome: "ok" },
+    ]);
+  });
+
+  // covers: AC-6501-2
+  it("una risposta che arriva dopo 60 s vale al primo tentativo e le classi del gruppo restano nel cursore", async () => {
+    const admin = await createUserWithSession({ isRootAdmin: true });
+    const projectId = await fixtureProject(admin);
+    const response = await postPlan(admin, projectId);
+    expect(response.status).toBe(202);
+    const { runId } = ((await response.json()) as { data: { runId: string } }).data;
+    // Con meno di 60 s davanti ogni passo esegue una sola fase: volumi, invio e raccolta dei risultati, poi classify.
+    for (let step = 0; step < 5 && (await runRow(runId)).phase !== "classify"; step += 1) {
+      await advancePlanRun(runId, Date.now() + 59_000);
+    }
+    expect(await runRow(runId)).toMatchObject({ status: "running", phase: "classify" });
+    expect(openRouterCalls()).toHaveLength(0);
+
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    try {
+      api.aiDelayMs = 60_000;
+      const pending = advancePlanRun(runId, Date.now() + 270_000);
+      await vi.waitFor(() => expect(openRouterCalls()).toHaveLength(1));
+      await vi.advanceTimersByTimeAsync(60_000);
+      const step = await pending;
+
+      expect(step).toMatchObject({ status: "completed", more: false });
+      const run = await runRow(runId);
+      const cursor = (run.cursor as { classify: { offset: number; place: string[]; competitor: string[]; notice: string | null } }).classify;
+      const expected = (value: string) => FIXTURE.keywords.filter((keyword) => keyword.class === value).map((keyword) => canonical(keyword.keyword)).sort();
+      expect({ ...cursor, place: [...cursor.place].sort(), competitor: [...cursor.competitor].sort() }).toEqual({
+        offset: FIXTURE.keywords.length,
+        place: expected("place"),
+        competitor: expected("competitor"),
+        notice: null,
+      });
+      expect(await prisma.strategy.findUniqueOrThrow({ where: { id: run.strategy_id! } })).toMatchObject({ grouping_source: "SERP", grouping_notice: null });
+      expect(await prisma.aiRequest.findMany({ select: { feature: true, outcome: true } })).toEqual([{ feature: "plan", outcome: "ok" }]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

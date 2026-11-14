@@ -69,6 +69,7 @@ const faqCalls = () =>
 
 describe("domande frequenti dell'articolo", () => {
   // covers: AC-4202-1
+  // impacted-by: T-6503 (lo spoke ha un solo H2: con i 2 H2 proposti dalla scaletta il blocco FAQ è in posizione 4)
   it("l'ultimo blocco è FAQ con «Domande frequenti» e 4 domande in grassetto; il corpo della richiesta FAQ ha le 2 keyword-domanda", async () => {
     await saveArticleSettings();
     const { articleId, runId } = await spokeArticle("t4202-a", QUESTIONS);
@@ -77,7 +78,7 @@ describe("domande frequenti dell'articolo", () => {
 
     const sections = await sectionsOf(articleId);
     const faq = sections[sections.length - 1];
-    expect(faq).toMatchObject({ kind: "FAQ", heading: "Domande frequenti", position: 2, edited: false, model: "autore/modello-prova:free" });
+    expect(faq).toMatchObject({ kind: "FAQ", heading: "Domande frequenti", position: 4, edited: false, model: "autore/modello-prova:free" });
     const questions = [...faq.body.matchAll(BOLD_QUESTION)].map((match) => match[1]);
     expect(questions).toHaveLength(4);
     for (const question of questions) expect(question).toMatch(/\?$/);
@@ -123,7 +124,8 @@ describe("domande frequenti dell'articolo", () => {
     expect(await prisma.articleRun.findUniqueOrThrow({ where: { id: runId } })).toMatchObject({ status: "failed", error_code: "AI_INVALID_RESPONSE" });
     expect(await prisma.article.findUniqueOrThrow({ where: { id: articleId } })).toMatchObject({ status: "FAILED", error_code: "AI_INVALID_RESPONSE" });
     const sections = await sectionsOf(articleId);
-    expect(sections.map((section) => section.kind)).toEqual(["INTRO", "H2"]);
+    // impacted-by: T-6503 (l'H2 dello spoke e i 2 H2 proposti dalla scaletta)
+    expect(sections.map((section) => section.kind)).toEqual(["INTRO", "H2", "H2", "H2"]);
     expect(faqCalls()).toHaveLength(2);
   });
 
