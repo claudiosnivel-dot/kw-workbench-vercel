@@ -100,6 +100,10 @@ Provenienza: *Vercel* = Settings → Environment Variables del progetto, per amb
 
 - DB: il progetto Supabase di produzione, con `DATABASE_URL` sul pooler (6543) e `DIRECT_URL`
   sulla porta 5432.
+- Regione delle funzioni: `fra1` (Francoforte, `regions` in `vercel.json`), la stessa del progetto Supabase
+  (`eu-central-1`). Con la regione predefinita di Vercel (`iad1`, Washington) ogni query attraversava l'oceano
+  (circa 90-100 ms andata e ritorno) e un clic con una decina di query in fila pagava più di un secondo solo di rete.
+  Sul piano Hobby le funzioni stanno in una sola regione.
 - Build (`npm run vercel-build` → `scripts/vercel-build.mjs`, T-202): con `VERCEL_ENV=production`
   applica `prisma migrate deploy`, poi `prisma db seed`, poi `next build`; un comando fallito ferma
   il build con lo stesso exit code.
