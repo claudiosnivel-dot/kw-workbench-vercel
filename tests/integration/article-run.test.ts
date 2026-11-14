@@ -3,10 +3,13 @@
 // con 5 tentativi; il limite giornaliero dell'account fa fallire il lavoro con AI_DAILY_LIMIT. In più l'annullamento,
 // anche durante una richiesta, le risposte tutte scartate e il primo passo programmato all'avvio. La continuazione è
 // sostituita da un registratore: nessuna chiamata HTTP nei test.
+// Gate di T-6402 (AC-6402-3): una richiesta degli articoli aspetta un modello fino a 90 s, così una scaletta che arriva
+// dopo 60 s è salvata al primo tentativo.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as reapJobsCron } from "@/app/api/cron/reap-jobs/route";
 import { advanceArticleRun, runArticleStep } from "@/lib/articles/run";
+import { upsertSettingValue } from "@/lib/integrations/app-settings";
 import { scheduleArticleRunContinuation } from "@/lib/modules/jobs/continuation";
 import { prisma } from "@/lib/prisma";
 import { memberWithPlan, stubOpenRouterEnv } from "../helpers/ai-titles";
@@ -186,5 +189,46 @@ describe("annullamento del lavoro", () => {
 
     expect(await runRow(runId)).toMatchObject({ status: "canceled", phase: "outline" });
     expect(await articleRow(articleId)).toMatchObject({ status: "FAILED", error_code: "CANCELED", meta_title: null, outline: null, sections: [] });
+  });
+});
+
+describe("articolo senza modelli utilizzabili", () => {
+  it("con l'elenco e i predefiniti tutti assenti dal catalogo il lavoro è failed con AI_NO_MODELS senza richieste", async () => {
+    await saveArticleSettings({ models: ["autore/sparito:free"] });
+    await upsertSettingValue({
+      key: "AI_MODEL_CATALOG",
+      value: JSON.stringify({ checkedAt: new Date().toISOString(), free: [{ id: "autore/altro:free", name: "Altro", contextLength: null }] }),
+    });
+    const { articleId, runId } = await startedArticle("t6403");
+
+    await advanceArticleRun(runId, Date.now() + STEP_MS);
+
+    expect(await runRow(runId)).toMatchObject({ status: "failed", error_code: "AI_NO_MODELS" });
+    expect(await articleRow(articleId)).toMatchObject({ status: "FAILED", error_code: "AI_NO_MODELS" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("tempi delle richieste degli articoli", () => {
+  // covers: AC-6402-3
+  it("una scaletta che arriva dopo 60 s è salvata al primo tentativo", async () => {
+    await saveArticleSettings({ models: ["autore/modello-a:free"] });
+    const { articleId, runId } = await startedArticle("t6402");
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    try {
+      fetchMock.mockImplementation((_url, init) => new Promise<Response>((resolve) => setTimeout(() => resolve(articleCompletion(init)), 60_000)));
+
+      // Meno di 180 s: dopo la scaletta il passo non ha il tempo di un'altra richiesta e si ferma.
+      const pending = advanceArticleRun(runId, Date.now() + 179_000);
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+      await vi.advanceTimersByTimeAsync(60_000);
+      const step = await pending;
+
+      expect(step).toMatchObject({ status: "running", more: true });
+      expect((await articleRow(articleId)).outline).toMatchObject({ blocks: [{ kind: "INTRO" }, { kind: "H2" }] });
+      expect(await prisma.aiRequest.findMany({ select: { model: true, outcome: true } })).toEqual([{ model: "autore/modello-a:free", outcome: "ok" }]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

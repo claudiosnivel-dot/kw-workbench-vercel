@@ -8,7 +8,8 @@ import { recordAiRequest } from "@/lib/ai/requests";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import { type ClassifyAi, classifyKeywords } from "@/lib/modules/plan-ai/classify";
 
-vi.mock("@/lib/ai/requests", () => ({ recordAiRequest: vi.fn(async () => {}) }));
+// impacted-by: T-6402 (i modelli in pausa si leggono dal registro): nessun modello in pausa.
+vi.mock("@/lib/ai/requests", () => ({ recordAiRequest: vi.fn(async () => {}), recentModelFailures: vi.fn(async () => new Set<string>()) }));
 
 const recorded = vi.mocked(recordAiRequest);
 const fetchMock = vi.fn<typeof fetch>();

@@ -24,7 +24,9 @@ vi.mock("@/lib/modules/strategy/service", () => ({
   readPlanTitlePage: vi.fn(),
   savePageAiProposal: vi.fn(async () => {}),
 }));
+// impacted-by: T-6403 (i modelli della richiesta con modelsForRequest): qui l'elenco salvato, il catalogo è mai letto.
 vi.mock("@/lib/ai/settings", () => ({
+  modelsForRequest: vi.fn((settings: { models: string[] }) => settings.models),
   getAiTitlesSettings: vi.fn(async () => ({
     enabled: true,
     models: ["autore/modelo-prueba:free"],

@@ -42,6 +42,35 @@ export async function recordAiRequest(context: AiRequestContext, attempt: Record
   }
 }
 
+/** Finestra e numero di tentativi non riusciti dopo cui un modello è in pausa (T-6402, D-58). */
+const PAUSE_WINDOW_MS = 30 * 60_000;
+const PAUSE_FAILURES = 2;
+/** Esiti che dicono qualcosa del modello; i limiti dell'account e la chiave non valida valgono per tutti i modelli. */
+const MODEL_FAILURES: ReadonlySet<AiRequestOutcome> = new Set<AiRequestOutcome>(["timeout", "truncated", "invalid_response", "provider_busy", "unavailable"]);
+
+/**
+ * Modelli in pausa fra quelli dati (T-6402): negli ultimi 30 minuti almeno 2 tentativi non riusciti (timeout,
+ * truncated, invalid_response, provider_busy, unavailable) e nessun ok dopo l'ultimo. Legge da ai_requests solo
+ * modello, esito e orario, di tutte le funzioni e di tutti i workspace, senza altri dati (CWE-639).
+ */
+export async function recentModelFailures(models: string[], now: Date = new Date()): Promise<Set<string>> {
+  const paused = new Set<string>();
+  if (models.length === 0) return paused;
+  const rows = await prisma.aiRequest.findMany({
+    where: { model: { in: models }, created_at: { gt: new Date(now.getTime() - PAUSE_WINDOW_MS) } },
+    orderBy: { created_at: "desc" },
+    select: { model: true, outcome: true },
+  });
+  for (const model of models) {
+    // Dal più recente: un ok prima di ogni errore toglie la pausa.
+    const outcomes = rows.filter((row) => row.model === model).map((row) => row.outcome);
+    const lastFailure = outcomes.findIndex((outcome) => MODEL_FAILURES.has(outcome));
+    if (lastFailure === -1 || outcomes.slice(0, lastFailure).includes("ok")) continue;
+    if (outcomes.filter((outcome) => MODEL_FAILURES.has(outcome)).length >= PAUSE_FAILURES) paused.add(model);
+  }
+  return paused;
+}
+
 /** Righe contate dal tetto: le ultime 24 ore, senza quelle del root admin. */
 const countedSince = (now: Date): Prisma.AiRequestWhereInput => ({ by_root_admin: false, created_at: { gt: new Date(now.getTime() - DAY_MS) } });
 

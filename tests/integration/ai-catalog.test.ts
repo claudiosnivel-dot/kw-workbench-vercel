@@ -1,6 +1,8 @@
 // Gate di T-3803 (AC-3803-1…3): catalogo dei modelli gratuiti di OpenRouter salvato con i soli modelli ':free' a
 // prezzo 0, stato dei modelli dell'elenco nella card, modelli assenti saltati dalla proposta e cron notturno protetto
 // da CRON_SECRET che, se la lettura non riesce, lascia il catalogo salvato com'era.
+// Gate di T-6401 (AC-6401-2): il catalogo salva quali modelli ragionano, e la scaletta di un articolo chiesta a un modello
+// che ragiona ha 8000 token in più di max_tokens, senza il parametro reasoning.
 import { randomBytes, randomUUID } from "node:crypto";
 import { UserRole } from "@/lib/generated/prisma/enums";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,11 +10,19 @@ import { POST as refreshCatalogRoute } from "@/app/api/admin/ai-titles/catalog/r
 import { GET as readAiTitles } from "@/app/api/admin/ai-titles/route";
 import { GET as catalogCron } from "@/app/api/cron/ai-catalog/route";
 import { readModelCatalog, refreshModelCatalog } from "@/lib/ai/catalog";
+import { advanceArticleRun } from "@/lib/articles/run";
 import { prisma } from "@/lib/prisma";
 import { completion, memberWithPlan, saveAiSettings, stubOpenRouterEnv, suggest } from "../helpers/ai-titles";
+import { articleCompletion, modelReply, saveArticleSettings, startArticle } from "../helpers/articles";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
+
+// Il primo passo del lavoro dell'articolo non parte con una richiesta HTTP: lo esegue il test.
+vi.mock("@/lib/modules/jobs/continuation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/modules/jobs/continuation")>()),
+  scheduleArticleRunContinuation: vi.fn(),
+}));
 
 type View = { models: string[]; statuses: Record<string, string>; addable: { id: string }[]; catalog: { checkedAt: string } | null };
 
@@ -138,5 +148,49 @@ describe("catalogo all'apertura della card", () => {
     expect(Date.now() - Date.parse(((await fresh.json()) as { data: View }).data.catalog?.checkedAt ?? "")).toBeLessThan(60_000);
     expect(calls("/models")).toHaveLength(2);
     expect(await prisma.appSetting.count({ where: { key: "AI_MODEL_CATALOG" } })).toBe(1);
+  });
+});
+
+describe("modelli che ragionano", () => {
+  const thinking = "a/pensa:free";
+  const plain = "a/diretto:free";
+  /** Catalogo simulato con supported_parameters: il primo modello ragiona, il secondo no. */
+  const reasoningCatalog = () =>
+    Response.json({
+      data: [
+        { id: thinking, name: "A: Pensa (free)", context_length: 131072, pricing: free, supported_parameters: ["max_tokens", "reasoning", "temperature"] },
+        { id: plain, name: "A: Diretto (free)", context_length: 131072, pricing: free, supported_parameters: ["max_tokens", "temperature"] },
+      ],
+    });
+
+  // covers: AC-6401-2
+  it("la scaletta chiesta al modello che ragiona ha max_tokens 12000, quella all'altro 4000, nessuna con reasoning", async () => {
+    await saveArticleSettings({ models: [thinking, plain] });
+    const { member, spoke } = await memberWithPlan("t6401");
+    const started = await startArticle(member.cookie, spoke, { length: "MEDIUM" });
+    const { runId } = ((await started.json()) as { data: { runId: string } }).data;
+    fetchMock.mockImplementation(async (url, init) => {
+      const target = String(url);
+      if (target.endsWith("/models")) return reasoningCatalog();
+      const sent = JSON.parse(String(init?.body)) as { model: string };
+      // Il modello che ragiona risponde senza JSON: la scaletta passa all'altro.
+      return sent.model === thinking ? modelReply("Ecco la scaletta richiesta.", thinking) : articleCompletion(init);
+    });
+    await refreshModelCatalog();
+
+    // Meno di 180 s: dopo la scaletta il passo non ha il tempo di un'altra richiesta e si ferma.
+    await advanceArticleRun(runId, Date.now() + 179_000);
+
+    expect((await readModelCatalog())?.free).toEqual([
+      expect.objectContaining({ id: thinking, reasoning: true }),
+      expect.objectContaining({ id: plain, reasoning: false }),
+    ]);
+    const bodies = calls("/chat/completions").map(([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>);
+    expect(bodies.map((body) => [body.model, body.max_tokens])).toEqual([
+      [thinking, 12_000],
+      [plain, 4000],
+    ]);
+    for (const body of bodies) expect(body).not.toHaveProperty("reasoning");
+    expect((await prisma.article.findFirstOrThrow({ where: { page_id: spoke.pageId } })).outline).toMatchObject({ model: plain });
   });
 });

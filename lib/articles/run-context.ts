@@ -1,8 +1,7 @@
 import { readModelCatalog } from "@/lib/ai/catalog";
-import { AiTitlesError } from "@/lib/ai/errors";
-import { modelStatus } from "@/lib/ai/models";
+import { AiTitlesError, noModelsError } from "@/lib/ai/errors";
 import { requestWithFallback } from "@/lib/ai/openrouter";
-import { getAiTitlesSettings } from "@/lib/ai/settings";
+import { getAiTitlesSettings, modelsForRequest } from "@/lib/ai/settings";
 import type { TitlesRequest } from "@/lib/ai/titles-prompt";
 import { getOpenRouterSettings } from "@/lib/env";
 import type { ArticleRunScope, Prisma } from "@/lib/generated/prisma/client";
@@ -13,9 +12,13 @@ import { logger } from "@/lib/observability/logger";
  * la fase che segue; più la scrittura sotto lease e la richiesta al modello con i modelli di riserva.
  */
 
-/** Attesa massima di un tentativo verso un modello e di una richiesta con tutti i modelli di riserva (T-4101). */
-const ATTEMPT_TIMEOUT_MS = 45_000;
-export const REQUEST_DEADLINE_MS = 120_000;
+/**
+ * Attesa massima di un tentativo verso un modello e di una richiesta con tutti i modelli di riserva (T-4101, rivisti da
+ * T-6402): un modello gratuito grande può impiegare circa un minuto per una scaletta (36 s nella prova del 2026-11-12),
+ * e dopo un modello lento resta ancora il tempo di un altro tentativo intero.
+ */
+const ATTEMPT_TIMEOUT_MS = 90_000;
+export const REQUEST_DEADLINE_MS = 180_000;
 
 /** Lease del passo in corso: ogni scrittura del lavoro la richiede, così un passo che l'ha persa non scrive. */
 export type RunLease = { runId: string; lockedUntil: Date };
@@ -61,19 +64,23 @@ export async function writeRun(tx: Prisma.TransactionClient, lease: RunLease, da
   }
 }
 
-/** Esito non riuscito della richiesta: tutti i tentativi con una risposta scartata dal controllo sono AI_INVALID_RESPONSE. */
+/**
+ * Esito non riuscito della richiesta: tutti i tentativi con una risposta scartata dal controllo o tagliata (T-6401) sono
+ * AI_INVALID_RESPONSE.
+ */
 function requestError(error: AiTitlesError, outcomes: string[]): AiTitlesError {
-  if (outcomes.length > 0 && outcomes.every((outcome) => outcome === "invalid_response")) {
+  if (outcomes.length > 0 && outcomes.every((outcome) => outcome === "invalid_response" || outcome === "truncated")) {
     return new AiTitlesError("AI_INVALID_RESPONSE", "Nessun modello dell'elenco ha dato una risposta valida");
   }
   return error;
 }
 
 /**
- * Una richiesta del lavoro (T-4101): modelli delle impostazioni del root admin in ordine (T-3802), saltando quelli assenti
- * dal catalogo (T-3803), con 45 s per tentativo e 120 s per tutta la richiesta, mai oltre la scadenza del passo; ogni
- * tentativo scrive la sua riga di ai_requests con funzione article e il workspace del lavoro (T-3901). Senza chiave
- * AI_UNAVAILABLE; senza una risposta valida AI_BUSY, AI_DAILY_LIMIT, AI_UNAVAILABLE o AI_INVALID_RESPONSE. Nel log solo
+ * Una richiesta del lavoro (T-4101): modelli delle impostazioni del root admin in ordine (T-3802), senza quelli assenti
+ * dal catalogo o, se lo sono tutti, i predefiniti ancora gratuiti (T-6403), con 90 s per tentativo e 180 s per tutta la
+ * richiesta (T-6402), mai oltre la scadenza del passo; ogni tentativo scrive la sua riga di ai_requests con funzione
+ * article e il workspace del lavoro (T-3901). Senza chiave AI_UNAVAILABLE, senza modelli utilizzabili AI_NO_MODELS
+ * senza richieste; senza una risposta valida AI_BUSY, AI_DAILY_LIMIT, AI_UNAVAILABLE o AI_INVALID_RESPONSE. Nel log solo
  * id, fase, modello, esito e tentativi, mai testi o keyword (CWE-532).
  */
 export async function requestForRun<T>(
@@ -85,14 +92,16 @@ export async function requestForRun<T>(
   if (!openRouter) {
     throw new AiTitlesError("AI_UNAVAILABLE", "La chiave di OpenRouter non è configurata");
   }
-  const [{ models }, catalog] = await Promise.all([getAiTitlesSettings(), readModelCatalog()]);
+  const [settings, catalog] = await Promise.all([getAiTitlesSettings(), readModelCatalog()]);
+  const models = modelsForRequest(settings, catalog);
+  if (models.length === 0) throw noModelsError(false);
   const startedAt = Date.now();
   const result = await requestWithFallback({ model: models[0], ...request }, models, {
     ...openRouter,
     deadlineMs: Math.max(0, Math.min(REQUEST_DEADLINE_MS, context.deadlineMs - startedAt)),
     attemptTimeoutMs: ATTEMPT_TIMEOUT_MS,
     validate,
-    skip: (model) => modelStatus(model, catalog) === "missing",
+    catalog,
     record: { feature: "article", workspaceId: context.run.workspaceId, byRootAdmin: context.run.byRootAdmin },
   });
   logger.info("article_run_request", {

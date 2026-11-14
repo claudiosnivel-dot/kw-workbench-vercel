@@ -2,10 +2,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useVolumesReasonText } from "@/components/volumes-reason-text";
 import type { AdminAlertsData } from "@/lib/admin/alerts-types";
-import { countAvailableModels, MIN_AVAILABLE_MODELS } from "@/lib/ai/models";
-
-/** Indirizzo della card «Titoli con l'AI» nelle Impostazioni (T-3902). */
-const AI_TITLES_CARD_HREF = "/admin/settings#ai-titles";
+import { AI_TITLES_CARD_HREF, countAvailableModels, MIN_AVAILABLE_MODELS } from "@/lib/ai/models";
 
 type Alert = { key: string; text: string; detail?: string | null; cardLink?: boolean };
 

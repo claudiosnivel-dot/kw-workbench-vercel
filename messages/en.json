@@ -451,6 +451,7 @@
     "AI_MODEL_NOT_FREE": "The model must be free: an ID like author/model:free.",
     "AI_BUSY": "All the free models are busy: try again in a few minutes.",
     "AI_DAILY_LIMIT": "Today's AI requests have run out: try again tomorrow.",
+    "AI_NO_MODELS": "No free AI model available: the model list needs updating.",
     "ARTICLE_NOT_FOUND": "Article not found.",
     "ARTICLE_VERSION_CONFLICT": "This article was changed elsewhere: reload the page.",
     "WP_NOT_CONFIGURED": "Connect the project to WordPress first, in the project settings.",
@@ -757,6 +758,8 @@
       "off": "Off",
       "models": "Models, first to try at the top",
       "modelsHint": "Free models only (ID ending in :free), 1 to 8. If a model is busy or answers badly, the next one is tried.",
+      "fallbackInUse": "No model in the list is free any more: headings and articles use the default models that are still free ({models}). Update the list.",
+      "fallbackNone": "No model in the list or among the defaults is free any more: headings and articles will not work until you update the list.",
       "up": "Up",
       "down": "Down",
       "remove": "Remove",
@@ -1992,6 +1995,7 @@
       "use": "Use these headings",
       "discard": "Discard",
       "rateLimited": "You have reached the suggestion limit: you can ask for another one from {time}.",
+      "openCard": "Open “AI titles”",
       "droppedH2": "{count, plural, one {One more proposed heading was not kept.} other {# more proposed headings were not kept.}}"
     },
     "regenerateDialog": {
@@ -2166,6 +2170,7 @@
       "AI_UNAVAILABLE": "The AI service cannot be reached: write the article again shortly.",
       "AI_INVALID_RESPONSE": "The models gave unusable answers: write the article again.",
       "AI_NOT_CONFIGURED": "AI articles are not active right now.",
+      "AI_NO_MODELS": "No free AI model available: the model list needs updating before writing the article again.",
       "JOB_ALREADY_ACTIVE": "This article is already being written: wait for it to finish.",
       "CANCELED": "Writing was stopped before the end.",
       "INTERNAL_ERROR": "Writing stopped because of an error: write the article again."

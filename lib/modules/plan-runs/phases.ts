@@ -1,7 +1,6 @@
 import { readModelCatalog } from "@/lib/ai/catalog";
-import { modelStatus } from "@/lib/ai/models";
 import { countCountedRequests } from "@/lib/ai/requests";
-import { getAiTitlesSettings } from "@/lib/ai/settings";
+import { getAiTitlesSettings, modelsForRequest } from "@/lib/ai/settings";
 import { getOpenRouterSettings } from "@/lib/env";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { ProjectNotFoundError } from "@/lib/modules/project-access";
@@ -209,8 +208,10 @@ async function serpInputs(run: PlanRunRecord) {
 
 /**
  * Modello della classificazione: off con AI_NOT_CONFIGURED se la funzione AI è spenta o manca la chiave, con
- * AI_CLASSIFY_UNAVAILABLE se il tetto della piattaforma (T-3901) è raggiunto per chi non è root admin; altrimenti i
- * modelli della card senza quelli assenti dal catalogo (T-3803), con le righe di ai_requests della funzione plan.
+ * AI_CLASSIFY_UNAVAILABLE se il tetto della piattaforma (T-3901) è raggiunto per chi non è root admin o se non c'è
+ * nessun modello utilizzabile (T-6403); altrimenti i modelli della card senza quelli assenti dal catalogo, o i
+ * predefiniti ancora gratuiti, con il catalogo per i token dei modelli che ragionano (T-6401) e le righe di ai_requests
+ * della funzione plan.
  */
 async function classifyAi(run: PlanRunRecord, deadlineMs: number): Promise<ClassifyContext["ai"]> {
   const settings = await getAiTitlesSettings();
@@ -219,12 +220,14 @@ async function classifyAi(run: PlanRunRecord, deadlineMs: number): Promise<Class
   const byRootAdmin = actorOf(run).isRootAdmin;
   if (!byRootAdmin && (await countCountedRequests()) >= settings.platformDailyRequests) return { off: "AI_CLASSIFY_UNAVAILABLE" };
   const catalog = await readModelCatalog();
+  const models = modelsForRequest(settings, catalog);
+  if (models.length === 0) return { off: "AI_CLASSIFY_UNAVAILABLE" };
   return {
-    models: settings.models,
+    models,
     ...openRouter,
     deadlineMs: Math.max(1, Math.min(CLASSIFY_DEADLINE_MS, deadlineMs - Date.now() - CLASSIFY_STEP_MARGIN_MS)),
     attemptTimeoutMs: CLASSIFY_ATTEMPT_TIMEOUT_MS,
-    skip: (model) => modelStatus(model, catalog) === "missing",
+    catalog,
     record: { feature: "plan", workspaceId: run.workspace_id, byRootAdmin },
   };
 }
