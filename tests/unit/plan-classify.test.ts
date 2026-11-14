@@ -1,5 +1,5 @@
 // Gate di T-6301 (AC-6301-1…AC-6301-3, D-57): luoghi e concorrenti del piano. I riconoscimenti fissi («vicino a me», il
-// nome del dominio del primo risultato) vengono prima del modello, che riceve solo le altre keyword a lotti di 300; una
+// nome del dominio del primo risultato) vengono prima del modello, che riceve solo le altre keyword a lotti di 100; una
 // risposta non valida di ogni modello lascia i soli riconoscimenti fissi con AI_CLASSIFY_UNAVAILABLE. OpenRouter è
 // simulato e il registro di ai_requests pure: il test unitario non ha il DB (la scrittura vera la prova
 // tests/integration/plan-run-serp.test.ts).
@@ -94,13 +94,14 @@ describe("classifyKeywords", () => {
   });
 
   // covers: AC-6301-3
-  it("con 301 keyword da classificare il modello riceve 2 richieste, da 300 e da 1 keyword", async () => {
+  // impacted-by: T-6501 (lotti di 100 al posto di 300: AC-6301-3 emendato con 101 keyword)
+  it("con 101 keyword da classificare il modello riceve 2 richieste, da 100 e da 1 keyword", async () => {
     fetchMock.mockImplementation(async () => completion("{}"));
-    const texts = Array.from({ length: 301 }, (_, index) => `apparecchio magnetoterapia modello ${index}`);
+    const texts = Array.from({ length: 101 }, (_, index) => `apparecchio magnetoterapia modello ${index}`);
 
     const result = await classifyKeywords(keywords(texts), new Map(), { language: "it", country: "IT", ai: AI });
 
-    expect(sentKeywords().map((batch) => batch.length)).toEqual([300, 1]);
+    expect(sentKeywords().map((batch) => batch.length)).toEqual([100, 1]);
     expect(result.notice).toBeNull();
     expect([...result.classes.values()].every((value) => value === "other")).toBe(true);
   });

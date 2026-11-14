@@ -38,11 +38,19 @@ export const SERP_COLLECT_INTERVAL_MS = 10_000;
 export const SERP_COLLECT_TIMEOUT_MS = 600_000;
 /** Il raggruppamento usa i risultati di Google se ci sono per almeno questa quota delle keyword che li hanno chiesti. */
 export const SERP_MIN_SHARE = 0.5;
-/** Attesa massima di un modello e di una richiesta di classificazione con i modelli di riserva. */
-const CLASSIFY_ATTEMPT_TIMEOUT_MS = 45_000;
-const CLASSIFY_DEADLINE_MS = 100_000;
+/**
+ * Attesa massima di un modello e di una richiesta di classificazione con i modelli di riserva: 90 s e 180 s come gli
+ * articoli (T-6501, prima 45 s e 100 s; il 2026-11-14 un modello grande rispondeva oltre i 45 s).
+ */
+const CLASSIFY_ATTEMPT_TIMEOUT_MS = 90_000;
+const CLASSIFY_DEADLINE_MS = 180_000;
 /** Tempo lasciato al passo dopo la richiesta di classificazione, dentro la lease. */
 const CLASSIFY_STEP_MARGIN_MS = 10_000;
+/**
+ * Tempo che una fase classify vuole davanti quando non è la prima del passo: la richiesta intera più il margine, così un
+ * gruppo non parte con un'attesa più corta (T-6501); con meno il passo si ferma e il successivo riparte da qui.
+ */
+export const CLASSIFY_PHASE_MS = CLASSIFY_DEADLINE_MS + CLASSIFY_STEP_MARGIN_MS;
 
 /** Richiesta salvata all'avvio (GenerateRequest della POST /strategies) con il nome già scelto. */
 export type PlanRunRequest = GenerateRequest & { name: string };

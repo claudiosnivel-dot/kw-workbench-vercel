@@ -246,7 +246,8 @@ modulo 40 prepara i dati e l'avvio; il lavoro che scrive l'articolo arriva con i
   LONG, notes? }` (note fino a 1000 caratteri). Controlli in ordine: permesso di modificare il piano e pagina del piano
   corrente (404, 409 `STRATEGY_READ_ONLY`); articoli spenti o chiave assente → 503 `AI_NOT_CONFIGURED`; lavoro già
   attivo sull'articolo → 409 `JOB_ALREADY_ACTIVE` con `runId`; tetto della piattaforma con posto per la stima
-  dell'articolo (H2 della pagina più 3, più il 30%, per eccesso) e limite del workspace → 429 `RATE_LIMITED` con
+  dell'articolo (H2 della pagina più 3, con meno di 2 H2 anche i 4 H2 che la scaletta può proporre, T-6503, più il
+  30%, per eccesso) e limite del workspace → 429 `RATE_LIMITED` con
   Retry-After. Il root admin è escluso dai limiti. Poi, in una transazione, l'articolo nasce o si sostituisce
   (`GENERATING`, blocchi e meta cancellati, version più 1), nasce il lavoro `pending` e la pagina passa da «Da
   scrivere» a «In scrittura»; risposta 202 `{ data: { articleId, runId } }`.
@@ -293,6 +294,14 @@ modulo 40 prepara i dati e l'avvio; il lavoro che scrive l'articolo arriva con i
   realistica, 16:9 per la copertina e 4:3 nel testo, nessun testo nell'immagine) li calcola il codice. La scaletta
   accettata salva meta, slug, `outline` (modello e blocchi con keyword, parole e link con l'id della pagina) e `images`
   e crea i blocchi vuoti; `progress_total` diventa i blocchi più 2.
+- **H2 proposti** (T-6503, `lib/articles/outline-*.ts`): con meno di 2 H2 nella pagina le istruzioni della scaletta,
+  nelle tre lingue, chiedono da 2 a 4 blocchi nuovi dopo quelli degli H2 della pagina, con id `NEW_1`, `NEW_2`... e
+  `heading`; i dati inviati non cambiano. Il controllo vuole heading di testo semplice da 3 a 120 caratteri, senza tag
+  né segni di Markdown, diversi tra loro e dagli H2 della pagina (confronto sulla forma canonica); meno di 2 o più di 4
+  blocchi nuovi, o un blocco `NEW_n` per una pagina con 2 H2 o più, rendono la risposta non valida. I blocchi nuovi
+  diventano blocchi H2 dell'articolo con il loro heading, scritti uno per richiesta come gli altri; gli H2 della pagina
+  nel piano (`strategy_pages.h2`) non cambiano. Prima del modulo 65 una pagina con una sola keyword e senza H2 dava un
+  articolo con la sola introduzione e le FAQ (circa 470 parole, prova del 2026-11-14).
 
 ## Articoli con l'AI: scrittura dei blocchi e FAQ (modulo 42)
 
@@ -377,8 +386,13 @@ utenti»); senza la chiave di OpenRouter restano spenti.
 
 - **Quando** (T-6301, T-6303): nella fase `classify` del lavoro di piano, dopo i risultati di Google e solo se ci sono
   per almeno metà delle prime 1000 keyword del perimetro; altrimenti il piano usa il motore di oggi e il modello non si
-  chiama. Le keyword si classificano a gruppi di 300, uno per passo della fase, con al più una richiesta con i modelli di
-  riserva ciascuno (45 s per modello, 100 s per richiesta, entro la lease del passo).
+  chiama. Le keyword si classificano a gruppi di 100, uno per volta nella fase, con al più una richiesta con i modelli
+  di riserva ciascuno: 90 s per modello e 180 s per richiesta, come gli articoli, entro la lease del passo meno 10 s; un
+  gruppo che non è la prima fase del passo parte solo con 190 s davanti, altrimenti il passo si ferma e il successivo
+  riprende da lì (T-6501; prima gruppi di 300, 45 s e 100 s). Prova del 2026-11-14 su «Noleggio magnetoterapia»: con
+  171 keyword in un gruppo ernie ha risposto tagliata anche con 12000 `max_tokens`, ultra ha superato i 45 s, i due
+  Gemma erano occupati e super-vl non aveva più tempo nei 100 s della richiesta. Con 1000 keyword le richieste di un
+  piano passano da 1-4 a 1-10, contate nel tetto della piattaforma (root admin escluso).
 - **Prima del modello**: una keyword con un modificatore locale («vicino a me», «zona», `modifiers.ts`) è `place`; una
   keyword che contiene, senza punti, il nome del dominio del primo risultato organico (senza www e senza dominio di
   primo livello, almeno 4 caratteri) è `competitor`. Le altre vanno al modello.

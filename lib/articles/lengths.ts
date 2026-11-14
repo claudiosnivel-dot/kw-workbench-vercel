@@ -22,9 +22,20 @@ export function defaultArticleLength(page: { kind: StrategyPageKind; contentType
 /** Più 30% su ogni stima: le risposte scartate dal controllo passano al modello successivo. */
 const withMargin = (requests: number) => Math.ceil((requests * 13) / 10);
 
-/** Stima delle richieste di un articolo (D-46): un H2 alla volta più 3 (scaletta, introduzione e FAQ), più il 30%. */
+/** Con meno di questi H2 nella pagina del piano la scaletta propone H2 nuovi solo per l'articolo (T-6503). */
+export const MIN_PAGE_H2 = 2;
+/** H2 nuovi che la scaletta propone a una pagina con meno di MIN_PAGE_H2 H2. */
+export const PROPOSED_H2 = { min: 2, max: 4 } as const;
+
+/** H2 dell'articolo al massimo: quelli della pagina, più i proposti dalla scaletta se la pagina ne ha meno di 2. */
+export const maxArticleH2 = (h2Count: number): number => h2Count + (h2Count < MIN_PAGE_H2 ? PROPOSED_H2.max : 0);
+
+/**
+ * Stima delle richieste di un articolo (D-46): un H2 alla volta più 3 (scaletta, introduzione e FAQ), più il 30%; con
+ * meno di 2 H2 nella pagina conta anche i 4 H2 che la scaletta può proporre, ognuno scritto in una richiesta (T-6503).
+ */
 export function estimateArticleRequests(h2Count: number): number {
-  return withMargin(h2Count + 3);
+  return withMargin(maxArticleH2(h2Count) + 3);
 }
 
 /** Stima di «Riscrivi questo blocco» (T-4402): la riscrittura e quella eventuale dei controlli, più il 30%. */

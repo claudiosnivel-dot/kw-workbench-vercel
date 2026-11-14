@@ -24,7 +24,7 @@ Dopo il modulo 62 il lavoro di piano ha volumi e risultati di Google, ma raggrup
     all'utente che tipo di sito ha.
 
   definition_of_done:
-    - "lib/modules/plan-ai/classify.ts: classifyKeywords(keywords, serps, context) restituisce per ogni forma canonica una classe fra place, competitor e other. Prima i riconoscimenti fissi: le keyword con categoria di modificatore local (sequenze come «vicino a me», modifiers.ts) sono place; una keyword che contiene, senza spazi e senza punti, il nome del dominio del primo risultato organico (senza www e senza dominio di primo livello) è competitor. Le altre vanno al modello a lotti di 300 con requestWithFallback e i modelli della card (T-3802), una riga di ai_requests per tentativo con feature 'plan' (T-3901)."
+    - "lib/modules/plan-ai/classify.ts: classifyKeywords(keywords, serps, context) restituisce per ogni forma canonica una classe fra place, competitor e other. Prima i riconoscimenti fissi: le keyword con categoria di modificatore local (sequenze come «vicino a me», modifiers.ts) sono place; una keyword che contiene, senza spazi e senza punti, il nome del dominio del primo risultato organico (senza www e senza dominio di primo livello) è competitor. Le altre vanno al modello a lotti di 100 (emendato da T-6501, prima 300) con requestWithFallback e i modelli della card (T-3802), una riga di ai_requests per tentativo con feature 'plan' (T-3901)."
     - "Prompt in italiano, in spagnolo e in inglese per le altre lingue come i titoli (T-5102), con le keyword come dati e non istruzioni; risposta validata: un oggetto JSON con le sole forme canoniche inviate e una classe ammessa ciascuna; forme mancanti, in più o classi sconosciute valgono other. Un lotto senza risposta valida lascia le sue keyword con i riconoscimenti fissi e l'esito ha il motivo AI_CLASSIFY_UNAVAILABLE; nessun errore blocca il piano."
     - "Con la funzione AI spenta o senza chiave nessuna richiesta e motivo AI_NOT_CONFIGURED."
 
@@ -38,9 +38,9 @@ Dopo il modulo 62 il lavoro di piano ha volumi e risultati di Google, ma raggrup
       when: "si chiama classifyKeywords sulle stesse keyword"
       then: "'noleggio magnetoterapia vicino a me' è place, 'noleggiomagnetoterapia it recensioni' è competitor, le altre due sono other e l'esito ha il motivo AI_CLASSIFY_UNAVAILABLE"
     - id: AC-6301-3
-      given: "301 keyword da classificare con il modello"
+      given: "101 keyword da classificare con il modello (emendato da T-6501: prima 301)"
       when: "si chiama classifyKeywords"
-      then: "OpenRouter riceve 2 richieste, la prima con 300 keyword e la seconda con 1"
+      then: "OpenRouter riceve 2 richieste, la prima con 100 keyword e la seconda con 1"
 
   target_tests:
     - file: "tests/unit/plan-classify.test.ts"

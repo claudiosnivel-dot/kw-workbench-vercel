@@ -2,6 +2,8 @@
 // keyword con almeno 3 dei primi 10 risultati in comune, forma gli hub per argomento anche da una sola seed, raccoglie i
 // luoghi in un'unica pagina locale e lascia i concorrenti tra le non assegnate con il motivo COMPETITOR. In più: lo
 // stesso piano per 20 permutazioni, le domande sotto soglia nelle FAQ, le keyword senza risultati e le ancore.
+// Gate di T-6502 (AC-6502-2, D-60): una pagina sotto soglia confluisce nello spoke la cui keyword principale ha più URL
+// in comune con la sua, non nella pilastro che ne ha di più solo con l'unione degli URL delle sue keyword.
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULES } from "@/lib/modules/strategy/rules";
 import { buildSerpPlan } from "@/lib/modules/strategy/serp-cluster";
@@ -140,5 +142,28 @@ describe("buildSerpPlan", () => {
     const anchoredPlan = planFor(items.slice(1), { anchors: [{ ref: "page-1", main: "scarpe running", open: true }] });
     expect(anchoredPlan.pages.map((page) => [page.kind, page.hubRef, page.main])).toEqual([["SPOKE", "page-1", "scarpe running donna"]]);
     expect(anchoredPlan.anchored).toEqual([{ ref: "page-1", secondary: ["scarpe running roma"] }]);
+  });
+
+  // covers: AC-6502-2
+  it("una pagina sotto soglia confluisce nello spoke per la keyword principale, non nella pilastro per l'unione degli URL", () => {
+    const pillar = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"];
+    const items = [
+      serpKeyword("magnetoterapia", 1000, pillar),
+      serpKeyword("magnetoterapia ginocchio", 300, ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "p8"]),
+      // Secondarie della pilastro (3 URL in comune con la principale): portano x1…x5 nell'unione degli URL della pilastro.
+      serpKeyword("magnetoterapia apparecchio", 200, ["p2", "p3", "p4", "x1", "x2", "x3"]),
+      serpKeyword("magnetoterapia domicilio", 150, ["p5", "p6", "p7", "x4", "x5", "y1"]),
+      // Una keyword e 20 ricerche: sotto soglia. 1 URL in comune con la principale della pilastro, 2 con quella dello
+      // spoke, 6 con l'unione degli URL della pilastro.
+      serpKeyword("magnetoterapia tendinite", 20, ["p1", "s1", "s2", "x1", "x2", "x3", "x4", "x5", "t1", "t2"]),
+    ];
+    const plan = planFor(items);
+
+    const hub = plan.pages.find((page) => page.kind === "HUB")!;
+    expect(hub.main).toBe("magnetoterapia");
+    expect(keywordsOf(hub)).toEqual(expect.arrayContaining(["magnetoterapia apparecchio", "magnetoterapia domicilio"]));
+    expect(hub.reason).toMatchObject({ code: "HUB_SERP", params: { merged: 0 } });
+    expect(pageWith(plan, "magnetoterapia tendinite")).toMatchObject({ kind: "SPOKE", hubRef: hub.ref, main: "magnetoterapia ginocchio" });
+    expect(plan.pages.some((page) => page.main === "magnetoterapia tendinite")).toBe(false);
   });
 });

@@ -73,6 +73,7 @@ async function makeStuck(runId: string, attempts: number) {
 describe("motore dei lavori degli articoli", () => {
   // covers: AC-4101-1
   // impacted-by: T-4201 e T-4202 (dopo la scaletta il lavoro scrive blocchi e FAQ: una riga di ai_requests per richiesta, AC-4101-1 emendato)
+  // impacted-by: T-6503 (lo spoke ha un solo H2: la scaletta propone NEW_1 e NEW_2, quindi 2 blocchi e 2 richieste in più)
   it("porta il lavoro a completed e l'articolo a READY con scaletta, blocchi e FAQ, con una riga di ai_requests del workspace per richiesta", async () => {
     await saveArticleSettings();
     const { owner, articleId, runId } = await startedArticle("t4101-a");
@@ -84,27 +85,37 @@ describe("motore dei lavori degli articoli", () => {
 
     expect(step).toMatchObject({ status: "completed", more: false });
     const run = await runRow(runId);
-    expect(run).toMatchObject({ status: "completed", phase: "done", locked_until: null, progress_done: 4, progress_total: 4 });
+    expect(run).toMatchObject({ status: "completed", phase: "done", locked_until: null, progress_done: 6, progress_total: 6 });
     const article = await articleRow(articleId);
     expect(article).toMatchObject({ status: "READY", error_code: null, meta_title: "scarpe running donna", slug: "scarpe-running-donna" });
-    expect(article.outline).toMatchObject({ model: "autore/modello-prova:free", blocks: [{ kind: "INTRO" }, { kind: "H2", heading: "H2 spoke" }] });
+    expect(article.outline).toMatchObject({
+      model: "autore/modello-prova:free",
+      blocks: [
+        { kind: "INTRO" },
+        { kind: "H2", heading: "H2 spoke" },
+        { kind: "H2", heading: "Sezione proposta 1" },
+        { kind: "H2", heading: "Sezione proposta 2" },
+      ],
+    });
     expect(article.images).toMatchObject([{ cover: true, aspectRatio: "16:9", fileName: "scarpe-running-donna.webp" }]);
     expect(article.sections.map((section) => [section.position, section.kind, section.heading, section.body.length > 0])).toEqual([
       [0, "INTRO", null, true],
       [1, "H2", "H2 spoke", true],
-      [2, "FAQ", "Domande frequenti", true],
+      [2, "H2", "Sezione proposta 1", true],
+      [3, "H2", "Sezione proposta 2", true],
+      [4, "FAQ", "Domande frequenti", true],
     ]);
-    // Scaletta, introduzione, H2 e FAQ: una richiesta ciascuno.
+    // Scaletta, introduzione, i 3 H2 e FAQ: una richiesta ciascuno.
     const requests = await prisma.aiRequest.findMany();
-    expect(requests).toHaveLength(4);
+    expect(requests).toHaveLength(6);
     for (const request of requests) {
       expect(request).toMatchObject({ feature: "article", outcome: "ok", workspace_id: owner.workspaceId, by_root_admin: false });
     }
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenCalledTimes(6);
 
     // Un passo su un lavoro finito non fa nulla.
     expect(await advanceArticleRun(runId, Date.now() + STEP_MS)).toMatchObject({ status: "completed", more: false });
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenCalledTimes(6);
   });
 
   // covers: AC-4101-2
@@ -225,7 +236,8 @@ describe("tempi delle richieste degli articoli", () => {
       const step = await pending;
 
       expect(step).toMatchObject({ status: "running", more: true });
-      expect((await articleRow(articleId)).outline).toMatchObject({ blocks: [{ kind: "INTRO" }, { kind: "H2" }] });
+      // impacted-by: T-6503 (lo spoke ha un solo H2: la scaletta ha anche i 2 H2 proposti)
+      expect((await articleRow(articleId)).outline).toMatchObject({ blocks: [{ kind: "INTRO" }, { kind: "H2" }, { kind: "H2" }, { kind: "H2" }] });
       expect(await prisma.aiRequest.findMany({ select: { model: true, outcome: true } })).toEqual([{ model: "autore/modello-a:free", outcome: "ok" }]);
     } finally {
       vi.useRealTimers();
