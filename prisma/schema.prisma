@@ -934,6 +934,9 @@ model StrategyKeyword {
   source_keyword_id String?
   /// Angolo da valutare (T-6702, D-62): keyword principale di una pagina sciolta dal motore per risultati di Google.
   angle             Boolean             @default(false)
+  /// Consiglio dell'AI sull'angolo (T-6901, D-62): action, target (forma canonica della keyword principale di una
+  /// pagina del piano), reason, alternative, h1; null senza consiglio o dopo la decisione dell'utente.
+  angle_advice      Json?
   strategy          Strategy            @relation(fields: [strategy_id], references: [id], onDelete: Cascade)
   page              StrategyPage?       @relation(fields: [page_id], references: [id], onDelete: SetNull)
 

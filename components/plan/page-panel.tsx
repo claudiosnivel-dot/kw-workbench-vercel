@@ -8,7 +8,7 @@ import { EntityMenu, type EntityMenuItem } from "@/components/entity-menu";
 import { ModalDialog } from "@/components/modal-dialog";
 import { AiTitles } from "@/components/plan/ai-titles";
 import { ArticleEntry, type PanelArticle } from "@/components/plan/article-entry";
-import { AngleBox, type CreatePageOperation, NewPageDialog } from "@/components/plan/plan-angles";
+import { type AngleAdviceDisplay, AngleBox, type CreatePageOperation, NewPageDialog } from "@/components/plan/plan-angles";
 import { type PickGroup, PickDialog, type PickOption } from "@/components/plan/pick-dialog";
 import { type PlanRequestResult, usePlanRequests } from "@/components/plan/plan-requests";
 import { StatusLabel } from "@/components/plan/status-menu";
@@ -76,8 +76,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * corrente (CWE-362). Un errore di validazione resta sotto il campo senza perdere il testo; dopo un 409
  * STRATEGY_CONFLICT il piano si ricarica con il suo messaggio. Sotto i campi, se disponibile, la proposta dei titoli con
  * l'AI (T-3603) e l'articolo della pagina (T-4401). Gli angoli da valutare (T-6802) hanno un riquadro con «Fanne una
- * pagina», «Sposta in…» e «Tienila come H2». Esc chiude e il focus torna alla scheda. Tutti i testi del piano sono resi
- * come testo (CWE-79).
+ * pagina», «Sposta in…» e «Tienila come H2»; il consiglio dell'AI (T-6902) è per intero nel primo riquadro che ne ha uno
+ * e in una riga breve negli altri, e prepara il foglio «Nuova pagina» e «Sposta in…» senza farli partire. Esc chiude e
+ * il focus torna alla scheda. Tutti i testi del piano sono resi come testo (CWE-79).
  */
 export function PagePanel({
   page,
@@ -212,6 +213,24 @@ export function PagePanel({
   // Nelle versioni precedenti gli angoli restano nell'elenco delle keyword, senza azioni.
   const angles = readOnly ? [] : page.keywords.filter((keyword) => keyword.angle && !kept.has(keyword.id));
   const listed = page.keywords.filter((keyword) => !angles.includes(keyword));
+  // Consiglio dell'AI (T-6902): per intero nel primo angolo che ne ha uno, in una riga breve negli altri.
+  const pageLabels = new Map(destinations.flatMap((group) => group.options).map((option) => [option.id, option.label]));
+  const firstAdvised = angles.find((keyword) => keyword.angleAdvice)?.id;
+  const adviceOf = (keyword: StrategyKeywordView): AngleAdviceDisplay | null =>
+    keyword.angleAdvice
+      ? {
+          value: keyword.angleAdvice,
+          full: keyword.id === firstAdvised,
+          pageLabel: keyword.angleAdvice.pageId ? (pageLabels.get(keyword.angleAdvice.pageId) ?? null) : null,
+        }
+      : null;
+  const advisedTarget = (keyword: StrategyKeywordView, action: "page" | "move") =>
+    keyword.angleAdvice?.action === action ? keyword.angleAdvice.pageId : null;
+  // Hub del foglio «Nuova pagina»: quello del consiglio se è ancora una pagina principale, altrimenti quello della pagina.
+  const newPageHub = (keyword: StrategyKeywordView) => {
+    const advised = advisedTarget(keyword, "page");
+    return advised && hubs.some((hub) => hub.id === advised) ? advised : page.kind === "HUB" ? page.id : (page.hubPageId ?? "");
+  };
 
   const otherDestinations = destinations
     .map((group) => ({ ...group, options: group.options.filter((option) => option.id !== page.id) }))
@@ -415,6 +434,7 @@ export function PagePanel({
               key={keyword.id}
               keyword={keyword}
               pending={requests.pending}
+              advice={adviceOf(keyword)}
               onNewPage={() => setDialog({ kind: "newPage", keyword })}
               onMove={() => setDialog({ kind: "move", keyword })}
               onKeep={() => void keepAngle(keyword)}
@@ -449,6 +469,7 @@ export function PagePanel({
               confirm: tPick("confirm"),
             }}
             groups={otherDestinations}
+            defaultId={advisedTarget(dialog.keyword, "move")}
             onPick={(targetPageId) => operate({ type: "move_keywords", keywordIds: [dialog.keyword.id], targetPageId })}
             onClose={() => setDialog(null)}
           />
@@ -458,7 +479,8 @@ export function PagePanel({
             keyword={dialog.keyword}
             others={angles.filter((keyword) => keyword.id !== dialog.keyword.id)}
             hubs={hubs}
-            defaultHubId={page.kind === "HUB" ? page.id : (page.hubPageId ?? "")}
+            defaultHubId={newPageHub(dialog.keyword)}
+            proposedH1={dialog.keyword.angleAdvice?.action === "page" ? dialog.keyword.angleAdvice.h1 : null}
             onCreate={createPage}
             onClose={() => setDialog(null)}
           />

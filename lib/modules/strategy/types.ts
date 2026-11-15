@@ -130,7 +130,23 @@ export type StrategyKeywordView = {
   isQuestion: boolean;
   /** Angolo da valutare (T-6702): keyword principale di una pagina che il motore ha sciolto, finché l'utente non decide. */
   angle: boolean;
+  /** Consiglio dell'AI sull'angolo (T-6901), solo per le keyword con angle true; null o assente senza consiglio. */
+  angleAdvice?: StrategyAngleAdvice | null;
 };
+
+/** Azioni che l'AI può consigliare per un angolo (T-6901): farne una pagina, spostarlo, tenerlo come H2. */
+export const ANGLE_ADVICE_ACTIONS = ["page", "move", "keep"] as const;
+export type AngleAdviceAction = (typeof ANGLE_ADVICE_ACTIONS)[number];
+
+/**
+ * Consiglio dell'AI su un angolo come si salva in strategy_keywords.angle_advice (T-6901): target è la forma canonica
+ * della keyword principale di una pagina del piano (l'hub per page, la destinazione per move, la pagina dell'angolo per
+ * keep), così resta valido dopo le modifiche al piano finché quella pagina esiste; h1 solo per page.
+ */
+export type AngleAdvice = { action: AngleAdviceAction; target: string; reason: string; alternative: string | null; h1: string | null };
+
+/** Consiglio nella vista della strategia (T-6901): pageId è la pagina con quella keyword principale, null se non c'è più. */
+export type StrategyAngleAdvice = Omit<AngleAdvice, "target"> & { pageId: string | null };
 
 /**
  * Proposta dei titoli con l'AI conservata nella pagina (T-3601, D-43): createdAt in ISO 8601, droppedH2 gli H2 validi

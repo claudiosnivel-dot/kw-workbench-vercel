@@ -1879,6 +1879,7 @@
         "classify": "Riconosco luoghi e concorrenti",
         "cluster": "Raggruppo le keyword",
         "save": "Salvo il piano",
+        "advise": "Consigli sugli angoli",
         "done": "Salvo il piano"
       },
       "failed": "Il piano non è stato preparato.",
@@ -1905,7 +1906,16 @@
       "label": "Angolo da valutare",
       "region": "Angolo da valutare: {keyword}",
       "newPage": "Fanne una pagina",
-      "keep": "Tienila come H2"
+      "keep": "Tienila come H2",
+      "advice": {
+        "title": "Consiglio dell'AI: {action}",
+        "short": "AI: {action}",
+        "page": "fanne una pagina propria",
+        "move": "spostala in «{page}»",
+        "moveElsewhere": "spostala in un'altra pagina",
+        "keep": "tienila qui come H2",
+        "alternative": "In alternativa: {text}"
+      }
     },
     "groupBy": "Raggruppa per",
     "group": {
@@ -2006,6 +2016,7 @@
       "noHub": "Nessuna: diventa una pagina principale",
       "h1": "Titolo (H1)",
       "h1Hint": "Facoltativo: se lo lasci vuoto lo propone il piano.",
+      "proposed": "Proposto dall'AI · puoi cambiarlo",
       "contentType": "Tipo di contenuto",
       "bring": "Porta con te anche",
       "note": "La pagina nasce «Da scrivere»; gli H2 li propone il piano come per le altre pagine.",
