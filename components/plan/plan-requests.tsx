@@ -7,8 +7,11 @@ import { AI_TITLES_CARD_HREF } from "@/lib/ai/models";
 import { type ApiErrorPayload, buildApiErrorMessage, messageOf, readJsonSafe, sendJson } from "@/lib/client/http";
 import type { StrategyAiProposal } from "@/lib/modules/strategy/types";
 
-/** Esito di una modifica del piano: la nuova version, oppure code e messaggio già tradotto. */
-export type PlanRequestResult = { ok: true; version: number } | { ok: false; code: string | null; message: string };
+/**
+ * Esito di una modifica del piano: la nuova version (con l'id della pagina nuova dopo create_page, T-6801), oppure code
+ * e messaggio già tradotto.
+ */
+export type PlanRequestResult = { ok: true; version: number; pageId?: string } | { ok: false; code: string | null; message: string };
 
 /**
  * Esito di una richiesta dei titoli con l'AI (T-3603): la proposta (null per lo scarto), oppure code, messaggio già
@@ -74,11 +77,12 @@ export function PlanRequestsProvider({
     try {
       const response = await request(current);
       if (response.ok) {
-        const payload = await readJsonSafe<{ data?: { version?: number } }>(response);
+        const payload = await readJsonSafe<{ data?: { version?: number; pageId?: unknown } }>(response);
         const next = payload?.data?.version ?? current + 1;
+        const pageId = payload?.data?.pageId;
         setReturned(next);
         router.refresh();
-        return { ok: true, version: next };
+        return typeof pageId === "string" ? { ok: true, version: next, pageId } : { ok: true, version: next };
       }
       const payload = await readJsonSafe<ApiErrorPayload>(response);
       if (payload?.code === "STRATEGY_CONFLICT") {

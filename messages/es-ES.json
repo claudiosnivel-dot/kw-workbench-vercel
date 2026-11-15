@@ -1405,7 +1405,8 @@
       "HUB_SERP": "Página pilar de «{keyword}», la búsqueda más amplia del grupo: las demás páginas del tema contienen sus palabras o comparten resultados de Google con ella.",
       "SPOKE_SERP": "Artículo satélite para una sola intención de búsqueda: {count, plural, one {# palabra clave con sus resultados de Google} other {# palabras clave con los mismos resultados de Google}}.",
       "SPOKE_LOCAL": "Página local: reúne {count, plural, one {# búsqueda con un lugar} other {# búsquedas con un lugar}} en una sola página, en lugar de una página por ciudad.",
-      "COMPETITOR": "Estas palabras clave buscan otro sitio o negocio: quedan fuera del plan."
+      "COMPETITOR": "Estas palabras clave buscan otro sitio o negocio: quedan fuera del plan.",
+      "MANUAL_PAGE": "Página creada por ti."
     },
     "ui": {
       "defaultName": "Estrategia {mode, select, AUTO {automática} other {experta}} del {date, date, short}",
@@ -1895,6 +1896,17 @@
         "AI_NOT_CONFIGURED": "La IA no está activa: los lugares y la competencia solo se reconocen por palabras como «cerca de mí» y por el nombre del sitio en los resultados."
       }
     },
+    "angles": {
+      "title": "{count, plural, one {# ángulo por evaluar} other {# ángulos por evaluar}}",
+      "text": "Búsquedas que Google trata como independientes pero que no tienen página propia en el plan: {keywords}{more, plural, =0 {} one { y una más} other { y # más}}. Para cada una, elige si crear una página, moverla o conservarla como H2.",
+      "quoted": "«{keyword}»",
+      "show": "Ver los ángulos",
+      "count": "{count, plural, one {# ángulo} other {# ángulos}}",
+      "label": "Ángulo por evaluar",
+      "region": "Ángulo por evaluar: {keyword}",
+      "newPage": "Crear una página",
+      "keep": "Conservar como H2"
+    },
     "groupBy": "Agrupar por",
     "group": {
       "hub": "Grupo",
@@ -1986,6 +1998,19 @@
       "deleteTitle": "¿Eliminar la página?",
       "deleteText": "La página «{title}» se elimina y sus palabras clave pasan a las que no tienen página.",
       "readOnly": "Versión anterior: solo se puede consultar."
+    },
+    "newPage": {
+      "title": "Nueva página",
+      "from": "a partir de «{keyword}»",
+      "hub": "Debajo de la página pilar",
+      "noHub": "Ninguna: se convierte en página pilar",
+      "h1": "Título (H1)",
+      "h1Hint": "Opcional: si lo dejas vacío, lo propone el plan.",
+      "contentType": "Tipo de contenido",
+      "bring": "Llevar también",
+      "note": "La página se crea «Por escribir»; el plan propone los H2 como en las demás páginas.",
+      "cancel": "Cancelar",
+      "create": "Crear la página"
     },
     "ai": {
       "suggest": "Mejorar los títulos con IA",

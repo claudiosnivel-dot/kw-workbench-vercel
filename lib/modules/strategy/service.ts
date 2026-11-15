@@ -65,6 +65,10 @@ export class StrategyNotFoundError extends AppError {
 const idField = z.string().trim().min(1).max(64);
 const versionField = z.number().int().min(0);
 
+const titleField = z.string().trim().min(1).max(MAX_TITLE_LENGTH);
+/** Keyword al massimo in una pagina creata a mano (T-6801). */
+const CREATE_PAGE_MAX_KEYWORDS = 50;
+
 const generateSchema = z.object({
   mode: z.enum(["AUTO", "EXPERT"]),
   name: z.string().trim().max(STRATEGY_NAME_MAX_LENGTH).optional(),
@@ -86,10 +90,17 @@ const operationSchema = z.object({
     z.object({ type: z.literal("merge_pages"), sourcePageId: idField, targetPageId: idField }),
     z.object({ type: z.literal("delete_page"), pageId: idField }),
     z.object({ type: z.literal("move_page"), pageId: idField, targetHubId: idField }),
+    // T-6801: pagina nuova da al massimo 50 keyword, con l'H1 della PATCH delle pagine (CWE-20).
+    z.object({
+      type: z.literal("create_page"),
+      keywordIds: z.array(idField).min(1).max(CREATE_PAGE_MAX_KEYWORDS),
+      hubPageId: idField.nullable(),
+      h1: titleField.optional(),
+      contentType: z.enum(STRATEGY_CONTENT_TYPES).optional(),
+    }),
+    z.object({ type: z.literal("keep_angle"), keywordIds: z.array(idField).min(1).max(STRATEGY_MAX_KEYWORDS) }),
   ]),
 });
-
-const titleField = z.string().trim().min(1).max(MAX_TITLE_LENGTH);
 
 /** Indirizzo della pagina pubblicata (T-4502): https assoluto, senza credenziali, fino a 500 caratteri (CWE-601). */
 const publishedUrlField = z
@@ -141,8 +152,7 @@ export function parseGenerateRequest(body: unknown): GenerateRequest {
 }
 
 export const parseRenameRequest = (body: unknown) => parseBody(renameSchema, body, "Rinomina");
-export const parseOperationRequest = (body: unknown) =>
-  parseBody(operationSchema, body, "Operazione") as { version: number; operation: StrategyOperation };
+export const parseOperationRequest = (body: unknown) => parseBody(operationSchema, body, "Operazione");
 export const parsePagePatchRequest = (body: unknown) =>
   parseBody(pagePatchSchema, body, "Modifica della pagina") as PagePatch & { version: number };
 
@@ -968,8 +978,34 @@ async function claimVersion(
   throw exists ? new ConflictError("La strategia è stata modificata nel frattempo", "STRATEGY_CONFLICT") : new StrategyNotFoundError();
 }
 
-/** Scrive le differenze tra due stati del piano: prima le keyword (le nuove principali per ultime), poi le pagine. */
+/**
+ * Scrive le differenze tra due stati del piano: prima le pagine nuove (create_page, T-6801), poi le keyword (le nuove
+ * principali per ultime), poi le altre pagine.
+ */
 async function persistState(tx: Prisma.TransactionClient, strategyId: string, before: EditorState, after: EditorState) {
+  const existing = new Set(before.pages.map((page) => page.id));
+  const created = after.pages.filter((page) => !existing.has(page.id));
+  if (created.length > 0) {
+    await tx.strategyPage.createMany({
+      data: created.map((page) => ({
+        id: page.id,
+        strategy_id: strategyId,
+        kind: page.kind,
+        hub_page_id: page.hubPageId,
+        h1: page.h1,
+        h2: page.h2,
+        h1_edited: page.h1Edited,
+        h2_edited: page.h2Edited,
+        content_type: page.contentType,
+        priority: page.priority,
+        position: page.position,
+        reason_code: page.reason.code,
+        reason_params: page.reason.params,
+        status: page.status,
+      })),
+    });
+  }
+
   const previous = new Map(before.keywords.map((keyword) => [keyword.id, keyword]));
   const changed = after.keywords.filter((keyword) => {
     const old = previous.get(keyword.id)!;
@@ -988,7 +1024,7 @@ async function persistState(tx: Prisma.TransactionClient, strategyId: string, be
   if (newMains.length > 0) {
     await tx.strategyKeyword.updateMany({ where: { strategy_id: strategyId, id: { in: newMains } }, data: { role: "MAIN" } });
   }
-  // Angoli decisi (T-6702): move_keywords toglie il segno alle keyword spostate.
+  // Angoli decisi (T-6702, T-6801): move_keywords, create_page e keep_angle tolgono il segno.
   const settled = after.keywords.filter((keyword) => previous.get(keyword.id)!.angle && !keyword.angle).map((keyword) => keyword.id);
   if (settled.length > 0) {
     await tx.strategyKeyword.updateMany({ where: { strategy_id: strategyId, id: { in: settled } }, data: { angle: false } });
@@ -1086,9 +1122,20 @@ async function mutatePlan(
   return version + 1;
 }
 
-export function operateOnStrategy(user: { id: string }, projectId: string, strategyId: string, body: unknown): Promise<number> {
-  const { version, operation } = parseOperationRequest(body);
-  return mutatePlan(user, projectId, strategyId, version, (state, context) => applyOperation(state, operation, context));
+/**
+ * Operazione sulla struttura del piano (T-1904): restituisce la nuova version e, per create_page (T-6801), l'id della
+ * pagina nuova, scelto qui perché l'editor resti puro.
+ */
+export async function operateOnStrategy(
+  user: { id: string },
+  projectId: string,
+  strategyId: string,
+  body: unknown
+): Promise<{ version: number; pageId?: string }> {
+  const { version, operation: request } = parseOperationRequest(body);
+  const operation: StrategyOperation = request.type === "create_page" ? { ...request, newPageId: randomUUID() } : request;
+  const next = await mutatePlan(user, projectId, strategyId, version, (state, context) => applyOperation(state, operation, context));
+  return operation.type === "create_page" ? { version: next, pageId: operation.newPageId } : { version: next };
 }
 
 export function patchStrategyPage(
