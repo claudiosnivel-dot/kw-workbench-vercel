@@ -5,7 +5,8 @@ import { useFormatter, useTranslations } from "next-intl";
 import { type DragEvent, type ReactNode, useId, useMemo, useState } from "react";
 import { EntityMenu } from "@/components/entity-menu";
 import { PagePanel } from "@/components/plan/page-panel";
-import { type PickGroup, PickDialog } from "@/components/plan/pick-dialog";
+import { AngleCount, anglesOf, PlanAnglesNotice } from "@/components/plan/plan-angles";
+import { type PickGroup, PickDialog, type PickOption } from "@/components/plan/pick-dialog";
 import { PlanProgress, type StatusCounts } from "@/components/plan/plan-progress";
 import { PlanRequestsProvider, usePlanRequests } from "@/components/plan/plan-requests";
 import { StatusMenu } from "@/components/plan/status-menu";
@@ -64,7 +65,12 @@ function planModel(strategy: StrategyView) {
     label: hub.label,
     options: [hub.pillar, ...hub.spokes].map((page) => ({ id: page.id, label: `${number.get(page.id)}. ${page.h1}` })),
   }));
-  return { hubs, pages, number, hubOf, counts, destinations };
+  // Pagine principali per il foglio «Nuova pagina» (T-6802): solo gli hub veri, non gli spoke rimasti senza hub.
+  const pillars: PickOption[] = hubs
+    .filter((hub) => hub.pillar.kind === "HUB")
+    .map((hub) => ({ id: hub.pillar.id, label: `${number.get(hub.pillar.id)}. ${hub.pillar.h1}` }));
+  const angles = pages.flatMap(anglesOf);
+  return { hubs, pages, number, hubOf, counts, destinations, pillars, angles };
 }
 
 type PlanModel = ReturnType<typeof planModel>;
@@ -140,14 +146,23 @@ function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitles
   const requests = usePlanRequests();
   const model = useMemo(() => planModel(strategy), [strategy]);
   const [openId, setOpenId] = useState(openPageId);
+  // Pagina appena creata (T-6802): il pannello passa a lei quando il piano ricaricato la contiene.
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const [dragging, setDragging] = useState<DragItem | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [pick, setPick] = useState<{ kind: "move"; page: StrategyPageView } | { kind: "assign"; keyword: StrategyKeywordView } | null>(null);
 
   const pageById = (id: string) => model.pages.find((page) => page.id === id);
-  const openPage = openId ? pageById(openId) : undefined;
+  const created = createdId ? pageById(createdId) : undefined;
+  const openPage = created ?? (openId ? pageById(openId) : undefined);
+  const open = (id: string) => {
+    setCreatedId(null);
+    setOpenId(id);
+  };
+  const firstAngle = model.pages.find((page) => anglesOf(page).length > 0);
 
   const closePanel = () => {
+    setCreatedId(null);
     setOpenId(null);
     const params = new URLSearchParams(window.location.search);
     if (params.has("page")) {
@@ -233,7 +248,7 @@ function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitles
         readOnly={readOnly}
         drag={canMove || group === "status" ? dragSource({ type: "page", id: page.id }) : {}}
         target={dropTarget({ kind: "card", pageId: page.id })}
-        onOpen={() => setOpenId(page.id)}
+        onOpen={() => open(page.id)}
         onStatus={(status) => void requests.patchPage(page.id, { status })}
         onMoveUnder={canMove ? () => setPick({ kind: "move", page }) : null}
       />
@@ -303,7 +318,7 @@ function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitles
     </div>
   );
   const list = (
-    <PlanList model={model} group={group} readOnly={readOnly} onOpen={setOpenId} onStatus={(id, status) => void requests.patchPage(id, { status })} />
+    <PlanList model={model} group={group} readOnly={readOnly} onOpen={open} onStatus={(id, status) => void requests.patchPage(id, { status })} />
   );
 
   const hub = openPage ? model.hubOf.get(openPage.id) : undefined;
@@ -311,6 +326,7 @@ function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitles
     <div className="space-y-4">
       {!readOnly && (
         <>
+          <PlanAnglesNotice angles={model.angles} onShow={() => firstAngle && open(firstAngle.id)} />
           <PlanProgress counts={model.counts} />
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <Segmented
@@ -369,6 +385,8 @@ function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitles
           readOnly={readOnly}
           aiTitlesAvailable={aiTitlesAvailable && !readOnly}
           article={articles && !readOnly ? { available: articles.available, exists: articles.pageIds.includes(openPage.id) } : undefined}
+          hubs={model.pillars}
+          onOpenPage={setCreatedId}
           onClose={closePanel}
         />
       )}
@@ -443,6 +461,7 @@ function PlanCard({ page, number, hub, showHubTag, readOnly, drag, target, onOpe
           <span>{t("number", { number })}</span>
           <span>{tStrategy(`contentTypes.${page.contentType}`)}</span>
           {pillar && <span className="status-chip">{t("pillar")}</span>}
+          <AngleCount page={page} />
         </div>
         {showHubTag && <span className={`plan-hub-tag is-c${hub.color}`}>{hub.label}</span>}
         <h3 id={titleId} className="leading-tight">
@@ -571,6 +590,7 @@ function PlanList({
                       <button type="button" className="plan-card-title" onClick={() => onOpen(page.id)}>
                         {page.h1}
                       </button>
+                      <AngleCount page={page} />
                     </td>
                     <td className="px-3 py-2">{tStrategy(`contentTypes.${page.contentType}`)}</td>
                     <td className="px-3 py-2">{summary.count}</td>

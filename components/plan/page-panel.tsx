@@ -8,7 +8,8 @@ import { EntityMenu, type EntityMenuItem } from "@/components/entity-menu";
 import { ModalDialog } from "@/components/modal-dialog";
 import { AiTitles } from "@/components/plan/ai-titles";
 import { ArticleEntry, type PanelArticle } from "@/components/plan/article-entry";
-import { type PickGroup, PickDialog } from "@/components/plan/pick-dialog";
+import { AngleBox, type CreatePageOperation, NewPageDialog } from "@/components/plan/plan-angles";
+import { type PickGroup, PickDialog, type PickOption } from "@/components/plan/pick-dialog";
 import { type PlanRequestResult, usePlanRequests } from "@/components/plan/plan-requests";
 import { StatusLabel } from "@/components/plan/status-menu";
 import { useModalFocus } from "@/lib/client/use-modal-focus";
@@ -38,11 +39,20 @@ export type PagePanelProps = {
   aiTitlesAvailable: boolean;
   /** Articolo della pagina (T-4401): «Scrivi l'articolo con l'AI» o «Apri l'articolo»; assente nelle versioni precedenti. */
   article?: PanelArticle;
+  /** Pagine principali del piano per il foglio «Nuova pagina» di un angolo (T-6802). */
+  hubs?: PickOption[];
+  /** Apre il pannello della pagina nuova dopo «Crea la pagina» (T-6802). */
+  onOpenPage?: (pageId: string) => void;
   onClose: () => void;
 };
 
 type Field = "h1" | "h2";
-type Dialog = { kind: "move"; keyword: StrategyKeywordView } | { kind: "merge" } | { kind: "delete" } | null;
+type Dialog =
+  | { kind: "move"; keyword: StrategyKeywordView }
+  | { kind: "newPage"; keyword: StrategyKeywordView }
+  | { kind: "merge" }
+  | { kind: "delete" }
+  | null;
 
 const toLines = (text: string) =>
   text
@@ -65,10 +75,22 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * modifica scrivendo: H1 e H2 si salvano all'uscita dal campo o dopo 800 ms senza digitare, sempre con la version
  * corrente (CWE-362). Un errore di validazione resta sotto il campo senza perdere il testo; dopo un 409
  * STRATEGY_CONFLICT il piano si ricarica con il suo messaggio. Sotto i campi, se disponibile, la proposta dei titoli con
- * l'AI (T-3603) e l'articolo della pagina (T-4401). Esc chiude e il focus torna alla scheda. Tutti i testi del piano
- * sono resi come testo (CWE-79).
+ * l'AI (T-3603) e l'articolo della pagina (T-4401). Gli angoli da valutare (T-6802) hanno un riquadro con «Fanne una
+ * pagina», «Sposta in…» e «Tienila come H2». Esc chiude e il focus torna alla scheda. Tutti i testi del piano sono resi
+ * come testo (CWE-79).
  */
-export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAvailable, article, onClose }: PagePanelProps) {
+export function PagePanel({
+  page,
+  hub,
+  links,
+  destinations,
+  readOnly,
+  aiTitlesAvailable,
+  article,
+  hubs = [],
+  onOpenPage,
+  onClose,
+}: PagePanelProps) {
   const t = useTranslations("plan.panel");
   const tPick = useTranslations("plan.pick");
   const tStrategy = useTranslations("strategy");
@@ -88,6 +110,8 @@ export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAv
   const [localStatus, setLocalStatus] = useState<StrategyPageStatus | null>(null);
   const [localType, setLocalType] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
+  // Angoli tenuti come H2: il riquadro sparisce subito, prima che il piano si ricarichi.
+  const [kept, setKept] = useState<Set<string>>(new Set());
   useModalFocus(true, panelRef, onClose);
 
   // I salvataggi in attesa non partono più dopo la chiusura del pannello.
@@ -171,6 +195,23 @@ export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAv
     if (!result.ok) setMessage(result.message);
     return result;
   };
+
+  const keepAngle = async (keyword: StrategyKeywordView) => {
+    if ((await operate({ type: "keep_angle", keywordIds: [keyword.id] })).ok) setKept((current) => new Set(current).add(keyword.id));
+  };
+
+  const createPage = async (operation: CreatePageOperation): Promise<PlanRequestResult> => {
+    const result = await operate(operation);
+    if (result.ok) {
+      setDialog(null);
+      if (result.pageId) onOpenPage?.(result.pageId);
+    }
+    return result;
+  };
+
+  // Nelle versioni precedenti gli angoli restano nell'elenco delle keyword, senza azioni.
+  const angles = readOnly ? [] : page.keywords.filter((keyword) => keyword.angle && !kept.has(keyword.id));
+  const listed = page.keywords.filter((keyword) => !angles.includes(keyword));
 
   const otherDestinations = destinations
     .map((group) => ({ ...group, options: group.options.filter((option) => option.id !== page.id) }))
@@ -338,7 +379,7 @@ export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAv
 
         <Section title={t("keywords")}>
           <ul className="space-y-1.5 text-sm">
-            {page.keywords.map((keyword) => (
+            {listed.map((keyword) => (
               <li key={keyword.id} className="flex flex-wrap items-center gap-2">
                 <span className={keyword.role === "MAIN" ? "font-semibold" : undefined}>{keyword.keyword}</span>
                 {keyword.role === "MAIN" && <span className="status-chip">{t("main")}</span>}
@@ -369,6 +410,16 @@ export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAv
               </li>
             ))}
           </ul>
+          {angles.map((keyword) => (
+            <AngleBox
+              key={keyword.id}
+              keyword={keyword}
+              pending={requests.pending}
+              onNewPage={() => setDialog({ kind: "newPage", keyword })}
+              onMove={() => setDialog({ kind: "move", keyword })}
+              onKeep={() => void keepAngle(keyword)}
+            />
+          ))}
         </Section>
 
         <Section title={t("reason")}>
@@ -399,6 +450,16 @@ export function PagePanel({ page, hub, links, destinations, readOnly, aiTitlesAv
             }}
             groups={otherDestinations}
             onPick={(targetPageId) => operate({ type: "move_keywords", keywordIds: [dialog.keyword.id], targetPageId })}
+            onClose={() => setDialog(null)}
+          />
+        )}
+        {dialog?.kind === "newPage" && (
+          <NewPageDialog
+            keyword={dialog.keyword}
+            others={angles.filter((keyword) => keyword.id !== dialog.keyword.id)}
+            hubs={hubs}
+            defaultHubId={page.kind === "HUB" ? page.id : (page.hubPageId ?? "")}
+            onCreate={createPage}
             onClose={() => setDialog(null)}
           />
         )}

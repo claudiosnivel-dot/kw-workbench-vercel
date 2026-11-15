@@ -2,10 +2,12 @@ import { ValidationError } from "@/lib/http/errors";
 import { compareKeywordPriority } from "@/lib/modules/strategy/cluster";
 import { buildPageTitles, type TitleContext, type TitleKeyword, type TitlePage } from "@/lib/modules/strategy/titles";
 import type {
+  PlanReason,
   StrategyContentType,
   StrategyKeywordView,
   StrategyPageStatus,
   StrategyPageView,
+  StrategyReasonCode,
 } from "@/lib/modules/strategy/types";
 
 /*
@@ -13,7 +15,8 @@ import type {
  * valgono sempre le regole del piano: una sola keyword principale per pagina (se esce, diventa principale la secondaria
  * più prioritaria), nessuna pagina senza keyword, gli spoke di un hub eliminato diventano hub, position è l'indice
  * nell'ordine di lavoro (T-2501). I titoli non modificati dall'utente delle pagine toccate si ricalcolano: l'H1 se
- * cambia la principale o il tipo, gli H2 se cambiano le keyword o gli spoke.
+ * cambia la principale o il tipo, gli H2 se cambiano le keyword o gli spoke. Una pagina nuova (create_page, T-6801)
+ * nasce con l'id scelto dal servizio, perché le funzioni restino pure.
  */
 
 /** Keyword nello stato del piano: quella della vista con la sua pagina (null per le non assegnate). */
@@ -32,7 +35,21 @@ export type StrategyOperation =
   | { type: "promote_to_hub"; pageId: string }
   | { type: "merge_pages"; sourcePageId: string; targetPageId: string }
   | { type: "delete_page"; pageId: string }
-  | { type: "move_page"; pageId: string; targetHubId: string };
+  | { type: "move_page"; pageId: string; targetHubId: string }
+  /**
+   * Pagina nuova (T-6801): la prima keyword è la principale; spoke di hubPageId, oppure pagina principale con null; senza
+   * h1 i titoli li propone il piano.
+   */
+  | {
+      type: "create_page";
+      newPageId: string;
+      keywordIds: string[];
+      hubPageId: string | null;
+      h1?: string;
+      contentType?: StrategyContentType;
+    }
+  /** Angoli decisi senza spostarli (T-6801): restano nella loro pagina come H2. */
+  | { type: "keep_angle"; keywordIds: string[] };
 
 export type PagePatch = {
   h1?: string;
@@ -102,10 +119,17 @@ function removePage(editor: Editor, page: EditorPage): void {
   editor.dirty.delete(page.id);
 }
 
+/** Keyword della strategia nell'ordine degli id, senza doppioni; un id di un'altra strategia è 404 (CWE-639). */
+function keywordsByIds(editor: Editor, keywordIds: string[]): EditorKeyword[] {
+  return [...new Set(keywordIds)].map((id) => {
+    const keyword = editor.state.keywords.find((item) => item.id === id);
+    if (!keyword) throw new UnknownStrategyItemError();
+    return keyword;
+  });
+}
+
 function moveKeywords(editor: Editor, keywordIds: string[], targetPageId: string | null): void {
-  const ids = new Set(keywordIds);
-  const moved = editor.state.keywords.filter((keyword) => ids.has(keyword.id));
-  if (moved.length !== ids.size) throw new UnknownStrategyItemError();
+  const moved = keywordsByIds(editor, keywordIds);
   if (targetPageId) pageOf(editor, targetPageId);
 
   for (const keyword of moved) {
@@ -171,6 +195,55 @@ function movePage(editor: Editor, pageId: string, targetHubId: string): void {
   page.hubPageId = target.id;
   // Dopo l'ultimo spoke della destinazione: la numerazione dell'ordine di lavoro lo riporta a un intero.
   page.position = last + 0.5;
+}
+
+/** Motivo di una pagina senza parametri del testo tradotto. */
+const pageReason = (code: StrategyReasonCode): PlanReason => ({ code, params: {} });
+
+type CreatePage = Extract<StrategyOperation, { type: "create_page" }>;
+
+/**
+ * Pagina nuova da keyword del piano (T-6801): spoke in fondo agli spoke dell'hub indicato, oppure pagina principale in
+ * fondo al piano; la prima keyword è la principale, le altre secondarie, e nessuna resta un angolo da valutare. Le
+ * pagine lasciate seguono le regole di normalize (vuote eliminate, principale riassegnata).
+ */
+function createPage(editor: Editor, operation: CreatePage): void {
+  const keywords = keywordsByIds(editor, operation.keywordIds);
+  const hub = operation.hubPageId ? pageOf(editor, operation.hubPageId) : null;
+  if (hub && hub.kind !== "HUB") throw new ValidationError("La pagina indicata non è una pagina principale");
+  if (editor.state.pages.some((page) => page.id === operation.newPageId)) throw new ValidationError("Pagina già presente");
+
+  const positions = (hub ? [hub, ...spokesOf(editor.state, hub.id)] : editor.state.pages).map((page) => page.position);
+  const page: EditorPage = {
+    id: operation.newPageId,
+    kind: hub ? "SPOKE" : "HUB",
+    hubPageId: hub?.id ?? null,
+    h1: operation.h1 ?? "",
+    h2: [],
+    h1Edited: operation.h1 !== undefined,
+    h2Edited: false,
+    contentType: operation.contentType ?? "guide",
+    priority: 0,
+    // Dopo l'ultima pagina del gruppo: la numerazione dell'ordine di lavoro la riporta a un intero.
+    position: Math.max(-1, ...positions) + 0.5,
+    reason: pageReason("MANUAL_PAGE"),
+    status: "TODO",
+    statusChangedAt: null,
+    publishedUrl: null,
+  };
+  editor.state.pages.push(page);
+  markDirty(editor, page.id);
+  keywords.forEach((keyword, index) => {
+    markDirty(editor, keyword.pageId);
+    keyword.pageId = page.id;
+    keyword.role = index === 0 ? "MAIN" : "SECONDARY";
+    keyword.angle = false;
+  });
+}
+
+/** Angoli tenuti dove sono (T-6801): solo il segno cambia, pagine e titoli no. */
+function keepAngles(editor: Editor, keywordIds: string[]): void {
+  for (const keyword of keywordsByIds(editor, keywordIds)) keyword.angle = false;
 }
 
 /**
@@ -285,6 +358,12 @@ export function applyOperation(state: EditorState, operation: StrategyOperation,
       break;
     case "move_page":
       movePage(editor, operation.pageId, operation.targetHubId);
+      break;
+    case "create_page":
+      createPage(editor, operation);
+      break;
+    case "keep_angle":
+      keepAngles(editor, operation.keywordIds);
       break;
   }
   normalize(editor);

@@ -1453,6 +1453,67 @@ input[type="checkbox"] {
   }
 }
 
+/* Angoli da valutare nel piano (T-6802): avviso, etichette, riquadro nel pannello e foglio «Nuova pagina». */
+.plan-angle-notice {
+  border-radius: 16px;
+  border: 1px solid var(--status-warn-border);
+  background: var(--status-warn-bg);
+  padding: 0.75rem 0.9rem;
+}
+
+.plan-angle-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--status-warn-border);
+  background: var(--status-warn-bg);
+  padding: 0.2rem 0.52rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--status-warn-text);
+  white-space: nowrap;
+}
+
+/* Nella vista elenco l'etichetta segue l'H1. */
+.plan-card-title + .plan-angle-chip {
+  margin-left: 0.4rem;
+}
+
+.plan-angle-box {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.6rem;
+  border-radius: 14px;
+  border: 1px solid var(--status-warn-border);
+  background: var(--status-warn-bg);
+  padding: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.plan-angle-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+/* Bersagli da almeno 44 px anche al tocco, con i testi che vanno a capo invece di uscire dalla finestra. */
+.plan-angle-actions button,
+.plan-angle-button,
+.plan-new-page :is(button, select, .input) {
+  min-height: 2.75rem;
+  white-space: normal;
+}
+
+.plan-check {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
 /* Proposta dei titoli con l'AI nel pannello della pagina (T-3603). */
 .plan-ai-card {
   border-radius: 16px;

@@ -24,7 +24,8 @@ export type ModifierCategory = (typeof MODIFIER_CATEGORIES)[number];
  * Motivi del piano (T-1901): i primi cinque spiegano perché esiste una pagina (reason_code), MERGED_INTO_PILLAR le
  * keyword confluite nella pagina pilastro e UNASSIGNED le keyword senza hub. Il motore per risultati di Google (T-6302)
  * aggiunge HUB_SERP (pilastro), SPOKE_SERP (pagina per intento), SPOKE_LOCAL (pagina locale) e COMPETITOR (keyword di un
- * concorrente tra le non assegnate). Ognuno ha il testo in strategy.reasons.
+ * concorrente tra le non assegnate). MANUAL_PAGE è la pagina creata dall'utente nell'editor del piano (T-6801). Ognuno
+ * ha il testo in strategy.reasons.
  */
 export const STRATEGY_REASON_CODES = [
   "HUB_SEED",
@@ -38,6 +39,7 @@ export const STRATEGY_REASON_CODES = [
   "SPOKE_SERP",
   "SPOKE_LOCAL",
   "COMPETITOR",
+  "MANUAL_PAGE",
 ] as const;
 export type StrategyReasonCode = (typeof STRATEGY_REASON_CODES)[number];
 

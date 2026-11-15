@@ -1405,7 +1405,8 @@
       "HUB_SERP": "Pillar page for “{keyword}”, the broadest search in the group: the other pages of the hub contain its words or share Google results with it.",
       "SPOKE_SERP": "Spoke for a single search intent: {count, plural, one {# keyword with its Google results} other {# keywords with the same Google results}}.",
       "SPOKE_LOCAL": "Local page: it gathers {count, plural, one {# search with a place} other {# searches with a place}} on one page instead of one page per city.",
-      "COMPETITOR": "These keywords look for another website or business: they stay out of the plan."
+      "COMPETITOR": "These keywords look for another website or business: they stay out of the plan.",
+      "MANUAL_PAGE": "Page you created."
     },
     "ui": {
       "defaultName": "{mode, select, AUTO {Automatic} other {Expert}} strategy of {date, date, short}",
@@ -1895,6 +1896,17 @@
         "AI_NOT_CONFIGURED": "The AI is not active: places and competitors are recognized only from words such as “near me” and from the site name in the results."
       }
     },
+    "angles": {
+      "title": "{count, plural, one {# angle to review} other {# angles to review}}",
+      "text": "Searches that Google treats as their own but that have no page of their own in the plan: {keywords}{more, plural, =0 {} one { and one more} other { and # more}}. For each one, choose whether to make it a page, move it or keep it as an H2.",
+      "quoted": "“{keyword}”",
+      "show": "See the angles",
+      "count": "{count, plural, one {# angle} other {# angles}}",
+      "label": "Angle to review",
+      "region": "Angle to review: {keyword}",
+      "newPage": "Make it a page",
+      "keep": "Keep it as an H2"
+    },
     "groupBy": "Group by",
     "group": {
       "hub": "Group",
@@ -1986,6 +1998,19 @@
       "deleteTitle": "Delete the page?",
       "deleteText": "The page “{title}” goes away and its keywords move to the ones without a page.",
       "readOnly": "Previous version: read only."
+    },
+    "newPage": {
+      "title": "New page",
+      "from": "from “{keyword}”",
+      "hub": "Under the main page",
+      "noHub": "None: it becomes a main page",
+      "h1": "Title (H1)",
+      "h1Hint": "Optional: leave it empty and the plan suggests one.",
+      "contentType": "Content type",
+      "bring": "Also bring along",
+      "note": "The page starts as “To write”; the plan suggests the H2s as it does for the other pages.",
+      "cancel": "Cancel",
+      "create": "Create the page"
     },
     "ai": {
       "suggest": "Improve the headings with AI",

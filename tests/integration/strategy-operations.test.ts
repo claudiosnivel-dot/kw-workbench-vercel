@@ -3,6 +3,8 @@
 // Gate di T-2503 (AC-2503-1, AC-2503-2): move_page porta uno spoke in fondo agli spoke di un altro hub e ricalcola gli
 // H2 non modificati dei due hub; un hub come pagina o uno spoke come destinazione sono 400 senza modifiche.
 // Gate di T-6702 (AC-6702-5, D-62): move_keywords toglie il segno di angolo da valutare alle keyword spostate.
+// Gate di T-6801 (AC-6801-1…3): create_page fa nascere uno spoke o una pagina principale dalle keyword indicate,
+// keep_angle toglie il segno senza spostare, un hub che non è un hub è 400 e una versione precedente 409.
 import { randomUUID } from "node:crypto";
 import { createTranslator } from "next-intl";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -306,5 +308,123 @@ describe("spostamento di uno spoke sotto un altro hub (T-2503)", () => {
     expect(((await spokeAsTarget.json()) as { code: string }).code).toBe("VALIDATION_ERROR");
     expect(await prisma.strategyPage.findMany({ where: { strategy_id: strategyId }, orderBy: { id: "asc" } })).toEqual(before);
     expect((await prisma.strategy.findUniqueOrThrow({ where: { id: strategyId }, select: { version: true } })).version).toBe(0);
+  });
+});
+
+describe("pagine nuove e angoli tenuti (T-6801)", () => {
+  const manualPages = (strategyId: string) =>
+    prisma.strategyPage.findMany({
+      where: { strategy_id: strategyId, reason_code: "MANUAL_PAGE" },
+      select: { id: true, kind: true, hub_page_id: true, h1: true, h1_edited: true, status: true, reason_code: true },
+    });
+  const keywordRow = (id: string) =>
+    prisma.strategyKeyword.findUniqueOrThrow({ where: { id }, select: { page_id: true, role: true, angle: true } });
+
+  // covers: AC-6801-1
+  it("create_page con un angolo della pilastro fa nascere uno spoke con l'H1 dato e aumenta la version di 1", async () => {
+    const { strategyId, pageIds, keywordIds } = await createPlan([
+      { key: "P", kind: "HUB", keywords: [kw("noleggio magnetoterapia", 1600), kw("noleggio magnetoterapia spalla", null)] },
+      { key: "S", kind: "SPOKE", hub: "P", keywords: [kw("noleggio magnetoterapia costo", 390)] },
+    ]);
+    const angle = keywordIds["noleggio magnetoterapia spalla"];
+    await prisma.strategyKeyword.update({ where: { id: angle }, data: { angle: true } });
+
+    const response = await runOperation(strategyId, 0, {
+      type: "create_page",
+      keywordIds: [angle],
+      hubPageId: pageIds.P,
+      h1: "Magnetoterapia alla spalla",
+    });
+
+    expect(response.status).toBe(200);
+    const { data } = (await response.json()) as { data: { version: number; pageId: string } };
+    expect(data.version).toBe(1);
+    expect(await manualPages(strategyId)).toEqual([
+      {
+        id: data.pageId,
+        kind: "SPOKE",
+        hub_page_id: pageIds.P,
+        h1: "Magnetoterapia alla spalla",
+        h1_edited: true,
+        status: "TODO",
+        reason_code: "MANUAL_PAGE",
+      },
+    ]);
+    expect(await keywordRow(angle)).toEqual({ page_id: data.pageId, role: "MAIN", angle: false });
+    expect((await pageKeywords(pageIds.P)).map((row) => row.canonical_keyword)).toEqual(["noleggio magnetoterapia"]);
+    expect((await prisma.strategy.findUniqueOrThrow({ where: { id: strategyId } })).version).toBe(1);
+  });
+
+  // covers: AC-6801-2
+  it("create_page senza hub fa nascere una pagina principale con la prima keyword principale e toglie lo spoke svuotato", async () => {
+    const { strategyId, pageIds, keywordIds } = await createPlan([
+      { key: "P", kind: "HUB", keywords: [kw("scarpe running", 5000), kw("scarpe running pronatore", 90)] },
+      { key: "S", kind: "SPOKE", hub: "P", keywords: [kw("scarpe running supinatore", 70)] },
+    ]);
+    const [b, a] = [keywordIds["scarpe running pronatore"], keywordIds["scarpe running supinatore"]];
+
+    const response = await runOperation(strategyId, 0, { type: "create_page", keywordIds: [b, a], hubPageId: null });
+
+    expect(response.status).toBe(200);
+    const { data } = (await response.json()) as { data: { pageId: string } };
+    const [page] = await manualPages(strategyId);
+    expect(page).toMatchObject({ id: data.pageId, kind: "HUB", hub_page_id: null, h1_edited: false, status: "TODO" });
+    expect(page.h1).not.toBe("");
+    expect(await pageKeywords(data.pageId)).toEqual([
+      { canonical_keyword: "scarpe running pronatore", role: "MAIN" },
+      { canonical_keyword: "scarpe running supinatore", role: "SECONDARY" },
+    ]);
+    expect(await prisma.strategyPage.count({ where: { id: pageIds.S } })).toBe(0);
+    expect(await prisma.strategyPage.count({ where: { id: pageIds.P } })).toBe(1);
+  });
+
+  // covers: AC-6801-3
+  it("keep_angle toglie il segno senza spostare; uno spoke come hub è 400 e una versione precedente 409 STRATEGY_READ_ONLY", async () => {
+    const pages: PlanPageSpec[] = [
+      { key: "P", kind: "HUB", keywords: [kw("noleggio magnetoterapia", 1600), kw("magnetoterapia notturna noleggio", null)] },
+      { key: "S", kind: "SPOKE", hub: "P", keywords: [kw("noleggio magnetoterapia costo", 390)] },
+    ];
+    const { strategyId, pageIds, keywordIds } = await createPlan(pages);
+    const angle = keywordIds["magnetoterapia notturna noleggio"];
+    await prisma.strategyKeyword.update({ where: { id: angle }, data: { angle: true } });
+
+    const kept = await runOperation(strategyId, 0, { type: "keep_angle", keywordIds: [angle] });
+    const pagesBefore = await prisma.strategyPage.findMany({ where: { strategy_id: strategyId }, orderBy: { id: "asc" } });
+    const underSpoke = await runOperation(strategyId, 1, { type: "create_page", keywordIds: [angle], hubPageId: pageIds.S });
+    await insertStrategy({ projectId, pages, createdAt: new Date(Date.now() + 60_000) });
+    const readOnly = await runOperation(strategyId, 1, { type: "create_page", keywordIds: [angle], hubPageId: pageIds.P });
+
+    expect(kept.status).toBe(200);
+    expect(await keywordRow(angle)).toEqual({ page_id: pageIds.P, role: "SECONDARY", angle: false });
+    expect(underSpoke.status).toBe(400);
+    expect(((await underSpoke.json()) as { code: string }).code).toBe("VALIDATION_ERROR");
+    expect(readOnly.status).toBe(409);
+    expect(((await readOnly.json()) as { code: string }).code).toBe("STRATEGY_READ_ONLY");
+    expect(await prisma.strategyPage.findMany({ where: { strategy_id: strategyId }, orderBy: { id: "asc" } })).toEqual(pagesBefore);
+    expect((await prisma.strategy.findUniqueOrThrow({ where: { id: strategyId } })).version).toBe(1);
+  });
+
+  it("create_page con una keyword di un'altra strategia è 404 e oltre 50 keyword è 400", async () => {
+    const first = await createPlan([{ key: "P", kind: "HUB", keywords: [kw("scarpe running", 5000)] }]);
+    // Versione precedente dello stesso progetto: la strategia dell'operazione resta il piano.
+    const other = await insertStrategy({
+      projectId,
+      pages: [{ key: "Q", kind: "HUB", keywords: [kw("calzini running", 800)] }],
+      createdAt: new Date("2026-01-01"),
+    });
+
+    const foreign = await runOperation(first.strategyId, 0, {
+      type: "create_page",
+      keywordIds: [other.keywordIds["calzini running"]],
+      hubPageId: null,
+    });
+    const tooMany = await runOperation(first.strategyId, 0, {
+      type: "create_page",
+      keywordIds: Array.from({ length: 51 }, (_, index) => `k${index}`),
+      hubPageId: null,
+    });
+
+    expect([foreign.status, tooMany.status]).toEqual([404, 400]);
+    expect(await prisma.strategyPage.count({ where: { strategy_id: first.strategyId } })).toBe(1);
   });
 });

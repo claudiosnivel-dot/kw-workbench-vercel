@@ -1405,7 +1405,8 @@
       "HUB_SERP": "Pagina pilastro su «{keyword}», la ricerca più ampia del gruppo: le altre pagine dell'hub ne contengono le parole o hanno risultati di Google in comune con lei.",
       "SPOKE_SERP": "Articolo satellite per un solo intento di ricerca: {count, plural, one {# keyword con i suoi risultati di Google} other {# keyword con gli stessi risultati di Google}}.",
       "SPOKE_LOCAL": "Pagina locale: raccoglie {count, plural, one {# ricerca con un luogo} other {# ricerche con un luogo}} in un'unica pagina, invece di una pagina per ogni città.",
-      "COMPETITOR": "Queste keyword cercano un altro sito o un'altra attività: restano fuori dal piano."
+      "COMPETITOR": "Queste keyword cercano un altro sito o un'altra attività: restano fuori dal piano.",
+      "MANUAL_PAGE": "Pagina creata da te."
     },
     "ui": {
       "defaultName": "Strategia {mode, select, AUTO {automatica} other {esperta}} del {date, date, short}",
@@ -1895,6 +1896,17 @@
         "AI_NOT_CONFIGURED": "L'AI non è attiva: luoghi e concorrenti sono riconosciuti solo da parole come «vicino a me» e dal nome del sito nei risultati."
       }
     },
+    "angles": {
+      "title": "{count, plural, one {# angolo da valutare} other {# angoli da valutare}}",
+      "text": "Ricerche che Google tratta come a sé ma senza una pagina propria nel piano: {keywords}{more, plural, =0 {} one { e un'altra} other { e altre #}}. Per ciascuna scegli se farne una pagina, spostarla o tenerla come H2.",
+      "quoted": "«{keyword}»",
+      "show": "Vedi gli angoli",
+      "count": "{count, plural, one {# angolo} other {# angoli}}",
+      "label": "Angolo da valutare",
+      "region": "Angolo da valutare: {keyword}",
+      "newPage": "Fanne una pagina",
+      "keep": "Tienila come H2"
+    },
     "groupBy": "Raggruppa per",
     "group": {
       "hub": "Gruppo",
@@ -1986,6 +1998,19 @@
       "deleteTitle": "Eliminare la pagina?",
       "deleteText": "La pagina «{title}» va via e le sue keyword finiscono tra quelle senza pagina.",
       "readOnly": "Versione precedente: si può solo consultare."
+    },
+    "newPage": {
+      "title": "Nuova pagina",
+      "from": "da «{keyword}»",
+      "hub": "Sotto la pagina principale",
+      "noHub": "Nessuna: diventa una pagina principale",
+      "h1": "Titolo (H1)",
+      "h1Hint": "Facoltativo: se lo lasci vuoto lo propone il piano.",
+      "contentType": "Tipo di contenuto",
+      "bring": "Porta con te anche",
+      "note": "La pagina nasce «Da scrivere»; gli H2 li propone il piano come per le altre pagine.",
+      "cancel": "Annulla",
+      "create": "Crea la pagina"
     },
     "ai": {
       "suggest": "Migliora i titoli con l'AI",
