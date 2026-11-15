@@ -105,13 +105,16 @@ export type PlanAnchor = { ref: string; main: string; open: boolean };
 /**
  * Piano restituito da buildStrategyPlan: pagine nell'ordine di lavoro e keyword non assegnate per priorità; con le
  * ancore, le keyword nuove che vanno nella pagina pilastro di un hub ancorato (anchored, per ref dell'ancora). Il motore
- * per risultati di Google (T-6302) dà anche il motivo di ogni keyword non assegnata, per forma canonica.
+ * per risultati di Google (T-6302) dà anche il motivo di ogni keyword non assegnata, per forma canonica, e gli angoli da
+ * valutare (T-6702, D-62): le keyword principali delle pagine che ha sciolto, in ordine di priorità, tutte secondarie nel
+ * piano.
  */
 export type StrategyPlan = {
   pages: PlanPage[];
   unassigned: string[];
   anchored: { ref: string; secondary: string[] }[];
   unassignedReasons?: Record<string, Extract<StrategyReasonCode, "COMPETITOR" | "UNASSIGNED">>;
+  angles?: string[];
 };
 
 /** Keyword di una strategia salvata, come la leggono pagina, export e PDF. */
@@ -123,6 +126,8 @@ export type StrategyKeywordView = {
   volume: number | null;
   score: number | null;
   isQuestion: boolean;
+  /** Angolo da valutare (T-6702): keyword principale di una pagina che il motore ha sciolto, finché l'utente non decide. */
+  angle: boolean;
 };
 
 /**

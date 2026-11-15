@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { saveAiSettings, stubOpenRouterEnv } from "../helpers/ai-titles";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
-import { generatePlan } from "../helpers/plan-run";
+import { generatePlan, noVolumesResponse, VOLUMES_URL_PART } from "../helpers/plan-run";
 import { insertStrategy, MAGNETOTHERAPY_REAL_SERP_FIXTURE } from "../helpers/strategy";
 
 vi.mock("@/lib/modules/jobs/continuation", async (importOriginal) => ({
@@ -30,11 +30,7 @@ const WRITING_SPOKES = ["noleggio magnetoterapia costo", "noleggio magnetoterapi
 const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
   const url = String(input);
   if (url.startsWith("https://openrouter.test/")) return new Response("{}", { status: 503 });
-  if (url.includes("/keywords_data/google_ads/search_volume/live")) {
-    const [task] = JSON.parse(String(init?.body)) as { keywords: string[] }[];
-    const result = task.keywords.map((keyword) => ({ keyword, spell: null, search_volume: null, competition_index: null }));
-    return Response.json({ status_code: 20000, cost: 0.09, tasks: [{ id: "volumes", status_code: 20000, cost: 0.09, result }] });
-  }
+  if (url.includes(VOLUMES_URL_PART)) return noVolumesResponse(init);
   return new Response("{}", { status: 404 });
 });
 

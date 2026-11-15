@@ -33,7 +33,7 @@ const SPOKE: StrategyPageView = {
   publishedUrl: null,
   aiProposal: null,
   keywords: [
-    { id: "k1", keyword: "migliori scarpe running", canonical: "migliori scarpe running", role: "MAIN", volume: 2900, score: 80, isQuestion: false },
+    { id: "k1", keyword: "migliori scarpe running", canonical: "migliori scarpe running", role: "MAIN", volume: 2900, score: 80, isQuestion: false, angle: false },
   ],
 };
 

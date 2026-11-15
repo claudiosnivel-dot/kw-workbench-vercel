@@ -114,6 +114,8 @@ function moveKeywords(editor: Editor, keywordIds: string[], targetPageId: string
     markDirty(editor, targetPageId);
     keyword.pageId = targetPageId;
     keyword.role = "SECONDARY";
+    // T-6702: spostare un angolo da valutare è già una decisione dell'utente.
+    keyword.angle = false;
   }
 }
 

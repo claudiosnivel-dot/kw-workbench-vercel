@@ -33,8 +33,8 @@ const PAGE: StrategyPageView = {
   publishedUrl: null,
   aiProposal: null,
   keywords: [
-    { id: "k1", keyword: "migliori scarpe running", canonical: "migliori scarpe running", role: "MAIN", volume: 2900, score: 80, isQuestion: false },
-    { id: "k2", keyword: "scarpe running recensioni", canonical: "scarpe running recensioni", role: "SECONDARY", volume: 390, score: 60, isQuestion: false },
+    { id: "k1", keyword: "migliori scarpe running", canonical: "migliori scarpe running", role: "MAIN", volume: 2900, score: 80, isQuestion: false, angle: false },
+    { id: "k2", keyword: "scarpe running recensioni", canonical: "scarpe running recensioni", role: "SECONDARY", volume: 390, score: 60, isQuestion: false, angle: false },
   ],
 };
 
