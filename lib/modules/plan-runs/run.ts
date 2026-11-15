@@ -32,16 +32,30 @@ const PLAN_STEP_MS = 270_000;
 const PLAN_LEASE_GRACE_MS = 30_000;
 /** Tempo lasciato a una fase che non è la prima del passo: le chiamate a DataForSEO con i loro tentativi. */
 const PHASE_MARGIN_MS = 60_000;
-/** Tempo che una fase vuole davanti se non è la prima del passo: alla classificazione la richiesta intera (T-6501). */
-const phaseMarginMs = (phase: string) => (phase === "classify" ? CLASSIFY_PHASE_MS : PHASE_MARGIN_MS);
+/**
+ * Tempo che una fase vuole davanti se non è la prima del passo: alla classificazione e al consiglio sugli angoli la
+ * richiesta intera (T-6501, T-6901).
+ */
+const phaseMarginMs = (phase: string) => (phase === "classify" || phase === "advise" ? CLASSIFY_PHASE_MS : PHASE_MARGIN_MS);
 
 export type PlanStepResult = { status: JobStatus; phase: string; more: boolean; skipped?: "lease_busy" };
 
 /** Codice d'errore del lavoro non riuscito: quello di un AppError (accesso perso, limite, perimetro) o INTERNAL_ERROR. */
 type PlanRunErrorCode = string;
 
-/** Porta a failed un lavoro ancora attivo con il codice; false se era già terminato. */
+/**
+ * Porta a failed un lavoro ancora attivo con il codice; false se era già terminato. Un lavoro con la strategia già
+ * salvata (fase advise, T-6901) si chiude invece a completed senza altri consigli: il piano c'è.
+ */
 export async function failPlanRun(runId: string, code: PlanRunErrorCode): Promise<boolean> {
+  const saved = await prisma.planRun.updateMany({
+    where: { id: runId, status: { in: ACTIVE_JOB_STATUSES }, strategy_id: { not: null } },
+    data: { status: "completed", phase: "done", locked_until: null },
+  });
+  if (saved.count === 1) {
+    logger.warn("plan_run_completed_without_advice", { runId, code });
+    return false;
+  }
   const { count } = await prisma.planRun.updateMany({
     where: { id: runId, status: { in: ACTIVE_JOB_STATUSES } },
     data: { status: "failed", error_code: code, locked_until: null },

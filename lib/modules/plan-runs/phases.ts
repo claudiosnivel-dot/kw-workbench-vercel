@@ -4,10 +4,12 @@ import { getAiTitlesSettings, modelsForRequest } from "@/lib/ai/settings";
 import { getOpenRouterSettings } from "@/lib/env";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { ProjectNotFoundError } from "@/lib/modules/project-access";
+import { type AdviceAngle, type AdvicePage, ANGLE_ADVICE_BATCH_SIZE, adviseAngles } from "@/lib/modules/plan-ai/angle-advice";
 import { CLASSIFY_BATCH_SIZE, type ClassifyContext, classifyKeywords, fixedClasses } from "@/lib/modules/plan-ai/classify";
 import { collectSerps, type PlanDataContext, readFreshSerps, requestSerps } from "@/lib/modules/plan-data/serps";
 import { fillPerimeterVolumes } from "@/lib/modules/plan-data/volumes";
 import type { PlanNotice, PlanRunPhase } from "@/lib/modules/plan-runs/types";
+import { logger } from "@/lib/observability/logger";
 import type { MetricsProviderError } from "@/lib/modules/providers/metrics/types";
 import type { SerpTask } from "@/lib/modules/providers/serp/dataforseo-serp";
 import {
@@ -28,7 +30,8 @@ import { prisma } from "@/lib/prisma";
  * prime 1000 keyword (T-6101, invio e raccolta), luoghi e concorrenti (T-6301), raggruppamento e salvataggio di
  * generateStrategy (T-1903). Il raggruppamento (T-6303) usa i risultati di Google (buildSerpPlan, T-6302) se ci sono per
  * almeno metà delle prime 1000 keyword, altrimenti il motore di oggi (buildStrategyPlan, T-1901) con SERP_TOO_FEW. Ogni
- * dato mancato lascia il motivo e il lavoro continua: il piano esce sempre, con grouping_notice.
+ * dato mancato lascia il motivo e il lavoro continua: il piano esce sempre, con grouping_notice. Con angoli da valutare
+ * (T-6702) la fase advise chiede dopo il salvataggio il consiglio dell'AI (T-6901); senza consiglio il piano resta com'è.
  */
 
 /** Keyword del perimetro, per priorità, che ricevono i risultati di Google. */
@@ -40,15 +43,17 @@ export const SERP_COLLECT_TIMEOUT_MS = 600_000;
 export const SERP_MIN_SHARE = 0.5;
 /**
  * Attesa massima di un modello e di una richiesta di classificazione con i modelli di riserva: 90 s e 180 s come gli
- * articoli (T-6501, prima 45 s e 100 s; il 2026-11-14 un modello grande rispondeva oltre i 45 s).
+ * articoli (T-6501, prima 45 s e 100 s; il 2026-11-14 un modello grande rispondeva oltre i 45 s). Valgono anche per il
+ * consiglio sugli angoli (T-6901).
  */
 const CLASSIFY_ATTEMPT_TIMEOUT_MS = 90_000;
 const CLASSIFY_DEADLINE_MS = 180_000;
 /** Tempo lasciato al passo dopo la richiesta di classificazione, dentro la lease. */
 const CLASSIFY_STEP_MARGIN_MS = 10_000;
 /**
- * Tempo che una fase classify vuole davanti quando non è la prima del passo: la richiesta intera più il margine, così un
- * gruppo non parte con un'attesa più corta (T-6501); con meno il passo si ferma e il successivo riparte da qui.
+ * Tempo che una fase classify o advise vuole davanti quando non è la prima del passo: la richiesta intera più il margine,
+ * così un gruppo non parte con un'attesa più corta (T-6501, T-6901); con meno il passo si ferma e il successivo riparte
+ * da qui.
  */
 export const CLASSIFY_PHASE_MS = CLASSIFY_DEADLINE_MS + CLASSIFY_STEP_MARGIN_MS;
 
@@ -71,6 +76,7 @@ export const PLAN_RUN_SELECT = {
   progress_total: true,
   locked_until: true,
   notice: true,
+  strategy_id: true,
   requester: { select: { is_root_admin: true } },
 } satisfies Prisma.PlanRunSelect;
 
@@ -215,13 +221,13 @@ async function serpInputs(run: PlanRunRecord) {
 }
 
 /**
- * Modello della classificazione: off con AI_NOT_CONFIGURED se la funzione AI è spenta o manca la chiave, con
- * AI_CLASSIFY_UNAVAILABLE se il tetto della piattaforma (T-3901) è raggiunto per chi non è root admin o se non c'è
- * nessun modello utilizzabile (T-6403); altrimenti i modelli della card senza quelli assenti dal catalogo, o i
- * predefiniti ancora gratuiti, con il catalogo per i token dei modelli che ragionano (T-6401) e le righe di ai_requests
- * della funzione plan.
+ * Modello della classificazione e del consiglio sugli angoli (T-6901): off con AI_NOT_CONFIGURED se la funzione AI è
+ * spenta o manca la chiave, con AI_CLASSIFY_UNAVAILABLE se il tetto della piattaforma (T-3901) è raggiunto per chi non è
+ * root admin o se non c'è nessun modello utilizzabile (T-6403); altrimenti i modelli della card senza quelli assenti dal
+ * catalogo, o i predefiniti ancora gratuiti, con il catalogo per i token dei modelli che ragionano (T-6401) e le righe di
+ * ai_requests della funzione plan.
  */
-async function classifyAi(run: PlanRunRecord, deadlineMs: number): Promise<ClassifyContext["ai"]> {
+async function planAi(run: PlanRunRecord, deadlineMs: number): Promise<ClassifyContext["ai"]> {
   const settings = await getAiTitlesSettings();
   const openRouter = getOpenRouterSettings();
   if (!settings.enabled || !openRouter) return { off: "AI_NOT_CONFIGURED" };
@@ -256,7 +262,7 @@ async function classifyPhase({ run, lease, deadlineMs }: PlanPhaseContext): Prom
   const result = await classifyKeywords(chunk, inputs.serps, {
     language: inputs.language,
     country: inputs.country,
-    ai: await classifyAi(run, deadlineMs),
+    ai: await planAi(run, deadlineMs),
   });
   const ofClass = (value: KeywordClass) => [...result.classes].filter(([, found]) => found === value).map(([canonical]) => canonical);
   const next: ClassifyCursor = {
@@ -313,16 +319,104 @@ async function clusterPhase({ run, lease, memo }: PlanPhaseContext): Promise<Pla
   return undefined;
 }
 
+/** Chiusura del lavoro a completed: la strategia è già salvata. */
+const COMPLETED = { status: "completed", phase: "done", locked_until: null } satisfies Prisma.PlanRunUncheckedUpdateManyInput;
+
 /**
- * Salva la strategia con la fonte del raggruppamento e il motivo, e nella stessa transazione chiude il lavoro a
- * completed con strategy_id: un passo che ha perso la lease non salva nulla.
+ * Salva la strategia con la fonte del raggruppamento e il motivo, e nella stessa transazione scrive strategy_id nel
+ * lavoro: un passo che ha perso la lease non salva nulla. Con angoli da valutare il lavoro passa alla fase advise
+ * (T-6901), altrimenti si chiude a completed.
  */
 async function savePhase({ run, lease, memo }: PlanPhaseContext): Promise<PlanPhaseOutcome> {
   const { draft, grouping } = memo.prepared ?? (await prepareDraft(run));
+  const advise = draft.keywordRows.some((row) => row.angle);
   await saveStrategyDraft(draft, grouping, (tx, strategyId) =>
-    writePlanRun(tx, lease, { status: "completed", phase: "done", strategy_id: strategyId, locked_until: null, progress_done: run.progress_total })
+    writePlanRun(tx, lease, { ...(advise ? { phase: "advise" } : COMPLETED), strategy_id: strategyId, progress_done: run.progress_total })
   );
   memo.prepared = undefined;
+  return undefined;
+}
+
+/** Angoli della strategia salvata già mandati al modello (T-6901). */
+type AdviseCursor = { offset: number };
+
+function adviseCursorOf(cursor: Prisma.JsonValue): AdviseCursor | null {
+  const advise = (cursor as { advise?: AdviseCursor } | null)?.advise;
+  return advise && typeof advise.offset === "number" ? advise : null;
+}
+
+/**
+ * Pagine della strategia salvata nell'ordine di lavoro, con la keyword principale, e angoli da valutare in un ordine
+ * fisso (volume, poi forma canonica), così i lotti di passi diversi non si sovrappongono.
+ */
+async function adviceInputs(strategyId: string): Promise<{ pages: AdvicePage[]; angles: AdviceAngle[] }> {
+  const [pages, keywords] = await Promise.all([
+    prisma.strategyPage.findMany({
+      where: { strategy_id: strategyId },
+      orderBy: [{ position: "asc" }, { id: "asc" }],
+      select: { id: true, kind: true, hub_page_id: true, h1: true },
+    }),
+    prisma.strategyKeyword.findMany({
+      where: { strategy_id: strategyId, page_id: { not: null }, OR: [{ role: "MAIN" }, { angle: true }] },
+      orderBy: [{ volume: { sort: "desc", nulls: "last" } }, { canonical_keyword: "asc" }],
+      select: { page_id: true, role: true, keyword: true, canonical_keyword: true, angle: true },
+    }),
+  ]);
+  const mainOf = new Map(keywords.filter((keyword) => keyword.role === "MAIN").map((keyword) => [keyword.page_id!, keyword]));
+  return {
+    pages: pages.flatMap((page) => {
+      const main = mainOf.get(page.id);
+      if (!main) return [];
+      const hub = page.hub_page_id ? (mainOf.get(page.hub_page_id)?.canonical_keyword ?? null) : null;
+      return [{ keyword: main.keyword, canonical: main.canonical_keyword, h1: page.h1, kind: page.kind, hub }];
+    }),
+    angles: keywords
+      .filter((keyword) => keyword.angle && keyword.role !== "MAIN" && mainOf.has(keyword.page_id!))
+      .map((keyword) => ({ keyword: keyword.keyword, canonical: keyword.canonical_keyword, page: mainOf.get(keyword.page_id!)!.canonical_keyword })),
+  };
+}
+
+/**
+ * Un lotto di al più ANGLE_ADVICE_BATCH_SIZE angoli della strategia salvata al modello (T-6901), poi la fase si ripete
+ * finché li ha visti tutti; i consigli si salvano con gli angoli e il cursore nella stessa transazione. Senza angoli, con
+ * l'AI spenta o oltre il tetto, o con un lotto senza risposta valida il lavoro si chiude a completed senza altri consigli
+ * e senza toccare grouping_notice.
+ */
+async function adviseStep({ run, lease, deadlineMs }: PlanPhaseContext): Promise<void> {
+  const strategyId = run.strategy_id;
+  const state = adviseCursorOf(run.cursor) ?? { offset: 0 };
+  const inputs = strategyId ? await adviceInputs(strategyId) : { pages: [], angles: [] };
+  const batch = inputs.angles.slice(state.offset, state.offset + ANGLE_ADVICE_BATCH_SIZE);
+  if (!strategyId || batch.length === 0) return writePlanRun(prisma, lease, COMPLETED);
+  const ai = await planAi(run, deadlineMs);
+  if ("off" in ai) return writePlanRun(prisma, lease, COMPLETED);
+  const { language, country } = await resolveStrategyTarget(requesterOf(run), run.project_id, requestOf(run));
+  const result = await adviseAngles(batch, inputs.pages, { language, country, ai });
+  const offset = state.offset + batch.length;
+  const last = !result.ok || offset >= inputs.angles.length;
+  await prisma.$transaction(async (tx) => {
+    for (const [canonical, advice] of result.advice) {
+      await tx.strategyKeyword.updateMany({
+        where: { strategy_id: strategyId, canonical_keyword: canonical, angle: true },
+        data: { angle_advice: advice },
+      });
+    }
+    await writePlanRun(tx, lease, last ? COMPLETED : { cursor: { ...cursorObject(run.cursor), advise: { offset } } });
+  });
+}
+
+/**
+ * Fase advise (T-6901): un errore qui chiude il lavoro a completed senza altri consigli, mai a failed, perché la
+ * strategia è già salvata; solo la lease persa esce, come nelle altre fasi.
+ */
+async function advisePhase(context: PlanPhaseContext): Promise<PlanPhaseOutcome> {
+  try {
+    await adviseStep(context);
+  } catch (error) {
+    if (error instanceof PlanRunLeaseLostError) throw error;
+    logger.error("plan_angle_advice_failed", { runId: context.run.id, error });
+    await writePlanRun(prisma, context.lease, COMPLETED);
+  }
   return undefined;
 }
 
@@ -334,4 +428,5 @@ export const PLAN_PHASES: Record<Exclude<PlanRunPhase, "done">, (context: PlanPh
   classify: classifyPhase,
   cluster: clusterPhase,
   save: savePhase,
+  advise: advisePhase,
 };

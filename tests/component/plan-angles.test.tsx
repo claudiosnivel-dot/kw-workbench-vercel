@@ -2,6 +2,9 @@
 // ne cita le keyword, le schede e le righe con angoli hanno l'etichetta «N angoli»; nel pannello «Tienila come H2»
 // invia keep_angle e toglie il riquadro, «Fanne una pagina» apre il foglio «Nuova pagina» che invia create_page e poi
 // lascia il pannello sulla pagina nuova.
+// Gate di T-6902 (AC-6902-1, AC-6902-2, D-62): il consiglio dell'AI nel riquadro dell'angolo (per intero nel primo, in
+// una riga breve negli altri) prepara il foglio «Nuova pagina» con l'hub e l'H1 proposti e «Sposta in…» con la pagina
+// consigliata; nessuna operazione parte finché l'utente non conferma.
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlanBoard } from "@/components/plan/plan-board";
@@ -118,6 +121,38 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const SHOULDER_REASON = "Chi cerca «spalla» vuole sapere se la magnetoterapia serve per quella zona: è un'altra domanda.";
+
+const DEDUCTIBLE = page("D", {
+  h1: "Noleggio magnetoterapia detraibile: cosa sapere",
+  position: 2,
+  keywords: [keyword("k5", "noleggio magnetoterapia detraibile", 90, { role: "MAIN" })],
+});
+
+/** Piano con il consiglio dell'AI sui due angoli della pilastro: K (k2) farne una pagina, J (k3) spostarlo in D. */
+const ADVISED = strategy([
+  {
+    pillar: {
+      ...PILLAR,
+      keywords: [
+        PILLAR.keywords[0],
+        {
+          ...PILLAR.keywords[1],
+          angleAdvice: {
+            action: "page",
+            pageId: "P",
+            reason: SHOULDER_REASON,
+            alternative: "Uniscila a «noleggio magnetoterapia ginocchio» in una pagina sulle zone del corpo.",
+            h1: "Magnetoterapia alla spalla",
+          },
+        },
+        { ...PILLAR.keywords[2], angleAdvice: { action: "move", pageId: "D", reason: "È la stessa domanda della detrazione.", alternative: null, h1: null } },
+      ],
+    },
+    spokes: [SPOKE, DEDUCTIBLE],
+  },
+]);
+
 describe("angoli da valutare nel piano", () => {
   // covers: AC-6802-1
   it("l'avviso conta gli angoli e cita le keyword; solo la scheda e la riga della pilastro hanno l'etichetta", () => {
@@ -196,5 +231,65 @@ describe("angoli da valutare nel piano", () => {
     const next = screen.getByRole("dialog", { name: "Magnetoterapia alla spalla" });
     expect(next).toHaveTextContent("Pagina creata da te.");
     expect(within(next).getByLabelText("Titolo (H1)")).toHaveValue("Magnetoterapia alla spalla");
+  });
+});
+
+describe("consiglio dell'AI sugli angoli", () => {
+  // covers: AC-6902-1
+  it("il riquadro mostra il consiglio con il motivo e il foglio parte dalla pilastro e dall'H1 proposti, senza operazioni", () => {
+    renderWithIntl(board(ADVISED));
+    const panel = openPillar();
+    const box = within(panel).getByRole("region", { name: "Angolo da valutare: noleggio magnetoterapia spalla" });
+    expect(box).toHaveTextContent("Consiglio dell'AI: fanne una pagina propria");
+    expect(box).toHaveTextContent(SHOULDER_REASON);
+    expect(box).toHaveTextContent("In alternativa: Uniscila a «noleggio magnetoterapia ginocchio» in una pagina sulle zone del corpo.");
+    // L'altro angolo ha la sola riga breve con l'azione consigliata.
+    const other = within(panel).getByRole("region", { name: "Angolo da valutare: magnetoterapia notturna noleggio" });
+    expect(other).toHaveTextContent("AI: spostala in «3. Noleggio magnetoterapia detraibile: cosa sapere»");
+    expect(other).not.toHaveTextContent("Consiglio dell'AI");
+    expect(other).not.toHaveTextContent("È la stessa domanda della detrazione.");
+
+    fireEvent.click(within(box).getByRole("button", { name: "Fanne una pagina" }));
+
+    const sheet = screen.getByRole("dialog", { name: "Nuova pagina" });
+    expect(within(sheet).getByLabelText("Sotto la pagina principale")).toHaveValue("P");
+    const h1 = within(sheet).getByLabelText("Titolo (H1)");
+    expect(h1).toHaveValue("Magnetoterapia alla spalla");
+    expect(h1).toHaveAccessibleDescription("Proposto dall'AI · puoi cambiarlo");
+    fireEvent.change(h1, { target: { value: "Magnetoterapia per la spalla" } });
+    expect(h1).toHaveAccessibleDescription("Facoltativo: se lo lasci vuoto lo propone il piano.");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // covers: AC-6902-2
+  it("«Sposta in…» parte dalla pagina consigliata e «Sposta» invia move_keywords con quella pagina", async () => {
+    fetchMock.mockResolvedValue(json(200, { data: { version: 5 } }));
+    renderWithIntl(board(ADVISED));
+    const panel = openPillar();
+    const box = within(panel).getByRole("region", { name: "Angolo da valutare: magnetoterapia notturna noleggio" });
+
+    fireEvent.click(within(box).getByRole("button", { name: "Sposta in…" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Sposta «magnetoterapia notturna noleggio» in un'altra pagina" });
+    expect(within(dialog).getByLabelText("Pagina")).toHaveValue("D");
+    expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Sposta" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(sentOperation()).toEqual({ version: 4, operation: { type: "move_keywords", keywordIds: ["k3"], targetPageId: "D" } });
+  });
+
+  it("senza consiglio «Sposta in…» parte dalla prima pagina e il foglio dall'H1 vuoto, come prima", () => {
+    renderWithIntl(board(strategy([{ pillar: PILLAR, spokes: [SPOKE, DEDUCTIBLE] }])));
+    const panel = openPillar();
+    const box = within(panel).getByRole("region", { name: "Angolo da valutare: magnetoterapia notturna noleggio" });
+    expect(box).not.toHaveTextContent("AI");
+
+    fireEvent.click(within(box).getByRole("button", { name: "Sposta in…" }));
+    expect(within(screen.getByRole("dialog", { name: /in un'altra pagina/ })).getByLabelText("Pagina")).toHaveValue("S");
+    fireEvent.click(screen.getByRole("button", { name: "Annulla" }));
+
+    fireEvent.click(within(box).getByRole("button", { name: "Fanne una pagina" }));
+    expect(within(screen.getByRole("dialog", { name: "Nuova pagina" })).getByLabelText("Titolo (H1)")).toHaveValue("");
   });
 });

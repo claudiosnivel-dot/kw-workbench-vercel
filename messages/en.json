@@ -1879,6 +1879,7 @@
         "classify": "Finding places and competitors",
         "cluster": "Grouping keywords",
         "save": "Saving the plan",
+        "advise": "Advice on the angles",
         "done": "Saving the plan"
       },
       "failed": "The plan could not be prepared.",
@@ -1905,7 +1906,16 @@
       "label": "Angle to review",
       "region": "Angle to review: {keyword}",
       "newPage": "Make it a page",
-      "keep": "Keep it as an H2"
+      "keep": "Keep it as an H2",
+      "advice": {
+        "title": "AI advice: {action}",
+        "short": "AI: {action}",
+        "page": "make it a page of its own",
+        "move": "move it to “{page}”",
+        "moveElsewhere": "move it to another page",
+        "keep": "keep it here as an H2",
+        "alternative": "Alternatively: {text}"
+      }
     },
     "groupBy": "Group by",
     "group": {
@@ -2006,6 +2016,7 @@
       "noHub": "None: it becomes a main page",
       "h1": "Title (H1)",
       "h1Hint": "Optional: leave it empty and the plan suggests one.",
+      "proposed": "Suggested by the AI · you can change it",
       "contentType": "Content type",
       "bring": "Also bring along",
       "note": "The page starts as “To write”; the plan suggests the H2s as it does for the other pages.",

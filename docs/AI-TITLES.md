@@ -406,3 +406,35 @@ utenti»); senza la chiave di OpenRouter restano spenti.
   della piattaforma raggiunto (chi non è root admin) nessuna richiesta e `AI_CLASSIFY_UNAVAILABLE`. Ogni tentativo
   scrive la sua riga di `ai_requests` con funzione `plan` (migrazione additiva `0055_ai_feature_plan`); nel log
   `plan_classify` solo conteggi, durata, modello ed esiti.
+
+## Consiglio sugli angoli del piano (modulo 69)
+
+- **Quando** (T-6901, D-62): nella fase `advise` del lavoro di piano, dopo `save`, solo se il piano salvato ha angoli
+  da valutare (T-6702, quindi solo con la classificazione dell'AI riuscita); senza angoli il lavoro si chiude a
+  `completed` come prima. Il lavoro resta in corso («Consigli sugli angoli» nell'avanzamento) finché arrivano i
+  consigli: la strategia è già salvata con `strategy_id`. Gli angoli vanno al modello a lotti di 40, uno per volta nella
+  fase, con al più una richiesta con i modelli di riserva ciascuno: 90 s per modello e 180 s per richiesta come la
+  classificazione, entro la lease del passo meno 10 s; un lotto che non è la prima fase del passo parte solo con 190 s
+  davanti.
+- **Cosa parte**: istruzioni in italiano, in spagnolo con la variante del paese o in inglese con la lingua del piano, e
+  nel messaggio dell'utente solo `{"pages": [...], "angles": [...]}`: per ogni pagina la keyword principale, l'H1, il
+  tipo (`hub` o `spoke`) e la keyword principale del suo hub; per ogni angolo la keyword e la keyword principale della
+  pagina in cui si trova. Keyword e titoli sono dati delimitati in JSON, non istruzioni (LLM01); nessun volume,
+  progetto o utente. `temperature` 0 e `max_tokens` 8000.
+- **Risposta**: un oggetto JSON per angolo con `action` (`page`, `move` o `keep`), `target` (la keyword principale
+  dell'hub per `page`, della pagina di destinazione per `move`), `reason` (al massimo 240 caratteri), `alternative`
+  facoltativa (240) e, per `page`, `h1` facoltativo (120). Chiavi e target si confrontano per forma canonica. Si
+  scartano le voci di angoli non inviati, le azioni sconosciute, i target che non sono pagine del piano (per `page` un
+  hub, per `move` una pagina diversa da quella dell'angolo) e i testi vuoti o oltre i limiti; i testi si ripuliscono
+  da tag e caratteri di controllo come i titoli. Testo non JSON o nessuna voce valida: `invalid_response` e il modello
+  successivo.
+- **Salvataggio**: `strategy_keywords.angle_advice` (migrazione additiva `0058_strategy_keyword_angle_advice`) con
+  action, target come forma canonica della keyword principale, reason, alternative e h1; la GET della strategia espone
+  `angleAdvice` con l'id della pagina che ha quella keyword principale (null se non c'è più). `create_page`,
+  `move_keywords` e `keep_angle` tolgono il consiglio insieme al segno di angolo.
+- **Quando l'AI non risponde**: con la funzione spenta, senza chiave o modelli, oltre il tetto della piattaforma (chi
+  non è root admin) o con un lotto senza risposta valida il lavoro si chiude a `completed` senza altri consigli e senza
+  cambiare `grouping_notice`; anche un errore nella fase chiude a `completed`, mai a `failed`, perché il piano c'è.
+  Ogni tentativo scrive la sua riga di `ai_requests` con funzione `plan`; nel log `plan_angle_advice` solo conteggi,
+  durata, modello ed esiti. Il consiglio è solo un suggerimento: nel pannello prepara il foglio «Nuova pagina» (hub e
+  H1 proposti) o «Sposta in…» (pagina consigliata), e nessuna azione parte senza la conferma dell'utente (T-6902).

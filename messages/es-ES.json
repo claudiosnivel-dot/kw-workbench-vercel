@@ -1879,6 +1879,7 @@
         "classify": "Detectando lugares y competencia",
         "cluster": "Agrupando las palabras clave",
         "save": "Guardando el plan",
+        "advise": "Consejos sobre los ángulos",
         "done": "Guardando el plan"
       },
       "failed": "No se ha podido preparar el plan.",
@@ -1905,7 +1906,16 @@
       "label": "Ángulo por evaluar",
       "region": "Ángulo por evaluar: {keyword}",
       "newPage": "Crear una página",
-      "keep": "Conservar como H2"
+      "keep": "Conservar como H2",
+      "advice": {
+        "title": "Consejo de la IA: {action}",
+        "short": "IA: {action}",
+        "page": "crea una página propia",
+        "move": "muévela a «{page}»",
+        "moveElsewhere": "muévela a otra página",
+        "keep": "consérvala aquí como H2",
+        "alternative": "Como alternativa: {text}"
+      }
     },
     "groupBy": "Agrupar por",
     "group": {
@@ -2006,6 +2016,7 @@
       "noHub": "Ninguna: se convierte en página pilar",
       "h1": "Título (H1)",
       "h1Hint": "Opcional: si lo dejas vacío, lo propone el plan.",
+      "proposed": "Propuesto por la IA · puedes cambiarlo",
       "contentType": "Tipo de contenido",
       "bring": "Llevar también",
       "note": "La página se crea «Por escribir»; el plan propone los H2 como en las demás páginas.",

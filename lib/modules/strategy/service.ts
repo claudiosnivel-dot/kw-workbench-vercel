@@ -28,12 +28,15 @@ import {
 } from "@/lib/modules/strategy/titles";
 import { strategyTranslator } from "@/lib/modules/strategy/translator";
 import {
+  ANGLE_ADVICE_ACTIONS,
   STRATEGY_CONTENT_TYPES,
   STRATEGY_PAGE_STATUSES,
   PUBLISHED_URL_MAX_LENGTH,
+  type AngleAdvice,
   type PlanAnchor,
   type PlanReason,
   type StrategyAiProposal,
+  type StrategyAngleAdvice,
   type StrategyKeywordInput,
   type StrategyKeywordView,
   type StrategyMode,
@@ -759,6 +762,7 @@ const RECORD_SELECT = {
       score: true,
       is_question: true,
       angle: true,
+      angle_advice: true,
     },
   },
 } satisfies Prisma.StrategySelect;
@@ -807,6 +811,33 @@ function keywordView({ pageId: _pageId, ...keyword }: EditorState["keywords"][nu
   return keyword;
 }
 
+const isAdviceText = (value: unknown): value is string | null => value === null || typeof value === "string";
+
+/** Consiglio salvato in angle_advice (T-6901) → AngleAdvice; un valore senza la forma attesa non si mostra. */
+function toAngleAdvice(value: Prisma.JsonValue): AngleAdvice | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const { action, target, reason, alternative = null, h1 = null } = value;
+  if (!(ANGLE_ADVICE_ACTIONS as readonly unknown[]).includes(action) || typeof target !== "string" || typeof reason !== "string") return null;
+  if (!isAdviceText(alternative) || !isAdviceText(h1)) return null;
+  return { action: action as AngleAdvice["action"], target, reason, alternative, h1 };
+}
+
+/**
+ * Consigli dell'AI degli angoli (T-6901) per id della keyword, con l'id della pagina che ha per keyword principale il
+ * target (null se quella pagina non c'è più); solo per le keyword con angle true.
+ */
+function angleAdviceViews(record: StrategyRecord, state: EditorState): Map<string, StrategyAngleAdvice> {
+  const pageOfMain = new Map(state.keywords.filter((keyword) => keyword.role === "MAIN" && keyword.pageId).map((keyword) => [keyword.canonical, keyword.pageId!]));
+  const views = new Map<string, StrategyAngleAdvice>();
+  for (const keyword of record.keywords) {
+    const advice = keyword.angle ? toAngleAdvice(keyword.angle_advice) : null;
+    if (!advice) continue;
+    const { target, ...rest } = advice;
+    views.set(keyword.id, { ...rest, pageId: pageOfMain.get(target) ?? null });
+  }
+  return views;
+}
+
 const isStringList = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string");
 
 const isCount = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0;
@@ -828,11 +859,12 @@ function toAiProposal(value: Prisma.JsonValue): StrategyAiProposal | null {
  */
 function toView(record: StrategyRecord, current: boolean): StrategyView {
   const state = toEditorState(record);
+  const advice = angleAdviceViews(record, state);
   const keywordsOf = (pageId: string | null) =>
     state.keywords
       .filter((keyword) => keyword.pageId === pageId)
       .sort((a, b) => Number(b.role === "MAIN") - Number(a.role === "MAIN") || compareKeywordPriority(a, b))
-      .map(keywordView);
+      .map((keyword) => ({ ...keywordView(keyword), angleAdvice: advice.get(keyword.id) ?? null }));
   const proposals = new Map(record.pages.map((page) => [page.id, current ? toAiProposal(page.ai_proposal) : null]));
   const pages = [...state.pages].sort((a, b) => a.position - b.position);
   const pageView = (page: EditorState["pages"][number]): StrategyPageView => ({
@@ -1024,10 +1056,13 @@ async function persistState(tx: Prisma.TransactionClient, strategyId: string, be
   if (newMains.length > 0) {
     await tx.strategyKeyword.updateMany({ where: { strategy_id: strategyId, id: { in: newMains } }, data: { role: "MAIN" } });
   }
-  // Angoli decisi (T-6702, T-6801): move_keywords, create_page e keep_angle tolgono il segno.
+  // Angoli decisi (T-6702, T-6801): move_keywords, create_page e keep_angle tolgono il segno e il consiglio dell'AI (T-6901).
   const settled = after.keywords.filter((keyword) => previous.get(keyword.id)!.angle && !keyword.angle).map((keyword) => keyword.id);
   if (settled.length > 0) {
-    await tx.strategyKeyword.updateMany({ where: { strategy_id: strategyId, id: { in: settled } }, data: { angle: false } });
+    await tx.strategyKeyword.updateMany({
+      where: { strategy_id: strategyId, id: { in: settled } },
+      data: { angle: false, angle_advice: Prisma.DbNull },
+    });
   }
 
   const remaining = new Map(after.pages.map((page) => [page.id, page]));

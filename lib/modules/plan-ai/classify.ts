@@ -125,17 +125,25 @@ function instructionLines(language: string, country: string | null): string[] {
   ];
 }
 
-/** Corpo della richiesta per un lotto: istruzioni nella lingua del piano come i titoli (T-5102), keyword in JSON. */
-export function buildClassifyRequest(canonicals: string[], context: { language: string; country: string | null; model: string }): TitlesRequest {
+/**
+ * Corpo di una richiesta del piano al modello (T-6301, T-6901): le istruzioni come messaggio di sistema, i dati in JSON
+ * come messaggio dell'utente, temperature 0.
+ */
+export function planRequest(model: string, instructions: string[], data: unknown, maxTokens: number): TitlesRequest {
   return {
-    model: context.model,
+    model,
     messages: [
-      { role: "system", content: instructionLines(context.language, context.country).join("\n") },
-      { role: "user", content: JSON.stringify({ keywords: canonicals }) },
+      { role: "system", content: instructions.join("\n") },
+      { role: "user", content: JSON.stringify(data) },
     ],
     temperature: 0,
-    max_tokens: 4000,
+    max_tokens: maxTokens,
   };
+}
+
+/** Corpo della richiesta per un lotto: istruzioni nella lingua del piano come i titoli (T-5102), keyword in JSON. */
+export function buildClassifyRequest(canonicals: string[], context: { language: string; country: string | null; model: string }): TitlesRequest {
+  return planRequest(context.model, instructionLines(context.language, context.country), { keywords: canonicals }, 4000);
 }
 
 const isKeywordClass = (value: unknown): value is KeywordClass => typeof value === "string" && (KEYWORD_CLASSES as readonly string[]).includes(value);

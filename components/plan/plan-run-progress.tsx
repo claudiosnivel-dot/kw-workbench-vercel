@@ -18,7 +18,7 @@ type PlanRunProgressProps = {
 
 /**
  * Avanzamento del lavoro di piano (T-6202): fase («Cerco i volumi», «Leggo i risultati di Google», «Raggruppo le
- * keyword», «Salvo il piano») con la barra e le keyword già lette, interrogando lo stato come la ricerca delle keyword
+ * keyword», «Salvo il piano», «Consigli sugli angoli» di T-6901) con la barra e le keyword già lette, interrogando lo stato come la ricerca delle keyword
  * (T-1205). A lavoro completed chiama onCompleted; a lavoro non riuscito mostra il motivo dal catalogo (mai un testo del
  * server, CWE-79) e «Riprova».
  */

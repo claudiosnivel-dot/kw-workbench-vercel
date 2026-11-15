@@ -1514,6 +1514,18 @@ input[type="checkbox"] {
   overflow-wrap: anywhere;
 }
 
+/* Consiglio dell'AI su un angolo (T-6902): blocco neutro dentro il riquadro, come la proposta dei titoli. */
+.plan-angle-advice {
+  display: grid;
+  gap: 0.3rem;
+  border-radius: 12px;
+  border: 1px solid var(--surface-border-strong);
+  background: var(--surface);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
 /* Proposta dei titoli con l'AI nel pannello della pagina (T-3603). */
 .plan-ai-card {
   border-radius: 16px;

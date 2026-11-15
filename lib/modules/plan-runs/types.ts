@@ -3,8 +3,11 @@
  * i componenti importano solo da qui, mai da moduli che raggiungono Prisma).
  */
 
-/** Fasi del lavoro di piano nell'ordine in cui si eseguono; done quando la strategia è salvata. */
-export const PLAN_RUN_PHASES = ["volumes", "serps_post", "serps_collect", "classify", "cluster", "save"] as const;
+/**
+ * Fasi del lavoro di piano nell'ordine in cui si eseguono; advise (T-6901) dopo il salvataggio solo con angoli da
+ * valutare; done alla fine.
+ */
+export const PLAN_RUN_PHASES = ["volumes", "serps_post", "serps_collect", "classify", "cluster", "save", "advise"] as const;
 export type PlanRunPhase = (typeof PLAN_RUN_PHASES)[number] | "done";
 
 /**

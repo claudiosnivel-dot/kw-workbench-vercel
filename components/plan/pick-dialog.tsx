@@ -13,6 +13,8 @@ type PickDialogProps = {
   labels: { title: string; field: string; cancel: string; confirm: string };
   /** Destinazioni raggruppate (per pagina principale); un gruppo senza etichetta è un elenco semplice. */
   groups: PickGroup[];
+  /** Destinazione preselezionata se è fra le scelte (il consiglio dell'AI, T-6902); altrimenti la prima. */
+  defaultId?: string | null;
   /** Conferma con la destinazione scelta: riuscita chiude il dialogo, altrimenti il messaggio resta nel dialogo. */
   onPick: (id: string) => Promise<PlanRequestResult>;
   onClose: () => void;
@@ -23,9 +25,10 @@ type PickDialogProps = {
  * «Sposta sotto…», «Assegna a…», «Sposta in…» e «Unisci a…». Una select nativa con i gruppi e un pulsante che conferma;
  * le etichette sono testo (CWE-79).
  */
-export function PickDialog({ labels, groups, onPick, onClose }: PickDialogProps) {
+export function PickDialog({ labels, groups, defaultId, onPick, onClose }: PickDialogProps) {
   const fieldId = useId();
-  const [target, setTarget] = useState(groups[0]?.options[0]?.id ?? "");
+  const preselected = defaultId && groups.some((group) => group.options.some((option) => option.id === defaultId)) ? defaultId : null;
+  const [target, setTarget] = useState(preselected ?? groups[0]?.options[0]?.id ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

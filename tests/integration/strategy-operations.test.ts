@@ -5,6 +5,7 @@
 // Gate di T-6702 (AC-6702-5, D-62): move_keywords toglie il segno di angolo da valutare alle keyword spostate.
 // Gate di T-6801 (AC-6801-1…3): create_page fa nascere uno spoke o una pagina principale dalle keyword indicate,
 // keep_angle toglie il segno senza spostare, un hub che non è un hub è 400 e una versione precedente 409.
+// T-6901 (D-62): create_page, move_keywords e keep_angle tolgono il consiglio dell'AI insieme al segno.
 import { randomUUID } from "node:crypto";
 import { createTranslator } from "next-intl";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -402,6 +403,41 @@ describe("pagine nuove e angoli tenuti (T-6801)", () => {
     expect(((await readOnly.json()) as { code: string }).code).toBe("STRATEGY_READ_ONLY");
     expect(await prisma.strategyPage.findMany({ where: { strategy_id: strategyId }, orderBy: { id: "asc" } })).toEqual(pagesBefore);
     expect((await prisma.strategy.findUniqueOrThrow({ where: { id: strategyId } })).version).toBe(1);
+  });
+
+  it("create_page, move_keywords e keep_angle tolgono il consiglio dell'AI insieme al segno; gli altri angoli lo tengono", async () => {
+    const { strategyId, pageIds, keywordIds } = await createPlan([
+      {
+        key: "P",
+        kind: "HUB",
+        keywords: [
+          kw("noleggio magnetoterapia", 1600),
+          kw("noleggio magnetoterapia spalla", null),
+          kw("noleggio magnetoterapia iva", null),
+          kw("magnetoterapia notturna noleggio", null),
+          kw("magnetoterapia ginocchio noleggio", null),
+        ],
+      },
+      { key: "S", kind: "SPOKE", hub: "P", keywords: [kw("noleggio magnetoterapia costo", 390)] },
+    ]);
+    const ids = ["noleggio magnetoterapia spalla", "noleggio magnetoterapia iva", "magnetoterapia notturna noleggio", "magnetoterapia ginocchio noleggio"].map(
+      (text) => keywordIds[text]
+    );
+    const advice = { action: "keep", target: "noleggio magnetoterapia", reason: "Resta come H2.", alternative: null, h1: null };
+    await prisma.strategyKeyword.updateMany({ where: { id: { in: ids } }, data: { angle: true, angle_advice: advice } });
+    const [created, moved, kept, untouched] = ids;
+
+    const responses = [
+      await runOperation(strategyId, 0, { type: "create_page", keywordIds: [created], hubPageId: pageIds.P }),
+      await runOperation(strategyId, 1, { type: "move_keywords", keywordIds: [moved], targetPageId: pageIds.S }),
+      await runOperation(strategyId, 2, { type: "keep_angle", keywordIds: [kept] }),
+    ];
+
+    expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
+    const rows = await prisma.strategyKeyword.findMany({ where: { id: { in: ids } }, select: { id: true, angle: true, angle_advice: true } });
+    const rowOf = (id: string) => rows.find((row) => row.id === id);
+    for (const id of [created, moved, kept]) expect(rowOf(id)).toMatchObject({ angle: false, angle_advice: null });
+    expect(rowOf(untouched)).toMatchObject({ angle: true, angle_advice: advice });
   });
 
   it("create_page con una keyword di un'altra strategia è 404 e oltre 50 keyword è 400", async () => {

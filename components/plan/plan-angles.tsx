@@ -6,12 +6,20 @@ import { DialogActions } from "@/components/dialog-actions";
 import { ModalDialog } from "@/components/modal-dialog";
 import type { PickOption } from "@/components/plan/pick-dialog";
 import type { PlanRequestResult } from "@/components/plan/plan-requests";
-import { STRATEGY_CONTENT_TYPES, type StrategyContentType, type StrategyKeywordView, type StrategyPageView } from "@/lib/modules/strategy/types";
+import {
+  STRATEGY_CONTENT_TYPES,
+  type StrategyAngleAdvice,
+  type StrategyContentType,
+  type StrategyKeywordView,
+  type StrategyPageView,
+} from "@/lib/modules/strategy/types";
 
 /*
  * Angoli da valutare nel piano (T-6802, D-62): l'avviso in testa al piano, il riquadro di ogni angolo nel pannello della
- * pagina con le tre azioni e il foglio «Nuova pagina». Keyword e titoli sono resi come testo (CWE-79); le modifiche
- * passano dalle operazioni del piano (create_page, keep_angle, move_keywords).
+ * pagina con le tre azioni e il foglio «Nuova pagina». Con il consiglio dell'AI (T-6902) il riquadro dice l'azione
+ * consigliata con il motivo e il foglio parte dall'hub e dall'H1 proposti; nessuna azione parte senza la conferma
+ * dell'utente. Keyword, titoli e testi dell'AI sono resi come testo (CWE-79); le modifiche passano dalle operazioni del
+ * piano (create_page, keep_angle, move_keywords).
  */
 
 // Keyword citate nell'avviso: le altre si contano.
@@ -52,16 +60,51 @@ export function AngleCount({ page }: { page: StrategyPageView }) {
   return count > 0 ? <span className="plan-angle-chip">{t("count", { count })}</span> : null;
 }
 
+/** Consiglio dell'AI mostrato in un riquadro (T-6902): per intero o in una riga breve, con l'etichetta della pagina target. */
+export type AngleAdviceDisplay = { value: StrategyAngleAdvice; full: boolean; pageLabel: string | null };
+
+/** Consiglio dell'AI nel riquadro: «Consiglio dell'AI: …» con motivo e alternativa, o la sola riga «AI: …». */
+function AngleAdviceNote({ advice }: { advice: AngleAdviceDisplay }) {
+  const t = useTranslations("plan.angles.advice");
+  const { value, full, pageLabel } = advice;
+  const action =
+    value.action === "page"
+      ? t("page")
+      : value.action === "keep"
+        ? t("keep")
+        : pageLabel
+          ? t("move", { page: pageLabel })
+          : t("moveElsewhere");
+  if (!full) return <p className="text-xs text-slate-600">{t("short", { action })}</p>;
+  return (
+    <div className="plan-angle-advice">
+      <p className="flex items-center gap-1.5 font-semibold">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="M12 3l1.8 4.6L18 9.4l-4.2 1.8L12 16l-1.8-4.8L6 9.4l4.2-1.8z" />
+        </svg>
+        <span>{t("title", { action })}</span>
+      </p>
+      <p>{value.reason}</p>
+      {value.alternative && <p className="text-xs text-slate-600">{t("alternative", { text: value.alternative })}</p>}
+    </div>
+  );
+}
+
 type AngleBoxProps = {
   keyword: StrategyKeywordView;
   pending: boolean;
+  /** Consiglio dell'AI sull'angolo (T-6902), se c'è. */
+  advice?: AngleAdviceDisplay | null;
   onNewPage: () => void;
   onMove: () => void;
   onKeep: () => void;
 };
 
-/** Riquadro di un angolo nel pannello: etichetta, volume e le azioni «Fanne una pagina», «Sposta in…», «Tienila come H2». */
-export function AngleBox({ keyword, pending, onNewPage, onMove, onKeep }: AngleBoxProps) {
+/**
+ * Riquadro di un angolo nel pannello: etichetta, volume, consiglio dell'AI se c'è (T-6902) e le azioni «Fanne una
+ * pagina», «Sposta in…», «Tienila come H2».
+ */
+export function AngleBox({ keyword, pending, advice, onNewPage, onMove, onKeep }: AngleBoxProps) {
   const t = useTranslations("plan.angles");
   const tPanel = useTranslations("plan.panel");
 
@@ -74,6 +117,7 @@ export function AngleBox({ keyword, pending, onNewPage, onMove, onKeep }: AngleB
         </span>
       </div>
       <p className="font-semibold">{keyword.keyword}</p>
+      {advice && <AngleAdviceNote advice={advice} />}
       <div className="plan-angle-actions">
         <button type="button" className="btn-secondary" disabled={pending} onClick={onNewPage}>
           {t("newPage")}
@@ -104,15 +148,17 @@ type NewPageDialogProps = {
   others: StrategyKeywordView[];
   /** Pagine principali del piano, con l'etichetta numerata. */
   hubs: PickOption[];
-  /** Pagina principale preselezionata: quella della keyword; vuota per nessuna. */
+  /** Pagina principale preselezionata: quella del consiglio dell'AI o quella della keyword; vuota per nessuna. */
   defaultHubId: string;
+  /** H1 proposto dall'AI (T-6902): il campo parte da qui con «Proposto dall'AI · puoi cambiarlo». */
+  proposedH1?: string | null;
   /** Crea la pagina: riuscita chiude il foglio (lo fa chi lo apre), altrimenti il messaggio resta nel foglio. */
   onCreate: (operation: CreatePageOperation) => Promise<PlanRequestResult>;
   onClose: () => void;
 };
 
 /** Foglio «Nuova pagina» da un angolo: pagina principale, H1 facoltativo, tipo, altri angoli da portare con sé. */
-export function NewPageDialog({ keyword, others, hubs, defaultHubId, onCreate, onClose }: NewPageDialogProps) {
+export function NewPageDialog({ keyword, others, hubs, defaultHubId, proposedH1, onCreate, onClose }: NewPageDialogProps) {
   const t = useTranslations("plan.newPage");
   const tStrategy = useTranslations("strategy.ui");
   const hubFieldId = useId();
@@ -120,7 +166,7 @@ export function NewPageDialog({ keyword, others, hubs, defaultHubId, onCreate, o
   const hintId = useId();
   const typeFieldId = useId();
   const [hubPageId, setHubPageId] = useState(hubs.some((hub) => hub.id === defaultHubId) ? defaultHubId : "");
-  const [h1, setH1] = useState("");
+  const [h1, setH1] = useState(proposedH1 ?? "");
   const [contentType, setContentType] = useState<StrategyContentType>("guide");
   const [brought, setBrought] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState(false);
@@ -177,7 +223,7 @@ export function NewPageDialog({ keyword, others, hubs, defaultHubId, onCreate, o
             onChange={(event) => setH1(event.target.value)}
           />
           <p id={hintId} className="text-xs text-slate-600">
-            {t("h1Hint")}
+            {proposedH1 && h1 === proposedH1 ? t("proposed") : t("h1Hint")}
           </p>
         </div>
         <label className="block" htmlFor={typeFieldId}>
