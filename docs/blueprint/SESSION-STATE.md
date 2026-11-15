@@ -9,7 +9,7 @@
 | **Progetto** | Titan SEO (`kw-workbench-vercel`) |
 | **Ecosistema** | `postgres-jsts` |
 | **Ultimo aggiornamento** | 2026-11-15 |
-| **Sessione corrente** | 2026-11-15 (settantaduesima) — BUILD di `angle-actions` (68) chiuso: operazioni `create_page` e `keep_angle`, avviso degli angoli da valutare, etichette, riquadro dell'angolo e foglio «Nuova pagina», checkpoint VERDE alla prima esecuzione, PR #171 in produzione. Precedente: 2026-11-15 (settantunesima) — BUILD di `plan-angles` (67) chiuso |
+| **Sessione corrente** | 2026-11-15 (settantaduesima, seguito) — scelte dei macrotask 64-68 confermate dall'utente (D-63, sola documentazione). Precedente: 2026-11-15 (settantaduesima) — BUILD di `angle-actions` (68) chiuso, checkpoint VERDE alla prima esecuzione, PR #171 in produzione |
 
 ---
 
@@ -135,7 +135,7 @@
 - **Ultimo chiuso (2026-11-15, settantesima sessione)**: `pillar-reopen` (66), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE alla prima esecuzione, nessuna migrazione. «Rigenera» copia una pilastro ancora da scrivere, bloccata solo dai suoi spoke iniziati, con la sola keyword principale e i titoli; le altre sue keyword tornano al motore. PR #166 mergiata (`89c4051`), CI di `master` verde (run 43722883099), produzione verde (`dpl_DeLkCfeBMevc7TxoYvYGEE1of7gG`, `/api/health` 200).
 - **Ultimo chiuso (2026-11-15, settantunesima sessione)**: `plan-angles` (67), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE alla prima esecuzione, migrazione additiva `0057_strategy_keyword_angle`. La pagina locale non riceve più pagine sciolte né domande; la keyword principale di ogni pagina sciolta è un angolo da valutare, salvato solo con la classificazione dell'AI riuscita. PR #169 mergiata (`044b05f`), CI di `master` verde (run 43744701541), produzione verde (`dpl_HK8RwTaGgo6Su2GSx8iLon2R6Sci`, `/api/health` 200).
 - **Ultimo chiuso (2026-11-15, settantaduesima sessione)**: `angle-actions` (68), avviato dal prompt di inizio sessione dell'utente, checkpoint VERDE alla prima esecuzione, nessuna migrazione. Nel piano gli angoli da valutare si vedono (avviso, etichette, riquadro nel pannello) e per ciascuno l'utente sceglie se farne una pagina (foglio «Nuova pagina», operazione `create_page`), spostarlo (`move_keywords`) o tenerlo come H2 (`keep_angle`). PR #171 mergiata (`52dc9fc`), CI di `master` verde (run 43761162404), produzione verde (`dpl_54J5e7Vn5q2xjzUjn3FXBdSEjCNh`, `/api/health` 200).
-- **Prossimo**: `angle-ai` (69), da costruire in una sessione nuova con il prompt di inizio sessione (dipendenze 38, 39, 63, 64, 65, 67 e 68 chiuse); poi 70 `local-tips`. Da chiedere la conferma delle scelte dell'agente dei moduli 64-68 (Self-check e note di costruzione). D-14 e D-15 restano in pausa.
+- **Prossimo**: `angle-ai` (69), da costruire in una sessione nuova con il prompt di inizio sessione (dipendenze 38, 39, 63, 64, 65, 67 e 68 chiuse); poi 70 `local-tips`. Scelte dell'agente dei moduli 64-68 confermate dall'utente il 2026-11-15 (D-63). D-14 e D-15 restano in pausa.
 - **Criteri/test di riferimento**: ultimo costruito e mergiato `docs/blueprint/68-angle-actions.md`; prossimo `docs/blueprint/69-angle-ai.md`.
 
 ## 3. Stato git
@@ -248,6 +248,11 @@
 - **Ambiente**: Docker 29.5; Node 25.5 locale (fuori dagli engines di vitest 5, jsdom 30 e, da T-407, del progetto `24.x`: funziona con avviso; riferimento la CI su Node 24 da `.nvmrc`). E2E e Vitest su Linux con Node 24: container `mcr.microsoft.com/playwright:v1.63.0-noble` nella rete `kw-workbench-vercel_default`, copia del repo senza `node_modules`, `npm ci`, un proxy TCP in Node da `localhost:54329` a `postgres-test:5432` (la guardia ammette solo host locali), `CI=true`. Con più stack Supabase accesi più semgrep la RAM si esaurisce: tenere accesi solo i container necessari. CLI Vercel autenticata (account `claudiosnivel-dot`, progetto collegato in `.vercel/`, ignorata da git) e regola locale `Bash(npx vercel redeploy *)` in `.claude/settings.local.json` per i redeploy; CLI Supabase autenticata (`supabase projects list`). Le variabili su Vercel sono condivise tra Production, Preview e Development.
 
 ## 5. Esiti dell'ultima sessione
+
+### Sessione 2026-11-15 (settantaduesima, seguito) — scelte dei macrotask 64-68 confermate (D-63), sola documentazione
+
+- **Richiesta**: «fammi le domande per confermare tutte le scelte», dopo la chiusura del 68. Due giri di AskUserQuestion da 4 domande (modelli e tempi dell'AI, H2 proposti, risultati di Google, «Rigenera» e pilastro da scrivere, angoli, foglio «Nuova pagina», scelte fatte a mano e «Rigenera»): scelte tutte le opzioni consigliate.
+- **Blueprint**: D-63 nel ledger (00-INDEX); Self-check e note di costruzione dei moduli 64, 65, 66, 67 e 68 segnati come confermati. Nessun codice applicativo modificato, nessun modulo nuovo.
 
 ### Sessione 2026-11-15 (settantaduesima) — BUILD di `angle-actions` (68), checkpoint VERDE, merge e produzione
 
