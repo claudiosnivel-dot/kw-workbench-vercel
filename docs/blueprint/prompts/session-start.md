@@ -51,7 +51,9 @@ ridiscute il design.
    60 dep-advisories (04, 53, 54) · 61 plan-data (09, 16, 17, 19, 37) ·
    62 plan-runs (12, 25, 41, 61) · 63 serp-clusters (19, 25, 38, 39, 51, 61, 62) ·
    64 ai-reliability (38, 39, 41) · 65 plan-tuning (41, 42, 63, 64) ·
-   66 pillar-reopen (25, 63, 65)
+   66 pillar-reopen (25, 63, 65) · 67 plan-angles (19, 25, 63, 65) ·
+   68 angle-actions (19, 25, 67) · 69 angle-ai (38, 39, 63, 64, 65, 67, 68) ·
+   70 local-tips (24, 25, 67, 68)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15
