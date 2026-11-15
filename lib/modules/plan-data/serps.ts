@@ -7,6 +7,7 @@ import {
   type SerpCollectOutcome,
   type SerpPostOutcome,
   type SerpTask,
+  withoutTrackingParams,
 } from "@/lib/modules/providers/serp/dataforseo-serp";
 import { prisma } from "@/lib/prisma";
 
@@ -28,7 +29,8 @@ export type SerpRequestOutcome = SerpPostOutcome & {
 
 /**
  * Risultati salvati da meno di SERP_MAX_AGE_DAYS giorni per le forme canoniche, nella lingua e nel paese indicati. Le righe
- * con link goto di Google, salvate prima di T-6504, non valgono: le loro keyword si chiedono di nuovo.
+ * con link goto di Google, salvate prima di T-6504, non valgono: le loro keyword si chiedono di nuovo; gli URL tornano
+ * senza i parametri di tracciamento (srsltid), anche quelli salvati prima.
  */
 export async function readFreshSerps(
   canonicals: string[],
@@ -47,7 +49,9 @@ export async function readFreshSerps(
     },
     select: { canonical_keyword: true, urls: true },
   });
-  return new Map(rows.filter((row) => !row.urls.some(isGoogleGotoUrl)).map((row) => [row.canonical_keyword, row.urls]));
+  return new Map(
+    rows.filter((row) => !row.urls.some(isGoogleGotoUrl)).map((row) => [row.canonical_keyword, row.urls.map(withoutTrackingParams)])
+  );
 }
 
 /**

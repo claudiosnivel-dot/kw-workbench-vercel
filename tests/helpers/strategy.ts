@@ -12,6 +12,7 @@ import type {
 } from "@/lib/modules/strategy/types";
 import { prisma } from "@/lib/prisma";
 import english from "../fixtures/strategy/en-running-gear.json";
+import magnetotherapyReal from "../fixtures/strategy/it-magnetoterapia-real-serp.json";
 import magnetotherapy from "../fixtures/strategy/it-magnetoterapia-serp.json";
 import italian from "../fixtures/strategy/it-scarpe-running.json";
 
@@ -84,6 +85,13 @@ export type SerpFixtureKeyword = FixtureKeyword & { urls: string[]; class: Keywo
 export type SerpFixture = { language: string; seeds: string[]; keywords: SerpFixtureKeyword[] };
 
 export const MAGNETOTHERAPY_SERP_FIXTURE = magnetotherapy as unknown as SerpFixture;
+
+/**
+ * Keyword tenute di «Noleggio magnetoterapia» con i risultati di Google veri salvati in produzione dopo T-6504, lette
+ * con sola SELECT (T-6502, D-60): senza classi, che il test calcola con i riconoscimenti fissi.
+ */
+export type RealSerpFixture = { language: string; seeds: string[]; keywords: (FixtureKeyword & { urls: string[] })[] };
+export const MAGNETOTHERAPY_REAL_SERP_FIXTURE = magnetotherapyReal as unknown as RealSerpFixture;
 
 /** Ingresso di buildSerpPlan dalla fixture: keyword, risultati (solo quelli con URL) e classi per forma canonica. */
 export function serpFixtureInputs(fixture: SerpFixture = MAGNETOTHERAPY_SERP_FIXTURE) {

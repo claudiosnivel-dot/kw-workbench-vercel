@@ -29,8 +29,8 @@ import type {
  *    più alta, e formano un solo spoke local.
  * 5. Regole di oggi: una domanda sotto questionSpokeVolume (con questionsAs faq) va nelle FAQ della pagina con più URL in
  *    comune; uno spoke sotto minKeywordsPerSpoke e minSpokeVolume, e oltre maxSpokesPerHub quelli a priorità più bassa,
- *    confluisce nello spoke tenuto dello stesso hub la cui keyword principale ha più URL in comune con la sua (T-6502),
- *    altrimenti nella pilastro.
+ *    confluisce nello spoke tenuto dello stesso hub con più URL in comune (T-6502); nella pilastro solo se nessuno spoke
+ *    ne ha almeno uno.
  * 6. Keyword senza risultati: nella pagina con più parole di contenuto in comune con la keyword principale (almeno una),
  *    altrimenti tra le non assegnate.
  * 7. Ancore (T-2502): un hub ancorato non ha una pilastro nuova; le sue pagine sono spoke nuovi dell'ancora e le keyword
@@ -149,12 +149,12 @@ function reasonOf(draft: Draft, pillar: boolean): PlanReason {
   return reasonFor("SPOKE_SERP", { count: draft.own.length, faq });
 }
 
-/** Il bersaglio con più URL in comune (almeno uno) secondo urlsOf, a parità il primo; null se nessuno ne ha. */
-function closestBy(urls: Set<string>, targets: Draft[], urlsOf: (target: Draft) => Set<string>): Draft | null {
+/** La pagina fra i bersagli con più URL in comune (almeno uno), a parità la prima; null se nessuna ne ha. */
+function closestByUrls(urls: Set<string>, targets: Draft[]): Draft | null {
   let best: Draft | null = null;
   let bestOverlap = 0;
   for (const target of targets) {
-    const value = overlap(urls, urlsOf(target));
+    const value = overlap(urls, target.urls);
     if (value > bestOverlap) {
       best = target;
       bestOverlap = value;
@@ -162,17 +162,6 @@ function closestBy(urls: Set<string>, targets: Draft[], urlsOf: (target: Draft) 
   }
   return best;
 }
-
-/** La pagina fra i bersagli con più URL in comune con l'unione degli URL delle sue keyword (almeno uno). */
-const closestByUrls = (urls: Set<string>, targets: Draft[]) => closestBy(urls, targets, (target) => target.urls);
-
-/**
- * Spoke in cui confluisce una pagina sotto soglia o oltre il massimo di spoke (T-6502): quello la cui keyword principale
- * ha più URL in comune con la keyword principale della pagina (almeno uno; a parità il primo per priorità); null se
- * nessuno spoke ne ha, e allora la pagina va nella pilastro. Prima il confronto usava l'unione degli URL delle pagine, e
- * la pilastro, con più keyword, vinceva quasi sempre (160 keyword su 175 nella pilastro il 2026-11-14).
- */
-const mergeTarget = (page: Draft, spokes: Draft[]) => closestBy(page.own[0].urls, spokes, (spoke) => spoke.own[0].urls);
 
 /** Passo 2: pagine per intento delle keyword con risultati, nell'ordine di priorità. */
 function intentPages(entries: Entry[], rules: StrategyRules): Draft[] {
@@ -249,8 +238,10 @@ function settleHub(hub: Hub, rules: StrategyRules, byPriority: (a: Draft, b: Dra
   const dropped = [...candidates.filter((page) => !accepted(page)), ...eligible.slice(rules.maxSpokesPerHub)];
   const targets = hub.pillar ? [hub.pillar, ...kept] : kept;
 
+  // T-6502: la pilastro non è fra i bersagli, perché con più keyword ha quasi sempre più URL in comune; la riceve solo
+  // una pagina che non ne ha con nessuno spoke tenuto (diagnosi sui risultati veri nel Self-check del modulo 65).
   for (const page of dropped) {
-    const target = mergeTarget(page, kept);
+    const target = closestByUrls(page.urls, kept);
     if (target) target.merged.push(...page.own);
     else toPillar(page.own, "merged");
   }
