@@ -2,13 +2,15 @@
 // keyword con almeno 3 dei primi 10 risultati in comune, forma gli hub per argomento anche da una sola seed, raccoglie i
 // luoghi in un'unica pagina locale e lascia i concorrenti tra le non assegnate con il motivo COMPETITOR. In più: lo
 // stesso piano per 20 permutazioni, le domande sotto soglia nelle FAQ, le keyword senza risultati e le ancore.
-// Gate di T-6502 (AC-6502-2, D-60): una pagina sotto soglia confluisce nello spoke la cui keyword principale ha più URL
-// in comune con la sua, non nella pilastro che ne ha di più solo con l'unione degli URL delle sue keyword.
+// Gate di T-6502 (AC-6502-1, AC-6502-2, D-60): sui risultati di Google veri di «Noleggio magnetoterapia» la pilastro
+// non raccoglie più metà delle keyword; una pagina sotto soglia confluisce in uno spoke con URL in comune, mai nella
+// pilastro che ne ha di più con l'unione degli URL delle sue keyword.
 import { describe, expect, it } from "vitest";
+import { fixedClasses } from "@/lib/modules/plan-ai/classify";
 import { DEFAULT_RULES } from "@/lib/modules/strategy/rules";
 import { buildSerpPlan } from "@/lib/modules/strategy/serp-cluster";
 import type { KeywordClass, PlanPage, StrategyKeywordInput, StrategyPlan, StrategyRules } from "@/lib/modules/strategy/types";
-import { MAGNETOTHERAPY_SERP_FIXTURE, serpFixtureInputs } from "../helpers/strategy";
+import { fixtureInputs, MAGNETOTHERAPY_REAL_SERP_FIXTURE, MAGNETOTHERAPY_SERP_FIXTURE, serpFixtureInputs } from "../helpers/strategy";
 
 const fixture = serpFixtureInputs();
 
@@ -145,7 +147,7 @@ describe("buildSerpPlan", () => {
   });
 
   // covers: AC-6502-2
-  it("una pagina sotto soglia confluisce nello spoke per la keyword principale, non nella pilastro per l'unione degli URL", () => {
+  it("una pagina sotto soglia confluisce nello spoke con URL in comune, non nella pilastro che ne ha di più con l'unione degli URL", () => {
     const pillar = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"];
     const items = [
       serpKeyword("magnetoterapia", 1000, pillar),
@@ -165,5 +167,23 @@ describe("buildSerpPlan", () => {
     expect(hub.reason).toMatchObject({ code: "HUB_SERP", params: { merged: 0 } });
     expect(pageWith(plan, "magnetoterapia tendinite")).toMatchObject({ kind: "SPOKE", hubRef: hub.ref, main: "magnetoterapia ginocchio" });
     expect(plan.pages.some((page) => page.main === "magnetoterapia tendinite")).toBe(false);
+  });
+
+  // covers: AC-6502-1
+  it("sui risultati di Google veri di «Noleggio magnetoterapia» la pilastro ha meno della metà delle keyword e il piano almeno 4 spoke", () => {
+    const real = MAGNETOTHERAPY_REAL_SERP_FIXTURE;
+    expect(real.keywords).toHaveLength(175);
+    expect(real.keywords.flatMap((item) => item.urls).some((url) => url.includes("google.com/goto") || url.includes("srsltid="))).toBe(false);
+    const keywords = fixtureInputs(real);
+    const serps = new Map(real.keywords.map((item, index) => [keywords[index].canonical, item.urls]));
+    // Nessuna classe dall'AI: solo i riconoscimenti fissi, come un piano con la classificazione non riuscita.
+    const plan = buildSerpPlan({ keywords, serps, classes: fixedClasses(keywords, serps, "it"), language: "it", rules: DEFAULT_RULES });
+
+    const inPlan = plan.pages.reduce((sum, page) => sum + keywordsOf(page).length, 0);
+    const pillars = plan.pages.filter((page) => page.kind === "HUB");
+    expect(pillars.length).toBeGreaterThan(0);
+    for (const pillar of pillars) expect(keywordsOf(pillar).length).toBeLessThan(inPlan / 2);
+    expect(plan.pages.filter((page) => page.kind === "SPOKE").length).toBeGreaterThanOrEqual(4);
+    expect(inPlan + plan.unassigned.length).toBe(175);
   });
 });

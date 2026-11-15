@@ -2,7 +2,8 @@
 // in coda priority, salvati per 30 giorni in keyword_serps, con i tetti di spesa del registro (T-903). Fetch di
 // DataForSEO simulato, nessuna chiamata reale (D-30).
 // Gate di T-6504 (AC-6504-1, AC-6504-2, D-60 emendata): i task chiedono resolve_goto_urls, i link google.com/goto rimasti
-// non si salvano e le righe salvate con i link goto non valgono come risultati recenti.
+// non si salvano, gli URL perdono il parametro di tracciamento srsltid e le righe salvate con i link goto non valgono
+// come risultati recenti.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetEnvForTests } from "@/lib/env";
@@ -216,14 +217,15 @@ const gotoUrl = (code: string) => `https://google.com/goto?url=CAES${code}`;
 
 describe("link google.com/goto nei risultati (T-6504)", () => {
   // covers: AC-6504-1
-  it("chiede resolve_goto_urls e salva solo i 7 indirizzi diretti su 10 risultati organic", async () => {
+  it("chiede resolve_goto_urls e salva solo i 7 indirizzi diretti su 10 risultati organic, senza srsltid", async () => {
     const context = await rootAdminContext();
     const goto = new Set([2, 5, 9]);
     api.items.set(
       MAIN,
       Array.from({ length: 10 }, (_, index) => {
         const rank = index + 1;
-        const url = goto.has(rank) ? gotoUrl(`codice-${rank}`) : `https://sito-${rank}.example/noleggio`;
+        const direct = rank === 4 ? `https://sito-${rank}.example/noleggio?srsltid=AfmBOo${rank}` : `https://sito-${rank}.example/noleggio`;
+        const url = goto.has(rank) ? gotoUrl(`codice-${rank}`) : direct;
         return { type: "organic", rank_group: rank, rank_absolute: rank, url, domain: `sito-${rank}.example` };
       }).reverse()
     );
@@ -237,13 +239,13 @@ describe("link google.com/goto nei risultati (T-6504)", () => {
   });
 
   // covers: AC-6504-2
-  it("una riga salvata con i link goto non vale come risultato recente e la sua keyword si chiede di nuovo", async () => {
+  it("una riga salvata con i link goto non vale come risultato recente e la sua keyword si chiede di nuovo; srsltid sparisce anche dalle righe salvate", async () => {
     const context = await rootAdminContext();
     const twoDaysAgo = new Date(Date.now() - 2 * DAY_MS);
     await prisma.keywordSerp.createMany({
       data: [
         { language_code: "it", country_code: "IT", canonical_keyword: item(MAIN).canonical, urls: [gotoUrl("a1"), gotoUrl("a2")], fetched_at: twoDaysAgo },
-        { language_code: "it", country_code: "IT", canonical_keyword: item(COST).canonical, urls: ["https://b.example/costo"], fetched_at: twoDaysAgo },
+        { language_code: "it", country_code: "IT", canonical_keyword: item(COST).canonical, urls: ["https://b.example/costo?srsltid=AfmBOo1"], fetched_at: twoDaysAgo },
       ],
     });
 

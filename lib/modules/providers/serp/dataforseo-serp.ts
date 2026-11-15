@@ -47,6 +47,24 @@ export function isGoogleGotoUrl(value: string): boolean {
   return /^(www\.)?google\.[a-z]{2,3}(\.[a-z]{2})?$/i.test(url.hostname) && url.pathname === "/goto";
 }
 
+/** Parametri di tracciamento che Google aggiunge agli URL dei risultati e che cambiano da una ricerca all'altra. */
+const TRACKING_PARAMS = ["srsltid"];
+
+/**
+ * URL di un risultato senza i parametri di tracciamento di Google (srsltid), così la stessa pagina trovata da due
+ * keyword ha lo stesso URL (T-6504); un testo che non è un URL resta com'è.
+ */
+export function withoutTrackingParams(value: string): string {
+  if (!TRACKING_PARAMS.some((param) => value.includes(`${param}=`))) return value;
+  try {
+    const url = new URL(value);
+    for (const param of TRACKING_PARAMS) url.searchParams.delete(param);
+    return url.toString();
+  } catch {
+    return value;
+  }
+}
+
 /** Un task inviato: la forma canonica della keyword e l'id del task restituito da DataForSEO. */
 export type SerpTask = { canonical: string; taskId: string };
 
@@ -102,8 +120,8 @@ function errorOf(call: Call<unknown>): MetricsProviderError {
 }
 
 /**
- * URL dei soli risultati organic nell'ordine di rank_absolute, al massimo 10, senza i link goto di Google rimasti
- * (T-6504): dati esterni salvati come testo.
+ * URL dei soli risultati organic nell'ordine di rank_absolute, al massimo 10, senza i link goto di Google rimasti e
+ * senza i parametri di tracciamento (T-6504): dati esterni salvati come testo.
  */
 function organicUrls(items: SerpItem[]): string[] {
   return items
@@ -117,7 +135,7 @@ function organicUrls(items: SerpItem[]): string[] {
     )
     .sort((left, right) => (left.rank_absolute ?? Number.MAX_SAFE_INTEGER) - (right.rank_absolute ?? Number.MAX_SAFE_INTEGER))
     .slice(0, SERP_MAX_URLS)
-    .map((item) => item.url as string);
+    .map((item) => withoutTrackingParams(item.url as string));
 }
 
 /**

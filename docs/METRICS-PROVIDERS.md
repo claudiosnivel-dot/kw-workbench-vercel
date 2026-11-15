@@ -95,3 +95,5 @@ Link `google.com/goto` (T-6504, D-60 emendata, letti il 2026-11-15):
 - Ora i task chiedono `resolve_goto_urls: true`, i link goto rimasti non si salvano (`isGoogleGotoUrl`: host
   `google.<dominio>`, con o senza www, e percorso `/goto`) e una riga di `keyword_serps` con link goto non vale come
   risultato recente: la keyword si chiede di nuovo.
+- Gli URL si salvano e si leggono senza `srsltid`, il parametro di tracciamento che Google aggiunge ad alcuni risultati e
+  che cambia a ogni ricerca (`withoutTrackingParams`): nei risultati riletti il 2026-11-15 era in 145 URL su 1658.
