@@ -1,6 +1,6 @@
-// Gate di T-2502 (AC-2502-1…3): «Rigenera» copia le pagine in scrittura o pubblicate con il loro hub e riorganizza le
-// altre con le keyword tenute; oltre 20 strategie elimina la più vecchia, mai il piano; le versioni precedenti sono in
-// sola lettura.
+// Gate di T-2502 (AC-2502-1…3) e di T-6601 (AC-6601-1, AC-6601-2): «Rigenera» copia le pagine in scrittura o pubblicate
+// con il loro hub e riorganizza le altre con le keyword tenute; una pilastro ancora da scrivere si copia con la sola
+// keyword principale; oltre 20 strategie elimina la più vecchia, mai il piano; le versioni precedenti sono in sola lettura.
 import { randomUUID } from "node:crypto";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH as patchPage } from "@/app/api/projects/[id]/strategies/[strategyId]/pages/[pageId]/route";
@@ -76,11 +76,29 @@ function sendPagePatch(session: Session, projectId: string, strategyId: string, 
   });
 }
 
+function sendOperation(session: Session, projectId: string, strategyId: string, body: unknown) {
+  return callRoute(operate, {
+    method: "POST",
+    url: `/api/projects/${projectId}/strategies/${strategyId}/operations`,
+    cookie: session.cookie,
+    params: { id: projectId, strategyId },
+    body,
+  });
+}
+
 /** Pagine di una strategia con la keyword principale e tutte le forme canoniche. */
 async function pagesOf(strategyId: string) {
   const pages = await prisma.strategyPage.findMany({
     where: { strategy_id: strategyId },
-    select: { id: true, kind: true, hub_page_id: true, h1: true, status: true, keywords: { select: { canonical_keyword: true, role: true } } },
+    select: {
+      id: true,
+      kind: true,
+      hub_page_id: true,
+      h1: true,
+      h1_edited: true,
+      status: true,
+      keywords: { select: { canonical_keyword: true, role: true } },
+    },
   });
   return pages.map((page) => ({
     ...page,
@@ -90,6 +108,47 @@ async function pagesOf(strategyId: string) {
 }
 
 const extra = (keyword: string, volume: number): FixtureKeyword => ({ keyword, volume, score: 50, searchIntent: "mixed", keywordType: "generic" });
+
+const PILLAR_H1 = "Scarpe running: la guida completa";
+const MOVED = "scarpe running recensioni";
+
+/**
+ * Piano della fixture italiana (T-6601) con lo spoke «scarpe running offerte» in scrittura, l'H1 della sua pilastro
+ * riscritto a mano e «scarpe running recensioni» spostata con move_keywords dallo spoke «migliori scarpe running» alla
+ * pilastro; con pillarStatus WRITING anche la pilastro è iniziata.
+ */
+async function planWithMovedKeyword(owner: Session, pillarStatus: "TODO" | "WRITING") {
+  const { projectId } = await projectWithKeywords(owner);
+  const first = await postGenerate(owner, projectId, { mode: "AUTO" });
+  const strategyId = first.id!;
+  const before = await pagesOf(strategyId);
+  const spoke = before.find((page) => page.main === "scarpe running offerte")!;
+  const pillar = before.find((page) => page.id === spoke.hub_page_id)!;
+  const comparison = before.find((page) => page.main === "migliori scarpe running")!;
+  const moved = await prisma.strategyKeyword.findFirstOrThrow({ where: { strategy_id: strategyId, canonical_keyword: MOVED }, select: { id: true } });
+
+  const statuses = [
+    (await sendPagePatch(owner, projectId, strategyId, spoke.id, { version: 0, status: "WRITING" })).status,
+    (await sendPagePatch(owner, projectId, strategyId, pillar.id, { version: 1, h1: PILLAR_H1 })).status,
+    (
+      await sendOperation(owner, projectId, strategyId, {
+        version: 2,
+        operation: { type: "move_keywords", keywordIds: [moved.id], targetPageId: pillar.id },
+      })
+    ).status,
+  ];
+  if (pillarStatus === "WRITING") {
+    statuses.push((await sendPagePatch(owner, projectId, strategyId, pillar.id, { version: 3, status: "WRITING" })).status);
+  }
+  const edited = await pagesOf(strategyId);
+  return {
+    projectId,
+    statuses,
+    spoke: edited.find((page) => page.id === spoke.id)!,
+    pillar: edited.find((page) => page.id === pillar.id)!,
+    comparison: comparison.main,
+  };
+}
 
 describe("rigenerazione del piano", () => {
   // covers: AC-2502-1
@@ -173,5 +232,39 @@ describe("rigenerazione del piano", () => {
     expect(unchanged.version).toBe(0);
     expect(unchanged.pages).toEqual([{ h1: "H1 hub" }]);
     expect(unchanged.keywords.every((keyword) => keyword.page_id === version.pageIds.hub)).toBe(true);
+  });
+
+  // covers: AC-6601-1
+  it("la pilastro da scrivere tiene keyword principale e H1 e le keyword spostate a mano tornano al motore", async () => {
+    const owner = await createUserWithSession({ displayName: `t6601-${randomUUID().slice(0, 8)}` });
+    const { projectId, statuses, spoke, pillar, comparison } = await planWithMovedKeyword(owner, "TODO");
+    expect(pillar.canonicals).toContain(MOVED);
+
+    const second = await postGenerate(owner, projectId, { mode: "AUTO", regenerate: true });
+
+    expect([...statuses, second.status]).toEqual([200, 200, 200, 202]);
+    const after = await pagesOf(second.id!);
+    const hub = after.find((page) => page.main === pillar.main)!;
+    expect(hub).toMatchObject({ kind: "HUB", h1: PILLAR_H1, h1_edited: true, status: "TODO" });
+    expect(hub.canonicals).not.toContain(MOVED);
+    expect(after.find((page) => page.main === comparison)!.canonicals).toContain(MOVED);
+    const copied = after.find((page) => page.main === spoke.main)!;
+    expect(copied).toMatchObject({ kind: "SPOKE", hub_page_id: hub.id, h1: spoke.h1, status: "WRITING", canonicals: spoke.canonicals });
+    const placed = after.flatMap((page) => page.canonicals);
+    expect(new Set(placed).size).toBe(placed.length);
+    expect(after.filter((page) => page.main === pillar.main)).toHaveLength(1);
+  });
+
+  // covers: AC-6601-2
+  it("una pilastro già in scrittura si copia con tutte le sue keyword, anche quelle spostate a mano", async () => {
+    const owner = await createUserWithSession({ displayName: `t6601-w-${randomUUID().slice(0, 8)}` });
+    const { projectId, statuses, pillar } = await planWithMovedKeyword(owner, "WRITING");
+
+    const second = await postGenerate(owner, projectId, { mode: "AUTO", regenerate: true });
+
+    expect([...statuses, second.status]).toEqual([200, 200, 200, 200, 202]);
+    const hub = (await pagesOf(second.id!)).find((page) => page.main === pillar.main)!;
+    expect(hub).toMatchObject({ kind: "HUB", status: "WRITING", canonicals: pillar.canonicals });
+    expect(hub.canonicals).toContain(MOVED);
   });
 });

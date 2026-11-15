@@ -256,8 +256,10 @@ type LockedKeyword = Prisma.StrategyKeywordGetPayload<{ select: typeof COPY_KEYW
 type LockedPlan = { planId: string | null; pages: LockedPage[]; keywords: LockedKeyword[] };
 
 /**
- * Pagine bloccate del piano corrente (T-2502): le pagine in scrittura o pubblicate più gli hub con almeno uno spoke
- * bloccato (hub ancorati), con le loro keyword. Senza piano, nessuna pagina.
+ * Pagine bloccate del piano corrente (T-2502): le pagine in scrittura o pubblicate, con tutte le loro keyword, più gli
+ * hub con almeno uno spoke bloccato (hub ancorati). Un hub ancorato ancora da scrivere tiene la sola keyword principale:
+ * le altre sue keyword, anche quelle spostate a mano, tornano nel perimetro e il motore le ridistribuisce (T-6601).
+ * Senza piano, nessuna pagina.
  */
 async function loadLockedPages(projectId: string): Promise<LockedPlan> {
   const plan = await prisma.strategy.findFirst({
@@ -271,10 +273,15 @@ async function loadLockedPages(projectId: string): Promise<LockedPlan> {
     lockedIds.add(page.id);
     if (page.kind === "SPOKE" && page.hub_page_id) lockedIds.add(page.hub_page_id);
   }
+  const pages = plan.pages.filter((page) => lockedIds.has(page.id));
+  // Una pagina bloccata ancora da scrivere è solo un hub ancorato dai suoi spoke iniziati.
+  const openHubIds = new Set(pages.filter((page) => page.status === "TODO").map((page) => page.id));
   return {
     planId: plan.id,
-    pages: plan.pages.filter((page) => lockedIds.has(page.id)),
-    keywords: plan.keywords.filter((keyword) => keyword.page_id !== null && lockedIds.has(keyword.page_id)),
+    pages,
+    keywords: plan.keywords.filter(
+      (keyword) => keyword.page_id !== null && lockedIds.has(keyword.page_id) && (keyword.role === "MAIN" || !openHubIds.has(keyword.page_id))
+    ),
   };
 }
 
@@ -459,7 +466,8 @@ export type PlanBuilder = (input: {
  * Raggruppa il perimetro con il motore (T-1901, o quello indicato da planner, T-6303) e prepara la strategia (T-1903): perimetro, piano, titoli (T-1902) e
  * righe da salvare, con i controlli della generazione. Con regenerate (T-2502) la strategia nuova diventa il piano senza
  * perdere il lavoro iniziato: copia le pagine bloccate del piano corrente (in scrittura, pubblicate e i loro hub) con
- * titoli, tipo, stato e keyword e ricostruisce le altre dalle keyword tenute meno quelle già copiate.
+ * titoli, tipo, stato e keyword (un hub ancora da scrivere con la sola principale, T-6601) e ricostruisce le altre dalle
+ * keyword tenute meno quelle già copiate.
  */
 export async function draftStrategy(
   user: { id: string },
