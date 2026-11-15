@@ -932,6 +932,8 @@ model StrategyKeyword {
   is_question       Boolean
   is_local          Boolean
   source_keyword_id String?
+  /// Angolo da valutare (T-6702, D-62): keyword principale di una pagina sciolta dal motore per risultati di Google.
+  angle             Boolean             @default(false)
   strategy          Strategy            @relation(fields: [strategy_id], references: [id], onDelete: Cascade)
   page              StrategyPage?       @relation(fields: [page_id], references: [id], onDelete: SetNull)
 

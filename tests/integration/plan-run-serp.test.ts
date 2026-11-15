@@ -6,20 +6,24 @@
 // Google danno il motore di oggi con SERP_TOO_FEW, senza richieste al modello.
 // Gate di T-6501 (AC-6501-1, AC-6501-2, D-60): la classificazione manda al modello gruppi di al più 100 keyword, un
 // gruppo per volta, e aspetta un modello fino a 90 s, così una risposta che arriva dopo 60 s vale al primo tentativo.
+// Gate di T-6702 (AC-6702-3, AC-6702-4, D-62): la keyword principale di una pagina sciolta è salvata come angolo da
+// valutare e la GET della strategia la espone; con la classificazione dell'AI non riuscita nessun angolo.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { GET as readStrategyRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/route";
 import { POST as createStrategy } from "@/app/api/projects/[id]/strategies/route";
 import { resetEnvForTests } from "@/lib/env";
 import { schedulePlanRunContinuation } from "@/lib/modules/jobs/continuation";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import { advancePlanRun } from "@/lib/modules/plan-runs/run";
 import { resetDataForSeoLimiterForTests } from "@/lib/modules/providers/metrics/dataforseo";
+import type { StrategyView } from "@/lib/modules/strategy/types";
 import { prisma } from "@/lib/prisma";
 import { saveAiSettings, stubOpenRouterEnv } from "../helpers/ai-titles";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
 import { callRoute } from "../helpers/http";
-import { finishPlanRun } from "../helpers/plan-run";
+import { finishPlanRun, noVolumesResponse, VOLUMES_URL_PART } from "../helpers/plan-run";
 import { MAGNETOTHERAPY_SERP_FIXTURE } from "../helpers/strategy";
 
 vi.mock("@/lib/modules/jobs/continuation", async (importOriginal) => ({
@@ -82,6 +86,8 @@ const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit
     const items = urls.map((link, index) => ({ type: "organic", rank_absolute: index + 1, url: link }));
     return Response.json({ status_code: 20000, cost: 0, tasks: [{ id, status_code: 20000, cost: 0, result: [{ keyword, items }] }] });
   }
+  // Volumi delle keyword tenute senza volume (T-6102): DataForSEO non ne ha.
+  if (url.includes(VOLUMES_URL_PART)) return noVolumesResponse(init);
   return new Response("{}", { status: 404 });
 });
 
@@ -178,6 +184,38 @@ async function generatedProject(session: Session, count: number) {
   return project.id;
 }
 
+/**
+ * Keyword tenuta senza volume con 10 risultati di Google che nessun'altra keyword del progetto ha: forma una pagina sotto
+ * soglia che il motore scioglie.
+ */
+async function addLoneKeyword(projectId: string, text: string) {
+  api.generated.set(text, Array.from({ length: 10 }, (_, rank) => `https://www.ortopedia-${rank}.example/articolo-${rank}`));
+  const section = await prisma.subproject.findFirstOrThrow({ where: { project_id: projectId } });
+  await prisma.keywordCandidate.create({
+    data: {
+      project_id: projectId,
+      subproject_id: section.id,
+      keyword: text,
+      normalized_keyword: text,
+      canonical_keyword: canonical(text),
+      source: "seed",
+      source_query: FIXTURE.seeds[0],
+      score: 50,
+      avg_monthly_searches: null,
+    },
+  });
+}
+
+async function readPlanView(session: Session, projectId: string, strategyId: string): Promise<StrategyView> {
+  const response = await callRoute(readStrategyRoute, {
+    url: `/api/projects/${projectId}/strategies/${strategyId}`,
+    cookie: session.cookie,
+    params: { id: projectId, strategyId },
+  });
+  expect(response.status).toBe(200);
+  return ((await response.json()) as { data: StrategyView }).data;
+}
+
 const postPlan = (session: Session, projectId: string, body: unknown = { mode: "AUTO" }) =>
   callRoute(createStrategy, { method: "POST", url: `/api/projects/${projectId}/strategies`, cookie: session.cookie, params: { id: projectId }, body });
 
@@ -262,6 +300,49 @@ describe("lavoro di piano con i risultati di Google", () => {
 
     expect(strategy).toMatchObject({ grouping_source: "ENGINE", grouping_notice: "SERP_TOO_FEW" });
     expect(openRouterCalls()).toHaveLength(0);
+  });
+});
+
+describe("angoli da valutare (T-6702)", () => {
+  const LONE = "noleggio magnetoterapia spalla";
+
+  // covers: AC-6702-3
+  it("la keyword principale di una pagina sciolta è salvata con angle true e la GET della strategia la espone", async () => {
+    const admin = await createUserWithSession({ isRootAdmin: true });
+    const projectId = await fixtureProject(admin);
+    await addLoneKeyword(projectId, LONE);
+
+    const { strategy } = await planned(admin, projectId);
+
+    expect(strategy).toMatchObject({ grouping_source: "SERP", grouping_notice: null });
+    const row = await prisma.strategyKeyword.findFirstOrThrow({ where: { strategy_id: strategy.id, canonical_keyword: canonical(LONE) } });
+    expect(row).toMatchObject({ angle: true, role: "SECONDARY" });
+    expect(row.page_id).not.toBeNull();
+
+    const view = await readPlanView(admin, projectId, strategy.id);
+    const pages = view.hubs.flatMap((hub) => [hub.pillar, ...hub.spokes]);
+    expect(pages.flatMap((page) => page.keywords).find((keyword) => keyword.canonical === canonical(LONE))).toMatchObject({ angle: true });
+    const mains = pages.map((page) => page.keywords.find((keyword) => keyword.role === "MAIN")!);
+    expect(mains.length).toBeGreaterThan(1);
+    expect(mains.every((keyword) => keyword.angle === false)).toBe(true);
+    // Luoghi e concorrenti non sono mai angoli.
+    const angles = pages.flatMap((page) => page.keywords).filter((keyword) => keyword.angle).map((keyword) => keyword.canonical);
+    for (const excluded of [...CITIES, ...COMPETITORS]) expect(angles).not.toContain(excluded);
+    expect(view.unassigned.every((keyword) => keyword.angle === false)).toBe(true);
+  });
+
+  // covers: AC-6702-4
+  it("con OpenRouter che risponde 503 a ogni modello il piano è salvato senza angoli", async () => {
+    const admin = await createUserWithSession({ isRootAdmin: true });
+    const projectId = await fixtureProject(admin);
+    await addLoneKeyword(projectId, LONE);
+    api.aiDown = true;
+
+    const { strategy, pageOf } = await planned(admin, projectId);
+
+    expect(strategy).toMatchObject({ grouping_source: "SERP", grouping_notice: "AI_CLASSIFY_UNAVAILABLE" });
+    expect(pageOf(canonical(LONE))).not.toBeNull();
+    expect(await prisma.strategyKeyword.count({ where: { strategy_id: strategy.id, angle: true } })).toBe(0);
   });
 });
 

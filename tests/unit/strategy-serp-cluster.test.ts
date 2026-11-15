@@ -5,6 +5,9 @@
 // Gate di T-6502 (AC-6502-1, AC-6502-2, D-60): sui risultati di Google veri di «Noleggio magnetoterapia» la pilastro
 // non raccoglie più metà delle keyword; una pagina sotto soglia confluisce in uno spoke con URL in comune, mai nella
 // pilastro che ne ha di più con l'unione degli URL delle sue keyword.
+// Gate di T-6701 (AC-6701-1, AC-6701-2, D-62): la pagina locale riceve solo luoghi, mai una pagina sciolta. Gate di
+// T-6702 (AC-6702-1, AC-6702-2): la keyword principale di ogni pagina sciolta, tranne luoghi, concorrenti e domande nelle
+// FAQ, è un angolo da valutare.
 import { describe, expect, it } from "vitest";
 import { fixedClasses } from "@/lib/modules/plan-ai/classify";
 import { DEFAULT_RULES } from "@/lib/modules/strategy/rules";
@@ -28,7 +31,7 @@ const CITIES = MAGNETOTHERAPY_SERP_FIXTURE.keywords
 const COMPETITORS = MAGNETOTHERAPY_SERP_FIXTURE.keywords.filter((keyword) => keyword.class === "competitor").map((keyword) => keyword.keyword);
 
 /** Keyword di prova con i primi risultati indicati per nome di sito. */
-function serpKeyword(text: string, volume: number, sites: string[]) {
+function serpKeyword(text: string, volume: number | null, sites: string[], isQuestion = false) {
   const input: StrategyKeywordInput = {
     sourceId: null,
     keyword: text,
@@ -38,22 +41,74 @@ function serpKeyword(text: string, volume: number, sites: string[]) {
     scoreSource: "metrics",
     searchIntent: "commercial",
     keywordType: "generic",
-    isQuestion: false,
+    isQuestion,
     isLocal: false,
   };
   return { input, urls: sites.map((site) => `https://www.${site}.example/`) };
 }
 
-function planFor(items: ReturnType<typeof serpKeyword>[], options: { classes?: [string, KeywordClass][]; anchors?: Parameters<typeof buildSerpPlan>[0]["anchors"] } = {}) {
+type PlanOptions = { classes?: [string, KeywordClass][]; anchors?: Parameters<typeof buildSerpPlan>[0]["anchors"]; rules?: Partial<StrategyRules> };
+
+function planFor(items: ReturnType<typeof serpKeyword>[], options: PlanOptions = {}) {
   return buildSerpPlan({
     keywords: items.map((item) => item.input),
     serps: new Map(items.filter((item) => item.urls.length > 0).map((item) => [item.input.canonical, item.urls])),
     classes: new Map(options.classes ?? []),
     language: "it",
-    rules: DEFAULT_RULES,
+    rules: { ...DEFAULT_RULES, ...options.rules },
     anchors: options.anchors,
   });
 }
+
+/** Siti numerati: sites("r", 10) = r1…r10. */
+const sites = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index + 1}`);
+
+const PLACES = ["magnetoterapia roma", "magnetoterapia milano", "magnetoterapia torino"];
+
+/** Perimetro di T-6701: pilastro, uno spoke S di 2 keyword, tre luoghi con 10 URL ciascuno e K con i siti indicati. */
+function localPerimeter(kSites: string[]) {
+  return [
+    serpKeyword("magnetoterapia", 1000, sites("p", 10)),
+    serpKeyword("magnetoterapia ginocchio", 300, sites("s", 10)),
+    serpKeyword("magnetoterapia ginocchio prezzo", 50, ["s1", "s2", "s3", ...sites("g", 7)]),
+    serpKeyword(PLACES[0], 40, sites("r", 10)),
+    serpKeyword(PLACES[1], 30, sites("m", 10)),
+    serpKeyword(PLACES[2], 20, sites("t", 10)),
+    serpKeyword("magnetoterapia spalla", null, kSites),
+  ];
+}
+const placeClasses = (places: string[]): [string, KeywordClass][] => places.map((place) => [place, "place"]);
+
+const ANGLE_PLACES = ["scarpe running roma", "scarpe running milano", "scarpe running torino"];
+
+/**
+ * Perimetro di T-6702: pilastro e tre spoke che superano le soglie (donna, uomo, trail) con maxSpokesPerHub 2, una pagina
+ * A con volume 10, una pagina B senza volume e una domanda Q sotto questionSpokeVolume; con extra anche tre luoghi con
+ * poche ricerche (la pagina locale resta oltre il massimo di spoke) e un concorrente.
+ */
+function anglePerimeter(extra = false) {
+  return [
+    serpKeyword("scarpe running", 5000, sites("p", 10)),
+    serpKeyword("scarpe running donna", 900, sites("d", 10)),
+    serpKeyword("scarpe running donna leggere", 100, ["d1", "d2", "d3", ...sites("dl", 7)]),
+    serpKeyword("scarpe running uomo", 600, sites("u", 10)),
+    serpKeyword("scarpe running uomo leggere", 80, ["u1", "u2", "u3", ...sites("ul", 7)]),
+    serpKeyword("scarpe running trail", 300, ["d9", ...sites("t", 9)]),
+    serpKeyword("scarpe running trail fango", 60, ["t1", "t2", "t3", ...sites("tf", 7)]),
+    serpKeyword("scarpe running bambino", 10, ["u9", ...sites("a", 9)]),
+    serpKeyword("scarpe running pronatore", null, ["d8", ...sites("b", 9)]),
+    serpKeyword("come scegliere scarpe running", 50, ["d7", ...sites("q", 9)], true),
+    ...(extra
+      ? [
+          serpKeyword(ANGLE_PLACES[0], 30, ["u8", ...sites("r", 9)]),
+          serpKeyword(ANGLE_PLACES[1], 20, ["u7", ...sites("m", 9)]),
+          serpKeyword(ANGLE_PLACES[2], 10, ["u6", ...sites("n", 9)]),
+          serpKeyword("scarpe running decathlon", 400, sites("c", 10)),
+        ]
+      : []),
+  ];
+}
+const ANGLE_RULES: Partial<StrategyRules> = { maxSpokesPerHub: 2 };
 
 describe("buildSerpPlan", () => {
   // covers: AC-6302-1
@@ -185,5 +240,53 @@ describe("buildSerpPlan", () => {
     for (const pillar of pillars) expect(keywordsOf(pillar).length).toBeLessThan(inPlan / 2);
     expect(plan.pages.filter((page) => page.kind === "SPOKE").length).toBeGreaterThanOrEqual(4);
     expect(inPlan + plan.unassigned.length).toBe(175);
+  });
+
+  // covers: AC-6701-1
+  it("una pagina sciolta con più URL in comune con i luoghi confluisce nello spoke con cui ne ha uno, non nella pagina locale", () => {
+    const plan = planFor(localPerimeter(["r1", "m1", "t1", "s10", ...sites("k", 6)]), { classes: placeClasses(PLACES) });
+
+    expect(pageWith(plan, "magnetoterapia spalla")).toMatchObject({ kind: "SPOKE", main: "magnetoterapia ginocchio" });
+    const local = plan.pages.filter((page) => page.contentType === "local");
+    expect(local).toHaveLength(1);
+    expect(keywordsOf(local[0]).sort()).toEqual([...PLACES].sort());
+  });
+
+  // covers: AC-6701-2
+  it("una pagina sciolta senza URL in comune con gli spoke tenuti va nella pilastro, non nella pagina locale", () => {
+    const plan = planFor(localPerimeter(["r1", "m1", "t1", ...sites("k", 7)]), { classes: placeClasses(PLACES) });
+
+    expect(pageWith(plan, "magnetoterapia spalla")).toMatchObject({ kind: "HUB", main: "magnetoterapia" });
+    const local = plan.pages.filter((page) => page.contentType === "local");
+    expect(local).toHaveLength(1);
+    expect(keywordsOf(local[0]).sort()).toEqual([...PLACES].sort());
+  });
+
+  // covers: AC-6702-1
+  it("le keyword principali delle pagine sciolte, per soglia o oltre il massimo di spoke, sono angoli; le domande nelle FAQ no", () => {
+    const plan = planFor(anglePerimeter(), { rules: ANGLE_RULES });
+
+    expect(plan.pages.filter((page) => page.kind === "SPOKE").map((page) => page.main)).toEqual(["scarpe running donna", "scarpe running uomo"]);
+    expect(plan.angles).toEqual(["scarpe running trail", "scarpe running bambino", "scarpe running pronatore"]);
+    expect(plan.angles).not.toContain("come scegliere scarpe running");
+    expect(plan.angles).not.toContain("scarpe running trail fango");
+    expect(pageWith(plan, "come scegliere scarpe running")).toBeDefined();
+    for (const angle of plan.angles!) {
+      expect(plan.pages.filter((page) => page.secondary.includes(angle))).toHaveLength(1);
+      expect(plan.pages.some((page) => page.main === angle)).toBe(false);
+    }
+  });
+
+  // covers: AC-6702-2
+  it("luoghi e concorrenti non sono mai angoli, anche quando la pagina locale è oltre il massimo di spoke", () => {
+    const plan = planFor(anglePerimeter(true), {
+      rules: ANGLE_RULES,
+      classes: [...placeClasses(ANGLE_PLACES), ["scarpe running decathlon", "competitor"]],
+    });
+
+    expect(plan.pages.some((page) => page.contentType === "local")).toBe(false);
+    expect(plan.unassignedReasons?.["scarpe running decathlon"]).toBe("COMPETITOR");
+    expect(plan.angles).toEqual(["scarpe running trail", "scarpe running bambino", "scarpe running pronatore"]);
+    for (const excluded of [...ANGLE_PLACES, "scarpe running decathlon"]) expect(plan.angles).not.toContain(excluded);
   });
 });

@@ -46,7 +46,7 @@ const PAGE: StrategyPageView = {
   publishedUrl: null,
   aiProposal: null,
   keywords: [
-    { id: "k1", keyword: "scarpe running donna", canonical: "scarpe running donna", role: "MAIN", volume: 2100, score: 80, isQuestion: false },
+    { id: "k1", keyword: "scarpe running donna", canonical: "scarpe running donna", role: "MAIN", volume: 2100, score: 80, isQuestion: false, angle: false },
   ],
 };
 

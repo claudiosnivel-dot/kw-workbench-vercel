@@ -2,6 +2,7 @@
 // respinge le modifiche concorrenti e la PATCH di una pagina valida H1 e H2.
 // Gate di T-2503 (AC-2503-1, AC-2503-2): move_page porta uno spoke in fondo agli spoke di un altro hub e ricalcola gli
 // H2 non modificati dei due hub; un hub come pagina o uno spoke come destinazione sono 400 senza modifiche.
+// Gate di T-6702 (AC-6702-5, D-62): move_keywords toglie il segno di angolo da valutare alle keyword spostate.
 import { randomUUID } from "node:crypto";
 import { createTranslator } from "next-intl";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -63,7 +64,7 @@ async function pageKeywords(pageId: string) {
   });
 }
 
-const kw = (text: string, volume: number): PlanKeywordSpec => ({ text, volume });
+const kw = (text: string, volume: number | null): PlanKeywordSpec => ({ text, volume });
 
 describe("modifiche al piano", () => {
   // covers: AC-1904-1
@@ -244,6 +245,36 @@ describe("spostamento di uno spoke sotto un altro hub (T-2503)", () => {
     { key: "C", kind: "SPOKE", hub: "H2", keywords: [kw("calzini running lunghi", 120)] },
   ];
   const pageOf = (id: string) => prisma.strategyPage.findUniqueOrThrow({ where: { id }, select: { hub_page_id: true, position: true, h2: true } });
+
+  // covers: AC-6702-5
+  it("move_keywords sposta un angolo da valutare in un'altra pagina e gli toglie il segno; gli altri angoli restano", async () => {
+    const { strategyId, pageIds, keywordIds } = await createPlan([
+      { key: "H", kind: "HUB", keywords: [kw("scarpe running", 5000), kw("scarpe running pronatore", null)] },
+      { key: "A", kind: "SPOKE", hub: "H", keywords: [kw("scarpe running donna", 900), kw("scarpe running trail", 300)] },
+      { key: "B", kind: "SPOKE", hub: "H", keywords: [kw("scarpe running uomo", 700)] },
+    ]);
+    await prisma.strategyKeyword.updateMany({
+      where: { id: { in: [keywordIds["scarpe running trail"], keywordIds["scarpe running pronatore"]] } },
+      data: { angle: true },
+    });
+
+    const response = await runOperation(strategyId, 0, {
+      type: "move_keywords",
+      keywordIds: [keywordIds["scarpe running trail"]],
+      targetPageId: pageIds.B,
+    });
+
+    expect(response.status).toBe(200);
+    expect(await prisma.strategyKeyword.findUniqueOrThrow({ where: { id: keywordIds["scarpe running trail"] } })).toMatchObject({
+      page_id: pageIds.B,
+      role: "SECONDARY",
+      angle: false,
+    });
+    expect(await prisma.strategyKeyword.findUniqueOrThrow({ where: { id: keywordIds["scarpe running pronatore"] } })).toMatchObject({
+      page_id: pageIds.H,
+      angle: true,
+    });
+  });
 
   // covers: AC-2503-1
   it("move_page mette A dopo C sotto H2, ricalcola gli H2 dei due hub e aumenta la version di 1", async () => {

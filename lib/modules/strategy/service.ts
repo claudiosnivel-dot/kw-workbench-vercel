@@ -562,6 +562,8 @@ export async function draftStrategy(
   for (const { ref, secondary } of plan.anchored) {
     for (const canonical of secondary) placement.set(canonical, { pageId: idOf.get(ref)!, role: "SECONDARY" });
   }
+  // T-6702: gli angoli del motore; le keyword copiate dalle pagine bloccate restano con angle false (default).
+  const angles = new Set(plan.angles ?? []);
   const keywordRows: KeywordRow[] = [
     ...locked.keywords.map(({ page_id: pageId, ...keyword }) => ({
       ...keyword,
@@ -584,6 +586,7 @@ export async function draftStrategy(
       is_question: keyword.isQuestion,
       is_local: keyword.isLocal,
       source_keyword_id: keyword.sourceId,
+      angle: angles.has(keyword.canonical),
     })),
   ];
   if (locked.pages.length > 0) {
@@ -745,6 +748,7 @@ const RECORD_SELECT = {
       volume: true,
       score: true,
       is_question: true,
+      angle: true,
     },
   },
 } satisfies Prisma.StrategySelect;
@@ -784,6 +788,7 @@ function toEditorState(record: StrategyRecord): EditorState {
       volume: keyword.volume,
       score: keyword.score,
       isQuestion: keyword.is_question,
+      angle: keyword.angle,
     })),
   };
 }
@@ -982,6 +987,11 @@ async function persistState(tx: Prisma.TransactionClient, strategyId: string, be
   const newMains = changed.filter((keyword) => keyword.role === "MAIN").map((keyword) => keyword.id);
   if (newMains.length > 0) {
     await tx.strategyKeyword.updateMany({ where: { strategy_id: strategyId, id: { in: newMains } }, data: { role: "MAIN" } });
+  }
+  // Angoli decisi (T-6702): move_keywords toglie il segno alle keyword spostate.
+  const settled = after.keywords.filter((keyword) => previous.get(keyword.id)!.angle && !keyword.angle).map((keyword) => keyword.id);
+  if (settled.length > 0) {
+    await tx.strategyKeyword.updateMany({ where: { strategy_id: strategyId, id: { in: settled } }, data: { angle: false } });
   }
 
   const remaining = new Map(after.pages.map((page) => [page.id, page]));

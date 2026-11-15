@@ -296,9 +296,13 @@ async function prepareDraft(run: PlanRunRecord): Promise<{ draft: StrategyDraft;
     return { draft, grouping: { source: "ENGINE", notice: run.notice ?? "SERP_TOO_FEW" } };
   }
   const classes = savedClasses(run, inputs.keywords, inputs.serps, inputs.language);
-  const draft = await draftStrategy(user, run.project_id, request, request.name, (input) =>
-    buildSerpPlan({ ...input, serps: inputs.serps, classes })
-  );
+  // T-6702 (D-62): angoli solo con i luoghi riconosciuti dall'AI in ogni gruppo; con i soli riconoscimenti fissi le città
+  // diventerebbero angoli. Il cursore tiene il primo motivo dei gruppi: basta un gruppo non riuscito per non averne.
+  const aiClassified = classifyCursorOf(run.cursor)?.notice === null;
+  const draft = await draftStrategy(user, run.project_id, request, request.name, (input) => {
+    const plan = buildSerpPlan({ ...input, serps: inputs.serps, classes });
+    return aiClassified ? plan : { ...plan, angles: [] };
+  });
   return { draft, grouping: { source: "SERP", notice: run.notice ?? classifyCursorOf(run.cursor)?.notice ?? null } };
 }
 

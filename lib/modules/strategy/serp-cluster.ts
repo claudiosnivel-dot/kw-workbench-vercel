@@ -30,7 +30,8 @@ import type {
  * 5. Regole di oggi: una domanda sotto questionSpokeVolume (con questionsAs faq) va nelle FAQ della pagina con più URL in
  *    comune; uno spoke sotto minKeywordsPerSpoke e minSpokeVolume, e oltre maxSpokesPerHub quelli a priorità più bassa,
  *    confluisce nello spoke tenuto dello stesso hub con più URL in comune (T-6502); nella pilastro solo se nessuno spoke
- *    ne ha almeno uno.
+ *    ne ha almeno uno. La pagina locale non riceve né pagine sciolte né domande: ha solo le keyword place (T-6701). La
+ *    keyword principale di ogni pagina sciolta, tranne la pagina locale, è un angolo da valutare (T-6702).
  * 6. Keyword senza risultati: nella pagina con più parole di contenuto in comune con la keyword principale (almeno una),
  *    altrimenti tra le non assegnate.
  * 7. Ancore (T-2502): un hub ancorato non ha una pilastro nuova; le sue pagine sono spoke nuovi dell'ancora e le keyword
@@ -71,6 +72,8 @@ type Hub = {
   spokes: Draft[];
   /** Keyword per la pagina pilastro di un hub ancorato. */
   toAnchor: Entry[];
+  /** Keyword principali delle pagine sciolte al passo 5: angoli da valutare (T-6702). */
+  angles: Entry[];
 };
 
 type Context = { language: string; usesVolume: boolean };
@@ -187,6 +190,7 @@ function formHubs(pages: Draft[], anchors: PlanAnchor[], params: SerpPlanParams,
     pillar: null,
     spokes: [],
     toAnchor: [],
+    angles: [],
   });
   const hubs = [...anchors]
     .sort((a, b) => byCanonical(a.main, b.main))
@@ -236,12 +240,16 @@ function settleHub(hub: Hub, rules: StrategyRules, byPriority: (a: Draft, b: Dra
   const eligible = candidates.filter(accepted).sort(byPriority);
   const kept = eligible.slice(0, rules.maxSpokesPerHub);
   const dropped = [...candidates.filter((page) => !accepted(page)), ...eligible.slice(rules.maxSpokesPerHub)];
-  const targets = hub.pillar ? [hub.pillar, ...kept] : kept;
+  // T-6701: la pagina locale non è un bersaglio, perché con un centinaio di luoghi somma centinaia di URL e vince per
+  // dimensione (diagnosi sui risultati veri nel Self-check del modulo 67): riceve solo le keyword place del passo 4.
+  const receivers = kept.filter((page) => page.kind !== "local");
+  const targets = hub.pillar ? [hub.pillar, ...receivers] : receivers;
 
   // T-6502: la pilastro non è fra i bersagli, perché con più keyword ha quasi sempre più URL in comune; la riceve solo
   // una pagina che non ne ha con nessuno spoke tenuto (diagnosi sui risultati veri nel Self-check del modulo 65).
   for (const page of dropped) {
-    const target = closestByUrls(page.urls, kept);
+    if (page.kind !== "local") hub.angles.push(page.own[0]);
+    const target = closestByUrls(page.urls, receivers);
     if (target) target.merged.push(...page.own);
     else toPillar(page.own, "merged");
   }
@@ -381,10 +389,15 @@ export function buildSerpPlan(params: SerpPlanParams): StrategyPlan {
     spokes.forEach((page, index) => planPages.push(toPlanPage(page, `${hubRef}s${index + 1}`, hubRef)));
   });
 
+  // T-6702: un angolo è sempre una keyword secondaria del piano; quello di un hub ancorato chiuso resta fuori come la
+  // sua keyword.
+  const left = new Set(unassigned);
+  const angles = hubs.flatMap((hub) => hub.angles).filter((entry) => !left.has(entry));
   return {
     pages: planPages,
     unassigned: unassigned.sort(byRank).map((entry) => entry.input.canonical),
     anchored,
     unassignedReasons,
+    angles: angles.sort(byRank).map((entry) => entry.input.canonical),
   };
 }

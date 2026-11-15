@@ -11,6 +11,16 @@ import { callRoute } from "./http";
 
 const STEP_MS = 270_000;
 
+/** Indirizzo dei volumi di DataForSEO (T-6102), chiesti dal lavoro di piano per le keyword tenute senza volume. */
+export const VOLUMES_URL_PART = "/keywords_data/google_ads/search_volume/live";
+
+/** Risposta simulata di DataForSEO ai volumi: nessun volume per le keyword della richiesta. */
+export function noVolumesResponse(init?: RequestInit): Response {
+  const [task] = JSON.parse(String(init?.body)) as { keywords: string[] }[];
+  const result = task.keywords.map((keyword) => ({ keyword, spell: null, search_volume: null, competition_index: null }));
+  return Response.json({ status_code: 20000, cost: 0.09, tasks: [{ id: "volumes", status_code: 20000, cost: 0.09, result }] });
+}
+
 /** Esegue i passi del lavoro finché non è più attivo (al massimo 10) e restituisce la riga del lavoro. */
 export async function finishPlanRun(runId: string) {
   for (let step = 0; step < 10; step += 1) {
