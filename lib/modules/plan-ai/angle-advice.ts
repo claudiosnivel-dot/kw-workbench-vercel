@@ -6,7 +6,7 @@ import { cleanTitle, firstJsonObject } from "@/lib/ai/titles-response";
 import { logger } from "@/lib/observability/logger";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import { type ClassifyAi, planRequest } from "@/lib/modules/plan-ai/classify";
-import { ANGLE_ADVICE_ACTIONS, type AngleAdvice, type StrategyPageKind } from "@/lib/modules/strategy/types";
+import { ANGLE_ADVICE_ACTIONS, type AngleAdvice, type StrategyPageKind, usefulAlternative } from "@/lib/modules/strategy/types";
 
 /*
  * Consiglio dell'AI sugli angoli da valutare (T-6901, D-62). Il motore per risultati di Google sa che un angolo ha
@@ -38,13 +38,28 @@ export type AdviceAngle = { keyword: string; canonical: string; page: string };
 /** Lingua e paese del piano con i modelli della richiesta (gli stessi della classificazione, T-6301). */
 export type AdviceContext = { language: string; country: string | null; ai: ClassifyAi };
 
-const ANSWER_EXAMPLE =
-  '{"angolo uno": {"action": "page", "target": "keyword principale", "reason": "...", "alternative": "...", "h1": "..."}, "angolo due": {"action": "keep", "reason": "..."}}';
+/**
+ * Esempio della risposta nella lingua delle istruzioni: alternative con una frase, perché con «...» i modelli vi
+ * scrivevano un'altra action («page», «keep»; prova in produzione del 2026-11-16).
+ */
+function answerExample(texts: { angle: string; main: string; reason: string; alternative: string; h1: string }): string {
+  return JSON.stringify({
+    [`${texts.angle} 1`]: { action: "page", target: texts.main, reason: texts.reason, alternative: texts.alternative, h1: texts.h1 },
+    [`${texts.angle} 2`]: { action: "keep", reason: texts.reason },
+  });
+}
 
 /** Righe delle istruzioni nella lingua del piano, come la classificazione (T-6301): spagnolo con la variante del paese. */
 function instructionLines(language: string, country: string | null): string[] {
   const limits = { reason: MAX_ADVICE_REASON, alternative: MAX_ADVICE_ALTERNATIVE, h1: MAX_ADVICE_H1 };
   if (language === "it") {
+    const example = answerExample({
+      angle: "angolo",
+      main: "keyword principale",
+      reason: "il perché in una o due frasi",
+      alternative: "una frase che spiega un'altra scelta sensata",
+      h1: "il titolo della pagina nuova",
+    });
     return [
       "Aiuti un esperto di SEO a decidere cosa fare degli angoli di un piano di contenuti in italiano.",
       "Un angolo è una keyword che su Google ha risultati suoi ma che il piano tiene come H2 di un'altra pagina, perché da sola ha poche ricerche.",
@@ -54,12 +69,19 @@ function instructionLines(language: string, country: string | null): string[] {
       "- page: chi cerca l'angolo ha un bisogno diverso da quello delle pagine del piano, che merita una pagina propria come approfondimento di una pagina principale;",
       "- move: l'angolo tratta lo stesso argomento di un'altra pagina del piano e va spostato lì;",
       "- keep: l'angolo è un aspetto della pagina in cui si trova e resta lì come H2 o domanda delle FAQ.",
-      `Rispondi solo con un oggetto JSON che ha per chiavi gli angoli, scritti come li hai ricevuti, e per valori un oggetto con action (page, move o keep), target (per page la keyword principale della pagina principale sotto cui nasce la pagina nuova, per move quella della pagina di destinazione, scritte come le hai ricevute; per keep non serve), reason (il perché in una o due frasi, entro ${limits.reason} caratteri), alternative (facoltativa: un'altra scelta sensata, entro ${limits.alternative} caratteri) e, solo per page, h1 (il titolo della pagina nuova con la keyword dell'angolo, entro ${limits.h1} caratteri), per esempio ${ANSWER_EXAMPLE}, senza altro testo.`,
+      `Rispondi solo con un oggetto JSON che ha per chiavi gli angoli, scritti come li hai ricevuti, e per valori un oggetto con action (page, move o keep), target (per page la keyword principale della pagina principale sotto cui nasce la pagina nuova, per move quella della pagina di destinazione, scritte come le hai ricevute; per keep non serve), reason (il perché in una o due frasi, entro ${limits.reason} caratteri), alternative (facoltativa: una frase che spiega un'altra scelta sensata, per esempio «Se non serve una pagina, tienila come domanda delle FAQ», entro ${limits.alternative} caratteri, mai la sola action) e, solo per page, h1 (il titolo della pagina nuova con la keyword dell'angolo, entro ${limits.h1} caratteri), per esempio ${example}, senza altro testo.`,
       "Scrivi reason, alternative e h1 in italiano, senza markdown né HTML; non inventare marchi, numeri, prezzi o altri dati.",
     ];
   }
   if (language === "es") {
     const { variant } = spanishMarket(country);
+    const example = answerExample({
+      angle: "ángulo",
+      main: "palabra clave principal",
+      reason: "el porqué en una o dos frases",
+      alternative: "una frase que explica otra opción razonable",
+      h1: "el título de la página nueva",
+    });
     return [
       `Ayudas a un experto en SEO a decidir qué hacer con los ángulos de un plan de contenidos en ${variant}.`,
       "Un ángulo es una palabra clave que en Google tiene resultados propios, pero que el plan mantiene como H2 de otra página porque por sí sola tiene pocas búsquedas.",
@@ -69,11 +91,18 @@ function instructionLines(language: string, country: string | null): string[] {
       "- page: quien busca el ángulo tiene una necesidad distinta de la de las páginas del plan, que merece una página propia como profundización de una página pilar;",
       "- move: el ángulo trata el mismo tema que otra página del plan y debe moverse allí;",
       "- keep: el ángulo es un aspecto de la página en la que está y se queda allí como H2 o pregunta de las FAQ.",
-      `Responde solo con un objeto JSON cuyas claves son los ángulos, escritos como los recibiste, y cuyos valores son un objeto con action (page, move o keep), target (para page la palabra clave principal de la página pilar bajo la que nace la página nueva, para move la de la página de destino, escritas como las recibiste; para keep no hace falta), reason (el porqué en una o dos frases, como máximo ${limits.reason} caracteres), alternative (opcional: otra opción razonable, como máximo ${limits.alternative} caracteres) y, solo para page, h1 (el título de la página nueva con la palabra clave del ángulo, como máximo ${limits.h1} caracteres), por ejemplo ${ANSWER_EXAMPLE}, sin ningún otro texto.`,
+      `Responde solo con un objeto JSON cuyas claves son los ángulos, escritos como los recibiste, y cuyos valores son un objeto con action (page, move o keep), target (para page la palabra clave principal de la página pilar bajo la que nace la página nueva, para move la de la página de destino, escritas como las recibiste; para keep no hace falta), reason (el porqué en una o dos frases, como máximo ${limits.reason} caracteres), alternative (opcional: una frase que explica otra opción razonable, por ejemplo «Si no hace falta una página, consérvala como pregunta de las FAQ», como máximo ${limits.alternative} caracteres, nunca la acción sola) y, solo para page, h1 (el título de la página nueva con la palabra clave del ángulo, como máximo ${limits.h1} caracteres), por ejemplo ${example}, sin ningún otro texto.`,
       `Escribe reason, alternative y h1 en ${variant}, sin markdown ni HTML; no inventes marcas, números, precios ni otros datos.`,
     ];
   }
   const name = languageName(language);
+  const example = answerExample({
+    angle: "angle",
+    main: "main keyword",
+    reason: "why, in one or two sentences",
+    alternative: "a sentence that explains another sensible choice",
+    h1: "the title of the new page",
+  });
   return [
     `You help an SEO expert decide what to do with the angles of a content plan in ${name} (language code ${language}).`,
     "An angle is a keyword that has its own Google results but that the plan keeps as an H2 of another page, because on its own it has few searches.",
@@ -83,7 +112,7 @@ function instructionLines(language: string, country: string | null): string[] {
     "- page: the searcher has a need that differs from the plan's pages and deserves a page of its own as a supporting page of a main page;",
     "- move: the angle covers the same topic as another page of the plan and should be moved there;",
     "- keep: the angle is one aspect of the page it is in and stays there as an H2 or FAQ question.",
-    `Answer only with a JSON object whose keys are the angles, written as you received them, and whose values are an object with action (page, move or keep), target (for page the main keyword of the main page the new page goes under, for move that of the destination page, written as you received them; not needed for keep), reason (why, in one or two sentences, at most ${limits.reason} characters), alternative (optional: another sensible choice, at most ${limits.alternative} characters) and, for page only, h1 (the title of the new page with the angle keyword, at most ${limits.h1} characters), for example ${ANSWER_EXAMPLE}, with no other text.`,
+    `Answer only with a JSON object whose keys are the angles, written as you received them, and whose values are an object with action (page, move or keep), target (for page the main keyword of the main page the new page goes under, for move that of the destination page, written as you received them; not needed for keep), reason (why, in one or two sentences, at most ${limits.reason} characters), alternative (optional: a sentence that explains another sensible choice, for example “If a page is not needed, keep it as an FAQ question”, at most ${limits.alternative} characters, never the action alone) and, for page only, h1 (the title of the new page with the angle keyword, at most ${limits.h1} characters), for example ${example}, with no other text.`,
     `Write reason, alternative and h1 in ${name}, with no markdown or HTML; do not invent brands, numbers, prices or other data.`,
   ];
 }
@@ -126,7 +155,8 @@ const cleanText = (value: string | null | undefined) => (value ? cleanTitle(valu
 /**
  * Consiglio di una voce della risposta, o null se la voce non vale: forma diversa, motivo vuoto, testi oltre i limiti,
  * target che non è un hub del piano per page o che non è un'altra pagina del piano per move. Per keep il target è la
- * pagina dell'angolo; l'H1 conta solo per page.
+ * pagina dell'angolo; l'H1 conta solo per page. Un'alternativa entro il limite ma di meno di tre parole (il solo codice
+ * d'azione) vale null e la voce resta (AC-6901-4).
  */
 function adviceOf(value: unknown, angle: AdviceAngle, pages: Map<string, AdvicePage>, language: string): AngleAdvice | null {
   const parsed = entrySchema.safeParse(value);
@@ -137,8 +167,20 @@ function adviceOf(value: unknown, angle: AdviceAngle, pages: Map<string, AdviceP
   const h1 = action === "page" ? cleanText(parsed.data.h1) : null;
   if (!reason || longerThan(reason, MAX_ADVICE_REASON)) return null;
   if ((alternative && longerThan(alternative, MAX_ADVICE_ALTERNATIVE)) || (h1 && longerThan(h1, MAX_ADVICE_H1))) return null;
+  return adviceWithTarget({ action, reason, alternative: usefulAlternative(alternative), h1 }, parsed.data.target, angle, pages, language);
+}
+
+/** Target della voce: per keep la pagina dell'angolo, per page un hub del piano, per move un'altra pagina del piano. */
+function adviceWithTarget(
+  entry: Omit<AngleAdvice, "target">,
+  rawTarget: string | null | undefined,
+  angle: AdviceAngle,
+  pages: Map<string, AdvicePage>,
+  language: string
+): AngleAdvice | null {
+  const { action, reason, alternative, h1 } = entry;
   if (action === "keep") return { action, target: angle.page, reason, alternative, h1: null };
-  const target = parsed.data.target ? pages.get(canonicalizeKeyword(parsed.data.target, language)) : undefined;
+  const target = rawTarget ? pages.get(canonicalizeKeyword(rawTarget, language)) : undefined;
   if (!target) return null;
   if (action === "page" && target.kind !== "HUB") return null;
   if (action === "move" && target.canonical === angle.page) return null;
