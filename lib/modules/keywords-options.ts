@@ -11,6 +11,9 @@ export type KeywordChip = (typeof KEYWORD_CHIPS)[number];
 export const KEYWORD_SORTS = ["promising", "searches", "az"] as const;
 export type KeywordSort = (typeof KEYWORD_SORTS)[number];
 
+/** Righe al massimo in un'azione tieni/scarta per id (T-2401): lo usa anche lo scarto delle città del piano (T-7001). */
+export const MAX_BULK_IDS = 1000;
+
 /**
  * Parametri di query che filtrano la vista (chip, cerca, pannello Filtri e i filtri dei vecchi indirizzi /results): con
  * almeno uno attivo compaiono «Tieni queste N» e «Scarta queste N» e, nella finestra Esporta, «Solo quelle che vedi ora».

@@ -764,6 +764,7 @@ const RECORD_SELECT = {
       is_question: true,
       angle: true,
       angle_advice: true,
+      source_keyword_id: true,
     },
   },
 } satisfies Prisma.StrategySelect;
@@ -859,16 +860,22 @@ function toAiProposal(value: Prisma.JsonValue): StrategyAiProposal | null {
 
 /**
  * Vista della strategia: hub nell'ordine di lavoro (position), principale per prima e secondarie per priorità. Le
- * proposte dell'AI si mostrano solo nel piano corrente (T-3602): nelle versioni precedenti restano nelle righe.
+ * proposte dell'AI si mostrano solo nel piano corrente (T-3602): nelle versioni precedenti restano nelle righe. Ogni
+ * keyword porta la riga dei risultati da cui viene, per lo scarto delle città della pagina locale (T-7001).
  */
 function toView(record: StrategyRecord, current: boolean): StrategyView {
   const state = toEditorState(record);
   const advice = angleAdviceViews(record, state);
+  const sources = new Map(record.keywords.map((keyword) => [keyword.id, keyword.source_keyword_id]));
   const keywordsOf = (pageId: string | null) =>
     state.keywords
       .filter((keyword) => keyword.pageId === pageId)
       .sort((a, b) => Number(b.role === "MAIN") - Number(a.role === "MAIN") || compareKeywordPriority(a, b))
-      .map((keyword) => ({ ...keywordView(keyword), angleAdvice: advice.get(keyword.id) ?? null }));
+      .map((keyword) => ({
+        ...keywordView(keyword),
+        angleAdvice: advice.get(keyword.id) ?? null,
+        sourceKeywordId: sources.get(keyword.id) ?? null,
+      }));
   const proposals = new Map(record.pages.map((page) => [page.id, current ? toAiProposal(page.ai_proposal) : null]));
   const pages = [...state.pages].sort((a, b) => a.position - b.position);
   const pageView = (page: EditorState["pages"][number]): StrategyPageView => ({

@@ -2,6 +2,7 @@
 // workspace, limiti di D-35 (20 strategie, 5000 keyword) e validazione delle regole.
 // impacted-by: T-6201 (la POST avvia il lavoro di piano e risponde 202 con runId, AC-1903-1, AC-1903-4 e AC-1903-5
 // emendati: la strategia nasce quando il lavoro arriva in fondo; i 409 e il 400 restano risposte della POST)
+// T-7001 (D-62): la GET dà a ogni keyword del piano la riga dei risultati da cui viene, che lo scarto delle città usa.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as listStrategies } from "@/app/api/projects/[id]/strategies/route";
 import {
@@ -9,7 +10,9 @@ import {
   GET as getStrategy,
   PATCH as renameStrategy,
 } from "@/app/api/projects/[id]/strategies/[strategyId]/route";
+import { PATCH as patchResults } from "@/app/api/projects/[id]/results/route";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import type { StrategyView } from "@/lib/modules/strategy/types";
 import { prisma } from "@/lib/prisma";
 import { createUserWithSession } from "../helpers/auth";
 import { resetDatabase } from "../helpers/db";
@@ -259,5 +262,44 @@ describe("API delle strategie", () => {
     expect(pageOf("cama de hospital barata")).toBe(pageOf("cama de hospital precio"));
     expect(pages.find((page) => page.id === pageOf("cuanto cuesta una cama de hospital"))?.h1).toBe("¿Cuánto cuesta una cama de hospital?");
     expect(pages.find((page) => page.kind === "HUB")?.h1).toMatch(/^Cama de hospital: /);
+  });
+});
+
+describe("riga dei risultati delle keyword del piano (T-7001)", () => {
+  it("la GET dà a ogni keyword la sua riga dei risultati; scartata con la PATCH dei risultati, esce dal piano rigenerato", async () => {
+    const { member, projectId, sectionId } = await teamProject();
+    await insertKeywords(projectId, sectionId, [
+      { keyword: "noleggio magnetoterapia", avg_monthly_searches: 1600 },
+      { keyword: "noleggio magnetoterapia roma", avg_monthly_searches: 90 },
+      { keyword: "noleggio magnetoterapia milano", avg_monthly_searches: 70 },
+    ]);
+    await prisma.seed.create({ data: { project_id: projectId, subproject_id: sectionId, keyword: "noleggio magnetoterapia" } });
+    const { strategyId } = await generate(member, projectId, { mode: "AUTO" });
+
+    const read = await callRoute(getStrategy, {
+      url: `/api/projects/${projectId}/strategies/${strategyId}`,
+      cookie: member.cookie,
+      params: { id: projectId, strategyId: strategyId! },
+    });
+    const { data: view } = (await read.json()) as { data: StrategyView };
+    const keywords = [...view.hubs.flatMap((hub) => [hub.pillar, ...hub.spokes]).flatMap((page) => page.keywords), ...view.unassigned];
+    const candidates = await prisma.keywordCandidate.findMany({ where: { project_id: projectId }, select: { id: true, canonical_keyword: true } });
+    expect(Object.fromEntries(keywords.map((keyword) => [keyword.canonical, keyword.sourceKeywordId]))).toEqual(
+      Object.fromEntries(candidates.map((candidate) => [candidate.canonical_keyword, candidate.id]))
+    );
+
+    const roma = keywords.find((keyword) => keyword.canonical === "noleggio magnetoterapia roma")!;
+    const discard = await callRoute(patchResults, {
+      method: "PATCH",
+      url: `/api/projects/${projectId}/results`,
+      cookie: member.cookie,
+      params: { id: projectId },
+      body: { action: "discard", ids: [roma.sourceKeywordId] },
+    });
+    expect(discard.status).toBe(200);
+    expect(await strategyKeywords(strategyId!)).toContain("noleggio magnetoterapia roma");
+
+    const regenerated = await generate(member, projectId, { mode: "AUTO" });
+    expect(await strategyKeywords(regenerated.strategyId!)).toEqual(["noleggio magnetoterapia", "noleggio magnetoterapia milano"]);
   });
 });

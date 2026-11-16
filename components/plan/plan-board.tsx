@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { type DragEvent, type ReactNode, useId, useMemo, useState } from "react";
 import { EntityMenu } from "@/components/entity-menu";
+import { LocalTipsNotice } from "@/components/plan/local-tips";
 import { PagePanel } from "@/components/plan/page-panel";
 import { AngleCount, anglesOf, PlanAnglesNotice } from "@/components/plan/plan-angles";
 import { type PickGroup, PickDialog, type PickOption } from "@/components/plan/pick-dialog";
@@ -13,6 +14,7 @@ import { StatusMenu } from "@/components/plan/status-menu";
 import { useMenuButton } from "@/lib/client/use-menu-button";
 import { type PlanGroup, type PlanView, planHref } from "@/lib/modules/next-step";
 import {
+  hasLocalTips,
   STRATEGY_PAGE_STATUSES,
   type StrategyKeywordView,
   type StrategyPageStatus,
@@ -70,7 +72,9 @@ function planModel(strategy: StrategyView) {
     .filter((hub) => hub.pillar.kind === "HUB")
     .map((hub) => ({ id: hub.pillar.id, label: `${number.get(hub.pillar.id)}. ${hub.pillar.h1}` }));
   const angles = pages.flatMap(anglesOf);
-  return { hubs, pages, number, hubOf, counts, destinations, pillars, angles };
+  // Pagine locali con molte città (T-7001): un avviso ciascuna, nell'ordine di lavoro.
+  const localTips = pages.filter(hasLocalTips);
+  return { hubs, pages, number, hubOf, counts, destinations, pillars, angles, localTips };
 }
 
 type PlanModel = ReturnType<typeof planModel>;
@@ -327,6 +331,14 @@ function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitles
       {!readOnly && (
         <>
           <PlanAnglesNotice angles={model.angles} onShow={() => firstAngle && open(firstAngle.id)} />
+          {model.localTips.map((page) => (
+            <LocalTipsNotice
+              key={page.id}
+              page={page}
+              number={model.localTips.length > 1 ? model.number.get(page.id)! : null}
+              onShow={() => open(page.id)}
+            />
+          ))}
           <PlanProgress counts={model.counts} />
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <Segmented

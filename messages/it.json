@@ -1917,6 +1917,32 @@
         "alternative": "In alternativa: {text}"
       }
     },
+    "localTips": {
+      "noticeTitle": "La pagina locale ha {count, number} città",
+      "noticeTitleNumbered": "La pagina locale n. {number} ha {count, number} città",
+      "noticeHint": "Scegli tu quelle che contano.",
+      "show": "Consigli",
+      "boxTitle": "{count, number} città in una sola pagina",
+      "boxText": "Una pagina sola non si posiziona per tutte. Solo tu sai dove lavori: scegli le città che contano.",
+      "oneArea": "Lavori in una zona sola?",
+      "oneAreaText": "Scarta le città dove non arrivi: escono dal piano alla prossima «Rigenera».",
+      "choose": "Scegli le città da scartare",
+      "nationwide": "Lavori in tutta Italia?",
+      "nationwideText": "Fai una pagina per le città dove hai sedi o clienti, 3–5 per iniziare. Le altre restano qui.",
+      "topPlaces": "Città più cercate",
+      "morePlaces": "{count, plural, one {e un'altra città} other {e altre # città}}",
+      "newPage": "Fanne una pagina",
+      "newPageLabel": "Fanne una pagina per «{keyword}»",
+      "dialogTitle": "Scegli le città da scartare",
+      "dialogText": "{count, plural, one {# keyword} other {# keyword}} della pagina, dalle più cercate. Quelle scelte diventano scartate nelle keyword del progetto.",
+      "discarded": "scartata",
+      "notSelectable": "non si può scartare da qui",
+      "tooMany": "Puoi scartarne al massimo {max, number} alla volta.",
+      "discard": "Scarta le città scelte",
+      "done": "Le città scartate escono dal piano alla prossima «Rigenera».",
+      "cancel": "Annulla",
+      "close": "Chiudi"
+    },
     "groupBy": "Raggruppa per",
     "group": {
       "hub": "Gruppo",

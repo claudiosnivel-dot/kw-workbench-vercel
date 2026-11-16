@@ -1917,6 +1917,32 @@
         "alternative": "Alternatively: {text}"
       }
     },
+    "localTips": {
+      "noticeTitle": "The local page has {count, number} cities",
+      "noticeTitleNumbered": "Local page no. {number} has {count, number} cities",
+      "noticeHint": "Pick the ones that matter.",
+      "show": "Tips",
+      "boxTitle": "{count, number} cities on a single page",
+      "boxText": "One page can't rank for all of them. Only you know where you work: pick the cities that matter.",
+      "oneArea": "Do you work in one area only?",
+      "oneAreaText": "Discard the cities you don't reach: they leave the plan at the next “Regenerate”.",
+      "choose": "Pick the cities to discard",
+      "nationwide": "Do you work nationwide?",
+      "nationwideText": "Make a page for the cities where you have offices or customers, 3–5 to start with. The others stay here.",
+      "topPlaces": "Most searched cities",
+      "morePlaces": "{count, plural, one {and one more city} other {and # more cities}}",
+      "newPage": "Make a page",
+      "newPageLabel": "Make a page for “{keyword}”",
+      "dialogTitle": "Pick the cities to discard",
+      "dialogText": "{count, plural, one {# keyword} other {# keywords}} on the page, most searched first. The ones you pick become discarded in the project's keywords.",
+      "discarded": "discarded",
+      "notSelectable": "can't be discarded from here",
+      "tooMany": "You can discard at most {max, number} at a time.",
+      "discard": "Discard the chosen cities",
+      "done": "The discarded cities leave the plan at the next “Regenerate”.",
+      "cancel": "Cancel",
+      "close": "Close"
+    },
     "groupBy": "Group by",
     "group": {
       "hub": "Group",

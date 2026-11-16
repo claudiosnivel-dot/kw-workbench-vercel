@@ -8,8 +8,9 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlanBoard } from "@/components/plan/plan-board";
-import type { StrategyKeywordView, StrategyPageView, StrategyView } from "@/lib/modules/strategy/types";
+import type { StrategyView } from "@/lib/modules/strategy/types";
 import { renderWithIntl } from "./intl";
+import { json, keyword, page, strategy } from "./plan-view";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }));
 
@@ -21,36 +22,6 @@ vi.mock("next/navigation", () => ({
 
 const fetchMock = vi.fn<typeof fetch>();
 const OPERATIONS_URL = "/api/projects/p1/strategies/s1/operations";
-
-const keyword = (id: string, text: string, volume: number | null, extra: Partial<StrategyKeywordView> = {}): StrategyKeywordView => ({
-  id,
-  keyword: text,
-  canonical: text,
-  role: "SECONDARY",
-  volume,
-  score: 50,
-  isQuestion: false,
-  angle: false,
-  ...extra,
-});
-
-const page = (id: string, extra: Partial<StrategyPageView> & Pick<StrategyPageView, "h1" | "keywords">): StrategyPageView => ({
-  id,
-  kind: "SPOKE",
-  hubPageId: "P",
-  h2: [],
-  h1Edited: false,
-  h2Edited: false,
-  contentType: "guide",
-  priority: 0,
-  position: 0,
-  reason: { code: "SPOKE_SERP", params: { count: 1, faq: 0 } },
-  status: "TODO",
-  statusChangedAt: null,
-  publishedUrl: null,
-  aiProposal: null,
-  ...extra,
-});
 
 const PILLAR = page("P", {
   kind: "HUB",
@@ -70,35 +41,11 @@ const SPOKE = page("S", {
   keywords: [keyword("k4", "noleggio magnetoterapia costo", 390, { role: "MAIN" })],
 });
 
-function strategy(hubs: StrategyView["hubs"], version = 4): StrategyView {
-  return {
-    id: "s1",
-    name: "Piano",
-    mode: "AUTO",
-    language: "it",
-    createdAt: "2026-11-15T10:00:00.000Z",
-    consideredCount: 4,
-    assignedCount: 4,
-    unassignedCount: 0,
-    truncated: false,
-    version,
-    pageCount: hubs.reduce((sum, hub) => sum + 1 + hub.spokes.length, 0),
-    projectId: "p1",
-    settings: {},
-    groupingSource: "SERP",
-    groupingNotice: null,
-    hubs,
-    unassigned: [],
-  };
-}
-
 const PLAN = strategy([{ pillar: PILLAR, spokes: [SPOKE] }]);
 
 const board = (plan: StrategyView, view: "board" | "list" | null = "board") => (
   <PlanBoard projectId="p1" strategy={plan} group="hub" view={view} readOnly={false} aiTitlesAvailable={false} openPageId={null} />
 );
-
-const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 function openPillar() {
   fireEvent.click(screen.getByRole("button", { name: PILLAR.h1 }));

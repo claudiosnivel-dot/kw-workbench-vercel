@@ -1526,6 +1526,51 @@ input[type="checkbox"] {
   line-height: 1.45;
 }
 
+/* Consigli sulla pagina locale (T-7001, T-7002): avviso in testa al piano, riquadro nel pannello e dialogo delle città. */
+.plan-local-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--surface-border-strong);
+  background: var(--surface);
+  padding: 0.75rem 0.9rem;
+}
+
+.plan-local-box {
+  display: grid;
+  gap: 0.6rem;
+  border-radius: 14px;
+  border: 1px solid var(--surface-border-strong);
+  background: var(--surface);
+  padding: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.plan-local-tip {
+  display: grid;
+  gap: 0.45rem;
+  border-top: 1px solid var(--surface-border);
+  padding-top: 0.6rem;
+}
+
+.plan-place-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  overflow-wrap: anywhere;
+}
+
+/* Bersagli da almeno 44 px anche al tocco, con i testi che vanno a capo invece di uscire dalla finestra. */
+.plan-local-box button,
+.plan-local-dialog button {
+  min-height: 2.75rem;
+  white-space: normal;
+}
+
 /* Proposta dei titoli con l'AI nel pannello della pagina (T-3603). */
 .plan-ai-card {
   border-radius: 16px;
