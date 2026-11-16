@@ -2,8 +2,9 @@
 // per ogni angolo da valutare e lo salva con l'angolo (una riga di ai_requests per tentativo, funzione plan); la GET della
 // strategia lo espone con l'id della pagina target. Con l'AI che non risponde il lavoro si chiude a completed con la
 // strategia salvata, gli angoli senza consiglio e grouping_notice invariato. DataForSEO e OpenRouter sono simulati con i
-// dati della fixture it-magnetoterapia-serp.json: nessuna chiamata reale. In più: lotti di 40 angoli, la funzione AI
-// spenta, e un lavoro con la strategia salvata che non diventa mai failed.
+// dati della fixture it-magnetoterapia-serp.json: nessuna chiamata reale. Gate di AC-6901-5 (2026-11-16): un'alternativa
+// salvata che è solo un codice d'azione si legge come null. In più: lotti di 40 angoli, la funzione AI spenta, e un
+// lavoro con la strategia salvata che non diventa mai failed.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as readStrategyRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/route";
@@ -268,6 +269,22 @@ describe("consiglio dell'AI sugli angoli nel lavoro di piano (T-6901)", () => {
       ["plan", "unavailable"],
       ["plan", "unavailable"],
     ]);
+  });
+
+  // covers: AC-6901-5
+  it("un consiglio salvato con il solo codice d'azione come alternativa si legge con alternative null", async () => {
+    const admin = await createUserWithSession({ isRootAdmin: true });
+    const projectId = await projectWithAngles(admin, [SHOULDER]);
+    const run = await finishPlanRun(await startPlan(admin, projectId));
+    const [row] = await angleRows(run.strategy_id!);
+    const saved = row.angle_advice as { action: string; target: string; reason: string };
+    // Come i consigli salvati in produzione prima della correzione del 2026-11-16.
+    await prisma.strategyKeyword.update({ where: { id: row.id }, data: { angle_advice: { ...saved, alternative: "keep" } } });
+
+    const view = await readPlanView(admin, projectId, run.strategy_id!);
+
+    const keyword = view.hubs.flatMap((hub) => [hub.pillar, ...hub.spokes]).flatMap((page) => page.keywords).find((item) => item.id === row.id)!;
+    expect(keyword.angleAdvice).toMatchObject({ action: saved.action, reason: saved.reason, alternative: null });
   });
 
   it("45 angoli vanno al modello in due lotti da 40 e 5 e tutti ricevono il consiglio", async () => {

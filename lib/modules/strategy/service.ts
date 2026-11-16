@@ -45,6 +45,7 @@ import {
   type StrategyRules,
   type StrategySummaryView,
   type StrategyView,
+  usefulAlternative,
 } from "@/lib/modules/strategy/types";
 import { prisma } from "@/lib/prisma";
 import { lockWorkspaceRow } from "@/lib/workspaces/lock";
@@ -813,13 +814,16 @@ function keywordView({ pageId: _pageId, ...keyword }: EditorState["keywords"][nu
 
 const isAdviceText = (value: unknown): value is string | null => value === null || typeof value === "string";
 
-/** Consiglio salvato in angle_advice (T-6901) → AngleAdvice; un valore senza la forma attesa non si mostra. */
+/**
+ * Consiglio salvato in angle_advice (T-6901) → AngleAdvice; un valore senza la forma attesa non si mostra, e
+ * un'alternativa che non è una frase (il solo codice d'azione dei consigli salvati prima del 2026-11-16) vale null.
+ */
 function toAngleAdvice(value: Prisma.JsonValue): AngleAdvice | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const { action, target, reason, alternative = null, h1 = null } = value;
   if (!(ANGLE_ADVICE_ACTIONS as readonly unknown[]).includes(action) || typeof target !== "string" || typeof reason !== "string") return null;
   if (!isAdviceText(alternative) || !isAdviceText(h1)) return null;
-  return { action: action as AngleAdvice["action"], target, reason, alternative, h1 };
+  return { action: action as AngleAdvice["action"], target, reason, alternative: usefulAlternative(alternative), h1 };
 }
 
 /**

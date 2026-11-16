@@ -427,7 +427,10 @@ utenti»); senza la chiave di OpenRouter restano spenti.
   scartano le voci di angoli non inviati, le azioni sconosciute, i target che non sono pagine del piano (per `page` un
   hub, per `move` una pagina diversa da quella dell'angolo) e i testi vuoti o oltre i limiti; i testi si ripuliscono
   da tag e caratteri di controllo come i titoli. Testo non JSON o nessuna voce valida: `invalid_response` e il modello
-  successivo.
+  successivo. L'alternativa è una frase: con l'esempio «...» i modelli vi scrivevano un'altra action (prova in
+  produzione del 2026-11-16, «In alternativa: page» nel pannello), quindi le istruzioni la chiedono come frase con un
+  esempio nella lingua del piano, e un'alternativa di meno di tre parole vale null, anche nella GET per i consigli già
+  salvati.
 - **Salvataggio**: `strategy_keywords.angle_advice` (migrazione additiva `0058_strategy_keyword_angle_advice`) con
   action, target come forma canonica della keyword principale, reason, alternative e h1; la GET della strategia espone
   `angleAdvice` con l'id della pagina che ha quella keyword principale (null se non c'è più). `create_page`,

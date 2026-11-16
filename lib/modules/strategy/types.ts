@@ -145,6 +145,18 @@ export type AngleAdviceAction = (typeof ANGLE_ADVICE_ACTIONS)[number];
  */
 export type AngleAdvice = { action: AngleAdviceAction; target: string; reason: string; alternative: string | null; h1: string | null };
 
+/** Parole che un'alternativa del consiglio deve avere per essere una frase e non il solo codice d'azione. */
+const MIN_ALTERNATIVE_WORDS = 3;
+
+/**
+ * Alternativa del consiglio da mostrare (T-6901, emendato il 2026-11-16): null se è vuota o ha meno di tre parole, come
+ * il solo «page», «move» o «keep» che i modelli scrivevano in produzione al posto di una frase.
+ */
+export function usefulAlternative(text: string | null | undefined): string | null {
+  const words = text?.match(/[\p{L}\p{N}]+/gu) ?? [];
+  return words.length >= MIN_ALTERNATIVE_WORDS ? text!.trim() : null;
+}
+
 /** Consiglio nella vista della strategia (T-6901): pageId è la pagina con quella keyword principale, null se non c'è più. */
 export type StrategyAngleAdvice = Omit<AngleAdvice, "target"> & { pageId: string | null };
 

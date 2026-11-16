@@ -1,7 +1,8 @@
-// Gate di T-6901 (AC-6901-1, D-62): la risposta del modello al consiglio sugli angoli vale solo per gli angoli inviati,
-// con un'azione nota e un target che è una pagina del piano (l'hub per page, un'altra pagina per move); le altre voci si
-// scartano. In più la richiesta: istruzioni nella lingua del piano, pagine e angoli come dati JSON, al massimo 40 angoli
-// per lotto, e i limiti dei testi.
+// Gate di T-6901 (AC-6901-1, AC-6901-4, D-62): la risposta del modello al consiglio sugli angoli vale solo per gli
+// angoli inviati, con un'azione nota e un target che è una pagina del piano (l'hub per page, un'altra pagina per move);
+// le altre voci si scartano, e un'alternativa che non è una frase (il solo codice d'azione) vale null. In più la
+// richiesta: istruzioni nella lingua del piano, pagine e angoli come dati JSON, al massimo 40 angoli per lotto, e i
+// limiti dei testi.
 import { describe, expect, it } from "vitest";
 import { AiTitlesError } from "@/lib/ai/errors";
 import {
@@ -85,6 +86,28 @@ describe("parseAngleAdvice", () => {
       expect(parse({ ...valid, [SHOULDER.keyword]: entry }).has(SHOULDER.canonical)).toBe(false);
     }
     expect(parse({ ...valid, [SHOULDER.keyword]: { action: "keep", reason: "x".repeat(MAX_ADVICE_REASON) } }).has(SHOULDER.canonical)).toBe(true);
+  });
+
+  // covers: AC-6901-4
+  it("un'alternativa che è solo un codice d'azione vale null, una frase resta (prova in produzione del 2026-11-16)", () => {
+    const advice = parse({
+      [SHOULDER.keyword]: { action: "keep", reason: "È un aspetto della guida.", alternative: "page" },
+      [VAT.keyword]: { action: "keep", reason: "Resta qui.", alternative: "Tienila come domanda delle FAQ." },
+    });
+
+    expect(advice.get(SHOULDER.canonical)).toEqual({ action: "keep", target: PILLAR.canonical, reason: "È un aspetto della guida.", alternative: null, h1: null });
+    expect(advice.get(VAT.canonical)).toMatchObject({ alternative: "Tienila come domanda delle FAQ." });
+    for (const code of ["Keep.", "«move»", " page "]) {
+      expect(parse({ [SHOULDER.keyword]: { action: "keep", reason: "Resta.", alternative: code } }).get(SHOULDER.canonical)?.alternative).toBeNull();
+    }
+  });
+
+  it("le istruzioni chiedono un'alternativa scritta come frase, con un esempio nella lingua del piano", () => {
+    const system = (language: string) => buildAngleAdviceRequest(ANGLES, PAGES, { language, country: "IT", model: "m" }).messages[0].content;
+    expect(system("it")).toContain("una frase che spiega un'altra scelta sensata");
+    expect(system("it")).not.toContain('"alternative": "..."');
+    expect(system("es")).toContain("una frase que explica otra opción razonable");
+    expect(system("en")).toContain("a sentence that explains another sensible choice");
   });
 
   it("una risposta senza JSON o senza voci valide è AI_INVALID_RESPONSE, così si prova il modello successivo", () => {
