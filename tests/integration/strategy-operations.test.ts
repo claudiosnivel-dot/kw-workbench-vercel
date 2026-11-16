@@ -6,6 +6,8 @@
 // Gate di T-6801 (AC-6801-1…3): create_page fa nascere uno spoke o una pagina principale dalle keyword indicate,
 // keep_angle toglie il segno senza spostare, un hub che non è un hub è 400 e una versione precedente 409.
 // T-6901 (D-62): create_page, move_keywords e keep_angle tolgono il consiglio dell'AI insieme al segno.
+// Gate di T-7002 (AC-7002-2, D-62): create_page con una città della pagina locale fa nascere uno spoke local dell'hub
+// con l'H1 dei titoli locali, e la pagina locale perde la città.
 import { randomUUID } from "node:crypto";
 import { createTranslator } from "next-intl";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -462,5 +464,38 @@ describe("pagine nuove e angoli tenuti (T-6801)", () => {
 
     expect([foreign.status, tooMany.status]).toEqual([404, 400]);
     expect(await prisma.strategyPage.count({ where: { strategy_id: first.strategyId } })).toBe(1);
+  });
+});
+
+describe("pagina locale per una città (T-7002)", () => {
+  // covers: AC-7002-2
+  it("create_page con una città della pagina locale, l'hub H e il tipo local fa nascere uno spoke local di H con l'H1 locale", async () => {
+    const { strategyId, pageIds, keywordIds } = await createPlan([
+      { key: "H", kind: "HUB", keywords: [kw("noleggio magnetoterapia", 1600)] },
+      {
+        key: "L",
+        kind: "SPOKE",
+        hub: "H",
+        keywords: [kw("noleggio magnetoterapia vicino a me", 320), kw("noleggio magnetoterapia roma", 90), kw("noleggio magnetoterapia milano", 70)],
+      },
+    ]);
+    await prisma.strategyPage.update({ where: { id: pageIds.L }, data: { content_type: "local" } });
+    const roma = keywordIds["noleggio magnetoterapia roma"];
+
+    const response = await runOperation(strategyId, 0, { type: "create_page", keywordIds: [roma], hubPageId: pageIds.H, contentType: "local" });
+
+    expect(response.status).toBe(200);
+    const { data } = (await response.json()) as { data: { pageId: string } };
+    const created = await prisma.strategyPage.findUniqueOrThrow({
+      where: { id: data.pageId },
+      select: { kind: true, hub_page_id: true, content_type: true, h1: true, h1_edited: true },
+    });
+    expect(created).toMatchObject({ kind: "SPOKE", hub_page_id: pageIds.H, content_type: "local", h1_edited: false });
+    expect(created.h1).toMatch(/^Noleggio magnetoterapia roma: (indirizzi e consigli in zona|dove andare e cosa sapere)$/);
+    expect(await pageKeywords(data.pageId)).toEqual([{ canonical_keyword: "noleggio magnetoterapia roma", role: "MAIN" }]);
+    expect((await pageKeywords(pageIds.L)).map((row) => row.canonical_keyword)).toEqual([
+      "noleggio magnetoterapia vicino a me",
+      "noleggio magnetoterapia milano",
+    ]);
   });
 });

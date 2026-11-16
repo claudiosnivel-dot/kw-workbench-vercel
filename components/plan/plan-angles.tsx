@@ -6,6 +6,7 @@ import { DialogActions } from "@/components/dialog-actions";
 import { ModalDialog } from "@/components/modal-dialog";
 import type { PickOption } from "@/components/plan/pick-dialog";
 import type { PlanRequestResult } from "@/components/plan/plan-requests";
+import { useCheckedSet } from "@/lib/client/use-checked-set";
 import {
   STRATEGY_CONTENT_TYPES,
   type StrategyAngleAdvice,
@@ -168,17 +169,9 @@ export function NewPageDialog({ keyword, others, hubs, defaultHubId, proposedH1,
   const [hubPageId, setHubPageId] = useState(hubs.some((hub) => hub.id === defaultHubId) ? defaultHubId : "");
   const [h1, setH1] = useState(proposedH1 ?? "");
   const [contentType, setContentType] = useState<StrategyContentType>("guide");
-  const [brought, setBrought] = useState<Set<string>>(new Set());
+  const { checked: brought, toggle } = useCheckedSet();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const toggle = (id: string, checked: boolean) =>
-    setBrought((current) => {
-      const next = new Set(current);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
 
   const create = async () => {
     setPending(true);

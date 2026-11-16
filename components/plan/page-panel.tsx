@@ -8,12 +8,14 @@ import { EntityMenu, type EntityMenuItem } from "@/components/entity-menu";
 import { ModalDialog } from "@/components/modal-dialog";
 import { AiTitles } from "@/components/plan/ai-titles";
 import { ArticleEntry, type PanelArticle } from "@/components/plan/article-entry";
+import { DiscardPlacesDialog, LocalTipsBox, localPageOperation } from "@/components/plan/local-tips";
 import { type AngleAdviceDisplay, AngleBox, type CreatePageOperation, NewPageDialog } from "@/components/plan/plan-angles";
 import { type PickGroup, PickDialog, type PickOption } from "@/components/plan/pick-dialog";
 import { type PlanRequestResult, usePlanRequests } from "@/components/plan/plan-requests";
 import { StatusLabel } from "@/components/plan/status-menu";
 import { useModalFocus } from "@/lib/client/use-modal-focus";
 import {
+  hasLocalTips,
   STRATEGY_CONTENT_TYPES,
   STRATEGY_PAGE_STATUSES,
   type StrategyAiProposal,
@@ -50,6 +52,7 @@ type Field = "h1" | "h2";
 type Dialog =
   | { kind: "move"; keyword: StrategyKeywordView }
   | { kind: "newPage"; keyword: StrategyKeywordView }
+  | { kind: "places" }
   | { kind: "merge" }
   | { kind: "delete" }
   | null;
@@ -77,8 +80,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * STRATEGY_CONFLICT il piano si ricarica con il suo messaggio. Sotto i campi, se disponibile, la proposta dei titoli con
  * l'AI (T-3603) e l'articolo della pagina (T-4401). Gli angoli da valutare (T-6802) hanno un riquadro con «Fanne una
  * pagina», «Sposta in…» e «Tienila come H2»; il consiglio dell'AI (T-6902) è per intero nel primo riquadro che ne ha uno
- * e in una riga breve negli altri, e prepara il foglio «Nuova pagina» e «Sposta in…» senza farli partire. Esc chiude e
- * il focus torna alla scheda. Tutti i testi del piano sono resi come testo (CWE-79).
+ * e in una riga breve negli altri, e prepara il foglio «Nuova pagina» e «Sposta in…» senza farli partire. Una pagina
+ * locale con molte città ha in testa i consigli (T-7001) con «Scegli le città da scartare» e «Fanne una pagina» accanto
+ * alle città (T-7002). Esc chiude e il focus torna alla scheda. Tutti i testi del piano sono resi come testo (CWE-79).
  */
 export function PagePanel({
   page,
@@ -210,6 +214,10 @@ export function PagePanel({
     return result;
   };
 
+  // Consigli sulle città (T-7001) solo nel piano corrente; «Fanne una pagina» fa una pagina locale (T-7002).
+  const localTips = !readOnly && hasLocalTips(page);
+  const createPlacePage = (keyword: StrategyKeywordView) => createPage(localPageOperation(page, keyword));
+
   // Nelle versioni precedenti gli angoli restano nell'elenco delle keyword, senza azioni.
   const angles = readOnly ? [] : page.keywords.filter((keyword) => keyword.angle && !kept.has(keyword.id));
   const listed = page.keywords.filter((keyword) => !angles.includes(keyword));
@@ -308,6 +316,14 @@ export function PagePanel({
               <p className="text-sm text-amber-200" role="alert">
                 {message}
               </p>
+            )}
+            {localTips && (
+              <LocalTipsBox
+                page={page}
+                pending={requests.pending}
+                onChoose={() => setDialog({ kind: "places" })}
+                onNewPage={(keyword) => void createPlacePage(keyword)}
+              />
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block" htmlFor={statusId}>
@@ -485,6 +501,7 @@ export function PagePanel({
             onClose={() => setDialog(null)}
           />
         )}
+        {dialog?.kind === "places" && <DiscardPlacesDialog page={page} onNewPage={createPlacePage} onClose={() => setDialog(null)} />}
         {dialog?.kind === "merge" && (
           <PickDialog
             labels={{ title: tPick("mergeTitle"), field: tPick("mergeLabel"), cancel: tPick("cancel"), confirm: tPick("merge") }}

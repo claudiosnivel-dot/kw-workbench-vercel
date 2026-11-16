@@ -132,6 +132,11 @@ export type StrategyKeywordView = {
   angle: boolean;
   /** Consiglio dell'AI sull'angolo (T-6901), solo per le keyword con angle true; null o assente senza consiglio. */
   angleAdvice?: StrategyAngleAdvice | null;
+  /**
+   * Riga dei risultati da cui viene la keyword (source_keyword_id): lo scarto delle città della pagina locale la usa
+   * (T-7001); null o assente se la strategia non la conosce.
+   */
+  sourceKeywordId?: string | null;
 };
 
 /** Azioni che l'AI può consigliare per un angolo (T-6901): farne una pagina, spostarlo, tenerlo come H2. */
@@ -188,6 +193,13 @@ export type StrategyPageView = {
   aiProposal: StrategyAiProposal | null;
   keywords: StrategyKeywordView[];
 };
+
+/** Keyword di una pagina locale da cui il piano mostra i consigli sulle città (T-7001, D-62). */
+export const LOCAL_TIPS_MIN_PLACES = 15;
+
+/** Pagina con content type local e almeno LOCAL_TIPS_MIN_PLACES keyword: avviso, consigli e scelta delle città (T-7001). */
+export const hasLocalTips = (page: Pick<StrategyPageView, "contentType" | "keywords">): boolean =>
+  page.contentType === "local" && page.keywords.length >= LOCAL_TIPS_MIN_PLACES;
 
 /** Hub nell'ordine di lavoro: la pagina pilastro e i suoi spoke in ordine di position. */
 export type StrategyHubView = { pillar: StrategyPageView; spokes: StrategyPageView[] };

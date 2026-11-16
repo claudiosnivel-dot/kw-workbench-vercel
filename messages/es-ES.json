@@ -1917,6 +1917,32 @@
         "alternative": "Como alternativa: {text}"
       }
     },
+    "localTips": {
+      "noticeTitle": "La página local tiene {count, number} ciudades",
+      "noticeTitleNumbered": "La página local n.º {number} tiene {count, number} ciudades",
+      "noticeHint": "Elige tú las que importan.",
+      "show": "Consejos",
+      "boxTitle": "{count, number} ciudades en una sola página",
+      "boxText": "Una sola página no se posiciona para todas. Solo tú sabes dónde trabajas: elige las ciudades que importan.",
+      "oneArea": "¿Trabajas en una sola zona?",
+      "oneAreaText": "Descarta las ciudades a las que no llegas: salen del plan en el próximo «Regenerar».",
+      "choose": "Elegir las ciudades que descartar",
+      "nationwide": "¿Trabajas en todo el país?",
+      "nationwideText": "Crea una página para las ciudades donde tienes sedes o clientes, 3–5 para empezar. Las demás se quedan aquí.",
+      "topPlaces": "Ciudades más buscadas",
+      "morePlaces": "{count, plural, one {y otra ciudad} other {y # ciudades más}}",
+      "newPage": "Crear una página",
+      "newPageLabel": "Crear una página para «{keyword}»",
+      "dialogTitle": "Elige las ciudades que descartar",
+      "dialogText": "{count, plural, one {# palabra clave} other {# palabras clave}} de la página, de las más buscadas a las menos. Las que elijas pasan a descartadas en las palabras clave del proyecto.",
+      "discarded": "descartada",
+      "notSelectable": "no se puede descartar desde aquí",
+      "tooMany": "Puedes descartar como máximo {max, number} a la vez.",
+      "discard": "Descartar las ciudades elegidas",
+      "done": "Las ciudades descartadas salen del plan en el próximo «Regenerar».",
+      "cancel": "Cancelar",
+      "close": "Cerrar"
+    },
     "groupBy": "Agrupar por",
     "group": {
       "hub": "Grupo",

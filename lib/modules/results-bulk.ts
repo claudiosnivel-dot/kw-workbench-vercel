@@ -1,11 +1,10 @@
 import { z } from "zod";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { ValidationError } from "@/lib/http/errors";
+import { MAX_BULK_IDS } from "@/lib/modules/keywords-options";
 import { type ActivityTarget, touchProjectActivity } from "@/lib/modules/project-activity";
 import { buildResultsWhere, parseResultsFilters } from "@/lib/modules/results-filters";
 import { prisma } from "@/lib/prisma";
-
-export const MAX_BULK_IDS = 1000;
 
 /**
  * Azioni in whitelist, un solo gesto tieni/scarta (T-2401): ciascuna scrive un solo campo noto (CWE-915). Tenere scrive
