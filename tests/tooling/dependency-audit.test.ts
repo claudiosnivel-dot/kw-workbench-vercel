@@ -173,6 +173,30 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
     expect(readJson<AllowlistEntry[]>("tests/tooling/audit-allowlist.json")).toEqual([]);
   });
 
+  // covers: AC-7801-1
+  it("next è almeno alla 16.4.5, una sola nell'albero, ed eslint-config-next ha la stessa versione anche in package.json", () => {
+    const ls = run("npm ls next eslint-config-next --json");
+    expect(ls.status, ls.stderr).toBe(0);
+    const tree = JSON.parse(ls.stdout) as LsNode;
+    const next = tree.dependencies?.next?.version ?? "";
+    const pkg = readJson<{ dependencies: Record<string, string>; devDependencies: Record<string, string> }>("package.json");
+
+    expect(next).toMatch(/^16\.4\.\d+$/);
+    expect(atLeast(next, "16.4.5")).toBe(true);
+    expect(new Set(versionsOf("next", tree))).toEqual(new Set([next]));
+    expect(tree.dependencies?.["eslint-config-next"]?.version).toBe(next);
+    expect(pkg.dependencies.next).toBe(next);
+    expect(pkg.devDependencies["eslint-config-next"]).toBe(next);
+  }, COMMAND_TIMEOUT_MS);
+
+  // covers: AC-7801-2
+  it("npm audit non riporta next né l'avviso GHSA-mfr8-8qww-v76h", () => {
+    const report = JSON.parse(audit.stdout) as AuditOutput;
+
+    expect(Object.keys(report.vulnerabilities)).not.toContain("next");
+    expect(audit.stdout).not.toContain("GHSA-mfr8-8qww-v76h");
+  });
+
   // covers: AC-406-4
   it("xlsx non è nell'albero delle dipendenze e nessun sorgente lo importa", () => {
     const ls = run("npm ls xlsx --json");
