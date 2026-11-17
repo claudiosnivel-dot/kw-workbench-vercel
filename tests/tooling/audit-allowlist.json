@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "ghsa": "GHSA-fc5q-39xc-vjpf",
+    "package": "picomatch",
+    "reason": "ReDoS con extglob ripetuti a un solo ramo, versioni fino alla 4.0.7; nessuna versione corretta pubblicata il 2026-11-17. picomatch arriva solo da strumenti di build e sviluppo (@sentry/nextjs con @rollup/plugin-commonjs al build, vite, vitest, knip, eslint-config-next, @parcel/watcher di next-intl) e nessun sorgente dell'app lo importa (D-67, T-7901).",
+    "closedBy": ["T-8002"]
+  }
+]
