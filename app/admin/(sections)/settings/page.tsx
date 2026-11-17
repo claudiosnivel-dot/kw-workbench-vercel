@@ -1,3 +1,4 @@
+import { AdminAgentKeyCard } from "@/components/admin-agent-key-card";
 import { AiTitlesSettingsCard } from "@/components/admin-ai-titles-card";
 import { AdminLaunchCard } from "@/components/admin-launch-card";
 import { BrandingSettingsCard } from "@/components/branding-settings-card";
@@ -5,22 +6,25 @@ import { GoogleSheetsApiConfigCard } from "@/components/google-sheets-api-config
 import { requireRootAdminPageUser } from "@/lib/admin/page-access";
 import { getAiTitlesView } from "@/lib/ai/settings";
 import { getLaunchChecklist, getLaunchState } from "@/lib/billing/launch";
+import { getPublicAppUrl } from "@/lib/env";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import { getGoogleSheetsApiConfigSnapshot } from "@/lib/integrations/google-sheets-config";
+import { agentKeyStatus } from "@/lib/modules/agent/keys";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Impostazioni dell'amministrazione (T-3301), del solo root admin: branding, API di Google Sheets, lancio commerciale e
- * titoli con l'AI (T-3501).
+ * titoli con l'AI (T-3501), chiave di Claude Code (T-7102).
  */
 export default async function AdminSettingsPage() {
-  await requireRootAdminPageUser();
-  const [branding, googleSheetsConfig, launch, aiTitles] = await Promise.all([
+  const user = await requireRootAdminPageUser();
+  const [branding, googleSheetsConfig, launch, aiTitles, agentKey] = await Promise.all([
     getBrandingSnapshot(),
     getGoogleSheetsApiConfigSnapshot(),
     getLaunchState(),
     getAiTitlesView(),
+    agentKeyStatus(user),
   ]);
 
   return (
@@ -36,6 +40,7 @@ export default async function AdminSettingsPage() {
       <GoogleSheetsApiConfigCard initial={googleSheetsConfig} />
       <AdminLaunchCard launch={{ ...launch, checklist: getLaunchChecklist() }} />
       <AiTitlesSettingsCard initial={aiTitles} />
+      <AdminAgentKeyCard initial={agentKey} origin={getPublicAppUrl()} />
     </>
   );
 }
