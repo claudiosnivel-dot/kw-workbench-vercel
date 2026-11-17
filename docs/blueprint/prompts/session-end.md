@@ -43,7 +43,9 @@ macrotask, senza chiedere conferme.
      58 landing-story · 59 landing-motion · 60 dep-advisories ·
      61 plan-data · 62 plan-runs · 63 serp-clusters · 64 ai-reliability ·
      65 plan-tuning · 66 pillar-reopen · 67 plan-angles ·
-     68 angle-actions · 69 angle-ai · 70 local-tips
+     68 angle-actions · 69 angle-ai · 70 local-tips · 71 mcp-keys ·
+     72 mcp-server · 73 mcp-research · 74 mcp-serp · 75 mcp-plan ·
+     76 mcp-articles
    • Baseline (.trueline/baseline.json, .trueline/hygiene-baseline.json) e budget
      consumato (MAX_RETRIES_PER_FINDING = 2, GLOBAL_WALL_CLOCK_MS = 242401).
    • Per ogni task chiuso: id, output prodotto, esito del gate (quale oracolo/test
