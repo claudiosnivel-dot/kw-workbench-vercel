@@ -51,3 +51,10 @@
 - Modulo dalla risposta dell'utente del 2026-11-17 («Eccezione ora (Consigliata)») sull'avviso di picomatch visto dopo il merge del 71 (D-67).
 - Esposizione: dal lockfile, picomatch è solo sotto @sentry/nextjs (@rollup/plugin-commonjs, al build), eslint-config-next, knip, next-intl (@parcel/watcher, in sviluppo), vite e vitest; valutata solo dall'albero delle dipendenze e dal testo dell'avviso.
 - Ordine: si costruisce subito, prima del 72, per scelta dell'utente; dipende da 04, 60 e 78, già chiusi.
+- Note di costruzione (2026-11-17, scelte dell'agente da confermare):
+  - voce dell'allowlist con il motivo in italiano, che rimanda a D-67 e T-7901, e `closedBy` ["T-8002"];
+  - in `tests/tooling/dependency-audit.test.ts` tre aiuti in comune: `unlistedHighAdvisories` (usato da AC-401-2 e
+    AC-7901-1), `blueprintTaskIds` (righe `- id: T-…` dei moduli) e `importersOf` (usato anche dal caso di xlsx, che
+    ora riconosce anche `import("…")`);
+  - AC-401-2 e AC-7901-1 visti rossi prima della voce dell'allowlist, poi verdi; AC-6001-2 emendato verde anche con
+    l'allowlist vuota; AC-7901-2 è un'assenza.
