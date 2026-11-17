@@ -53,7 +53,10 @@ ridiscute il design.
    64 ai-reliability (38, 39, 41) · 65 plan-tuning (41, 42, 63, 64) ·
    66 pillar-reopen (25, 63, 65) · 67 plan-angles (19, 25, 63, 65) ·
    68 angle-actions (19, 25, 67) · 69 angle-ai (38, 39, 63, 64, 65, 67, 68) ·
-   70 local-tips (24, 25, 67, 68)
+   70 local-tips (24, 25, 67, 68) · 71 mcp-keys (17, 33, 35) ·
+   72 mcp-server (04, 15, 17, 71) · 73 mcp-research (09, 12, 23, 24, 37, 71, 72) ·
+   74 mcp-serp (61, 65, 72) · 75 mcp-plan (19, 25, 62, 63, 68, 69, 73) ·
+   76 mcp-articles (40, 42, 43, 44, 52, 73, 75)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15
