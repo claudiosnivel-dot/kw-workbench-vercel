@@ -57,7 +57,8 @@ ridiscute il design.
    72 mcp-server (04, 15, 17, 71) · 73 mcp-research (09, 12, 23, 24, 37, 71, 72) ·
    74 mcp-serp (61, 65, 72) · 75 mcp-plan (19, 25, 62, 63, 68, 69, 73) ·
    76 mcp-articles (40, 42, 43, 44, 52, 73, 75) · 77 advice-quality (69) ·
-   78 next-advisory (04, 60)
+   78 next-advisory (04, 60) · 79 picomatch-allowlist (04, 60, 78) ·
+   80 dep-refresh (78, 79; dopo il 77 e non prima del 2026-11-23)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15
@@ -95,6 +96,11 @@ REGOLE DI SESSIONE (decise dall'utente il 2026-10-04):
     nessuna pausa per chiedere il via. Ci si ferma solo per un blocco vero (vedi
     punto 2, fix o rimozioni human-gated, controllo rosso a budget esaurito), dopo
     aver completato tutto ciò che non dipende dal blocco.
+  • AVVISI NUOVI DELLE DIPENDENZE (D-67, 2026-11-17): se un avviso di
+    sicurezza nuovo su una dipendenza blocca il checkpoint e c'è una versione
+    corretta della stessa serie (stessa major e minor), portala in un modulo
+    apposito con checkpoint e CI verdi, poi riprendi il macrotask e dichiaralo
+    nel riepilogo; senza versione corretta della stessa serie fermati e chiedi.
 
 INVARIANTI NON NEGOZIABILI — tienile in testa per OGNI task:
   • ORACLE-AS-JUDGE, MAI LLM-AS-JUDGE (L-COL-002): "verde" = esito di un oracolo

@@ -33,7 +33,7 @@ Il checkpoint del modulo 57 è NON-VERDE solo per `tests/tooling/dependency-audi
     - id: AC-6001-2
       given: "l'albero delle dipendenze aggiornato"
       when: "il test esegue npm audit --json"
-      then: "il rapporto ha 0 vulnerabilità critical, nessun avviso per next, undici e zod, e tests/tooling/audit-allowlist.json è un elenco vuoto"
+      then: "il rapporto ha 0 vulnerabilità critical e nessun avviso per next, undici e zod, e ogni voce di tests/tooling/audit-allowlist.json ha un closedBy con task che esistono in docs/blueprint e nessuna riguarda next, undici o zod (emendato da D-67, 2026-11-17: prima l'allowlist doveva essere vuota)"
 
   target_tests:
     - file: "tests/tooling/dependency-audit.test.ts"

@@ -69,6 +69,32 @@ function highAdvisories(audit: AuditOutput): Map<string, Set<string>> {
   return found;
 }
 
+/** Avvisi high del rapporto che non hanno una voce dell'allowlist con lo stesso GHSA e lo stesso pacchetto. */
+function unlistedHighAdvisories(audit: AuditOutput, allowlist: AllowlistEntry[]): string[] {
+  const allowed = new Map(allowlist.map((entry) => [entry.ghsa, entry.package]));
+  return [...highAdvisories(audit)]
+    .filter(([ghsa, packages]) => !packages.has(allowed.get(ghsa) ?? ""))
+    .map(([ghsa, packages]) => `${ghsa} (${[...packages].join(", ")})`);
+}
+
+/** Id dei task atomici scritti nei moduli del blueprint (righe «- id: T-…» dei blocchi YAML). */
+function blueprintTaskIds(): Set<string> {
+  const dir = join(process.cwd(), "docs", "blueprint");
+  const ids = new Set<string>();
+  for (const file of readdirSync(dir).filter((name) => /^\d{2}-.+\.md$/.test(name))) {
+    for (const match of readFileSync(join(dir, file), "utf8").matchAll(/^\s*- id: (T-\d{3,4})\s*$/gm)) ids.add(match[1]);
+  }
+  return ids;
+}
+
+/** Sorgenti di app, lib, components, prisma e scripts che importano o richiedono il pacchetto. */
+function importersOf(name: string): string[] {
+  const pattern = new RegExp(`from\\s+["']${name}["']|(require|import)\\(\\s*["']${name}["']\\s*\\)`);
+  return ["app", "lib", "components", "prisma", "scripts"]
+    .flatMap(sourceFiles)
+    .filter((file) => pattern.test(readFileSync(join(process.cwd(), file), "utf8")));
+}
+
 describe("dipendenze aggiornate e advisory sotto controllo", () => {
   let ls: SpawnSyncReturns<string>;
   let audit: SpawnSyncReturns<string>;
@@ -109,11 +135,7 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
       for (const task of entry.closedBy) expect(task, entry.ghsa).toMatch(TASK_ID);
     }
 
-    const allowed = new Map(allowlist.map((entry) => [entry.ghsa, entry.package]));
-    const unlisted = [...highAdvisories(report)]
-      .filter(([ghsa, packages]) => !packages.has(allowed.get(ghsa) ?? ""))
-      .map(([ghsa, packages]) => `${ghsa} (${[...packages].join(", ")})`);
-    expect(unlisted).toEqual([]);
+    expect(unlistedHighAdvisories(report, allowlist)).toEqual([]);
   });
 
   // covers: AC-1907-4
@@ -165,12 +187,19 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
   }, COMMAND_TIMEOUT_MS);
 
   // covers: AC-6001-2
-  it("npm audit non ha critical né avvisi per next, undici e zod, e l'allowlist è vuota", () => {
+  // impacted-by: T-7901 (D-67: l'allowlist può avere voci con un task di chiusura del blueprint, mai per next, undici e zod)
+  it("npm audit non ha critical né avvisi per next, undici e zod, e ogni voce dell'allowlist ha un task di chiusura del blueprint", () => {
     const report = JSON.parse(audit.stdout) as AuditOutput;
+    const allowlist = readJson<AllowlistEntry[]>("tests/tooling/audit-allowlist.json");
+    const tasks = blueprintTaskIds();
 
     expect(report.metadata.vulnerabilities.critical).toBe(0);
     expect(Object.keys(report.vulnerabilities).filter((name) => ["next", "undici", "zod"].includes(name))).toEqual([]);
-    expect(readJson<AllowlistEntry[]>("tests/tooling/audit-allowlist.json")).toEqual([]);
+    expect(allowlist.filter((entry) => ["next", "undici", "zod"].includes(entry.package)).map((entry) => entry.ghsa)).toEqual([]);
+    for (const entry of allowlist) {
+      expect(entry.closedBy.length, entry.ghsa).toBeGreaterThan(0);
+      expect(entry.closedBy.filter((task) => !tasks.has(task)), entry.ghsa).toEqual([]);
+    }
   });
 
   // covers: AC-7801-1
@@ -197,6 +226,27 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
     expect(audit.stdout).not.toContain("GHSA-mfr8-8qww-v76h");
   });
 
+  // covers: AC-7901-1
+  it("l'avviso high di picomatch è nell'allowlist con il motivo e la chiusura in T-8002, task del blueprint", () => {
+    const report = JSON.parse(audit.stdout) as AuditOutput;
+    const allowlist = readJson<AllowlistEntry[]>("tests/tooling/audit-allowlist.json");
+    const entry = allowlist.find((item) => item.ghsa === "GHSA-fc5q-39xc-vjpf");
+
+    expect(entry).toMatchObject({ package: "picomatch", closedBy: ["T-8002"] });
+    expect(entry?.reason.trim().length).toBeGreaterThan(0);
+    expect(blueprintTaskIds().has("T-8002")).toBe(true);
+    expect(unlistedHighAdvisories(report, allowlist)).toEqual([]);
+  });
+
+  // covers: AC-7901-2
+  it("picomatch non è una dipendenza diretta e nessun sorgente lo importa", () => {
+    const pkg = readJson<{ dependencies: Record<string, string>; devDependencies: Record<string, string> }>("package.json");
+
+    expect(Object.keys(pkg.dependencies)).not.toContain("picomatch");
+    expect(Object.keys(pkg.devDependencies)).not.toContain("picomatch");
+    expect(importersOf("picomatch")).toEqual([]);
+  });
+
   // covers: AC-406-4
   it("xlsx non è nell'albero delle dipendenze e nessun sorgente lo importa", () => {
     const ls = run("npm ls xlsx --json");
@@ -204,11 +254,6 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
     expect(tree.dependencies ?? {}).not.toHaveProperty("xlsx");
     expect(ls.stdout).not.toContain("\"xlsx\"");
 
-    const importers = ["app", "lib", "components", "prisma", "scripts"]
-      .flatMap(sourceFiles)
-      .filter((file) =>
-        /from\s+["']xlsx["']|require\(\s*["']xlsx["']\s*\)/.test(readFileSync(join(process.cwd(), file), "utf8"))
-      );
-    expect(importers).toEqual([]);
+    expect(importersOf("xlsx")).toEqual([]);
   }, COMMAND_TIMEOUT_MS);
 });

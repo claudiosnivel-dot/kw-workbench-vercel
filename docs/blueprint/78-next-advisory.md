@@ -50,7 +50,7 @@ Il checkpoint del modulo 71 è NON-VERDE solo per il controllo 3: `tests/tooling
 - Versione: la 16.4.5 è la prima con la correzione ed è del 2026-11-03; la 16.4.6 (2026-11-09) aveva meno di due settimane.
 - Gate umani: nessuno nuovo; l'aggiornamento di next tocca tutta l'app, quindi la CI esegue tutti gli E2E, con le baseline visive di T-103, prima del merge.
 - Ordine: dipende da 04 e 60, già chiusi; si costruisce prima di chiudere il 71, il cui checkpoint aspetta il test delle dipendenze verde.
-- Note di costruzione (2026-11-17, scelte dell'agente da confermare):
+- Note di costruzione (2026-11-17, scelte dell'agente confermate dall'utente lo stesso giorno, D-67; la 16.4.6 arriva con il modulo 80):
   - aggiornamento con `npm install --save-exact next@16.4.5` e `npm install --save-dev --save-exact
     eslint-config-next@16.4.5`; nel lockfile cambiano solo le versioni di next, `@next/env`, `@next/eslint-plugin-next` e
     dei pacchetti `@next/swc-*`; una sola next (anche sotto @sentry/nextjs e next-intl), sharp 0.35.5 sotto next come
