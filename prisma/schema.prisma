@@ -192,6 +192,8 @@ model User {
   created_articles          Article[]                @relation("ArticleCreator")
   /// Lavori di piano avviati dall'utente (T-6201): alla sua eliminazione restano, senza autore.
   requested_plan_runs       PlanRun[]                @relation("PlanRunRequester")
+  /// Chiavi di Claude Code del root admin (T-7101): al massimo una attiva, cancellate con l'utente.
+  agent_keys                AgentKey[]
 
   // Indice unico parziale users_single_root_admin_idx (migrazione 0005): un solo root admin. Prisma non esprime
   // gli indici parziali: c'è solo nella migrazione e tests/integration/schema-indexes.test.ts ne verifica la presenza.
@@ -691,6 +693,24 @@ model EmailChangeToken {
 
   @@index([user_id])
   @@map("email_change_tokens")
+}
+
+/// Chiave personale di Claude Code del root admin (T-7101, D-64): «tsk_» più 32 byte casuali, mostrata una volta sola;
+/// nel DB solo l'hash SHA-256 esadecimale e i primi 8 caratteri dopo «tsk_». expires_at null vuol dire «Mai».
+model AgentKey {
+  id           String    @id @default(cuid())
+  user_id      String
+  prefix       String
+  key_hash     String    @unique @db.Char(64)
+  created_at   DateTime  @default(now())
+  expires_at   DateTime?
+  last_used_at DateTime?
+  revoked_at   DateTime?
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  // Indice unico parziale agent_keys_single_active_idx (migrazione 0059): una sola chiave non revocata per utente.
+  @@index([user_id, created_at])
+  @@map("agent_keys")
 }
 
 // Abbonamenti per workspace (T-1603): stati di Paddle Billing, aggiornati solo dai webhook firmati.

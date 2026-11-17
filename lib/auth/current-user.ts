@@ -71,7 +71,7 @@ export function isAdminUser(user: AuthUser): boolean {
   return user.role === UserRole.ADMIN;
 }
 
-function isRootAdminUser(user: AuthUser): boolean {
+export function isRootAdminUser(user: AuthUser): boolean {
   return user.role === UserRole.ADMIN && user.isRootAdmin;
 }
 

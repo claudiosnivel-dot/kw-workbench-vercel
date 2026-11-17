@@ -23,13 +23,16 @@ export type AdminAuditAction =
   | "launch.update"
   // Impostazioni dei titoli con l'AI (T-3501, D-42): solo i campi cambiati, mai la chiave di OpenRouter.
   | "ai.update"
+  // Chiave di Claude Code del root admin creata o revocata (T-7101, D-64): prefisso e durata, mai la chiave.
+  | "agent_key.create"
+  | "agent_key.revoke"
   // Tetto dei rimborsi automatici della quota raggiunto (T-1703, D-27 emendata): evento di sistema, actor null.
   | "quota.refund_cap_reached";
 
 export type AuditEntry = {
   actorUserId: string | null;
   action: AdminAuditAction;
-  targetType: "user" | "branding" | "launch" | "workspace" | "ai";
+  targetType: "user" | "branding" | "launch" | "workspace" | "ai" | "agent_key";
   targetId?: string | null;
   metadata?: Prisma.InputJsonObject;
   ip?: string | null;

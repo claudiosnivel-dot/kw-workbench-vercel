@@ -1566,9 +1566,19 @@ input[type="checkbox"] {
 
 /* Bersagli da almeno 44 px anche al tocco, con i testi che vanno a capo invece di uscire dalla finestra. */
 .plan-local-box button,
-.plan-local-dialog button {
+.plan-local-dialog button,
+.agent-key-card :is(button, select),
+.agent-key-dialog button {
   min-height: 2.75rem;
   white-space: normal;
+}
+
+/* Chiave e comando di Claude Code (T-7102): vanno a capo a 390 px invece di allargare la pagina. */
+.agent-key-value {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  resize: none;
 }
 
 /* Proposta dei titoli con l'AI nel pannello della pagina (T-3603). */
