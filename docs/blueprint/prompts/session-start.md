@@ -56,7 +56,7 @@ ridiscute il design.
    70 local-tips (24, 25, 67, 68) · 71 mcp-keys (17, 33, 35) ·
    72 mcp-server (04, 15, 17, 71) · 73 mcp-research (09, 12, 23, 24, 37, 71, 72) ·
    74 mcp-serp (61, 65, 72) · 75 mcp-plan (19, 25, 62, 63, 68, 69, 73) ·
-   76 mcp-articles (40, 42, 43, 44, 52, 73, 75)
+   76 mcp-articles (40, 42, 43, 44, 52, 73, 75) · 77 advice-quality (69)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15

@@ -109,5 +109,5 @@ o pubblicato non si rovina (anti-obiettivo 2 del disegno). Disegno in
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal disegno approvato dall'utente il 2026-11-17 («approvo», D-64): scelte di Claude Code nel piano dell'app, piani senza AI di Titan SEO, pagine iniziate protette, «Rigenera» permesso.
-- Scelte dell'agente da confermare: avviso AGENT_PLAN invece di quello dell'AI non attiva, guardia anche su move_page e promote_to_hub, delete_page assente, numero di città nella lettura delle pagine locali.
+- Scelte dell'agente (le principali confermate dall'utente il 2026-11-17, D-65; le altre restano dell'agente): avviso AGENT_PLAN invece di quello dell'AI non attiva, guardia anche su move_page e promote_to_hub, delete_page assente, numero di città nella lettura delle pagine locali.
 - Ordine: dopo il 74; T-7502 dopo T-7501.
