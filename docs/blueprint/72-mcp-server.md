@@ -104,5 +104,5 @@ articoli arrivano con i moduli 73-76.
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal disegno approvato dall'utente il 2026-11-17 («approvo», D-64): server MCP remoto, chiave solo per `/api/mcp`, registro di ogni chiamata, istruzioni di lavoro all'avvio.
-- Scelte dell'agente da confermare: protocollo scritto nel repo, versione 2025-06-18 come più recente supportata, 120 richieste al minuto, istruzioni e descrizioni in inglese, errori nella lingua delle preferenze del root admin, il root admin vede solo i progetti dei propri workspace.
+- Scelte dell'agente (le principali confermate dall'utente il 2026-11-17, D-65; le altre restano dell'agente): protocollo scritto nel repo, versione 2025-06-18 come più recente supportata, 120 richieste al minuto, istruzioni e descrizioni in inglese, errori nella lingua delle preferenze del root admin, il root admin vede solo i progetti dei propri workspace.
 - Ordine: dopo il 71; T-7202 dopo T-7201.

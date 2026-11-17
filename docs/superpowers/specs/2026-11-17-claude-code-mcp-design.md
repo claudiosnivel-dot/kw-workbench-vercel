@@ -100,7 +100,7 @@ Discussi con l'utente, che li vuole evitati tutti con le soluzioni qui sotto:
 - I lavori avviati dal server MCP (estrazione, lavoro di piano) sono segnati come «di Claude Code».
 - Tetto giornaliero in dollari solo per i lavori di Claude Code, sulle stime di costo che Titan SEO già registra per
   DataForSEO (`metrics_provider_requests.estimated_cost_usd`, volumi e risultati di Google); valore nella card admin,
-  5 $ di partenza (scelta dell'agente), giorno di calendario UTC.
+  2 $ di partenza (scelta dell'utente del 2026-11-17, D-65), giorno di calendario UTC.
 - Prima di avviare un lavoro che spende, lo strumento controlla il tetto: superato, risponde con un errore che dice di
   fermarsi e chiedere il via all'utente (che può alzare il tetto dalla card). Ogni risposta degli strumenti che
   spendono riporta la spesa di oggi e il tetto. Restano i tetti di spesa e il limite di un lavoro attivo per sezione
@@ -203,9 +203,12 @@ In più, punti da risolvere nel blueprint senza cambiare cosa si costruisce:
 
 ## Scelte dell'agente da rileggere
 
+Confermate dall'utente il 2026-11-17 con AskUserQuestion (D-65): server scritto nel repo, strumenti e istruzioni in inglese, workspace personale, attesa fino a 50 s, avviso del piano, pagina portata «In scrittura», registro; il tetto parte da 2 $.
+
+
 - Server MCP scritto nel repo, senza la libreria ufficiale.
 - Nomi e descrizioni degli strumenti in inglese (li legge il modello); testi per l'utente nei cataloghi.
-- Tetto di spesa di partenza 5 $ al giorno, giorno UTC, solo sui lavori di Claude Code.
+- Tetto di spesa di partenza 2 $ al giorno (l'utente ha scelto 2 $ invece dei 5 proposti, D-65), giorno UTC, solo sui lavori di Claude Code.
 - Progetti nuovi nel workspace personale salvo un altro workspace del root admin indicato.
 - `wait_for_job` fino a circa 50 s per chiamata.
 - Avviso nuovo nel piano preparato per Claude Code invece di quello di «AI non attiva».

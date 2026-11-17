@@ -82,5 +82,5 @@ salvarli non costa nulla in più. Disegno in `docs/superpowers/specs/2026-11-17-
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal disegno approvato dall'utente il 2026-11-17 («approvo», D-64): quadro completo con titolo e descrizione dei risultati, senza costi in più.
-- Scelte dell'agente da confermare: colonna results accanto a urls, 300 caratteri al massimo, da 1 a 50 keyword per chiamata, nessun rinnovo forzato delle righe vecchie.
+- Scelte dell'agente (le principali confermate dall'utente il 2026-11-17, D-65; le altre restano dell'agente): colonna results accanto a urls, 300 caratteri al massimo, da 1 a 50 keyword per chiamata, nessun rinnovo forzato delle righe vecchie.
 - Ordine: dopo il 73; T-7402 dopo T-7401.

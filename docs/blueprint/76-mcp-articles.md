@@ -101,5 +101,5 @@ ne accorga (anti-obiettivo 5) con la versione dell'articolo, e fa vedere chi ha 
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal disegno approvato dall'utente il 2026-11-17 («approvo», D-64): articoli di Claude Code nel sito e uguali in Titan SEO, versione contro le sovrascritture, registro e spesa visibili.
-- Scelte dell'agente da confermare: FAQ riconosciute dal titolo delle domande frequenti della lingua, lunghezza dalle soglie di oggi, pagina «Da scrivere» portata «In scrittura», limiti di 200 000 caratteri e 40 blocchi, etichetta «Scritto da Claude Code», guida in docs/AGENT-MCP.md.
+- Scelte dell'agente (le principali confermate dall'utente il 2026-11-17, D-65; le altre restano dell'agente): FAQ riconosciute dal titolo delle domande frequenti della lingua, lunghezza dalle soglie di oggi, pagina «Da scrivere» portata «In scrittura», limiti di 200 000 caratteri e 40 blocchi, etichetta «Scritto da Claude Code», guida in docs/AGENT-MCP.md.
 - Ordine: ultimo dei moduli 71-76; T-7602 dopo T-7601. Dopo il merge: prova vera dal computer dell'utente con Claude Code collegato a produzione.

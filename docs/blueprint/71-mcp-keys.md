@@ -103,5 +103,5 @@ con il modulo 72.
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal disegno approvato dall'utente il 2026-11-17 («approvo», D-64): durata a scelta 30, 60, 90 giorni o Mai (scelta dell'utente), una sola chiave attiva, solo hash, revoca, ultimo uso.
-- Scelte dell'agente da confermare: formato «tsk_» + 32 byte, prefisso di 8 caratteri, 90 giorni preselezionati, card dopo quella dei titoli con l'AI.
+- Scelte dell'agente (le principali confermate dall'utente il 2026-11-17, D-65; le altre restano dell'agente): formato «tsk_» + 32 byte, prefisso di 8 caratteri, 90 giorni preselezionati, card dopo quella dei titoli con l'AI.
 - Ordine: primo dei moduli 71-76; T-7102 dopo T-7101.

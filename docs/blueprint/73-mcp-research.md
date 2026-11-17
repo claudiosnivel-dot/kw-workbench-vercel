@@ -69,7 +69,7 @@ del disegno) e contro le attese lunghe (anti-obiettivo 6). Disegno in
   definition_of_done:
     - "list_keywords({ projectId, topicId?, status: kept | discarded | all, minVolume?, searchIntent?, keywordType?, search?, page }): 200 keyword per pagina nell'ordine «promettenti» di oggi, con id, keyword, volume, punteggio, intento, tipo, domanda, locale, tenuta o scartata, argomento; totale e numero di pagine. Filtri con parseResultsFilters (valori in whitelist)."
     - "set_keywords({ projectId, action: keep | discard, ids (al massimo MAX_BULK_IDS) }): applyBulkAction di oggi (T-2401); risponde con il numero di righe aggiornate."
-    - "Migrazione additiva: metrics_provider_requests.agent (boolean, default false), vero per le richieste dei lavori con origin AGENT; impostazione agent_daily_cap_usd (default 5) dove stanno le impostazioni dell'amministrazione."
+    - "Migrazione additiva: metrics_provider_requests.agent (boolean, default false), vero per le richieste dei lavori con origin AGENT; impostazione agent_daily_cap_usd (default 2, D-65) dove stanno le impostazioni dell'amministrazione."
     - "agentSpendToday(): somma di estimated_cost_usd delle richieste agent del giorno UTC. create_project e run_search controllano il tetto prima di avviare: oltre il tetto isError AGENT_SPEND_CAP con spesa e tetto e nessun lavoro avviato; le risposte di create_project, run_search e wait_for_job riportano spesa di oggi e tetto."
     - "Card «Claude Code» (T-7102): campo «Tetto giornaliero di spesa» in dollari (da 0 a 100, due decimali) e la spesa di oggi; PATCH /api/admin/agent-key/settings solo per il root admin."
     - "Code AGENT_SPEND_CAP in API_ERROR_CODES e nei cataloghi it, en, es-ES."
@@ -109,5 +109,5 @@ del disegno) e contro le attese lunghe (anti-obiettivo 6). Disegno in
 ## Self-check
 - Strutturale: `validate_blueprint.mjs docs/blueprint` exit 0.
 - Modulo dal disegno approvato dall'utente il 2026-11-17 («approvo», D-64): Claude Code fa tutto e lancia in autonomia anche quello che spende, con il tetto giornaliero dei suoi lavori.
-- Scelte dell'agente da confermare: tetto di 5 $ al giorno UTC modificabile da 0 a 100 $, attesa fino a 50 s con letture ogni 3 s, 200 keyword per pagina, da 1 a 10 parole di partenza, progetti nel workspace personale salvo un altro indicato.
+- Scelte dell'agente (le principali confermate dall'utente il 2026-11-17, D-65; le altre restano dell'agente): tetto di 2 $ al giorno UTC (scelta dell'utente, D-65) modificabile da 0 a 100 $, attesa fino a 50 s con letture ogni 3 s, 200 keyword per pagina, da 1 a 10 parole di partenza, progetti nel workspace personale salvo un altro indicato.
 - Ordine: dopo il 72; T-7302 dopo T-7301.
