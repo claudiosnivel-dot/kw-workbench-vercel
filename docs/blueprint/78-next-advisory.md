@@ -50,3 +50,14 @@ Il checkpoint del modulo 71 è NON-VERDE solo per il controllo 3: `tests/tooling
 - Versione: la 16.4.5 è la prima con la correzione ed è del 2026-11-03; la 16.4.6 (2026-11-09) aveva meno di due settimane.
 - Gate umani: nessuno nuovo; l'aggiornamento di next tocca tutta l'app, quindi la CI esegue tutti gli E2E, con le baseline visive di T-103, prima del merge.
 - Ordine: dipende da 04 e 60, già chiusi; si costruisce prima di chiudere il 71, il cui checkpoint aspetta il test delle dipendenze verde.
+- Note di costruzione (2026-11-17, scelte dell'agente da confermare):
+  - aggiornamento con `npm install --save-exact next@16.4.5` e `npm install --save-dev --save-exact
+    eslint-config-next@16.4.5`; nel lockfile cambiano solo le versioni di next, `@next/env`, `@next/eslint-plugin-next` e
+    dei pacchetti `@next/swc-*`; una sola next (anche sotto @sentry/nextjs e next-intl), sharp 0.35.5 sotto next come
+    prima;
+  - dopo l'aggiornamento `npm audit` riporta solo avvisi moderati (@sentry/*, typescript-eslint, exceljs, fast-uri,
+    glob, minimatch, uuid), nessun high né critical, e non riporta più next; l'allowlist resta `[]`;
+  - test: due casi nuovi in `tests/tooling/dependency-audit.test.ts` per AC-7801-1 e AC-7801-2, scritti prima
+    dell'aggiornamento e visti rossi insieme ad AC-6001-2, poi verdi; nessun altro test cambiato;
+  - i tipi delle rotte in `.next/types` erano rimasti quelli del build del 71 (rotta `/api/admin/agent-key`): rigenerati
+    con `next typegen` prima del typecheck.
