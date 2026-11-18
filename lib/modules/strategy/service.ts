@@ -231,7 +231,7 @@ async function loadPerimeter(projectId: string, settings: StrategySettings, excl
 }
 
 /** Il piano del progetto è la sua strategia più recente (T-2502); a parità di istante decide l'id. */
-const PLAN_ORDER = [{ created_at: "desc" }, { id: "asc" }] satisfies Prisma.StrategyOrderByWithRelationInput[];
+export const PLAN_ORDER = [{ created_at: "desc" }, { id: "asc" }] satisfies Prisma.StrategyOrderByWithRelationInput[];
 
 const COPY_PAGE_SELECT = {
   id: true,

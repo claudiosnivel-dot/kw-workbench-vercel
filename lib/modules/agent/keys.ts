@@ -144,3 +144,8 @@ export async function verifyAgentKey(token: string | null | undefined): Promise<
   }
   return { user, keyId: key.id };
 }
+
+/** Ultimo uso della chiave (T-7201): lo aggiorna il server MCP a ogni richiesta con una chiave valida. */
+export async function markAgentKeyUsed(keyId: string, now = new Date()): Promise<void> {
+  await prisma.agentKey.updateMany({ where: { id: keyId }, data: { last_used_at: now } });
+}

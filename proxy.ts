@@ -37,6 +37,8 @@ const PUBLIC_PATHS = new Set([
   "/api/billing/webhook",
   // Modulo contatti (T-1805): protetto da rate limit e CAPTCHA nella rotta.
   "/api/contact",
+  // Server MCP di Claude Code (T-7201): nessuna sessione, solo la chiave del root admin verificata dalla rotta.
+  "/api/mcp",
 ]);
 
 // Passi dei job in background (T-1203), dei lavori degli articoli (T-4101) e dei lavori di piano (T-6201): nessuna
