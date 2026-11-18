@@ -12,7 +12,8 @@ export type RateLimitRule = { max: number; windowSeconds: number };
  * il rinnovo degli inviti per workspace (T-3202) uno condiviso di 20 l'ora. Le proposte dei titoli con l'AI per
  * workspace (T-3501) hanno una finestra di 24 ore: il max lo leggono dalle impostazioni del root admin a ogni richiesta
  * (T-3601), qui il default (lib/ai/settings.ts); così gli articoli avviati (T-4002) e le sezioni riscritte (T-4402) per
- * workspace. Il tetto della piattaforma conta le richieste di ai_requests, non questi tentativi (T-3901).
+ * workspace. Il tetto della piattaforma conta le richieste di ai_requests, non questi tentativi (T-3901). Il server MCP di
+ * Claude Code ha un limite fisso di 120 richieste al minuto per chiave (T-7201, CWE-770).
  */
 export function rateLimitRules() {
   const loginWindow = getIntEnv("RATE_LIMIT_LOGIN_WINDOW_SECONDS");
@@ -36,6 +37,7 @@ export function rateLimitRules() {
     aiTitlesWorkspace: { max: 10, windowSeconds: 86_400 },
     aiArticlesWorkspace: { max: 3, windowSeconds: 86_400 },
     aiSectionRewritesWorkspace: { max: 20, windowSeconds: 86_400 },
+    agentKeyRequests: { max: 120, windowSeconds: 60 },
   } satisfies Record<string, RateLimitRule>;
 }
 

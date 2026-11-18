@@ -322,6 +322,7 @@ model Project {
   strategies                Strategy[]
   articles                  Article[]
   plan_runs                 PlanRun[]
+  agent_calls               AgentCall[]
 
   @@index([workspace_id])
   @@index([default_subproject_id])
@@ -698,19 +699,39 @@ model EmailChangeToken {
 /// Chiave personale di Claude Code del root admin (T-7101, D-64): «tsk_» più 32 byte casuali, mostrata una volta sola;
 /// nel DB solo l'hash SHA-256 esadecimale e i primi 8 caratteri dopo «tsk_». expires_at null vuol dire «Mai».
 model AgentKey {
-  id           String    @id @default(cuid())
+  id           String      @id @default(cuid())
   user_id      String
   prefix       String
-  key_hash     String    @unique @db.Char(64)
-  created_at   DateTime  @default(now())
+  key_hash     String      @unique @db.Char(64)
+  created_at   DateTime    @default(now())
   expires_at   DateTime?
   last_used_at DateTime?
   revoked_at   DateTime?
-  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  calls        AgentCall[]
 
   // Indice unico parziale agent_keys_single_active_idx (migrazione 0059): una sola chiave non revocata per utente.
   @@index([user_id, created_at])
   @@map("agent_keys")
+}
+
+/// Registro delle chiamate di strumento del server MCP (T-7201, D-64): strumento, progetto, esito e durata di ogni
+/// tools/call, mai i parametri, i testi o la chiave (CWE-532). project_id resta null se lo strumento non tocca un
+/// progetto o non ha superato il controllo d'accesso, e torna null se il progetto viene eliminato.
+model AgentCall {
+  id          String   @id @default(cuid())
+  key_id      String
+  tool        String
+  project_id  String?
+  ok          Boolean
+  error_code  String?
+  duration_ms Int
+  created_at  DateTime @default(now())
+  key         AgentKey @relation(fields: [key_id], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  @@index([created_at])
+  @@map("agent_calls")
 }
 
 // Abbonamenti per workspace (T-1603): stati di Paddle Billing, aggiornati solo dai webhook firmati.
