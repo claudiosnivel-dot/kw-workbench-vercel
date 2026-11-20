@@ -27,9 +27,12 @@
 
   acceptance_criteria:
     - id: AC-7901-1
-      given: "l'allowlist con la voce di picomatch e npm audit che riporta GHSA-fc5q-39xc-vjpf"
-      when: "tests/tooling/dependency-audit.test.ts confronta il rapporto con l'allowlist"
-      then: "ogni avviso high del rapporto è nell'allowlist, la voce GHSA-fc5q-39xc-vjpf ha package picomatch, un motivo non vuoto e closedBy [T-8002], e T-8002 compare come id di un task in docs/blueprint"
+      # Emendato il 2026-11-20 (D-68, T-8101): GHSA-fc5q-39xc-vjpf è stato ritirato il 2026-11-18 e la sua voce è
+      # tolta dall'allowlist. Prima: «l'allowlist con la voce di picomatch e npm audit che riporta GHSA-fc5q-39xc-vjpf
+      # […] la voce GHSA-fc5q-39xc-vjpf ha package picomatch, un motivo non vuoto e closedBy [T-8002]».
+      given: "l'avviso GHSA-fc5q-39xc-vjpf di picomatch ritirato il 2026-11-18 dal GitHub Advisory Database"
+      when: "tests/tooling/dependency-audit.test.ts legge il rapporto di npm audit e l'allowlist"
+      then: "il rapporto non contiene GHSA-fc5q-39xc-vjpf e l'allowlist non ha voci per GHSA-fc5q-39xc-vjpf né per il package picomatch"
     - id: AC-7901-2
       given: "package.json e i sorgenti dell'app"
       when: "il test cerca picomatch fra le dipendenze dirette e negli import di app, lib, components, prisma e scripts"
@@ -51,6 +54,7 @@
 - Modulo dalla risposta dell'utente del 2026-11-17 («Eccezione ora (Consigliata)») sull'avviso di picomatch visto dopo il merge del 71 (D-67).
 - Esposizione: dal lockfile, picomatch è solo sotto @sentry/nextjs (@rollup/plugin-commonjs, al build), eslint-config-next, knip, next-intl (@parcel/watcher, in sviluppo), vite e vitest; valutata solo dall'albero delle dipendenze e dal testo dell'avviso.
 - Ordine: si costruisce subito, prima del 72, per scelta dell'utente; dipende da 04, 60 e 78, già chiusi.
+- Emendamento del 2026-11-20 (D-68): l'avviso di picomatch è stato ritirato il 2026-11-18; T-8101 (modulo 81) toglie la voce dall'allowlist ed emenda AC-7901-1; AC-7901-2 resta.
 - Note di costruzione (2026-11-17, scelte dell'agente da confermare):
   - voce dell'allowlist con il motivo in italiano, che rimanda a D-67 e T-7901, e `closedBy` ["T-8002"];
   - in `tests/tooling/dependency-audit.test.ts` tre aiuti in comune: `unlistedHighAdvisories` (usato da AC-401-2 e

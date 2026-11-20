@@ -1,8 +1,8 @@
 [
   {
-    "ghsa": "GHSA-fc5q-39xc-vjpf",
-    "package": "picomatch",
-    "reason": "ReDoS con extglob ripetuti a un solo ramo, versioni fino alla 4.0.7; nessuna versione corretta pubblicata il 2026-11-17. picomatch arriva solo da strumenti di build e sviluppo (@sentry/nextjs con @rollup/plugin-commonjs al build, vite, vitest, knip, eslint-config-next, @parcel/watcher di next-intl) e nessun sorgente dell'app lo importa (D-67, T-7901).",
+    "ghsa": "GHSA-7589-6fvf-x4pw",
+    "package": "effect",
+    "reason": "ReDoS in Schema.TemplateLiteral, versioni fino alla 3.22.0, corretto dalla 3.22.1 (pubblicato il 2026-11-19). effect 3.20.0 arriva solo da prisma (devDependency) attraverso @prisma/config, che lo fissa esatto anche nella 7.10.1: nessuna versione corretta nella serie 3.20 il 2026-11-20. Lo usa solo il CLI di Prisma per leggere prisma.config.ts (migrazioni, generate, build); nessun sorgente dell'app lo importa (D-68, T-8101).",
     "closedBy": ["T-8002"]
   }
 ]
