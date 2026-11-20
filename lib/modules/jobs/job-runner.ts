@@ -2,7 +2,7 @@ import { type ExtractionPlanLimits, extractionPlanLimits } from "@/lib/billing/e
 import { isCommercialLive } from "@/lib/billing/launch";
 import { reserveRun } from "@/lib/billing/usage";
 import { isUniqueViolation } from "@/lib/db/unique-violation";
-import type { Job, Prisma } from "@/lib/generated/prisma/client";
+import type { Job, JobOrigin, Prisma } from "@/lib/generated/prisma/client";
 import { getIntEnv } from "@/lib/env";
 import { advanceJob } from "@/lib/modules/jobs/advance-job";
 import { ACTIVE_JOB_STATUSES, failActiveJob, failureCauseOf, toPublicJobError } from "@/lib/modules/jobs/job-state";
@@ -15,14 +15,15 @@ import { lockWorkspaceRow } from "@/lib/workspaces/lock";
 // Un job concluso tra la violazione dell'indice e la rilettura libera la sezione: si riprova l'inserimento.
 const ENQUEUE_ATTEMPTS = 3;
 
-/** Dati del nuovo job di estrazione pending della sezione, con il payload dell'avvio. */
-function extractionJobData(projectId: string, subprojectId: string, payload: Prisma.InputJsonObject) {
+/** Dati del nuovo job di estrazione pending della sezione, con il payload dell'avvio e chi l'ha avviato (T-7301). */
+function extractionJobData(projectId: string, subprojectId: string, payload: Prisma.InputJsonObject, origin: JobOrigin) {
   return {
     project_id: projectId,
     subproject_id: subprojectId,
     type: "extraction" as const,
     status: "pending" as const,
     payload: { projectId, subprojectId, ...payload },
+    origin,
   };
 }
 
@@ -30,16 +31,18 @@ function extractionJobData(projectId: string, subprojectId: string, payload: Pri
  * Crea il job di estrazione della sezione (T-1201). L'indice parziale jobs_one_active_per_subproject ammette un solo
  * job pending o running per sezione: se esiste già, restituisce quello con created=false invece di propagare la
  * violazione (nessun controllo check-then-insert, CWE-362). plan sono i limiti del piano letti all'avvio (T-1605):
- * tetto di keyword e metriche con licenza, salvati nel payload; senza, l'estrazione non ha limiti di piano.
+ * tetto di keyword e metriche con licenza, salvati nel payload; senza, l'estrazione non ha limiti di piano. origin è
+ * AGENT per le ricerche avviate da Claude Code (T-7301).
  */
 export async function enqueueExtractionJob(
   projectId: string,
   subprojectId: string,
-  plan?: ExtractionPlanLimits
+  plan?: ExtractionPlanLimits,
+  origin: JobOrigin = "APP"
 ): Promise<{ job: Job; created: boolean }> {
   for (let attempt = 1; ; attempt += 1) {
     try {
-      const job = await prisma.job.create({ data: extractionJobData(projectId, subprojectId, plan ? { plan } : {}) });
+      const job = await prisma.job.create({ data: extractionJobData(projectId, subprojectId, plan ? { plan } : {}, origin) });
       return { job, created: true };
     } catch (error) {
       if (!isUniqueViolation(error)) {
@@ -77,17 +80,18 @@ function activeJobOfSection(subprojectId: string): Promise<Job | null> {
  * job: la transazione si annulla con la riserva) e la creazione del job con la riserva nel payload. actor è chi avvia:
  * il root admin ha sempre le metriche con licenza (T-2003) e nessun limite d'uso nemmeno con il lancio attivo (D-37,
  * T-2101): il suo job nasce come in pausa, senza rate limit, riserva né controllo del job attivo nel workspace; resta
- * l'indice di un solo job attivo per sezione.
+ * l'indice di un solo job attivo per sezione. origin è AGENT per le ricerche avviate da Claude Code (T-7301).
  */
 export async function startExtractionJob(
   projectId: string,
   subprojectId: string,
   workspaceId: string,
-  actor: { isRootAdmin: boolean }
+  actor: { isRootAdmin: boolean },
+  origin: JobOrigin = "APP"
 ): Promise<{ job: Job; created: boolean }> {
   const { runsPerDay, ...plan } = await extractionPlanLimits(workspaceId, actor);
   if (actor.isRootAdmin || !(await isCommercialLive())) {
-    return enqueueExtractionJob(projectId, subprojectId, plan);
+    return enqueueExtractionJob(projectId, subprojectId, plan, origin);
   }
 
   await enforceRateLimits([{ key: `run:workspace:${workspaceId}`, rule: rateLimitRules().runStart }]);
@@ -102,7 +106,7 @@ export async function startExtractionJob(
       if (active) {
         throw new ActiveJobInWorkspace(active);
       }
-      const job = await tx.job.create({ data: extractionJobData(projectId, subprojectId, { plan, quota }) });
+      const job = await tx.job.create({ data: extractionJobData(projectId, subprojectId, { plan, quota }, origin) });
       return { job, created: true };
     });
   } catch (error) {

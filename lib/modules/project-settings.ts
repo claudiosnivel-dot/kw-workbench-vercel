@@ -25,9 +25,9 @@ export type EffectiveProjectSettings = {
 };
 
 // Limiti degli input di progetti e sezioni (T-809, D-24).
-const NAME_MAX_LENGTH = 120;
+export const NAME_MAX_LENGTH = 120;
 const DESCRIPTION_MAX_LENGTH = 1000;
-const SEED_MAX_LENGTH = 200;
+export const SEED_MAX_LENGTH = 200;
 const SEEDS_PER_REQUEST_MAX = 500;
 const SITE_URL_MAX_LENGTH = 300;
 // Massimo della colonna Int di Postgres: oltre, la query fallirebbe con un 500 (CWE-190).

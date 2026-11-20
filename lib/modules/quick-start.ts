@@ -3,6 +3,7 @@ import { requireVerifiedEmail } from "@/lib/auth/verified-email";
 import type { WorkspaceSummary } from "@/lib/authz/workspace";
 import { canPerform } from "@/lib/authz/permissions";
 import { assertWithinLimit, countLimitedProjects, defaultMetricsProvider, loadPlanGuard } from "@/lib/billing/enforce";
+import type { JobOrigin } from "@/lib/generated/prisma/enums";
 import { AppError, JOB_ERROR_CODES } from "@/lib/http/errors";
 import { scheduleJobContinuation } from "@/lib/modules/jobs/continuation";
 import { startExtractionJob } from "@/lib/modules/jobs/job-runner";
@@ -23,21 +24,22 @@ const EXTRACTION_BLOCKERS = new Set(["EMAIL_NOT_VERIFIED", "PLAN_LIMIT", "RATE_L
 
 /**
  * Crea in una transazione il progetto nel workspace già autorizzato (project.create), il primo argomento (position 0,
- * argomento predefinito del progetto) e le seed, una per voce del topic nell'ordine (T-2301, T-3701); il nome viene
- * dalla prima voce. Lingua e paese sono quelli del corpo, se presenti, altrimenti targeting. Limiti del piano come la
- * creazione normale (T-1605), maxSeedsPerSection sul numero di voci; il progetto creato in un workspace ancora senza
- * progetti è created_via_onboarding e resta fuori da maxProjects (T-2004, uno per workspace).
+ * argomento predefinito del progetto) e le seed, una per voce del topic nell'ordine (T-2301, T-3701); il nome
+ * dell'argomento viene dalla prima voce, quello del progetto da name se c'è (create_project di Claude Code, T-7301),
+ * altrimenti dalla stessa voce. Lingua e paese sono quelli del corpo, se presenti, altrimenti targeting. Limiti del
+ * piano come la creazione normale (T-1605), maxSeedsPerSection sul numero di voci; il progetto creato in un workspace
+ * ancora senza progetti è created_via_onboarding e resta fuori da maxProjects (T-2004, uno per workspace).
  */
 export async function createQuickStartProject(
   user: Pick<AuthUser, "id" | "isRootAdmin">,
   workspaceId: string,
-  input: QuickStartInput,
+  input: QuickStartInput & { name?: string },
   targeting: Targeting
 ): Promise<QuickStartCreation> {
-  const name = quickStartName(input.seeds[0]);
+  const topicName = quickStartName(input.seeds[0]);
   const { data } = parseProjectCreate(
     {
-      name,
+      name: input.name ?? topicName,
       language_code: input.languageCode ?? targeting.languageCode,
       country_code: input.countryCode ?? targeting.countryCode,
       createInitialSection: false,
@@ -62,7 +64,7 @@ export async function createQuickStartProject(
       data: { workspace_id: workspaceId, created_by_user_id: user.id, created_via_onboarding: firstProject, ...data },
       select: { id: true },
     });
-    const topic = await tx.subproject.create({ data: { project_id: project.id, name, position: 0 }, select: { id: true } });
+    const topic = await tx.subproject.create({ data: { project_id: project.id, name: topicName, position: 0 }, select: { id: true } });
     await tx.project.updateMany({
       where: { id: project.id, workspace_id: workspaceId },
       data: { default_subproject_id: topic.id },
@@ -78,19 +80,20 @@ export async function createQuickStartProject(
  * Avvia la ricerca del primo argomento come la rotta run della sezione (T-1204): permesso extraction.run nel workspace,
  * email verificata, poi startExtractionJob e il primo passo in background. Un blocco noto (permesso, email, piano, rate
  * limit, quota, job già attivo nel workspace) diventa il code dell'esito invece di un errore: progetto e argomento
- * restano.
+ * restano. origin è AGENT per i progetti creati da Claude Code (T-7301).
  */
 export async function startQuickStartExtraction(
   user: AuthUser,
   creation: QuickStartCreation,
-  workspace: Pick<WorkspaceSummary, "id" | "role">
+  workspace: Pick<WorkspaceSummary, "id" | "role">,
+  origin: JobOrigin = "APP"
 ): Promise<QuickStartExtraction> {
   if (!canPerform(workspace.role, "extraction.run")) {
     return { jobId: null, extraction: "FORBIDDEN" };
   }
   try {
     requireVerifiedEmail(user);
-    const { job, created } = await startExtractionJob(creation.projectId, creation.topicId, workspace.id, user);
+    const { job, created } = await startExtractionJob(creation.projectId, creation.topicId, workspace.id, user, origin);
     if (!created) {
       return { jobId: null, extraction: JOB_ERROR_CODES.alreadyActive };
     }

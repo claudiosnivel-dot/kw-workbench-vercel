@@ -458,7 +458,8 @@
     "WP_AUTH_FAILED": "WordPress did not accept the username and application password: check them and try again.",
     "WP_NOT_FOUND": "The site does not answer like WordPress: check the address and that the REST API is turned on.",
     "WP_UNREACHABLE": "The WordPress site can't be reached: check the address and try again shortly.",
-    "WP_REJECTED": "WordPress refused the article: try again or check the WordPress user's permissions."
+    "WP_REJECTED": "WordPress refused the article: try again or check the WordPress user's permissions.",
+    "AGENT_SPEND_CAP": "Claude Code reached today's spending cap: raise it in the admin settings or try again tomorrow."
   },
   "errorPages": {
     "error": {
@@ -843,7 +844,12 @@
       "copyKey": "Copy the key",
       "copyCommand": "Copy the command",
       "copied": "Copied",
-      "onlyNow": "Copy them now: the key and the command won't be shown again."
+      "onlyNow": "Copy them now: the key and the command won't be shown again.",
+      "capLabel": "Daily spending cap (dollars)",
+      "spentToday": "Spent today by Claude Code jobs: {spent} of {cap}. The day ends at midnight UTC.",
+      "capSave": "Save the cap",
+      "capSaving": "Saving...",
+      "capSaved": "Cap saved."
     },
     "user": {
       "back": "← Users",

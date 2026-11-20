@@ -80,6 +80,12 @@ enum JobType {
   extraction
 }
 
+// Chi ha avviato la ricerca (T-7301, D-64): l'app o Claude Code dal server MCP.
+enum JobOrigin {
+  APP
+  AGENT
+}
+
 enum JobStatus {
   pending
   running
@@ -449,6 +455,8 @@ model Job {
   /// Causa di un job failed (T-1703, D-27 emendata): INTERNAL restituisce la quota entro il tetto dei rimborsi.
   failure_cause       JobFailureCause?
   quota_refunded      Boolean          @default(false)
+  /// AGENT per le ricerche avviate da Claude Code (T-7301): le loro richieste a pagamento contano per il suo tetto.
+  origin              JobOrigin        @default(APP)
   project             Project          @relation(fields: [project_id], references: [id], onDelete: Cascade)
   subproject          Subproject       @relation(fields: [subproject_id], references: [id], onDelete: Cascade)
   suggestions         JobSuggestion[]
@@ -562,6 +570,8 @@ model MetricsProviderRequest {
   status             MetricsRequestStatus @default(pending)
   /// Codice di DataForSEO dell'esito (T-3903, T-3704): null per un timeout o un errore di rete; mai il messaggio.
   provider_code      Int?
+  /// Richiesta di un lavoro con origin AGENT (T-7302, D-65): conta per il tetto giornaliero di spesa di Claude Code.
+  agent              Boolean              @default(false)
   project            Project?             @relation(fields: [project_id], references: [id], onDelete: SetNull)
 
   @@index([created_at])
