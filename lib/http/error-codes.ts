@@ -135,6 +135,8 @@ export const API_ERROR_CODES = [
   "WP_NOT_FOUND",
   "WP_UNREACHABLE",
   "WP_REJECTED",
+  // Tetto giornaliero di spesa di Claude Code raggiunto (T-7302, D-65).
+  "AGENT_SPEND_CAP",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

@@ -38,10 +38,22 @@ async function spent(client: Client, where: Prisma.MetricsProviderRequestWhereIn
 }
 
 /**
+ * Richiesta di una ricerca avviata da Claude Code (jobs.origin AGENT, T-7302): conta per il suo tetto giornaliero. Gli id
+ * dei lavori di piano non sono ricerche e restano fuori, finché il modulo 75 non li segna.
+ */
+async function isAgentJob(client: Client, jobId: string | undefined): Promise<boolean> {
+  if (!jobId) {
+    return false;
+  }
+  const job = await client.job.findUnique({ where: { id: jobId }, select: { origin: true } });
+  return job?.origin === "AGENT";
+}
+
+/**
  * Prenota una richiesta se lo speso del mese UTC e quello dell'estrazione (le richieste già prenotate da questa
  * estrazione) più il costo stimato restano entro i tetti; altrimenti nessuna riga e il motivo del blocco. Il costo
  * stimato è METRICS_COST_PER_REQUEST_USD (volumi), oppure estimatedCostUsd quando il prezzo dipende dal numero di task
- * (risultati di Google, T-6101).
+ * (risultati di Google, T-6101). La riga è agent per le richieste dei lavori avviati da Claude Code (T-7302).
  */
 export async function reserveProviderRequest(input: {
   provider: MetricsProvider;
@@ -80,6 +92,7 @@ export async function reserveProviderRequest(input: {
         job_id: input.jobId ?? null,
         keyword_count: input.keywordCount,
         estimated_cost_usd: estimate,
+        agent: await isAgentJob(tx, input.jobId),
       },
       select: { id: true },
     });
@@ -119,6 +132,24 @@ export async function readFailedProviderRequests(provider: MetricsProvider, now:
     prisma.metricsProviderRequest.findFirst({ where, orderBy: { created_at: "desc" }, select: { provider_code: true } }),
   ]);
   return { failed, lastCode: last?.provider_code ?? null };
+}
+
+/** Inizio del giorno UTC di now. */
+function dayStartUtc(now: Date = new Date()): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+/**
+ * Spesa di oggi di Claude Code (T-7302, D-65): somma dei costi stimati delle richieste agent dal giorno UTC di now, in
+ * dollari con la precisione di Decimal(10,4). La stima si conosce prima dell'invio, quindi conta anche le richieste in
+ * corso.
+ */
+export async function agentSpendToday(now: Date = new Date()): Promise<number> {
+  const total = await prisma.metricsProviderRequest.aggregate({
+    _sum: { estimated_cost_usd: true },
+    where: { agent: true, created_at: { gte: dayStartUtc(now) } },
+  });
+  return toUnits(Number(total._sum.estimated_cost_usd ?? 0)) / 10_000;
 }
 
 /** Spesa del mese UTC corrente per il root admin. */

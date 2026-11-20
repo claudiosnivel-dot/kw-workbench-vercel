@@ -3,6 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { AgentKeyConfirmDialog } from "@/components/admin-agent-key-dialog";
+import { AgentSpendCapField } from "@/components/admin-agent-spend-cap";
 import { SettingsCard } from "@/components/settings-card";
 import { readApiResponse, sendJson } from "@/lib/client/http";
 import { useSaveAction } from "@/lib/client/use-save-action";
@@ -10,6 +11,7 @@ import {
   AGENT_KEY_DURATIONS,
   type AgentKeyDuration,
   type AgentKeyStatus,
+  type AgentSpend,
   type CreatedAgentKey,
   DEFAULT_AGENT_KEY_DURATION,
 } from "@/lib/modules/agent/key-types";
@@ -81,8 +83,17 @@ function KeyStatusList({ status }: { status: AgentKeyStatus }) {
  * Card «Claude Code» delle impostazioni dell'amministrazione (T-7102), solo per il root admin: stato della chiave, durata
  * (90 giorni preselezionati), creazione e revoca. La chiave nuova e il comando si vedono una volta, solo nello stato del
  * componente: mai in un URL né nello storage del browser; ricaricando resta il prefisso. La rotta riverifica il ruolo.
+ * In fondo il tetto giornaliero di spesa di Claude Code con la spesa di oggi (T-7302).
  */
-export function AdminAgentKeyCard({ initial, origin }: { initial: AgentKeyStatus | null; origin: string | null }) {
+export function AdminAgentKeyCard({
+  initial,
+  origin,
+  spend,
+}: {
+  initial: AgentKeyStatus | null;
+  origin: string | null;
+  spend: AgentSpend;
+}) {
   const t = useTranslations("admin.agentKey");
   const durationId = useId();
   const { saving, error, setError, save } = useSaveAction();
@@ -169,6 +180,8 @@ export function AdminAgentKeyCard({ initial, origin }: { initial: AgentKeyStatus
             </button>
           )}
         </div>
+
+        <AgentSpendCapField initial={spend} />
       </div>
 
       {dialog && active && (

@@ -21,3 +21,10 @@ export type AgentKeyStatus = {
 
 /** Risposta della creazione: la chiave in chiaro, l'unica volta in cui esce da Titan SEO, e il suo stato. */
 export type CreatedAgentKey = { key: string; status: AgentKeyStatus };
+
+/** Tetto giornaliero di spesa di Claude Code (T-7302, D-65): 2 $ di default, modificabile nella card da 0 a 100 $. */
+export const AGENT_DAILY_CAP_DEFAULT_USD = 2;
+export const AGENT_DAILY_CAP_MAX_USD = 100;
+
+/** Spesa di oggi (giorno UTC) delle richieste a pagamento dei lavori di Claude Code e tetto, in dollari. */
+export type AgentSpend = { spentTodayUsd: number; capUsd: number };

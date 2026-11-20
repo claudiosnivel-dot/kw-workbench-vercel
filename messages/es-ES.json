@@ -458,7 +458,8 @@
     "WP_AUTH_FAILED": "WordPress no ha aceptado el usuario y la contraseña de aplicación: revísalos e inténtalo de nuevo.",
     "WP_NOT_FOUND": "El sitio no responde como un WordPress: revisa la dirección y que la API REST esté activa.",
     "WP_UNREACHABLE": "No se puede acceder al sitio de WordPress: revisa la dirección y vuelve a intentarlo en un momento.",
-    "WP_REJECTED": "WordPress ha rechazado el artículo: inténtalo de nuevo o revisa los permisos del usuario de WordPress."
+    "WP_REJECTED": "WordPress ha rechazado el artículo: inténtalo de nuevo o revisa los permisos del usuario de WordPress.",
+    "AGENT_SPEND_CAP": "Claude Code ha alcanzado el límite de gasto de hoy: súbelo en los ajustes de administración o vuelve a intentarlo mañana."
   },
   "errorPages": {
     "error": {
@@ -843,7 +844,12 @@
       "copyKey": "Copiar la clave",
       "copyCommand": "Copiar el comando",
       "copied": "Copiado",
-      "onlyNow": "Cópialos ahora: la clave y el comando no se volverán a mostrar."
+      "onlyNow": "Cópialos ahora: la clave y el comando no se volverán a mostrar.",
+      "capLabel": "Límite diario de gasto (dólares)",
+      "spentToday": "Gastado hoy por los trabajos de Claude Code: {spent} de {cap}. El día termina a medianoche UTC.",
+      "capSave": "Guardar el límite",
+      "capSaving": "Guardando...",
+      "capSaved": "Límite guardado."
     },
     "user": {
       "back": "← Usuarios",

@@ -3,7 +3,9 @@ import { AppError } from "@/lib/http/errors";
 import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
 import { AGENT_INSTRUCTIONS } from "@/lib/modules/agent/instructions";
 import type { AgentTool } from "@/lib/modules/agent/tool";
+import { listKeywordsTool, setKeywordsTool } from "@/lib/modules/agent/tools/keywords";
 import { getProjectTool, listProjectsTool } from "@/lib/modules/agent/tools/projects";
+import { createProjectTool, runSearchTool, waitForJobTool } from "@/lib/modules/agent/tools/research";
 import { catalogTranslator } from "@/lib/modules/strategy/translator";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
@@ -18,8 +20,16 @@ export const MCP_PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26"] as const;
 
 export const JSON_RPC_ERRORS = { parseError: -32700, invalidRequest: -32600, methodNotFound: -32601, invalidParams: -32602 } as const;
 
-/** Registro degli strumenti: tools/list li elenca in quest'ordine, tools/call li cerca per nome. */
-const TOOLS: readonly AgentTool[] = [listProjectsTool, getProjectTool];
+/** Registro degli strumenti: tools/list li elenca in quest'ordine (quello del lavoro), tools/call li cerca per nome. */
+const TOOLS: readonly AgentTool[] = [
+  listProjectsTool,
+  getProjectTool,
+  createProjectTool,
+  runSearchTool,
+  waitForJobTool,
+  listKeywordsTool,
+  setKeywordsTool,
+];
 
 type JsonRpcId = string | number;
 

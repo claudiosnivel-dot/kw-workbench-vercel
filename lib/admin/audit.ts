@@ -26,6 +26,8 @@ export type AdminAuditAction =
   // Chiave di Claude Code del root admin creata o revocata (T-7101, D-64): prefisso e durata, mai la chiave.
   | "agent_key.create"
   | "agent_key.revoke"
+  // Tetto giornaliero di spesa di Claude Code cambiato (T-7302, D-65): tetto prima e dopo.
+  | "agent_key.settings"
   // Tetto dei rimborsi automatici della quota raggiunto (T-1703, D-27 emendata): evento di sistema, actor null.
   | "quota.refund_cap_reached";
 

@@ -6,6 +6,8 @@ import { enforceRateLimits } from "@/lib/security/rate-limit";
 import { rateLimitRules } from "@/lib/security/rate-limit-config";
 
 export const runtime = "nodejs";
+// wait_for_job aspetta fino a 50 s (T-7301): la rotta ha il tempo di rispondere.
+export const maxDuration = 60;
 
 const BEARER = /^Bearer\s+(\S+)$/i;
 
