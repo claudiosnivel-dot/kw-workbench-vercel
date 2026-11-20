@@ -227,15 +227,12 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
   });
 
   // covers: AC-7901-1
-  it("l'avviso high di picomatch è nell'allowlist con il motivo e la chiusura in T-8002, task del blueprint", () => {
-    const report = JSON.parse(audit.stdout) as AuditOutput;
+  // impacted-by: T-8101 (D-68: GHSA-fc5q-39xc-vjpf ritirato il 2026-11-18, la voce di picomatch è uscita dall'allowlist)
+  it("l'avviso ritirato di picomatch non è nel rapporto di npm audit né nell'allowlist", () => {
     const allowlist = readJson<AllowlistEntry[]>("tests/tooling/audit-allowlist.json");
-    const entry = allowlist.find((item) => item.ghsa === "GHSA-fc5q-39xc-vjpf");
 
-    expect(entry).toMatchObject({ package: "picomatch", closedBy: ["T-8002"] });
-    expect(entry?.reason.trim().length).toBeGreaterThan(0);
-    expect(blueprintTaskIds().has("T-8002")).toBe(true);
-    expect(unlistedHighAdvisories(report, allowlist)).toEqual([]);
+    expect(audit.stdout).not.toContain("GHSA-fc5q-39xc-vjpf");
+    expect(allowlist.filter((entry) => entry.ghsa === "GHSA-fc5q-39xc-vjpf" || entry.package === "picomatch")).toEqual([]);
   });
 
   // covers: AC-7901-2
@@ -246,6 +243,32 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
     expect(Object.keys(pkg.devDependencies)).not.toContain("picomatch");
     expect(importersOf("picomatch")).toEqual([]);
   });
+
+  // covers: AC-8101-1
+  it("l'avviso high di effect è nell'allowlist con il motivo e la chiusura in T-8002, task del blueprint", () => {
+    const report = JSON.parse(audit.stdout) as AuditOutput;
+    const allowlist = readJson<AllowlistEntry[]>("tests/tooling/audit-allowlist.json");
+    const entry = allowlist.find((item) => item.ghsa === "GHSA-7589-6fvf-x4pw");
+
+    expect(entry).toMatchObject({ package: "effect", closedBy: ["T-8002"] });
+    expect(entry?.reason.trim().length).toBeGreaterThan(0);
+    expect(blueprintTaskIds().has("T-8002")).toBe(true);
+    expect(unlistedHighAdvisories(report, allowlist)).toEqual([]);
+  });
+
+  // covers: AC-8101-2
+  it("effect non è una dipendenza diretta, nessun sorgente lo importa e ogni effect dell'albero è sotto prisma", () => {
+    const pkg = readJson<{ dependencies: Record<string, string>; devDependencies: Record<string, string> }>("package.json");
+    const ls = run("npm ls effect --json");
+    expect(ls.status, ls.stderr).toBe(0);
+    const tree = JSON.parse(ls.stdout) as LsNode;
+
+    expect(Object.keys(pkg.dependencies)).not.toContain("effect");
+    expect(Object.keys(pkg.devDependencies)).not.toContain("effect");
+    expect(importersOf("effect")).toEqual([]);
+    expect(versionsOf("effect", tree).length).toBeGreaterThan(0);
+    expect(Object.keys(tree.dependencies ?? {})).toEqual(["prisma"]);
+  }, COMMAND_TIMEOUT_MS);
 
   // covers: AC-406-4
   it("xlsx non è nell'albero delle dipendenze e nessun sorgente lo importa", () => {
