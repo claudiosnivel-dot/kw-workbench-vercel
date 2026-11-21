@@ -67,7 +67,9 @@ Uso in Titan SEO (`lib/modules/providers/serp/dataforseo-serp.ts`, `lib/modules/
 - Spesa: ogni chiamata a `task_post` è una riga di `metrics_provider_requests` (fornitore DATAFORSEO, `keyword_count`
   = task del lotto), prenotata con la stima 0,0012 $ per task e chiusa con il `cost` restituito; valgono
   `METRICS_MONTHLY_BUDGET_USD` e `METRICS_RUN_BUDGET_USD` come per i volumi e la spesa compare nella card «Spesa
-  fornitore metriche». Raccogliere i risultati non costa e non passa dal registro.
+  fornitore metriche». Raccogliere i risultati non costa e non passa dal registro. Le righe di un lavoro di piano
+  avviato da Claude Code (`plan_runs.origin` AGENT, T-7501) sono `agent` e contano per il suo tetto giornaliero, come
+  quelle delle sue ricerche (T-7302).
 - Raccolta: `tasks_ready`, poi `task_get/regular` (al massimo 10 richieste in parallelo) per i soli task richiesti e
   pronti; 40601 e 40602 restano in attesa. Si salvano in `keyword_serps` solo i risultati `organic`, al massimo 10
   nell'ordine di `rank_absolute`: gli URL in `urls`, che legge il motore del piano, e gli stessi risultati con `title`

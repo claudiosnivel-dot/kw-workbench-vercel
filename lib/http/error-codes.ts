@@ -137,6 +137,8 @@ export const API_ERROR_CODES = [
   "WP_REJECTED",
   // Tetto giornaliero di spesa di Claude Code raggiunto (T-7302, D-65).
   "AGENT_SPEND_CAP",
+  // Pagina del piano non «Da scrivere» toccata da Claude Code oltre stato e indirizzo pubblicato (T-7502, D-64).
+  "AGENT_PAGE_LOCKED",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

@@ -7,15 +7,15 @@ import type { StrategyView } from "@/lib/modules/strategy/types";
 type PlanGroupingNoticeProps = { grouping: { source: StrategyView["groupingSource"]; notice: StrategyView["groupingNotice"] } };
 
 /** Motivi con il testo proprio in plan.grouping.reason; gli altri sono quelli dei volumi (testi di «Aggiungi i volumi»). */
-const OWN_REASONS = ["PROVIDER_ERROR", "SERP_TIMEOUT", "SERP_TOO_FEW", "AI_CLASSIFY_UNAVAILABLE", "AI_NOT_CONFIGURED"] as const;
+const OWN_REASONS = ["PROVIDER_ERROR", "SERP_TIMEOUT", "SERP_TOO_FEW", "AI_CLASSIFY_UNAVAILABLE", "AI_NOT_CONFIGURED", "AGENT_PLAN"] as const;
 type OwnReason = (typeof OWN_REASONS)[number];
 const isOwnReason = (notice: string): notice is OwnReason => (OWN_REASONS as readonly string[]).includes(notice);
 
 /**
  * Avviso sopra il piano (T-6202, T-6303) quando manca un dato: con il raggruppamento di riserva dice in parole semplici
  * che le keyword sono raggruppate per parole in comune e perché; con i risultati di Google come fonte dice perché manca
- * qualcosa (l'AI di luoghi e concorrenti, i volumi). I motivi dei volumi e di DataForSEO hanno gli stessi testi di
- * «Aggiungi i volumi»; senza motivo nessun avviso.
+ * qualcosa (l'AI di luoghi e concorrenti, i volumi) o che il piano è preparato per Claude Code (AGENT_PLAN, T-7501). I
+ * motivi dei volumi e di DataForSEO hanno gli stessi testi di «Aggiungi i volumi»; senza motivo nessun avviso.
  */
 export function PlanGroupingNotice({ grouping: { source, notice } }: PlanGroupingNoticeProps) {
   const t = useTranslations("plan.grouping");

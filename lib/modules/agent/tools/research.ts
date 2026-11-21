@@ -7,7 +7,8 @@ import { isSupportedCountryCode, isSupportedLanguageCode, normalizeCountryCode, 
 import type { Job } from "@/lib/generated/prisma/client";
 import { AppError, JOB_ERROR_CODES } from "@/lib/http/errors";
 import { assertAgentSpendAllowed, readAgentSpend } from "@/lib/modules/agent/spend";
-import { defineTool } from "@/lib/modules/agent/tool";
+import { type AgentToolContext, defineTool } from "@/lib/modules/agent/tool";
+import { waitForPlanRun } from "@/lib/modules/agent/tools/plan";
 import { pollUntilFinished } from "@/lib/modules/agent/wait";
 import { scheduleJobContinuation } from "@/lib/modules/jobs/continuation";
 import { findActiveJobId } from "@/lib/modules/jobs/job-api";
@@ -164,42 +165,54 @@ async function searchProgress(job: Job) {
   return { done: job.progress_done, total: job.progress_total, keywordsFound: found, volumesRequested: volumes };
 }
 
+/** Attesa di una ricerca: quantità trovate e chieste e, a lavoro finito, le keyword tenute dell'argomento. */
+async function waitForSearch(jobId: string, { user, recordProject }: AgentToolContext) {
+  const owned = await prisma.job.findFirst({
+    where: { id: jobId, project: projectAccessWhere(user.id, "project.read") },
+    select: { id: true, project_id: true },
+  });
+  if (!owned) {
+    throw jobNotFound();
+  }
+  recordProject(owned.project_id);
+
+  const { value: job, finished } = await pollUntilFinished(
+    async () => {
+      const current = await readJob(jobId);
+      if (!current) {
+        throw jobNotFound();
+      }
+      return current;
+    },
+    (current) => !ACTIVE_JOB_STATUSES.includes(current.status)
+  );
+  const keptKeywords = finished ? await prisma.keywordCandidate.count({ where: { subproject_id: job.subproject_id, ...KEPT_WHERE } }) : undefined;
+  return {
+    jobId: job.id,
+    topicId: job.subproject_id,
+    status: job.status,
+    phase: job.phase,
+    finished,
+    progress: await searchProgress(job),
+    ...(keptKeywords === undefined ? {} : { keptKeywords }),
+    ...(job.status === "failed" ? { error: job.error_message } : {}),
+    spend: await readAgentSpend(),
+  };
+}
+
 export const waitForJobTool = defineTool({
   name: "wait_for_job",
   description:
-    "Wait for a keyword research started by create_project or run_search: answers as soon as it is finished (completed, failed or canceled) or after about 50 seconds with its status, phase and progress (keywords found, volumes requested); when finished, also the number of kept keywords of the topic. Call it again while finished is false.",
-  input: z.object({ jobId: idField("Job id from create_project or run_search") }).strict(),
-  async run({ jobId }, { user, recordProject }) {
-    const owned = await prisma.job.findFirst({
-      where: { id: jobId, project: projectAccessWhere(user.id, "project.read") },
-      select: { id: true, project_id: true },
-    });
-    if (!owned) {
-      throw jobNotFound();
-    }
-    recordProject(owned.project_id);
-
-    const { value: job, finished } = await pollUntilFinished(
-      async () => {
-        const current = await readJob(jobId);
-        if (!current) {
-          throw jobNotFound();
-        }
-        return current;
-      },
-      (current) => !ACTIVE_JOB_STATUSES.includes(current.status)
-    );
-    const keptKeywords = finished ? await prisma.keywordCandidate.count({ where: { subproject_id: job.subproject_id, ...KEPT_WHERE } }) : undefined;
-    return {
-      jobId: job.id,
-      topicId: job.subproject_id,
-      status: job.status,
-      phase: job.phase,
-      finished,
-      progress: await searchProgress(job),
-      ...(keptKeywords === undefined ? {} : { keptKeywords }),
-      ...(job.status === "failed" ? { error: job.error_message } : {}),
-      spend: await readAgentSpend(),
-    };
+    "Wait for a keyword research (jobId from create_project or run_search) or a plan job (runId from build_plan): answers as soon as it is finished (completed, failed or canceled) or after about 50 seconds with its status, phase and progress. For a research the progress counts keywords found and volumes requested and, when finished, the kept keywords of the topic; for a plan job it counts the keywords with Google results and, when completed, gives the strategyId of the plan. Call it again while finished is false.",
+  input: z
+    .object({
+      jobId: idField("Job id from create_project or run_search").optional(),
+      runId: idField("Plan job id from build_plan").optional(),
+    })
+    .strict()
+    .refine((input) => (input.jobId === undefined) !== (input.runId === undefined), "pass exactly one of jobId and runId"),
+  async run({ jobId, runId }, context) {
+    // Lavoro di piano con runId (T-7501), ricerca con jobId (T-7301).
+    return runId ? waitForPlanRun(runId, context) : waitForSearch(jobId!, context);
   },
 });

@@ -118,6 +118,8 @@ export type PlanPageSpec = {
   h2Edited?: boolean;
   /** Stato di scrittura (T-2501), da scrivere se manca. */
   status?: StrategyPageStatus;
+  /** Tipo di contenuto, guide se manca. */
+  contentType?: StrategyContentType;
 };
 
 /**
@@ -182,7 +184,7 @@ export async function insertStrategy(params: {
         h2_edited: page.h2Edited ?? false,
         status: page.status ?? "TODO",
         status_changed_at: page.status && page.status !== "TODO" ? new Date() : null,
-        content_type: "guide" as const,
+        content_type: page.contentType ?? "guide",
         priority: page.keywords.reduce((sum, keyword) => sum + (keyword.volume ?? 0), 0),
         position,
         reason_code: page.kind === "HUB" ? "HUB_SEED" : "SPOKE_WORD",

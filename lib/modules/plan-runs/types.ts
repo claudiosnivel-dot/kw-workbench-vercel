@@ -14,7 +14,8 @@ export type PlanRunPhase = (typeof PLAN_RUN_PHASES)[number] | "done";
  * Motivi salvati in grouping_notice (T-6201, T-6303): quelli dei volumi (MetricsNotice), un errore del fornitore, la
  * raccolta dei risultati di Google oltre i 10 minuti e i risultati per meno di metà delle keyword (raggruppamento di
  * riserva); l'AI che non ha risposto o non è attiva (luoghi e concorrenti dai soli riconoscimenti fissi, anche con i
- * risultati di Google come fonte).
+ * risultati di Google come fonte); il piano preparato per Claude Code senza le AI di Titan SEO (T-7501), al posto dei
+ * due motivi dell'AI.
  */
 export const PLAN_NOTICES = [
   "PLAN_NO_LICENSED_METRICS",
@@ -29,6 +30,7 @@ export const PLAN_NOTICES = [
   "SERP_TOO_FEW",
   "AI_CLASSIFY_UNAVAILABLE",
   "AI_NOT_CONFIGURED",
+  "AGENT_PLAN",
 ] as const;
 export type PlanNotice = (typeof PLAN_NOTICES)[number];
 
