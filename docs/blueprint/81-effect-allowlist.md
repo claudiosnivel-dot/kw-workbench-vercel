@@ -51,7 +51,7 @@
 - Modulo dalla risposta dell'utente del 2026-11-20 («scelta A») al riepilogo del 73, il cui checkpoint era NON-VERDE solo per `dependency-audit` (D-68).
 - Esposizione: dal lockfile, effect è solo sotto `prisma` → `@prisma/config` (devDependency), il CLI che legge `prisma.config.ts` per migrazioni, generate e build; nessun sorgente dell'app lo importa e il client generato non lo usa. Valutata solo dall'albero delle dipendenze e dal testo dell'avviso.
 - Ordine: si costruisce subito, prima di chiudere il 73, per scelta dell'utente; dipende da 04, 60 e 79, già chiusi. L'80 dipende anche dall'81 (T-8002 chiude la sua voce), come il 40 dipende dal 51.
-- Note di costruzione (2026-11-20, scelte dell'agente da confermare):
+- Note di costruzione (2026-11-20; la scelta di fondo è dell'utente, D-68; questi dettagli tecnici restano dell'agente, D-69):
   - voce dell'allowlist con il motivo in italiano, che rimanda a D-68 e T-8101, e `closedBy` ["T-8002"];
   - il caso di AC-7901-1 cerca GHSA-fc5q-39xc-vjpf nel testo intero del rapporto di npm audit e vuole l'allowlist
     senza voci con quel GHSA o con il package picomatch;
