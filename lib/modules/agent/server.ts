@@ -6,6 +6,7 @@ import type { AgentTool } from "@/lib/modules/agent/tool";
 import { listKeywordsTool, setKeywordsTool } from "@/lib/modules/agent/tools/keywords";
 import { getProjectTool, listProjectsTool } from "@/lib/modules/agent/tools/projects";
 import { createProjectTool, runSearchTool, waitForJobTool } from "@/lib/modules/agent/tools/research";
+import { getSerpsTool } from "@/lib/modules/agent/tools/serps";
 import { catalogTranslator } from "@/lib/modules/strategy/translator";
 import { logger } from "@/lib/observability/logger";
 import { prisma } from "@/lib/prisma";
@@ -29,6 +30,7 @@ const TOOLS: readonly AgentTool[] = [
   waitForJobTool,
   listKeywordsTool,
   setKeywordsTool,
+  getSerpsTool,
 ];
 
 type JsonRpcId = string | number;

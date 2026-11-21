@@ -23,6 +23,8 @@ export const SERP_TASKS_PER_CALL = 100;
 export const SERP_PRIORITY_COST_USD = 0.0012;
 /** Risultati organici salvati per keyword: una pagina di Google, il prezzo di una SERP. */
 export const SERP_MAX_URLS = 10;
+/** Lunghezza massima di titolo e descrizione salvati di un risultato (T-7401). */
+const SERP_TEXT_MAX_LENGTH = 300;
 
 const PRIORITY_HIGH = 2;
 const STATUS_OK = 20000;
@@ -68,6 +70,9 @@ export function withoutTrackingParams(value: string): string {
 /** Un task inviato: la forma canonica della keyword e l'id del task restituito da DataForSEO. */
 export type SerpTask = { canonical: string; taskId: string };
 
+/** Risultato organico salvato in keyword_serps.results (T-7401): testo di terzi, null dove manca. */
+export type SerpResult = { url: string; title: string | null; description: string | null };
+
 /** Motivo per cui i risultati non sono stati chiesti o raccolti (stessi codici dei volumi). */
 export type SerpNotice = Extract<
   MetricsNotice,
@@ -94,7 +99,7 @@ export type SerpCollectOutcome = {
   providerError?: MetricsProviderError;
 };
 
-type SerpItem = { type?: string; rank_absolute?: number; url?: string | null };
+type SerpItem = { type?: string; rank_absolute?: number; url?: string | null; title?: string | null; description?: string | null };
 type ApiTask<R> = { id?: string; status_code?: number; cost?: number; result?: R[] | null };
 type ApiResponse<R> = { status_code?: number; cost?: number; tasks?: ApiTask<R>[] };
 type Call<R> = { ok: boolean; httpStatus: number | null; body: ApiResponse<R> };
@@ -119,11 +124,25 @@ function errorOf(call: Call<unknown>): MetricsProviderError {
   return { httpStatus: call.httpStatus, code: typeof call.body.status_code === "number" ? call.body.status_code : null };
 }
 
+const CONTROL_CHARACTERS = /\p{Cc}/gu;
+const LONE_HIGH_SURROGATE = /[\uD800-\uDBFF]$/;
+
 /**
- * URL dei soli risultati organic nell'ordine di rank_absolute, al massimo 10, senza i link goto di Google rimasti e
- * senza i parametri di tracciamento (T-6504): dati esterni salvati come testo.
+ * Titolo o descrizione di un risultato come testo semplice (T-7401): i caratteri di controllo diventano spazi (Postgres
+ * non salva \u0000 nei JSON), gli spazi si uniscono e il testo si taglia a 300 caratteri senza spezzare una coppia
+ * surrogata; vuoto o mancante è null.
  */
-function organicUrls(items: SerpItem[]): string[] {
+function serpText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.replace(CONTROL_CHARACTERS, " ").replace(/\s+/g, " ").trim();
+  return text.length === 0 ? null : text.slice(0, SERP_TEXT_MAX_LENGTH).replace(LONE_HIGH_SURROGATE, "").trimEnd();
+}
+
+/**
+ * Soli risultati organic nell'ordine di rank_absolute, al massimo 10, senza i link goto di Google rimasti e senza i
+ * parametri di tracciamento (T-6504), con titolo e descrizione (T-7401): dati esterni salvati come testo.
+ */
+function organicResults(items: SerpItem[]): SerpResult[] {
   return items
     .filter(
       (item) =>
@@ -135,7 +154,7 @@ function organicUrls(items: SerpItem[]): string[] {
     )
     .sort((left, right) => (left.rank_absolute ?? Number.MAX_SAFE_INTEGER) - (right.rank_absolute ?? Number.MAX_SAFE_INTEGER))
     .slice(0, SERP_MAX_URLS)
-    .map((item) => withoutTrackingParams(item.url as string));
+    .map((item) => ({ url: withoutTrackingParams(item.url as string), title: serpText(item.title), description: serpText(item.description) }));
 }
 
 /**
@@ -217,8 +236,8 @@ type Collected = { kind: "saved" | "pending" | "failed"; task: SerpTask; error?:
 
 /**
  * Raccoglie i task pronti (tasks_ready, poi task_get/regular per ognuno dei richiesti) e salva in keyword_serps gli URL
- * organic, con fetched_at aggiornato; restituisce i task ancora non pronti e quelli non riusciti. Leggere i risultati
- * non costa (la spesa è all'invio), quindi le chiamate non passano dal registro.
+ * organic con titolo e descrizione (T-7401), con fetched_at aggiornato; restituisce i task ancora non pronti e quelli
+ * non riusciti. Leggere i risultati non costa (la spesa è all'invio), quindi le chiamate non passano dal registro.
  */
 export async function collectSerpTasks(tasks: SerpTask[], context: MetricsContext): Promise<SerpCollectOutcome> {
   const outcome: SerpCollectOutcome = { saved: [], pending: [], failed: [] };
@@ -249,12 +268,14 @@ export async function collectSerpTasks(tasks: SerpTask[], context: MetricsContex
     if (!call.ok || apiTask?.status_code !== STATUS_OK) {
       return { kind: "failed", task, error: { httpStatus: call.httpStatus, code: apiTask?.status_code ?? errorOf(call).code } };
     }
-    const urls = organicUrls(apiTask.result?.flatMap((result) => result.items ?? []) ?? []);
+    // urls resta l'elenco che legge il motore del piano; results ha gli stessi risultati con titolo e descrizione.
+    const results = organicResults(apiTask.result?.flatMap((result) => result.items ?? []) ?? []);
+    const urls = results.map((result) => result.url);
     const key = { language_code: languageCode, country_code: countryCode, canonical_keyword: task.canonical };
     await prisma.keywordSerp.upsert({
       where: { language_code_country_code_canonical_keyword: key },
-      create: { ...key, urls },
-      update: { urls, fetched_at: new Date() },
+      create: { ...key, urls, results },
+      update: { urls, results, fetched_at: new Date() },
     });
     return { kind: "saved", task };
   });

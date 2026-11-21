@@ -69,8 +69,12 @@ Uso in Titan SEO (`lib/modules/providers/serp/dataforseo-serp.ts`, `lib/modules/
   `METRICS_MONTHLY_BUDGET_USD` e `METRICS_RUN_BUDGET_USD` come per i volumi e la spesa compare nella card «Spesa
   fornitore metriche». Raccogliere i risultati non costa e non passa dal registro.
 - Raccolta: `tasks_ready`, poi `task_get/regular` (al massimo 10 richieste in parallelo) per i soli task richiesti e
-  pronti; 40601 e 40602 restano in attesa. Si salvano in `keyword_serps` solo gli URL dei risultati `organic`, al
-  massimo 10 nell'ordine di `rank_absolute`: dati esterni salvati come testo, mai seguiti dal server né resi come HTML.
+  pronti; 40601 e 40602 restano in attesa. Si salvano in `keyword_serps` solo i risultati `organic`, al massimo 10
+  nell'ordine di `rank_absolute`: gli URL in `urls`, che legge il motore del piano, e gli stessi risultati con `title`
+  e `description` dell'item in `results` (T-7401, colonna nullable: le righe di prima restano null finché non si
+  rinnovano dopo i 30 giorni), testi senza caratteri di controllo e al massimo di 300 caratteri. Dati esterni salvati
+  come testo, mai seguiti dal server né resi come HTML; Claude Code li legge con lo strumento `get_serps` (T-7402),
+  che non fa richieste a DataForSEO.
 - Cache: i risultati di una keyword (forma canonica, lingua, paese) valgono 30 giorni (`SERP_MAX_AGE_DAYS`); entro i
   30 giorni la keyword non si invia di nuovo.
 - Solo chi può usare i dati con licenza (`canUseLicensedMetrics`: root admin, o diritto `licensedMetrics` con il lancio
