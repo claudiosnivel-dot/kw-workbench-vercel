@@ -38,15 +38,19 @@ async function spent(client: Client, where: Prisma.MetricsProviderRequestWhereIn
 }
 
 /**
- * Richiesta di una ricerca avviata da Claude Code (jobs.origin AGENT, T-7302): conta per il suo tetto giornaliero. Gli id
- * dei lavori di piano non sono ricerche e restano fuori, finché il modulo 75 non li segna.
+ * Richiesta di una ricerca (jobs.origin AGENT, T-7302) o di un lavoro di piano (plan_runs.origin AGENT, T-7501) avviati
+ * da Claude Code: conta per il suo tetto giornaliero. jobId è l'id dell'uno o dell'altro.
  */
 async function isAgentJob(client: Client, jobId: string | undefined): Promise<boolean> {
   if (!jobId) {
     return false;
   }
   const job = await client.job.findUnique({ where: { id: jobId }, select: { origin: true } });
-  return job?.origin === "AGENT";
+  if (job) {
+    return job.origin === "AGENT";
+  }
+  const run = await client.planRun.findUnique({ where: { id: jobId }, select: { origin: true } });
+  return run?.origin === "AGENT";
 }
 
 /**

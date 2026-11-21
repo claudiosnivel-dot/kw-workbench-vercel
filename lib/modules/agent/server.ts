@@ -4,6 +4,7 @@ import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
 import { AGENT_INSTRUCTIONS } from "@/lib/modules/agent/instructions";
 import type { AgentTool } from "@/lib/modules/agent/tool";
 import { listKeywordsTool, setKeywordsTool } from "@/lib/modules/agent/tools/keywords";
+import { buildPlanTool, editPlanTool, getPlanTool, updatePageTool } from "@/lib/modules/agent/tools/plan";
 import { getProjectTool, listProjectsTool } from "@/lib/modules/agent/tools/projects";
 import { createProjectTool, runSearchTool, waitForJobTool } from "@/lib/modules/agent/tools/research";
 import { getSerpsTool } from "@/lib/modules/agent/tools/serps";
@@ -31,6 +32,10 @@ const TOOLS: readonly AgentTool[] = [
   listKeywordsTool,
   setKeywordsTool,
   getSerpsTool,
+  buildPlanTool,
+  getPlanTool,
+  editPlanTool,
+  updatePageTool,
 ];
 
 type JsonRpcId = string | number;

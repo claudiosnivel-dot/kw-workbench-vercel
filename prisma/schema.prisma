@@ -80,7 +80,7 @@ enum JobType {
   extraction
 }
 
-// Chi ha avviato la ricerca (T-7301, D-64): l'app o Claude Code dal server MCP.
+// Chi ha avviato la ricerca (T-7301, D-64) o il lavoro di piano (T-7501): l'app o Claude Code dal server MCP.
 enum JobOrigin {
   APP
   AGENT
@@ -1132,6 +1132,8 @@ model PlanRun {
   strategy_id    String?
   notice         String?
   error_code     String?
+  /// AGENT per i lavori avviati da Claude Code (T-7501): niente AI di Titan SEO, richieste a pagamento nel suo tetto.
+  origin         JobOrigin @default(APP)
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   project        Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)

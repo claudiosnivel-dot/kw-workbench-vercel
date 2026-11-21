@@ -77,6 +77,7 @@ export const PLAN_RUN_SELECT = {
   locked_until: true,
   notice: true,
   strategy_id: true,
+  origin: true,
   requester: { select: { is_root_admin: true } },
 } satisfies Prisma.PlanRunSelect;
 
@@ -124,6 +125,9 @@ function requesterOf(run: PlanRunRecord): { id: string } {
 }
 
 const actorOf = (run: PlanRunRecord) => ({ isRootAdmin: run.requester?.is_root_admin ?? false });
+
+/** Lavoro avviato da Claude Code (T-7501): niente AI di Titan SEO, il ragionamento è suo. */
+const byAgent = (run: PlanRunRecord) => run.origin === "AGENT";
 
 /** Il primo motivo resta: il piano dice perché è mancato il primo dato. */
 const firstNotice = (run: PlanRunRecord, notice: PlanNotice | undefined) => run.notice ?? notice ?? null;
@@ -249,9 +253,14 @@ async function planAi(run: PlanRunRecord, deadlineMs: number): Promise<ClassifyC
 /**
  * Classifica le keyword con risultati a gruppi di CLASSIFY_BATCH_SIZE, uno per volta (al più una richiesta al modello
  * con i suoi tentativi), e ripete la fase finché le ha viste tutte; con risultati per meno di metà delle keyword passa
- * subito al raggruppamento, che userà il motore di oggi, senza chiamare il modello.
+ * subito al raggruppamento, che userà il motore di oggi, senza chiamare il modello. Un lavoro di Claude Code (T-7501)
+ * passa subito al raggruppamento senza cursore: restano i soli riconoscimenti fissi (savedClasses).
  */
 async function classifyPhase({ run, lease, deadlineMs }: PlanPhaseContext): Promise<PlanPhaseOutcome> {
+  if (byAgent(run)) {
+    await writePlanRun(prisma, lease, { phase: "cluster" });
+    return undefined;
+  }
   const inputs = await serpInputs(run);
   const state = classifyCursorOf(run.cursor) ?? { offset: 0, place: [], competitor: [], notice: null };
   if (!inputs.useSerp || state.offset >= inputs.keywords.length) {
@@ -290,8 +299,8 @@ function savedClasses(run: PlanRunRecord, keywords: StrategyKeywordInput[], serp
 
 /**
  * Strategia da salvare con la fonte del raggruppamento (T-6303): con i risultati di Google buildSerpPlan, grouping_source
- * SERP e come motivo il primo dato mancato o quello dell'AI; altrimenti il motore di oggi, ENGINE e il primo dato mancato
- * o SERP_TOO_FEW.
+ * SERP e come motivo il primo dato mancato o quello dell'AI, che per un lavoro di Claude Code è AGENT_PLAN (T-7501);
+ * altrimenti il motore di oggi, ENGINE e il primo dato mancato o SERP_TOO_FEW.
  */
 async function prepareDraft(run: PlanRunRecord): Promise<{ draft: StrategyDraft; grouping: StrategyGrouping }> {
   const request = requestOf(run);
@@ -303,13 +312,15 @@ async function prepareDraft(run: PlanRunRecord): Promise<{ draft: StrategyDraft;
   }
   const classes = savedClasses(run, inputs.keywords, inputs.serps, inputs.language);
   // T-6702 (D-62): angoli solo con i luoghi riconosciuti dall'AI in ogni gruppo; con i soli riconoscimenti fissi le città
-  // diventerebbero angoli. Il cursore tiene il primo motivo dei gruppi: basta un gruppo non riuscito per non averne.
-  const aiClassified = classifyCursorOf(run.cursor)?.notice === null;
+  // diventerebbero angoli. Il cursore tiene il primo motivo dei gruppi: basta un gruppo non riuscito per non averne. Un
+  // lavoro di Claude Code (T-7501) non classifica con l'AI, quindi non ne ha: gli angoli li valuta lui.
+  const aiClassified = !byAgent(run) && classifyCursorOf(run.cursor)?.notice === null;
   const draft = await draftStrategy(user, run.project_id, request, request.name, (input) => {
     const plan = buildSerpPlan({ ...input, serps: inputs.serps, classes });
     return aiClassified ? plan : { ...plan, angles: [] };
   });
-  return { draft, grouping: { source: "SERP", notice: run.notice ?? classifyCursorOf(run.cursor)?.notice ?? null } };
+  const aiNotice: PlanNotice | null = byAgent(run) ? "AGENT_PLAN" : (classifyCursorOf(run.cursor)?.notice ?? null);
+  return { draft, grouping: { source: "SERP", notice: run.notice ?? aiNotice } };
 }
 
 /** Raggruppa il perimetro e prepara la strategia; la fase save la salva nello stesso passo. */
@@ -325,11 +336,11 @@ const COMPLETED = { status: "completed", phase: "done", locked_until: null } sat
 /**
  * Salva la strategia con la fonte del raggruppamento e il motivo, e nella stessa transazione scrive strategy_id nel
  * lavoro: un passo che ha perso la lease non salva nulla. Con angoli da valutare il lavoro passa alla fase advise
- * (T-6901), altrimenti si chiude a completed.
+ * (T-6901), altrimenti si chiude a completed; un lavoro di Claude Code (T-7501) non ha la fase advise.
  */
 async function savePhase({ run, lease, memo }: PlanPhaseContext): Promise<PlanPhaseOutcome> {
   const { draft, grouping } = memo.prepared ?? (await prepareDraft(run));
-  const advise = draft.keywordRows.some((row) => row.angle);
+  const advise = !byAgent(run) && draft.keywordRows.some((row) => row.angle);
   await saveStrategyDraft(draft, grouping, (tx, strategyId) =>
     writePlanRun(tx, lease, { ...(advise ? { phase: "advise" } : COMPLETED), strategy_id: strategyId, progress_done: run.progress_total })
   );

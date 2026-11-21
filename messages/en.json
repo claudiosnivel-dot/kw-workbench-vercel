@@ -459,7 +459,8 @@
     "WP_NOT_FOUND": "The site does not answer like WordPress: check the address and that the REST API is turned on.",
     "WP_UNREACHABLE": "The WordPress site can't be reached: check the address and try again shortly.",
     "WP_REJECTED": "WordPress refused the article: try again or check the WordPress user's permissions.",
-    "AGENT_SPEND_CAP": "Claude Code reached today's spending cap: raise it in the admin settings or try again tomorrow."
+    "AGENT_SPEND_CAP": "Claude Code reached today's spending cap: raise it in the admin settings or try again tomorrow.",
+    "AGENT_PAGE_LOCKED": "This page is no longer “To write”: Claude Code can only change its status, its published URL and its article."
   },
   "errorPages": {
     "error": {
@@ -1937,7 +1938,8 @@
         "SERP_TIMEOUT": "Google results did not arrive in time.",
         "SERP_TOO_FEW": "Google results arrived for fewer than half of the keywords.",
         "AI_CLASSIFY_UNAVAILABLE": "The AI did not respond: places and competitors are recognized only from words such as “near me” and from the site name in the results.",
-        "AI_NOT_CONFIGURED": "The AI is not active: places and competitors are recognized only from words such as “near me” and from the site name in the results."
+        "AI_NOT_CONFIGURED": "The AI is not active: places and competitors are recognized only from words such as “near me” and from the site name in the results.",
+        "AGENT_PLAN": "Plan prepared for Claude Code: it judges places, competitors and angles itself."
       }
     },
     "angles": {

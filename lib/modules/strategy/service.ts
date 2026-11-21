@@ -82,27 +82,41 @@ const generateSchema = z.object({
 
 const renameSchema = z.object({ name: z.string().trim().min(1).max(STRATEGY_NAME_MAX_LENGTH), version: versionField });
 
+/**
+ * Operazioni sulla struttura del piano (T-1904, T-6801), una per tipo: la rotta delle operazioni le accetta tutte, il
+ * server MCP tutte tranne delete_page (T-7502).
+ */
+export const OPERATION_SCHEMAS = {
+  moveKeywords: z.object({
+    type: z.literal("move_keywords"),
+    keywordIds: z.array(idField).min(1).max(STRATEGY_MAX_KEYWORDS),
+    targetPageId: idField.nullable(),
+  }),
+  promoteToHub: z.object({ type: z.literal("promote_to_hub"), pageId: idField }),
+  mergePages: z.object({ type: z.literal("merge_pages"), sourcePageId: idField, targetPageId: idField }),
+  deletePage: z.object({ type: z.literal("delete_page"), pageId: idField }),
+  movePage: z.object({ type: z.literal("move_page"), pageId: idField, targetHubId: idField }),
+  // T-6801: pagina nuova da al massimo 50 keyword, con l'H1 della PATCH delle pagine (CWE-20).
+  createPage: z.object({
+    type: z.literal("create_page"),
+    keywordIds: z.array(idField).min(1).max(CREATE_PAGE_MAX_KEYWORDS),
+    hubPageId: idField.nullable(),
+    h1: titleField.optional(),
+    contentType: z.enum(STRATEGY_CONTENT_TYPES).optional(),
+  }),
+  keepAngle: z.object({ type: z.literal("keep_angle"), keywordIds: z.array(idField).min(1).max(STRATEGY_MAX_KEYWORDS) }),
+};
+
 const operationSchema = z.object({
   version: versionField,
   operation: z.discriminatedUnion("type", [
-    z.object({
-      type: z.literal("move_keywords"),
-      keywordIds: z.array(idField).min(1).max(STRATEGY_MAX_KEYWORDS),
-      targetPageId: idField.nullable(),
-    }),
-    z.object({ type: z.literal("promote_to_hub"), pageId: idField }),
-    z.object({ type: z.literal("merge_pages"), sourcePageId: idField, targetPageId: idField }),
-    z.object({ type: z.literal("delete_page"), pageId: idField }),
-    z.object({ type: z.literal("move_page"), pageId: idField, targetHubId: idField }),
-    // T-6801: pagina nuova da al massimo 50 keyword, con l'H1 della PATCH delle pagine (CWE-20).
-    z.object({
-      type: z.literal("create_page"),
-      keywordIds: z.array(idField).min(1).max(CREATE_PAGE_MAX_KEYWORDS),
-      hubPageId: idField.nullable(),
-      h1: titleField.optional(),
-      contentType: z.enum(STRATEGY_CONTENT_TYPES).optional(),
-    }),
-    z.object({ type: z.literal("keep_angle"), keywordIds: z.array(idField).min(1).max(STRATEGY_MAX_KEYWORDS) }),
+    OPERATION_SCHEMAS.moveKeywords,
+    OPERATION_SCHEMAS.promoteToHub,
+    OPERATION_SCHEMAS.mergePages,
+    OPERATION_SCHEMAS.deletePage,
+    OPERATION_SCHEMAS.movePage,
+    OPERATION_SCHEMAS.createPage,
+    OPERATION_SCHEMAS.keepAngle,
   ]),
 });
 
@@ -117,15 +131,18 @@ const publishedUrlField = z
     return url.protocol === "https:" && url.hostname !== "" && !url.username && !url.password;
   }, "indirizzo https assoluto, senza credenziali");
 
+/** Campi della PATCH di una pagina (T-1904, T-2501, T-4502), anche per update_page del server MCP (T-7502). */
+export const PAGE_PATCH_SHAPE = {
+  version: versionField,
+  h1: titleField.optional(),
+  h2: z.array(titleField).max(MAX_H2_ITEMS).optional(),
+  contentType: z.enum(STRATEGY_CONTENT_TYPES).optional(),
+  status: z.enum(STRATEGY_PAGE_STATUSES).optional(),
+  publishedUrl: publishedUrlField.optional(),
+};
+
 const pagePatchSchema = z
-  .object({
-    version: versionField,
-    h1: titleField.optional(),
-    h2: z.array(titleField).max(MAX_H2_ITEMS).optional(),
-    contentType: z.enum(STRATEGY_CONTENT_TYPES).optional(),
-    status: z.enum(STRATEGY_PAGE_STATUSES).optional(),
-    publishedUrl: publishedUrlField.optional(),
-  })
+  .object(PAGE_PATCH_SHAPE)
   .refine((value) => [value.h1, value.h2, value.contentType, value.status, value.publishedUrl].some((field) => field !== undefined), {
     message: "nessun campo da modificare",
   });
@@ -1169,6 +1186,13 @@ async function mutatePlan(
 }
 
 /**
+ * Controllo facoltativo di chi modifica sul piano letto dopo la presa della version, prima della modifica (la guardia
+ * delle pagine iniziate di Claude Code, T-7502): un errore lanciato annulla la transazione, version compresa.
+ */
+export type OperationGuard = (state: EditorState, operation: StrategyOperation) => void;
+export type PagePatchGuard = (state: EditorState, pageId: string, patch: PagePatch) => void;
+
+/**
  * Operazione sulla struttura del piano (T-1904): restituisce la nuova version e, per create_page (T-6801), l'id della
  * pagina nuova, scelto qui perché l'editor resti puro.
  */
@@ -1176,11 +1200,15 @@ export async function operateOnStrategy(
   user: { id: string },
   projectId: string,
   strategyId: string,
-  body: unknown
+  body: unknown,
+  guard?: OperationGuard
 ): Promise<{ version: number; pageId?: string }> {
   const { version, operation: request } = parseOperationRequest(body);
   const operation: StrategyOperation = request.type === "create_page" ? { ...request, newPageId: randomUUID() } : request;
-  const next = await mutatePlan(user, projectId, strategyId, version, (state, context) => applyOperation(state, operation, context));
+  const next = await mutatePlan(user, projectId, strategyId, version, (state, context) => {
+    guard?.(state, operation);
+    return applyOperation(state, operation, context);
+  });
   return operation.type === "create_page" ? { version: next, pageId: operation.newPageId } : { version: next };
 }
 
@@ -1189,10 +1217,14 @@ export function patchStrategyPage(
   projectId: string,
   strategyId: string,
   pageId: string,
-  body: unknown
+  body: unknown,
+  guard?: PagePatchGuard
 ): Promise<number> {
   const { version, ...patch } = parsePagePatchRequest(body);
-  return mutatePlan(user, projectId, strategyId, version, (state, context) => applyPagePatch(state, pageId, patch, context));
+  return mutatePlan(user, projectId, strategyId, version, (state, context) => {
+    guard?.(state, pageId, patch);
+    return applyPagePatch(state, pageId, patch, context);
+  });
 }
 
 /** Rinomina con controllo della version (T-1903). */

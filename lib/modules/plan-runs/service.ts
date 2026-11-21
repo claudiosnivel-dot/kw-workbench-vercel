@@ -1,5 +1,5 @@
 import { requireProjectAccess } from "@/lib/authz/workspace";
-import { Prisma } from "@/lib/generated/prisma/client";
+import { type JobOrigin, Prisma } from "@/lib/generated/prisma/client";
 import { AppError, JOB_ERROR_CODES } from "@/lib/http/errors";
 import { schedulePlanRunContinuation } from "@/lib/modules/jobs/continuation";
 import { ACTIVE_JOB_STATUSES } from "@/lib/modules/jobs/job-state";
@@ -19,7 +19,7 @@ const activePlanRunError = (runId: string | undefined) =>
   new AppError(409, JOB_ERROR_CODES.alreadyActive, "C'è già un piano in preparazione per questo progetto", runId ? { runId } : undefined);
 
 /** Lavoro inesistente o di un altro progetto: stessa risposta (CWE-639). */
-class PlanRunNotFoundError extends AppError {
+export class PlanRunNotFoundError extends AppError {
   constructor() {
     super(404, "PLAN_RUN_NOT_FOUND", "Lavoro di piano non trovato");
     this.name = "PlanRunNotFoundError";
@@ -36,10 +36,16 @@ async function activeRunIdOf(projectId: string): Promise<string | undefined> {
 /**
  * Avvia il lavoro di piano (T-6201): permessi, limite di 20 strategie, sezione e perimetro non vuoto come la
  * generazione di oggi (T-1903); con un lavoro attivo nel progetto 409 JOB_ALREADY_ACTIVE con il suo runId, anche per due
- * avvii insieme (indice unico parziale, CWE-362). Il lavoro salva la richiesta con il nome già scelto e il primo passo
- * parte con la continuazione firmata.
+ * avvii insieme (indice unico parziale, CWE-362). Il lavoro salva la richiesta con il nome già scelto e chi l'ha avviato
+ * (AGENT per Claude Code, T-7501), e il primo passo parte con la continuazione firmata.
  */
-export async function startPlanRun(user: { id: string }, projectId: string, request: GenerateRequest, defaultName: string): Promise<string> {
+export async function startPlanRun(
+  user: { id: string },
+  projectId: string,
+  request: GenerateRequest,
+  defaultName: string,
+  origin: JobOrigin = "APP"
+): Promise<string> {
   const { project } = await checkStrategyStart(user, projectId, request);
   const active = await activeRunIdOf(project.id);
   if (active) throw activePlanRunError(active);
@@ -48,7 +54,13 @@ export async function startPlanRun(user: { id: string }, projectId: string, requ
   let runId: string;
   try {
     const run = await prisma.planRun.create({
-      data: { project_id: project.id, workspace_id: project.workspace_id, requested_by: user.id, request: saved as unknown as Prisma.InputJsonObject },
+      data: {
+        project_id: project.id,
+        workspace_id: project.workspace_id,
+        requested_by: user.id,
+        request: saved as unknown as Prisma.InputJsonObject,
+        origin,
+      },
       select: { id: true },
     });
     runId = run.id;
