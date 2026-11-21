@@ -4,6 +4,8 @@
 // Gate di T-6504 (AC-6504-1, AC-6504-2, D-60 emendata): i task chiedono resolve_goto_urls, i link google.com/goto rimasti
 // non si salvano, gli URL perdono il parametro di tracciamento srsltid e le righe salvate con i link goto non valgono
 // come risultati recenti.
+// Gate di T-7401 (AC-7401-1, AC-7401-2, D-64): con ogni indirizzo si salvano titolo e descrizione del risultato in
+// keyword_serps.results, ripuliti dai caratteri di controllo e tagliati a 300 caratteri; urls resta quello di prima.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetEnvForTests } from "@/lib/env";
@@ -259,5 +261,68 @@ describe("link google.com/goto nei risultati (T-6504)", () => {
     const saved = await prisma.keywordSerp.findFirstOrThrow({ where: { canonical_keyword: item(MAIN).canonical } });
     expect(saved.urls).toEqual(expectedUrls(MAIN));
     expect(saved.fetched_at.getTime()).toBeGreaterThan(twoDaysAgo.getTime());
+  });
+});
+
+/** Risultato organic con titolo e descrizione: senza `description` la proprietà manca, come nelle risposte di DataForSEO. */
+function organicItem(rank: number, url: string, description: string | null = `Descrizione del sito ${rank}`) {
+  return {
+    type: "organic",
+    rank_group: rank,
+    rank_absolute: rank,
+    url,
+    domain: new URL(url).hostname,
+    title: `Titolo del sito ${rank}`,
+    ...(description === null ? {} : { description }),
+  };
+}
+
+/** Salva la keyword principale con i risultati indicati e restituisce la sua riga di keyword_serps. */
+async function saveMainWith(items: unknown[]) {
+  const context = await rootAdminContext();
+  api.items.set(MAIN, items);
+  const requested = await requestSerps([item(MAIN)], context);
+  await collectSerps(requested.tasks, context);
+  return prisma.keywordSerp.findFirstOrThrow({ where: { canonical_keyword: item(MAIN).canonical } });
+}
+
+describe("titolo e descrizione dei risultati (T-7401)", () => {
+  // covers: AC-7401-1
+  it("salva con ogni indirizzo titolo e descrizione nello stesso ordine; urls resta quello di prima e la descrizione mancante è null", async () => {
+    const ranks = Array.from({ length: 10 }, (_, index) => index + 1);
+    const items = ranks
+      .map((rank) =>
+        organicItem(rank, rank === 4 ? gotoUrl("codice-4") : `https://sito-${rank}.example/noleggio`, rank === 7 ? null : `Descrizione del sito ${rank}`)
+      )
+      .reverse();
+
+    const row = await saveMainWith(items);
+
+    const direct = ranks.filter((rank) => rank !== 4);
+    expect(row.urls).toEqual(direct.map((rank) => `https://sito-${rank}.example/noleggio`));
+    expect(row.results).toEqual(
+      direct.map((rank) => ({
+        url: `https://sito-${rank}.example/noleggio`,
+        title: `Titolo del sito ${rank}`,
+        description: rank === 7 ? null : `Descrizione del sito ${rank}`,
+      }))
+    );
+  });
+
+  // covers: AC-7401-2
+  it("un titolo di 500 caratteri con caratteri di controllo si salva con al massimo 300 caratteri e senza caratteri di controllo", async () => {
+    const title = `Noleggio\u0000 magnetoterapia\u0007\tprezzi\n${"a".repeat(470)}`;
+    expect(title.length).toBeGreaterThanOrEqual(500);
+    const long = { ...organicItem(1, "https://sito-1.example/noleggio"), title, description: `Prezzi\u001b e ${"b".repeat(400)}` };
+
+    const row = await saveMainWith([long, organicItem(2, "https://sito-2.example/noleggio")]);
+
+    const [first] = row.results as { url: string; title: string; description: string }[];
+    expect(first.title.length).toBeLessThanOrEqual(300);
+    expect(first.title).not.toMatch(/\p{Cc}/u);
+    expect(first.title.startsWith("Noleggio magnetoterapia prezzi aaa")).toBe(true);
+    expect(first.description.length).toBeLessThanOrEqual(300);
+    expect(first.description).not.toMatch(/\p{Cc}/u);
+    expect(row.urls).toEqual(["https://sito-1.example/noleggio", "https://sito-2.example/noleggio"]);
   });
 });
