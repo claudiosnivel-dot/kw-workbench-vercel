@@ -59,7 +59,7 @@ ridiscute il design.
    76 mcp-articles (40, 42, 43, 44, 52, 73, 75) · 77 advice-quality (69) ·
    78 next-advisory (04, 60) · 79 picomatch-allowlist (04, 60, 78) ·
    80 dep-refresh (78, 79, 81; dopo il 77 e non prima del 2026-11-23) ·
-   81 effect-allowlist (04, 60, 79)
+   81 effect-allowlist (04, 60, 79) · 82 mcp-refine (75, 76)
    Scegli il primo macrotask non ancora chiuso le cui dipendenze sono già verdi.
    Se un task usa una decisione PROPOSTA del ledger non ancora confermata o una
    decisione APERTA che il task non può lasciare come segnaposto, non costruirlo (D-14 e D-15
