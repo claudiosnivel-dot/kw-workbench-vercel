@@ -36,13 +36,20 @@ const MAX_META_DESCRIPTION = 155;
 const MAX_SLUG = 80;
 /** Testo di un blocco: ben oltre le parole del tetto più lungo (2500 per l'intero articolo). */
 const MAX_BODY = 30_000;
-/** Blocchi di un articolo: introduzione, fino a 20 H2 della pilastro e FAQ, con margine. */
-const MAX_SECTIONS = 40;
+/** Blocchi di un articolo: introduzione, fino a 20 H2 della pilastro e FAQ, con margine (anche per import_article, T-7601). */
+export const MAX_SECTIONS = 40;
 const MAX_INSTRUCTION = 500;
 /** Lettere minuscole e cifre in gruppi separati da un trattino: nessuna ripetizione ambigua (CWE-1333). */
 const SLUG_PATTERN = /^[\p{Ll}\p{Lo}\p{N}]+(?:-[\p{Ll}\p{Lo}\p{N}]+)*$/u;
 
 const metaText = (max: number) => z.string().trim().min(1, "obbligatorio").max(max, `al massimo ${max} caratteri`);
+
+/** Meta title, meta description e slug con i limiti di T-4102: per l'editor e per import_article (T-7601). */
+export const ARTICLE_META_FIELDS = {
+  metaTitle: metaText(MAX_META_TITLE),
+  metaDescription: metaText(MAX_META_DESCRIPTION),
+  slug: metaText(MAX_SLUG).regex(SLUG_PATTERN, "lettere minuscole e cifre separate da trattini"),
+};
 
 // Strict: un id di articolo, progetto o workspace nel corpo è un 400 (CWE-639, CWE-915).
 const patchSchema = z.strictObject({
@@ -51,9 +58,9 @@ const patchSchema = z.strictObject({
     .array(z.strictObject({ id: z.string().min(1).max(64), body: z.string().max(MAX_BODY) }))
     .max(MAX_SECTIONS)
     .optional(),
-  meta_title: metaText(MAX_META_TITLE).optional(),
-  meta_description: metaText(MAX_META_DESCRIPTION).optional(),
-  slug: metaText(MAX_SLUG).regex(SLUG_PATTERN, "lettere minuscole e cifre separate da trattini").optional(),
+  meta_title: ARTICLE_META_FIELDS.metaTitle.optional(),
+  meta_description: ARTICLE_META_FIELDS.metaDescription.optional(),
+  slug: ARTICLE_META_FIELDS.slug.optional(),
 });
 
 const rewriteSchema = z.strictObject({

@@ -3,6 +3,8 @@
 // (da 2 a 5 colonne, da 1 a 12 righe di dati) con le celle pulite come il testo; toglie HTML, titoli di livello 1 e 2,
 // immagini, tabelle fuori dai limiti, blocchi di codice e ogni altro link lasciandone il testo. In più il conteggio delle
 // parole, i segnaposto, il testo dentro un recinto di codice, il blocco vuoto dopo la pulizia e le risposte senza tabelle.
+// impacted-by: T-7601 (link e immagini con le parentesi tonde nella destinazione, come javascript:alert(1), si tolgono
+// lasciando il testo)
 import { describe, expect, it } from "vitest";
 import { AiTitlesError } from "@/lib/ai/errors";
 import { markdownWords, sanitizeSectionMarkdown } from "@/lib/articles/markdown-sanitizer";
@@ -202,6 +204,12 @@ describe("pulizia del Markdown di un blocco", () => {
     expect(sanitizeSectionMarkdown(quoted, LINKS)).toBe("Fine della citazione.");
     expect(sanitizeSectionMarkdown(table, LINKS)).toBe(table);
     expect(sanitizeSectionMarkdown(table, LINKS, { tables: false })).toBe("Risposta breve.");
+  });
+
+  it("un link o un'immagine con le parentesi tonde nella destinazione si tolgono lasciando il testo del link", () => {
+    const body = "Leggi [la guida](javascript:alert(1)) e [la pilastro](page:L1).![foto](https://x.example/a(1).png) Fine.";
+
+    expect(sanitizeSectionMarkdown(body, LINKS)).toBe(`Leggi la guida e [la pilastro](page:${PILLAR_ID}). Fine.`);
   });
 
   it("conta le parole del testo senza la sintassi del Markdown né la destinazione dei link", () => {

@@ -2,6 +2,7 @@
 // verificare» e gli appunti non cambiano finché l'utente non clicca «Continua lo stesso». In più la copia diretta senza
 // segnaposto con l'HTML e il Markdown dell'export, «Segna come pubblicata» con l'indirizzo precompilato e «Invia a
 // WordPress» (T-4602) con la stessa conferma, il link alla bozza e «Aggiorna la bozza su WordPress».
+// impacted-by: T-7601 (l'articolo ha source: TITAN_AI per quelli delle AI di Titan SEO, AGENT per quelli di Claude Code)
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ArticleEditor } from "@/components/article/article-editor";
@@ -41,6 +42,7 @@ function article(withPlaceholders: boolean): ArticleView {
     id: "a1",
     pageId: "pg1",
     status: "READY",
+    source: "TITAN_AI",
     length: "MEDIUM",
     notes: null,
     errorCode: null,

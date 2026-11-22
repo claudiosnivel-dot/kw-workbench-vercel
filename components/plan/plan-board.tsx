@@ -40,8 +40,11 @@ export type PlanBoardProps = {
   readOnly: boolean;
   /** «Migliora i titoli con l'AI» nel pannello della pagina (T-3603): funzione accesa, chiave e permesso di modifica. */
   aiTitlesAvailable: boolean;
-  /** Articoli nel pannello della pagina (T-4401): avvio disponibile e pagine che hanno già un articolo; assente nelle versioni precedenti. */
-  articles?: { available: boolean; pageIds: string[] };
+  /**
+   * Articoli nel pannello della pagina (T-4401): avvio disponibile, pagine che hanno già un articolo e quelle con
+   * l'articolo di Claude Code (T-7602); assente nelle versioni precedenti.
+   */
+  articles?: { available: boolean; pageIds: string[]; agentPageIds?: string[] };
   /** Pagina il cui pannello è aperto all'arrivo (parametro page, T-2506). */
   openPageId: string | null;
 };
@@ -396,7 +399,15 @@ function PlanBoardContent({ projectId, strategy, group, view, readOnly, aiTitles
           destinations={model.destinations}
           readOnly={readOnly}
           aiTitlesAvailable={aiTitlesAvailable && !readOnly}
-          article={articles && !readOnly ? { available: articles.available, exists: articles.pageIds.includes(openPage.id) } : undefined}
+          article={
+            articles && !readOnly
+              ? {
+                  available: articles.available,
+                  exists: articles.pageIds.includes(openPage.id),
+                  agent: articles.agentPageIds?.includes(openPage.id) ?? false,
+                }
+              : undefined
+          }
           hubs={model.pillars}
           onOpenPage={setCreatedId}
           onClose={closePanel}

@@ -83,11 +83,19 @@ export async function requireArticleSettings(): Promise<AiSettings> {
   return settings;
 }
 
-/** Articolo della pagina nel progetto autorizzato, con il lavoro attivo se c'è (CWE-639). */
+/** Articolo della pagina nel progetto autorizzato, con la version e il lavoro attivo se c'è (CWE-639). */
 export function findArticle(project: AuthorizedProject, strategyId: string, pageId: string) {
   return prisma.article.findFirst({
     where: { page_id: pageId, project_id: project.id, project: project.perimeter, page: { strategy_id: strategyId } },
-    select: { id: true, runs: { where: { status: { in: [...ACTIVE_RUN] } }, select: { id: true, scope: true } } },
+    select: { id: true, version: true, runs: { where: { status: { in: [...ACTIVE_RUN] } }, select: { id: true, scope: true } } },
+  });
+}
+
+/** Pagina del piano «Da scrivere» portata «In scrittura» all'avvio di un articolo (T-2501) o alla sua importazione (T-7601). */
+export async function markPageWriting(tx: Prisma.TransactionClient, project: AuthorizedProject, strategyId: string, pageId: string): Promise<void> {
+  await tx.strategyPage.updateMany({
+    where: { id: pageId, strategy_id: strategyId, status: "TODO", strategy: { project_id: project.id, project: project.perimeter } },
+    data: { status: "WRITING", status_changed_at: new Date() },
   });
 }
 
@@ -97,7 +105,8 @@ export const isUniqueViolation = (error: unknown) => error instanceof Prisma.Pri
  * Avvio della generazione dell'articolo di una pagina (T-4002): permesso strategy.write e corpo { length, notes? };
  * pagina del piano corrente (404, 409 STRATEGY_READ_ONLY); articoli spenti o chiave assente → 503 AI_NOT_CONFIGURED;
  * un lavoro attivo sull'articolo → 409 JOB_ALREADY_ACTIVE; poi i limiti. In una transazione crea o sostituisce
- * l'articolo (GENERATING, blocchi, meta e controlli cancellati, version cresciuta), crea il lavoro pending con il
+ * l'articolo (GENERATING, blocchi, meta e controlli cancellati, version cresciuta, source TITAN_AI anche per un articolo
+ * importato da Claude Code), crea il lavoro pending con il
  * workspace del progetto e porta la pagina da TODO a WRITING; dopo il commit programma il primo passo del lavoro
  * (T-4101). Due avvii insieme: l'indice unico della pagina o quello del lavoro attivo fa fallire il secondo, che
  * risponde 409 (CWE-362).
@@ -144,6 +153,7 @@ export async function startArticle(
             outline: Prisma.DbNull,
             images: Prisma.DbNull,
             seo_report: Prisma.DbNull,
+            source: "TITAN_AI",
             version: { increment: 1 },
             created_by_user_id: actor.id,
           },
@@ -160,10 +170,7 @@ export async function startArticle(
         data: { article_id: articleId, workspace_id: project.workspace_id, scope: "ARTICLE", phase: "outline" },
         select: { id: true },
       });
-      await tx.strategyPage.updateMany({
-        where: { id: pageId, strategy_id: strategyId, status: "TODO", strategy: { project_id: project.id, project: project.perimeter } },
-        data: { status: "WRITING", status_changed_at: new Date() },
-      });
+      await markPageWriting(tx, project, strategyId, pageId);
       return { articleId, runId: run.id };
     });
   } catch (error) {
@@ -178,6 +185,7 @@ const ARTICLE_SELECT = {
   id: true,
   page_id: true,
   status: true,
+  source: true,
   length: true,
   notes: true,
   error_code: true,
@@ -208,6 +216,7 @@ function toArticleView(record: ArticleRecord): ArticleView {
     id: record.id,
     pageId: record.page_id,
     status: record.status,
+    source: record.source,
     length: record.length,
     notes: record.notes,
     errorCode: record.error_code,
@@ -292,8 +301,14 @@ export async function cancelArticleRun(actor: { id: string }, projectId: string,
   return { runId: run.id };
 }
 
-/** Pagine del progetto con un articolo (T-4401): il pannello mostra «Apri l'articolo». Il progetto è già autorizzato. */
-export async function articlePageIds(projectId: string): Promise<string[]> {
-  const articles = await prisma.article.findMany({ where: { project_id: projectId }, select: { page_id: true } });
-  return articles.map((article) => article.page_id);
+/**
+ * Pagine del progetto con un articolo (T-4401): il pannello mostra «Apri l'articolo», e «Scritto da Claude Code» per
+ * quelli importati dal server MCP (T-7602). Il progetto è già autorizzato.
+ */
+export async function articlePages(projectId: string): Promise<{ pageIds: string[]; agentPageIds: string[] }> {
+  const articles = await prisma.article.findMany({ where: { project_id: projectId }, select: { page_id: true, source: true } });
+  return {
+    pageIds: articles.map((article) => article.page_id),
+    agentPageIds: articles.filter((article) => article.source === "AGENT").map((article) => article.page_id),
+  };
 }

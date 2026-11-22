@@ -9,24 +9,24 @@ import { getLaunchChecklist, getLaunchState } from "@/lib/billing/launch";
 import { getPublicAppUrl } from "@/lib/env";
 import { getBrandingSnapshot } from "@/lib/integrations/branding";
 import { getGoogleSheetsApiConfigSnapshot } from "@/lib/integrations/google-sheets-config";
+import { readAgentActivity } from "@/lib/modules/agent/activity";
 import { agentKeyStatus } from "@/lib/modules/agent/keys";
-import { readAgentSpend } from "@/lib/modules/agent/spend";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Impostazioni dell'amministrazione (T-3301), del solo root admin: branding, API di Google Sheets, lancio commerciale e
- * titoli con l'AI (T-3501), chiave e tetto di spesa di Claude Code (T-7102, T-7302).
+ * titoli con l'AI (T-3501), chiave, tetto di spesa e attività di Claude Code (T-7102, T-7302, T-7602).
  */
 export default async function AdminSettingsPage() {
   const user = await requireRootAdminPageUser();
-  const [branding, googleSheetsConfig, launch, aiTitles, agentKey, agentSpend] = await Promise.all([
+  const [branding, googleSheetsConfig, launch, aiTitles, agentKey, agentActivity] = await Promise.all([
     getBrandingSnapshot(),
     getGoogleSheetsApiConfigSnapshot(),
     getLaunchState(),
     getAiTitlesView(),
     agentKeyStatus(user),
-    readAgentSpend(),
+    readAgentActivity(user),
   ]);
 
   return (
@@ -42,7 +42,7 @@ export default async function AdminSettingsPage() {
       <GoogleSheetsApiConfigCard initial={googleSheetsConfig} />
       <AdminLaunchCard launch={{ ...launch, checklist: getLaunchChecklist() }} />
       <AiTitlesSettingsCard initial={aiTitles} />
-      <AdminAgentKeyCard initial={agentKey} origin={getPublicAppUrl()} spend={agentSpend} />
+      <AdminAgentKeyCard initial={agentKey} origin={getPublicAppUrl()} spend={agentActivity.spend} calls={agentActivity.calls} />
     </>
   );
 }

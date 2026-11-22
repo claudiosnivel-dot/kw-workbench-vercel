@@ -2,6 +2,7 @@
 // obbligatorio mancante con l'H1 della pagina pilastro. In più keyword usate, densità, lunghezze delle meta, link
 // presenti e segnaposto da verificare aperti. Gate di T-5202 (AC-5202-2): il blocco oltre il tetto di parole della
 // scaletta mostra le parole che ha e il tetto.
+// impacted-by: T-7601 (l'articolo ha source: TITAN_AI per quelli delle AI di Titan SEO, AGENT per quelli di Claude Code)
 import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ArticleSeoReport } from "@/components/article/article-seo-report";
@@ -15,6 +16,7 @@ const ARTICLE: ArticleView = {
   id: "a1",
   pageId: "pg1",
   status: "READY",
+  source: "TITAN_AI",
   length: "MEDIUM",
   notes: null,
   errorCode: null,

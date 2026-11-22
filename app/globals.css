@@ -1581,6 +1581,20 @@ input[type="checkbox"] {
   resize: none;
 }
 
+/* Attività di Claude Code nella card «Claude Code» (T-7602): ogni chiamata su una riga che a 390 px va a capo. */
+.agent-activity-list {
+  border-top: 1px solid var(--surface-border-strong);
+}
+
+.agent-activity-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--surface-border-strong);
+  overflow-wrap: anywhere;
+}
+
 /* Proposta dei titoli con l'AI nel pannello della pagina (T-3603). */
 .plan-ai-card {
   border-radius: 16px;
