@@ -2,6 +2,7 @@
 // e i dati da verificare in arancio, anche nelle celle di una tabella, «Copia prompt» copia il prompt del segnaposto
 // immagine, e mentre il lavoro è attivo il polling ogni 3 s sostituisce «Sto scrivendo…» con il testo del blocco. In più
 // i link interni verso le pagine del piano e l'errore del lavoro con il testo del catalogo.
+// impacted-by: T-7601 (l'articolo ha source: TITAN_AI per quelli delle AI di Titan SEO, AGENT per quelli di Claude Code)
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArticleEditor, type ArticleEditorProps } from "@/components/article/article-editor";
@@ -24,6 +25,7 @@ const ARTICLE: ArticleView = {
   id: "a1",
   pageId: "pg1",
   status: "READY",
+  source: "TITAN_AI",
   length: "MEDIUM",
   notes: null,
   errorCode: null,

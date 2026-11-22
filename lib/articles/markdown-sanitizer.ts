@@ -42,8 +42,10 @@ const BULLET = /^(\s*)[*+-]\s+/;
 const ORDERED = /^\s*\d{1,3}[.)]\s+/;
 const QUOTE = /^\s*(?:>\s?)+/;
 // Il testo tra parentesi quadre non contiene altre parentesi quadre: una lunga fila di '[' resta lineare (CWE-1333).
-const IMAGE = /!\[[^[\]]*\]\([^()]*\)|!\[[^[\]]*\]\[[^[\]]*\]/g;
-const INLINE_LINK = /\[([^[\]]*)\]\(\s*<?([^()\s<>]*)>?(?:\s+["'(][^()]*["')])?\s*\)/g;
+// La destinazione può avere un livello di parentesi tonde bilanciate, come in CommonMark (javascript:alert(1), T-7601):
+// ogni alternativa comincia con un carattere diverso, quindi anche una lunga fila di '(' resta lineare.
+const IMAGE = /!\[[^[\]]*\]\((?:[^()]|\([^()]*\))*\)|!\[[^[\]]*\]\[[^[\]]*\]/g;
+const INLINE_LINK = /\[([^[\]]*)\]\(\s*<?((?:[^()\s<>]|\([^()\s<>]*\))*)>?(?:\s+["'(][^()]*["')])?\s*\)/g;
 const BARE_URL = /\b(?:https?:\/\/|ftp:\/\/|www\.)[^\s<>()[\]]+/gi;
 const PAGE_LINK = /^page:(.+)$/;
 
@@ -143,6 +145,17 @@ function readTable(lines: string[], start: number, links: ReadonlyMap<string, st
 }
 
 /**
+ * Recinto di codice dopo la riga (``` o ~~~, anche non chiuso): quello che la riga apre, nessuno se chiude quello aperto
+ * (stesso carattere, almeno altrettanto lungo), altrimenti quello di prima; inside dice se la riga è codice, apertura e
+ * chiusura comprese. Serve anche a dividere in blocchi il Markdown di Claude Code (T-7601).
+ */
+export function nextFence(line: string, fence: string | null): { fence: string | null; inside: boolean } {
+  const marker = FENCE.exec(line)?.[1];
+  if (fence) return { fence: marker && marker[0] === fence[0] && marker.length >= fence.length ? null : fence, inside: true };
+  return marker ? { fence: marker, inside: true } : { fence: null, inside: false };
+}
+
+/**
  * Righe pulite del blocco: senza i blocchi di codice (recinti ``` o ~~~, anche non chiusi), con le sole tabelle nei
  * limiti; una riga di separazione senza intestazione, con le righe con '|' che la seguono, e ogni altra riga che comincia
  * e finisce con '|' si tolgono.
@@ -153,17 +166,19 @@ function cleanLines(lines: string[], links: ReadonlyMap<string, string>, tables:
   let index = 0;
   while (index < lines.length) {
     const line = lines[index];
-    const marker = FENCE.exec(line)?.[1];
-    if (fence) {
-      if (marker && marker[0] === fence[0] && marker.length >= fence.length) fence = null;
-    } else if (marker) {
-      fence = marker;
-    } else if (line.includes("|") && !isDelimiterRow(line) && isDelimiterRow(lines[index + 1])) {
+    const code = nextFence(line, fence);
+    fence = code.fence;
+    if (code.inside) {
+      index += 1;
+      continue;
+    }
+    if (line.includes("|") && !isDelimiterRow(line) && isDelimiterRow(lines[index + 1])) {
       const table = readTable(lines, index, links, tables);
       kept.push(...table.kept);
       index = table.end;
       continue;
-    } else if (isDelimiterRow(line)) {
+    }
+    if (isDelimiterRow(line)) {
       while (index + 1 < lines.length && lines[index + 1].trim() && lines[index + 1].includes("|")) index += 1;
     } else if (!TABLE_ROW.test(line)) {
       const cleaned = cleanLine(line, links);

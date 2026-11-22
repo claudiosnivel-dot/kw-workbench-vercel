@@ -850,7 +850,16 @@
       "spentToday": "Spent today by Claude Code jobs: {spent} of {cap}. The day ends at midnight UTC.",
       "capSave": "Save the cap",
       "capSaving": "Saving...",
-      "capSaved": "Cap saved."
+      "capSaved": "Cap saved.",
+      "activity": {
+        "title": "Recent calls",
+        "spend": "{spent} of {cap} today",
+        "empty": "No calls",
+        "ok": "Succeeded",
+        "error": "Error: {code}",
+        "noProject": "No project",
+        "duration": "{duration} s"
+      }
     },
     "user": {
       "back": "← Users",
@@ -2154,6 +2163,7 @@
       "starting": "Starting…",
       "rateLimited": "You have reached the article limit: try again after {time}."
     },
+    "agentSource": "Written by Claude Code",
     "editor": {
       "back": "Back to the plan",
       "status": {

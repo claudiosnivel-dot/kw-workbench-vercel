@@ -70,10 +70,12 @@ const metaValue = (article: ArticleView, field: MetaField) =>
  * modifica e «Riscrivi questo blocco», i segnaposto immagine dopo il loro blocco con «Copia prompt» e il riquadro
  * «Controllo SEO». I salvataggi partono uno alla volta con la version dell'ultima risposta (CWE-362); un 409
  * ARTICLE_VERSION_CONFLICT chiede di ricaricare la pagina. Con un lavoro attivo non si modifica. Sotto l'H1 «Copia»,
- * «Scarica» e «Segna come pubblicata» (T-4501, T-4502).
+ * «Scarica» e «Segna come pubblicata» (T-4501, T-4502). Un articolo importato da Claude Code ha accanto allo stato
+ * «Scritto da Claude Code» e si modifica e riscrive come gli altri (T-7602).
  */
 export function ArticleEditor({ projectId, strategyId, page, pages, article: initial, canEdit, canStart, publication }: ArticleEditorProps) {
   const t = useTranslations("article.editor");
+  const tArticle = useTranslations("article");
   const tMarks = useTranslations("article.marks");
   const tStatus = useTranslations("article.editor.status");
   const requests = useArticleRequests();
@@ -263,6 +265,7 @@ export function ArticleEditor({ projectId, strategyId, page, pages, article: ini
         <h1 className="text-2xl font-semibold">{page.h1}</h1>
         <div className="flex flex-wrap items-center gap-2 text-sm" role="status">
           <span className="status-chip">{tStatus(article.status)}</span>
+          {article.source === "AGENT" && <span className="status-chip">{tArticle("agentSource")}</span>}
           {run?.scope === "ARTICLE" && run.progress.total > 0 && <span>{t("progress", run.progress)}</span>}
           {run?.scope === "SECTION" && <span>{t("rewriting")}</span>}
         </div>

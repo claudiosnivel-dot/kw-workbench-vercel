@@ -2,6 +2,7 @@
 
 import { useFormatter, useTranslations } from "next-intl";
 import { useId, useState } from "react";
+import { AgentActivityList } from "@/components/admin-agent-activity";
 import { AgentKeyConfirmDialog } from "@/components/admin-agent-key-dialog";
 import { AgentSpendCapField } from "@/components/admin-agent-spend-cap";
 import { SettingsCard } from "@/components/settings-card";
@@ -9,6 +10,7 @@ import { readApiResponse, sendJson } from "@/lib/client/http";
 import { useSaveAction } from "@/lib/client/use-save-action";
 import {
   AGENT_KEY_DURATIONS,
+  type AgentCallView,
   type AgentKeyDuration,
   type AgentKeyStatus,
   type AgentSpend,
@@ -83,18 +85,22 @@ function KeyStatusList({ status }: { status: AgentKeyStatus }) {
  * Card «Claude Code» delle impostazioni dell'amministrazione (T-7102), solo per il root admin: stato della chiave, durata
  * (90 giorni preselezionati), creazione e revoca. La chiave nuova e il comando si vedono una volta, solo nello stato del
  * componente: mai in un URL né nello storage del browser; ricaricando resta il prefisso. La rotta riverifica il ruolo.
- * In fondo il tetto giornaliero di spesa di Claude Code con la spesa di oggi (T-7302).
+ * In fondo il tetto giornaliero di spesa di Claude Code con la spesa di oggi (T-7302) e l'attività di Claude Code con
+ * le ultime chiamate (T-7602), che dopo il salvataggio del tetto mostra quello nuovo.
  */
 export function AdminAgentKeyCard({
   initial,
   origin,
-  spend,
+  spend: initialSpend,
+  calls = [],
 }: {
   initial: AgentKeyStatus | null;
   origin: string | null;
   spend: AgentSpend;
+  calls?: AgentCallView[];
 }) {
   const t = useTranslations("admin.agentKey");
+  const [spend, setSpend] = useState(initialSpend);
   const durationId = useId();
   const { saving, error, setError, save } = useSaveAction();
   const [status, setStatus] = useState(initial);
@@ -181,7 +187,9 @@ export function AdminAgentKeyCard({
           )}
         </div>
 
-        <AgentSpendCapField initial={spend} />
+        <AgentSpendCapField initial={initialSpend} onSaved={setSpend} />
+
+        <AgentActivityList calls={calls} spend={spend} />
       </div>
 
       {dialog && active && (

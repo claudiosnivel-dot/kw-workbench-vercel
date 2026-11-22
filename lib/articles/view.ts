@@ -1,4 +1,4 @@
-import type { ArticleLength, ArticleRunScope, ArticleSectionKind, ArticleStatus, JobStatus } from "@/lib/generated/prisma/enums";
+import type { ArticleLength, ArticleRunScope, ArticleSectionKind, ArticleSource, ArticleStatus, JobStatus } from "@/lib/generated/prisma/enums";
 
 /*
  * Articolo come lo ricevono l'editor e le API (T-4002, T-4401, T-4402) e lettura dei suoi campi JSON: segnaposto
@@ -12,6 +12,8 @@ export type ArticleView = {
   id: string;
   pageId: string;
   status: ArticleStatus;
+  /** Chi ha scritto l'articolo: le AI di Titan SEO o Claude Code (T-7601), che l'editor mostra con «Scritto da Claude Code». */
+  source: ArticleSource;
   length: ArticleLength;
   notes: string | null;
   errorCode: string | null;

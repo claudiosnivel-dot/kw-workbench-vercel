@@ -850,7 +850,16 @@
       "spentToday": "Speso oggi dai lavori di Claude Code: {spent} su {cap}. Il giorno si chiude a mezzanotte UTC.",
       "capSave": "Salva il tetto",
       "capSaving": "Salvataggio...",
-      "capSaved": "Tetto salvato."
+      "capSaved": "Tetto salvato.",
+      "activity": {
+        "title": "Ultime chiamate",
+        "spend": "{spent} di {cap} oggi",
+        "empty": "Nessuna chiamata",
+        "ok": "Riuscita",
+        "error": "Errore: {code}",
+        "noProject": "Nessun progetto",
+        "duration": "{duration} s"
+      }
     },
     "user": {
       "back": "← Utenti",
@@ -2154,6 +2163,7 @@
       "starting": "Avvio…",
       "rateLimited": "Hai raggiunto il limite di articoli: riprova dopo le {time}."
     },
+    "agentSource": "Scritto da Claude Code",
     "editor": {
       "back": "Torna al piano",
       "status": {

@@ -1027,6 +1027,13 @@ enum ArticleRunScope {
   SECTION
 }
 
+/// Chi ha scritto l'articolo (T-7601, D-64): le AI di Titan SEO (TITAN_AI, anche per gli articoli di prima) o Claude
+/// Code che lo importa dal server MCP (AGENT).
+enum ArticleSource {
+  TITAN_AI
+  AGENT
+}
+
 /// Articolo di una pagina del piano (T-4002, D-46): uno per pagina; «Rigenera» lo porta sulla copia della pagina nel
 /// nuovo piano (T-2502). version cresce a ogni nuovo avvio e servirà alle modifiche dell'editor (modulo 44).
 model Article {
@@ -1036,6 +1043,7 @@ model Article {
   length             ArticleLength
   notes              String?          @db.VarChar(1000)
   status             ArticleStatus    @default(GENERATING)
+  source             ArticleSource    @default(TITAN_AI)
   error_code         String?
   meta_title         String?
   meta_description   String?

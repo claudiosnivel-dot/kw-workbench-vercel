@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 /** Titolo del blocco FAQ nella lingua del piano (T-4202); inglese per le lingue senza istruzioni proprie. */
 const FAQ_HEADINGS: Record<string, string> = { it: "Domande frequenti", es: "Preguntas frecuentes" };
-const faqHeading = (language: string) => FAQ_HEADINGS[language] ?? "Frequently asked questions";
+export const faqHeading = (language: string) => FAQ_HEADINGS[language] ?? "Frequently asked questions";
 
 /** Dati della richiesta delle domande frequenti: la pagina, la scheda, le note, la scaletta e l'istruzione dell'autore. */
 export function faqInput(article: PhaseArticle, run: PhaseRun): FaqInput {

@@ -11,7 +11,7 @@ Workflow, in this order:
 3. Keywords: read the keywords with their data and keep or discard them.
 4. Plan: build the plan, read it, and decide pages, H1 and H2 yourself.
 5. Edits: change the plan with its operations, always passing the plan version you last read.
-6. Articles: write each article in the site's code and import the same text into Titan SEO.
+6. Articles: write each article in the site's code, import the same text into Titan SEO and fix in the site the problems its checks report; before changing an article you already imported, read it again because the user may have edited it in Titan SEO.
 
 Rules:
 - Do not use the AI features of Titan SEO: the SEO reasoning (grouping keywords, choosing titles and headings, writing articles) is yours.

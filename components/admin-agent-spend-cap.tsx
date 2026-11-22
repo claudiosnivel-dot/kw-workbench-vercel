@@ -13,8 +13,9 @@ const USD = { style: "currency", currency: "USD", minimumFractionDigits: 2, maxi
 /**
  * Tetto giornaliero di spesa di Claude Code nella card «Claude Code» (T-7302, D-65): importo in dollari da 0 a 100 con
  * due decimali e la spesa di oggi (giorno UTC) dei lavori di Claude Code. La rotta riverifica il root admin e l'importo.
+ * onSaved riceve la spesa e il tetto salvati (l'attività della card, T-7602).
  */
-export function AgentSpendCapField({ initial }: { initial: AgentSpend }) {
+export function AgentSpendCapField({ initial, onSaved }: { initial: AgentSpend; onSaved?: (spend: AgentSpend) => void }) {
   const t = useTranslations("admin.agentKey");
   const format = useFormatter();
   const capId = useId();
@@ -29,6 +30,7 @@ export function AgentSpendCapField({ initial }: { initial: AgentSpend }) {
     if (saved) {
       setSpend(saved);
       setValue(saved.capUsd.toFixed(2));
+      onSaved?.(saved);
     }
     return t("capSaved");
   };

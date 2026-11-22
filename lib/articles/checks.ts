@@ -24,6 +24,15 @@ const MAX_PROBLEM_TEXT = 200;
 
 type Section = PhaseArticle["sections"][number];
 
+/**
+ * Articolo dei controlli deterministici: la pagina del piano, la scaletta, le meta e i blocchi con il loro testo; basta
+ * anche un articolo non ancora salvato, come quello importato da Claude Code (T-7601).
+ */
+export type CheckedArticle = Pick<PhaseArticle, "plan" | "blocks" | "metaTitle" | "metaDescription"> & {
+  sections: Pick<Section, "position" | "kind" | "body">[];
+};
+type CheckedSection = CheckedArticle["sections"][number];
+
 /** Controlli di un blocco: l'analisi del testo (T-4301) e i problemi SEO del blocco (T-4302). */
 type BlockCheck = { style: StyleAnalysis; problems: SeoProblem[] };
 
@@ -34,11 +43,11 @@ type BlockCheck = { style: StyleAnalysis; problems: SeoProblem[] };
 type ReportProblem = SeoProblem | { rule: "ai_patterns"; count: number } | { rule: "words_over"; count: number; max: number };
 
 /** Blocco della scaletta di una sezione; nessuno per il blocco FAQ, che non è nella scaletta. */
-const outlineBlock = (article: PhaseArticle, section: Section) =>
+const outlineBlock = (article: CheckedArticle, section: CheckedSection) =>
   section.kind === "FAQ" ? undefined : article.blocks.find((block) => block.position === section.position);
 
 /** Articolo per il controllo SEO: keyword e link di ogni blocco dalla scaletta, nessuno per il blocco FAQ. */
-function seoArticle(article: PhaseArticle): SeoArticle {
+function seoArticle(article: CheckedArticle): SeoArticle {
   return {
     language: article.plan.language,
     mainKeyword: article.plan.page.main.keyword,
@@ -54,7 +63,7 @@ function seoArticle(article: PhaseArticle): SeoArticle {
 }
 
 /** Il blocco ha più parole di words della scaletta (T-5202): un problema del rapporto, mai un motivo di riscrittura. */
-function wordsOver(article: PhaseArticle, section: Section): ReportProblem[] {
+function wordsOver(article: CheckedArticle, section: CheckedSection): ReportProblem[] {
   const max = outlineBlock(article, section)?.words;
   const count = markdownWords(section.body).length;
   return max !== undefined && count > max ? [{ rule: "words_over", count, max }] : [];
@@ -63,7 +72,7 @@ function wordsOver(article: PhaseArticle, section: Section): ReportProblem[] {
 const aiPatternCount = (style: StyleAnalysis) => style.matches.filter((match) => match.kind === "ai_pattern").length;
 
 /** Controlli del blocco in position con il testo che ha nell'articolo dato. */
-function checkBlock(article: PhaseArticle, position: number): BlockCheck {
+function checkBlock(article: CheckedArticle, position: number): BlockCheck {
   const body = article.sections.find((section) => section.position === position)?.body ?? "";
   return {
     style: analyzeStyle(body, article.plan.language),
@@ -109,14 +118,17 @@ async function rewrite(context: PhaseContext, article: PhaseArticle, section: Se
 
 const storedChecks = (check: BlockCheck, rewritten: boolean) => ({ version: STYLE_RULES_VERSION, ...check.style, problems: check.problems, rewritten });
 
-/** Controlli salvati di un blocco modificato dall'autore (T-4402): quelli del testo che ha nell'articolo dato, senza modello. */
-export const authorBlockChecks = (article: PhaseArticle, position: number) => storedChecks(checkBlock(article, position), false);
+/**
+ * Controlli salvati di un blocco modificato dall'autore (T-4402) o importato da Claude Code (T-7601): quelli del testo
+ * che ha nell'articolo dato, senza modello.
+ */
+export const authorBlockChecks = (article: CheckedArticle, position: number) => storedChecks(checkBlock(article, position), false);
 
 /**
  * Rapporto SEO dell'articolo (T-4302): densità e problemi dell'articolo, poi i blocchi con i problemi rimasti e il tetto
  * di parole della scaletta superato (T-5202).
  */
-export function seoReport(article: PhaseArticle) {
+export function seoReport(article: CheckedArticle) {
   const seo = analyzeSeo(seoArticle(article));
   const blocks = article.sections.map((section) => {
     const style = analyzeStyle(section.body, article.plan.language);
