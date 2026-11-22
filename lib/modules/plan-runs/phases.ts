@@ -4,7 +4,7 @@ import { getAiTitlesSettings, modelsForRequest } from "@/lib/ai/settings";
 import { getOpenRouterSettings } from "@/lib/env";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { ProjectNotFoundError } from "@/lib/modules/project-access";
-import { type AdviceAngle, type AdvicePage, ANGLE_ADVICE_BATCH_SIZE, adviseAngles } from "@/lib/modules/plan-ai/angle-advice";
+import { type AdvicePage, ANGLE_ADVICE_BATCH_SIZE, adviseAngles, groupAngles, type RankedAngle } from "@/lib/modules/plan-ai/angle-advice";
 import { CLASSIFY_BATCH_SIZE, type ClassifyContext, classifyKeywords, fixedClasses } from "@/lib/modules/plan-ai/classify";
 import { collectSerps, type PlanDataContext, readFreshSerps, requestSerps } from "@/lib/modules/plan-data/serps";
 import { fillPerimeterVolumes } from "@/lib/modules/plan-data/volumes";
@@ -348,7 +348,7 @@ async function savePhase({ run, lease, memo }: PlanPhaseContext): Promise<PlanPh
   return undefined;
 }
 
-/** Angoli della strategia salvata già mandati al modello (T-6901). */
+/** Gruppi di angoli della strategia salvata già mandati al modello (T-6901, T-7701). */
 type AdviseCursor = { offset: number };
 
 function adviseCursorOf(cursor: Prisma.JsonValue): AdviseCursor | null {
@@ -360,7 +360,7 @@ function adviseCursorOf(cursor: Prisma.JsonValue): AdviseCursor | null {
  * Pagine della strategia salvata nell'ordine di lavoro, con la keyword principale, e angoli da valutare in un ordine
  * fisso (volume, poi forma canonica), così i lotti di passi diversi non si sovrappongono.
  */
-async function adviceInputs(strategyId: string): Promise<{ pages: AdvicePage[]; angles: AdviceAngle[] }> {
+async function adviceInputs(strategyId: string): Promise<{ pages: AdvicePage[]; angles: RankedAngle[] }> {
   const [pages, keywords] = await Promise.all([
     prisma.strategyPage.findMany({
       where: { strategy_id: strategyId },
@@ -370,7 +370,7 @@ async function adviceInputs(strategyId: string): Promise<{ pages: AdvicePage[]; 
     prisma.strategyKeyword.findMany({
       where: { strategy_id: strategyId, page_id: { not: null }, OR: [{ role: "MAIN" }, { angle: true }] },
       orderBy: [{ volume: { sort: "desc", nulls: "last" } }, { canonical_keyword: "asc" }],
-      select: { page_id: true, role: true, keyword: true, canonical_keyword: true, angle: true },
+      select: { page_id: true, role: true, keyword: true, canonical_keyword: true, angle: true, volume: true },
     }),
   ]);
   const mainOf = new Map(keywords.filter((keyword) => keyword.role === "MAIN").map((keyword) => [keyword.page_id!, keyword]));
@@ -383,32 +383,47 @@ async function adviceInputs(strategyId: string): Promise<{ pages: AdvicePage[]; 
     }),
     angles: keywords
       .filter((keyword) => keyword.angle && keyword.role !== "MAIN" && mainOf.has(keyword.page_id!))
-      .map((keyword) => ({ keyword: keyword.keyword, canonical: keyword.canonical_keyword, page: mainOf.get(keyword.page_id!)!.canonical_keyword })),
+      .map((keyword) => ({
+        keyword: keyword.keyword,
+        canonical: keyword.canonical_keyword,
+        page: mainOf.get(keyword.page_id!)!.canonical_keyword,
+        volume: keyword.volume,
+      })),
   };
 }
 
 /**
- * Un lotto di al più ANGLE_ADVICE_BATCH_SIZE angoli della strategia salvata al modello (T-6901), poi la fase si ripete
- * finché li ha visti tutti; i consigli si salvano con gli angoli e il cursore nella stessa transazione. Senza angoli, con
- * l'AI spenta o oltre il tetto, o con un lotto senza risposta valida il lavoro si chiude a completed senza altri consigli
- * e senza toccare grouping_notice.
+ * Un lotto di al più ANGLE_ADVICE_BATCH_SIZE gruppi di angoli della strategia salvata al modello (T-6901): degli angoli
+ * con le stesse parole va solo il rappresentante, e il suo consiglio si salva uguale per tutti gli angoli del gruppo
+ * (T-7701); il cursore conta i gruppi, così un gruppo non si divide fra due lotti. La fase si ripete finché li ha visti
+ * tutti; i consigli si salvano con gli angoli e il cursore nella stessa transazione. Senza angoli, con l'AI spenta o
+ * oltre il tetto, o con un lotto senza risposta valida il lavoro si chiude a completed senza altri consigli e senza
+ * toccare grouping_notice.
  */
 async function adviseStep({ run, lease, deadlineMs }: PlanPhaseContext): Promise<void> {
   const strategyId = run.strategy_id;
   const state = adviseCursorOf(run.cursor) ?? { offset: 0 };
   const inputs = strategyId ? await adviceInputs(strategyId) : { pages: [], angles: [] };
-  const batch = inputs.angles.slice(state.offset, state.offset + ANGLE_ADVICE_BATCH_SIZE);
-  if (!strategyId || batch.length === 0) return writePlanRun(prisma, lease, COMPLETED);
+  if (!strategyId || inputs.angles.length === 0) return writePlanRun(prisma, lease, COMPLETED);
   const ai = await planAi(run, deadlineMs);
   if ("off" in ai) return writePlanRun(prisma, lease, COMPLETED);
   const { language, country } = await resolveStrategyTarget(requesterOf(run), run.project_id, requestOf(run));
-  const result = await adviseAngles(batch, inputs.pages, { language, country, ai });
+  const groups = groupAngles(inputs.angles, language);
+  const batch = groups.slice(state.offset, state.offset + ANGLE_ADVICE_BATCH_SIZE);
+  if (batch.length === 0) return writePlanRun(prisma, lease, COMPLETED);
+  const result = await adviseAngles(
+    batch.map((group) => group.representative),
+    inputs.pages,
+    { language, country, ai }
+  );
   const offset = state.offset + batch.length;
-  const last = !result.ok || offset >= inputs.angles.length;
+  const last = !result.ok || offset >= groups.length;
   await prisma.$transaction(async (tx) => {
-    for (const [canonical, advice] of result.advice) {
+    for (const { representative, members } of batch) {
+      const advice = result.advice.get(representative.canonical);
+      if (!advice) continue;
       await tx.strategyKeyword.updateMany({
-        where: { strategy_id: strategyId, canonical_keyword: canonical, angle: true },
+        where: { strategy_id: strategyId, canonical_keyword: { in: members.map((member) => member.canonical) }, angle: true },
         data: { angle_advice: advice },
       });
     }

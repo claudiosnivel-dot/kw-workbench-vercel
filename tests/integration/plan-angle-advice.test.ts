@@ -4,7 +4,9 @@
 // strategia salvata, gli angoli senza consiglio e grouping_notice invariato. DataForSEO e OpenRouter sono simulati con i
 // dati della fixture it-magnetoterapia-serp.json: nessuna chiamata reale. Gate di AC-6901-5 (2026-11-16): un'alternativa
 // salvata che è solo un codice d'azione si legge come null. In più: lotti di 40 angoli, la funzione AI spenta, e un
-// lavoro con la strategia salvata che non diventa mai failed.
+// lavoro con la strategia salvata che non diventa mai failed. Gate di T-7701 (AC-7701-1, AC-7701-2, D-65): degli angoli
+// con le stesse parole va al modello solo il più cercato, e il suo consiglio vale uguale per tutti; i lotti contano i
+// gruppi.
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as readStrategyRoute } from "@/app/api/projects/[id]/strategies/[strategyId]/route";
@@ -35,6 +37,8 @@ const classOf = new Map(FIXTURE.keywords.map((keyword) => [canonical(keyword.key
 
 const SHOULDER = "noleggio magnetoterapia spalla";
 const NIGHT = "magnetoterapia notturna noleggio";
+const MAT = "tappetino magnetoterapia noleggio";
+const MATS = "noleggio tappetini per magnetoterapia";
 
 type AdviceRequest = {
   pages: { main: string; h1: string; kind: "hub" | "spoke"; hub?: string }[];
@@ -147,11 +151,11 @@ beforeEach(async () => {
 type Session = Awaited<ReturnType<typeof createUserWithSession>>;
 
 /**
- * Progetto it-IT del root admin con le keyword tenute della fixture e, per ogni testo indicato, una keyword senza volume
- * con 10 risultati di Google che nessun'altra ha: ognuna forma una pagina sotto soglia che il motore scioglie, e la sua
- * keyword diventa un angolo da valutare.
+ * Progetto it-IT del root admin con le keyword tenute della fixture e, per ogni testo indicato, una keyword (senza volume
+ * o con quello indicato, sotto la soglia di uno spoke) con 10 risultati di Google che nessun'altra ha: ognuna forma una
+ * pagina sotto soglia che il motore scioglie, e la sua keyword diventa un angolo da valutare.
  */
-async function projectWithAngles(session: Session, angles: string[]) {
+async function projectWithAngles(session: Session, angles: string[], volumes: Record<string, number> = {}) {
   const project = await prisma.project.create({
     data: { name: "Noleggio magnetoterapia", workspace_id: session.workspaceId, language_code: "it", country_code: "IT" },
   });
@@ -174,7 +178,7 @@ async function projectWithAngles(session: Session, angles: string[]) {
   await prisma.keywordCandidate.createMany({
     data: [
       ...FIXTURE.keywords.map((item) => keyword(item.keyword, item.volume, item.score ?? 50, item.isQuestion ?? false)),
-      ...angles.map((text) => keyword(text, null, 50)),
+      ...angles.map((text) => keyword(text, volumes[text] ?? null, 50)),
     ],
   });
   await prisma.seed.create({ data: { project_id: project.id, subproject_id: section.id, keyword: FIXTURE.seeds[0] } });
@@ -205,6 +209,9 @@ const adviceCalls = () => openRouterCalls().filter(([, init]) => isAdviceRequest
 
 const angleRows = (strategyId: string) =>
   prisma.strategyKeyword.findMany({ where: { strategy_id: strategyId, angle: true }, orderBy: { canonical_keyword: "asc" } });
+
+/** Angoli di ogni richiesta di consiglio a OpenRouter, nell'ordine delle richieste. */
+const sentAngles = () => adviceCalls().map(([, init]) => (userMessage(init) as AdviceRequest).angles.map((angle) => angle.keyword));
 
 describe("consiglio dell'AI sugli angoli nel lavoro di piano (T-6901)", () => {
   // covers: AC-6901-2
@@ -339,5 +346,47 @@ describe("consiglio dell'AI sugli angoli nel lavoro di piano (T-6901)", () => {
       strategy_id: saved.strategy_id,
     });
     expect(adviceCalls()).toHaveLength(0);
+  });
+});
+
+describe("un solo consiglio per gli angoli che sono la stessa ricerca (T-7701)", () => {
+  // covers: AC-7701-1
+  it("dei due angoli sul tappetino va al modello solo il più cercato e il consiglio vale uguale per entrambi", async () => {
+    const admin = await createUserWithSession({ isRootAdmin: true });
+    const projectId = await projectWithAngles(admin, [MAT, MATS], { [MAT]: 90, [MATS]: 20 });
+
+    const run = await finishPlanRun(await startPlan(admin, projectId));
+
+    expect(run).toMatchObject({ status: "completed", phase: "done" });
+    expect(sentAngles()).toEqual([[MAT]]);
+    const rows = await angleRows(run.strategy_id!);
+    expect(rows.map((row) => [row.canonical_keyword, row.volume])).toEqual([
+      [canonical(MATS), 20],
+      [canonical(MAT), 90],
+    ]);
+    const adviceOf = (text: string) => rows.find((row) => row.canonical_keyword === canonical(text))!.angle_advice;
+    expect(adviceOf(MAT)).toMatchObject({ action: "page", target: expect.any(String), reason: `Chi cerca «${MAT}» ha un'altra domanda.` });
+    expect(adviceOf(MATS)).toEqual(adviceOf(MAT));
+  });
+
+  // covers: AC-7701-2
+  it("45 angoli con 10 coppie con le stesse radici vanno al modello come 35 in un solo lotto e tutti hanno il consiglio", async () => {
+    const admin = await createUserWithSession({ isRootAdmin: true });
+    const number = (index: number) => String(index + 1).padStart(2, "0");
+    const singles = Array.from({ length: 25 }, (_, index) => `noleggio magnetoterapia variante ${number(index)}`);
+    const pairs = Array.from({ length: 10 }, (_, index) => [`noleggio magnetoterapia modello ${number(index)}`, `modelli per noleggio magnetoterapia ${number(index)}`]);
+    const projectId = await projectWithAngles(admin, [...singles, ...pairs.flat()]);
+
+    const run = await finishPlanRun(await startPlan(admin, projectId));
+
+    expect(run).toMatchObject({ status: "completed", phase: "done" });
+    expect(sentAngles().map((angles) => angles.length)).toEqual([35]);
+    // Senza volumi il rappresentante della coppia è la forma canonica più corta.
+    expect(sentAngles()[0]).toEqual(expect.arrayContaining([...singles, ...pairs.map(([shorter]) => shorter)]));
+    const rows = await angleRows(run.strategy_id!);
+    expect(rows).toHaveLength(45);
+    expect(rows.every((row) => row.angle_advice !== null)).toBe(true);
+    const adviceOf = (text: string) => rows.find((row) => row.canonical_keyword === canonical(text))!.angle_advice;
+    for (const [shorter, longer] of pairs) expect(adviceOf(longer)).toEqual(adviceOf(shorter));
   });
 });

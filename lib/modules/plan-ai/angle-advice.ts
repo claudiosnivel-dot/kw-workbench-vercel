@@ -6,6 +6,7 @@ import { cleanTitle, firstJsonObject } from "@/lib/ai/titles-response";
 import { logger } from "@/lib/observability/logger";
 import { canonicalizeKeyword } from "@/lib/modules/normalization";
 import { type ClassifyAi, planRequest } from "@/lib/modules/plan-ai/classify";
+import { compareKeywordPriority, variantKey } from "@/lib/modules/strategy/cluster";
 import { ANGLE_ADVICE_ACTIONS, type AngleAdvice, type StrategyPageKind, usefulAlternative } from "@/lib/modules/strategy/types";
 
 /*
@@ -15,15 +16,19 @@ import { ANGLE_ADVICE_ACTIONS, type AngleAdvice, type StrategyPageKind, usefulAl
  * risponde con un oggetto JSON per angolo: page (una pagina propria sotto l'hub target), move (spostarlo nella pagina
  * target) o keep (tenerlo dov'è come H2), il motivo, un'alternativa facoltativa e per page un H1. Le voci con un angolo o
  * un target che non esistono, azioni sconosciute o testi oltre i limiti si scartano. Il consiglio è solo un
- * suggerimento: nessuna azione sul piano parte dalla risposta.
+ * suggerimento: nessuna azione sul piano parte dalla risposta. Gli angoli con le stesse parole sono la stessa ricerca:
+ * il modello ne riceve uno per gruppo e il consiglio vale per tutti (T-7701, D-65); la stessa chiusura dell'H1 dopo i
+ * due punti vale in al massimo due H1 di un lotto (T-7702).
  */
 
-/** Angoli inviati al modello in una richiesta. */
+/** Angoli (rappresentanti dei gruppi, T-7701) inviati al modello in una richiesta. */
 export const ANGLE_ADVICE_BATCH_SIZE = 40;
 /** Lunghezze massime, in caratteri, di motivo, alternativa e H1 del consiglio. */
 export const MAX_ADVICE_REASON = 240;
 export const MAX_ADVICE_ALTERNATIVE = 240;
 export const MAX_ADVICE_H1 = 120;
+/** H1 di un lotto con la stessa chiusura dopo i due punti che restano; dal successivo l'H1 vale null (T-7702). */
+export const MAX_H1_SAME_CLOSING = 2;
 /** Oltre questa lunghezza la risposta non si analizza. */
 const MAX_CONTENT_LENGTH = 100_000;
 /** 40 consigli con motivo, alternativa e H1 stanno largamente in 8000 token. */
@@ -38,14 +43,46 @@ export type AdviceAngle = { keyword: string; canonical: string; page: string };
 /** Lingua e paese del piano con i modelli della richiesta (gli stessi della classificazione, T-6301). */
 export type AdviceContext = { language: string; country: string | null; ai: ClassifyAi };
 
+/** Angolo con il suo volume, per scegliere il rappresentante del gruppo (T-7701). */
+export type RankedAngle = AdviceAngle & { volume: number | null };
+
+/** Angoli con lo stesso insieme di radici: il rappresentante va al modello, il consiglio vale per tutti i membri. */
+export type AngleGroup<T extends RankedAngle = RankedAngle> = { representative: T; members: T[] };
+
+const priorityOf = (angle: RankedAngle) => ({ volume: angle.volume, score: null, canonical: angle.canonical });
+
+/**
+ * Gruppi degli angoli per insieme di radici (variantKey di T-1901: parole vuote tolte, in qualunque ordine, al singolare
+ * o al plurale), nell'ordine del loro primo angolo. Il rappresentante è l'angolo più cercato, a parità quello con la
+ * forma canonica più corta (compareKeywordPriority senza punteggio). Un angolo di sole parole vuote fa gruppo da sé.
+ */
+export function groupAngles<T extends RankedAngle>(angles: T[], language: string): AngleGroup<T>[] {
+  const groups = new Map<string, AngleGroup<T>>();
+  for (const angle of angles) {
+    const key = variantKey(angle.canonical, language) || `=${angle.canonical}`;
+    const group = groups.get(key);
+    if (!group) {
+      groups.set(key, { representative: angle, members: [angle] });
+      continue;
+    }
+    group.members.push(angle);
+    if (compareKeywordPriority(priorityOf(angle), priorityOf(group.representative)) < 0) group.representative = angle;
+  }
+  return [...groups.values()];
+}
+
+type ExampleTexts = { angle: string; main: string; reason: string; alternative: string; h1: [string, string] };
+
 /**
  * Esempio della risposta nella lingua delle istruzioni: alternative con una frase, perché con «...» i modelli vi
- * scrivevano un'altra action («page», «keep»; prova in produzione del 2026-11-16).
+ * scrivevano un'altra action («page», «keep»; prova in produzione del 2026-11-16), e due H1 con formule e chiusure
+ * diverse, perché con un solo esempio finivano tutti «: guida pratica» (T-7702).
  */
-function answerExample(texts: { angle: string; main: string; reason: string; alternative: string; h1: string }): string {
+function answerExample(texts: ExampleTexts): string {
   return JSON.stringify({
-    [`${texts.angle} 1`]: { action: "page", target: texts.main, reason: texts.reason, alternative: texts.alternative, h1: texts.h1 },
-    [`${texts.angle} 2`]: { action: "keep", reason: texts.reason },
+    [`${texts.angle} 1`]: { action: "page", target: texts.main, reason: texts.reason, alternative: texts.alternative, h1: texts.h1[0] },
+    [`${texts.angle} 2`]: { action: "page", target: texts.main, reason: texts.reason, h1: texts.h1[1] },
+    [`${texts.angle} 3`]: { action: "keep", reason: texts.reason },
   });
 }
 
@@ -58,7 +95,7 @@ function instructionLines(language: string, country: string | null): string[] {
       main: "keyword principale",
       reason: "il perché in una o due frasi",
       alternative: "una frase che spiega un'altra scelta sensata",
-      h1: "il titolo della pagina nuova",
+      h1: ["l'angolo 1 nel titolo: una chiusura", "un'altra formula con l'angolo 2: un'altra chiusura"],
     });
     return [
       "Aiuti un esperto di SEO a decidere cosa fare degli angoli di un piano di contenuti in italiano.",
@@ -69,6 +106,8 @@ function instructionLines(language: string, country: string | null): string[] {
       "- page: chi cerca l'angolo ha un bisogno diverso da quello delle pagine del piano, che merita una pagina propria come approfondimento di una pagina principale;",
       "- move: l'angolo tratta lo stesso argomento di un'altra pagina del piano e va spostato lì;",
       "- keep: l'angolo è un aspetto della pagina in cui si trova e resta lì come H2 o domanda delle FAQ.",
+      "Angoli con le stesse parole in ordine diverso sono la stessa ricerca e vanno trattati allo stesso modo, con la stessa action e lo stesso target.",
+      "L'h1 di page è specifico per l'angolo: parte dalla sua keyword o dal suo senso e usa formule diverse fra le pagine; la stessa chiusura dopo i due punti compare in al massimo due h1 della risposta.",
       `Rispondi solo con un oggetto JSON che ha per chiavi gli angoli, scritti come li hai ricevuti, e per valori un oggetto con action (page, move o keep), target (per page la keyword principale della pagina principale sotto cui nasce la pagina nuova, per move quella della pagina di destinazione, scritte come le hai ricevute; per keep non serve), reason (il perché in una o due frasi, entro ${limits.reason} caratteri), alternative (facoltativa: una frase che spiega un'altra scelta sensata, per esempio «Se non serve una pagina, tienila come domanda delle FAQ», entro ${limits.alternative} caratteri, mai la sola action) e, solo per page, h1 (il titolo della pagina nuova con la keyword dell'angolo, entro ${limits.h1} caratteri), per esempio ${example}, senza altro testo.`,
       "Scrivi reason, alternative e h1 in italiano, senza markdown né HTML; non inventare marchi, numeri, prezzi o altri dati.",
     ];
@@ -80,7 +119,7 @@ function instructionLines(language: string, country: string | null): string[] {
       main: "palabra clave principal",
       reason: "el porqué en una o dos frases",
       alternative: "una frase que explica otra opción razonable",
-      h1: "el título de la página nueva",
+      h1: ["el ángulo 1 en el título: un cierre", "otra fórmula con el ángulo 2: otro cierre"],
     });
     return [
       `Ayudas a un experto en SEO a decidir qué hacer con los ángulos de un plan de contenidos en ${variant}.`,
@@ -91,6 +130,8 @@ function instructionLines(language: string, country: string | null): string[] {
       "- page: quien busca el ángulo tiene una necesidad distinta de la de las páginas del plan, que merece una página propia como profundización de una página pilar;",
       "- move: el ángulo trata el mismo tema que otra página del plan y debe moverse allí;",
       "- keep: el ángulo es un aspecto de la página en la que está y se queda allí como H2 o pregunta de las FAQ.",
+      "Los ángulos con las mismas palabras en otro orden son la misma búsqueda y se tratan igual, con la misma action y el mismo target.",
+      "El h1 de page es específico del ángulo: parte de su palabra clave o de su sentido y usa fórmulas distintas entre las páginas; el mismo cierre después de los dos puntos aparece como máximo en dos h1 de la respuesta.",
       `Responde solo con un objeto JSON cuyas claves son los ángulos, escritos como los recibiste, y cuyos valores son un objeto con action (page, move o keep), target (para page la palabra clave principal de la página pilar bajo la que nace la página nueva, para move la de la página de destino, escritas como las recibiste; para keep no hace falta), reason (el porqué en una o dos frases, como máximo ${limits.reason} caracteres), alternative (opcional: una frase que explica otra opción razonable, por ejemplo «Si no hace falta una página, consérvala como pregunta de las FAQ», como máximo ${limits.alternative} caracteres, nunca la acción sola) y, solo para page, h1 (el título de la página nueva con la palabra clave del ángulo, como máximo ${limits.h1} caracteres), por ejemplo ${example}, sin ningún otro texto.`,
       `Escribe reason, alternative y h1 en ${variant}, sin markdown ni HTML; no inventes marcas, números, precios ni otros datos.`,
     ];
@@ -101,7 +142,7 @@ function instructionLines(language: string, country: string | null): string[] {
     main: "main keyword",
     reason: "why, in one or two sentences",
     alternative: "a sentence that explains another sensible choice",
-    h1: "the title of the new page",
+    h1: ["angle 1 in the title: one ending", "another wording with angle 2: another ending"],
   });
   return [
     `You help an SEO expert decide what to do with the angles of a content plan in ${name} (language code ${language}).`,
@@ -112,6 +153,8 @@ function instructionLines(language: string, country: string | null): string[] {
     "- page: the searcher has a need that differs from the plan's pages and deserves a page of its own as a supporting page of a main page;",
     "- move: the angle covers the same topic as another page of the plan and should be moved there;",
     "- keep: the angle is one aspect of the page it is in and stays there as an H2 or FAQ question.",
+    "Angles with the same words in a different order are the same search and must be treated the same way, with the same action and the same target.",
+    "The h1 of page is specific to the angle: it starts from its keyword or its meaning and uses different wordings across pages; the same ending after the colon appears in at most two h1 of the answer.",
     `Answer only with a JSON object whose keys are the angles, written as you received them, and whose values are an object with action (page, move or keep), target (for page the main keyword of the main page the new page goes under, for move that of the destination page, written as you received them; not needed for keep), reason (why, in one or two sentences, at most ${limits.reason} characters), alternative (optional: a sentence that explains another sensible choice, for example “If a page is not needed, keep it as an FAQ question”, at most ${limits.alternative} characters, never the action alone) and, for page only, h1 (the title of the new page with the angle keyword, at most ${limits.h1} characters), for example ${example}, with no other text.`,
     `Write reason, alternative and h1 in ${name}, with no markdown or HTML; do not invent brands, numbers, prices or other data.`,
   ];
@@ -188,10 +231,31 @@ function adviceWithTarget(
 }
 
 /**
+ * Chiusura di un H1: il testo dopo l'ultimo «:» in forma canonica (minuscole, senza accenti, spazi semplici, T-702);
+ * null senza «:» o con il solo «:» in fondo.
+ */
+function closingOf(h1: string, language: string): string | null {
+  const colon = h1.lastIndexOf(":");
+  return colon >= 0 ? canonicalizeKeyword(h1.slice(colon + 1), language) || null : null;
+}
+
+/**
+ * Dal terzo H1 con la stessa chiusura in poi, nell'ordine della risposta, l'H1 vale null (T-7702): il foglio «Nuova
+ * pagina» parte vuoto e il piano propone il suo H1, come senza consiglio; action, target, motivo e alternativa restano.
+ */
+function withVariedClosings(entry: AngleAdvice, closings: Map<string, number>, language: string): AngleAdvice {
+  const closing = entry.h1 ? closingOf(entry.h1, language) : null;
+  if (!closing) return entry;
+  const count = (closings.get(closing) ?? 0) + 1;
+  closings.set(closing, count);
+  return count > MAX_H1_SAME_CLOSING ? { ...entry, h1: null } : entry;
+}
+
+/**
  * Consigli della risposta del modello per gli angoli inviati, per forma canonica dell'angolo: chiavi e target valgono
- * anche scritti con maiuscole o accenti diversi (si confrontano le forme canoniche); le voci che non valgono si scartano.
- * Testo non JSON (o troppo lungo) o nessuna voce valida → AI_INVALID_RESPONSE, e requestWithFallback passa al modello
- * successivo.
+ * anche scritti con maiuscole o accenti diversi (si confrontano le forme canoniche); le voci che non valgono si scartano,
+ * e degli H1 con la stessa chiusura restano i primi MAX_H1_SAME_CLOSING (T-7702). Testo non JSON (o troppo lungo) o
+ * nessuna voce valida → AI_INVALID_RESPONSE, e requestWithFallback passa al modello successivo.
  */
 export function parseAngleAdvice(content: string, angles: AdviceAngle[], pages: AdvicePage[], language: string): Map<string, AngleAdvice> {
   const answer = content.length <= MAX_CONTENT_LENGTH ? firstJsonObject(content) : null;
@@ -201,11 +265,12 @@ export function parseAngleAdvice(content: string, angles: AdviceAngle[], pages: 
   const angleOf = new Map(angles.map((angle) => [angle.canonical, angle]));
   const pageOf = new Map(pages.map((page) => [page.canonical, page]));
   const advice = new Map<string, AngleAdvice>();
+  const closings = new Map<string, number>();
   for (const [key, value] of Object.entries(answer)) {
     const angle = angleOf.get(canonicalizeKeyword(key, language));
     if (!angle || advice.has(angle.canonical)) continue;
     const entry = adviceOf(value, angle, pageOf, language);
-    if (entry) advice.set(angle.canonical, entry);
+    if (entry) advice.set(angle.canonical, withVariedClosings(entry, closings, language));
   }
   if (advice.size === 0) {
     throw new AiTitlesError("AI_INVALID_RESPONSE", "Risposta del modello non valida: nessun consiglio valido");
