@@ -46,7 +46,8 @@ macrotask, senza chiedere conferme.
      68 angle-actions · 69 angle-ai · 70 local-tips · 71 mcp-keys ·
      72 mcp-server · 73 mcp-research · 74 mcp-serp · 75 mcp-plan ·
      76 mcp-articles · 77 advice-quality · 78 next-advisory ·
-     79 picomatch-allowlist · 80 dep-refresh · 81 effect-allowlist
+     79 picomatch-allowlist · 80 dep-refresh · 81 effect-allowlist ·
+     82 mcp-refine
    • Baseline (.trueline/baseline.json, .trueline/hygiene-baseline.json) e budget
      consumato (MAX_RETRIES_PER_FINDING = 2, GLOBAL_WALL_CLOCK_MS = 242401).
    • Per ogni task chiuso: id, output prodotto, esito del gate (quale oracolo/test
