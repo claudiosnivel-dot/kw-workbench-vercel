@@ -55,7 +55,7 @@ del disegno) e contro le attese lunghe (anti-obiettivo 6). Disegno in
 
   out_of_scope:
     - "Modificare o eliminare progetti e argomenti esistenti."
-    - "Più argomenti in create_project: si aggiungono con run_search."
+    - "Più argomenti in create_project: si aggiungono con run_search. (Emendato da D-71: run_search non crea argomenti; un argomento nuovo nasce con create_topic, T-8301.)"
 
 - id: T-7302
   title: "list_keywords, set_keywords e tetto di spesa di Claude Code"
