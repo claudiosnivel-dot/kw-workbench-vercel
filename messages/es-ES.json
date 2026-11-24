@@ -845,6 +845,8 @@
       "copyKey": "Copiar la clave",
       "copyCommand": "Copiar el comando",
       "copied": "Copiado",
+      "pasteInTerminal": "Pégalo en el terminal, antes de iniciar Claude Code, no en el chat: ahí la clave quedaría escrita en la conversación.",
+      "removeOld": "Si ya habías conectado Titan SEO, primero quita la conexión anterior con <code>claude mcp remove titanseo</code>.",
       "onlyNow": "Cópialos ahora: la clave y el comando no se volverán a mostrar.",
       "capLabel": "Límite diario de gasto (dólares)",
       "spentToday": "Gastado hoy por los trabajos de Claude Code: {spent} de {cap}. El día termina a medianoche UTC.",

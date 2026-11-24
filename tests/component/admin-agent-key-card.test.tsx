@@ -1,6 +1,7 @@
 // Gate di T-7102 (AC-7102-1…3): card «Claude Code» delle impostazioni dell'amministrazione con la durata scelta, la
 // chiave e il comando claude mcp add mostrati una volta, lo stato della chiave attiva senza la chiave e la revoca.
 // impacted-by: T-7302 (la card riceve la spesa di oggi e il tetto giornaliero di spesa di Claude Code)
+// impacted-by: T-8303 (sotto il comando le avvertenze su dove incollarlo e su claude mcp remove titanseo)
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AdminAgentKeyCard } from "@/components/admin-agent-key-card";
@@ -54,6 +55,27 @@ describe("card «Claude Code» dell'amministrazione", () => {
     expect(screen.getByRole("button", { name: "Copia la chiave" })).toHaveTextContent("Copia");
     expect(screen.getByRole("button", { name: "Copia il comando" })).toHaveTextContent("Copia");
     expect(screen.getByText("Copiali adesso: la chiave e il comando non si vedranno più.")).toBeVisible();
+  });
+
+  // covers: AC-8303-1
+  it("dopo «Crea la chiave» sotto il comando dice di incollarlo nel terminale e di togliere prima il collegamento vecchio", async () => {
+    fetchMock.mockResolvedValue(Response.json({ data: { key: KEY, status: activeStatus } }, { status: 201 }));
+    renderWithIntl(<AdminAgentKeyCard initial={null} origin={ORIGIN} spend={SPEND} />);
+    const terminal = "Incollalo nel terminale, prima di avviare Claude Code, non nella chat: lì la chiave resterebbe scritta nella conversazione.";
+
+    expect(screen.queryByText(terminal)).toBeNull();
+    expect(screen.queryByText("claude mcp remove titanseo")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Crea la chiave" }));
+
+    const warning = await screen.findByText(terminal);
+    expect(warning).toBeVisible();
+    const remove = screen.getByText("claude mcp remove titanseo");
+    expect(remove.tagName).toBe("CODE");
+    expect(remove.parentElement).toHaveTextContent("Se avevi già collegato Titan SEO, prima togli il collegamento vecchio con claude mcp remove titanseo.");
+    // Le avvertenze vengono dopo il comando.
+    const command = screen.getByLabelText("Comando per collegare Claude Code");
+    expect(command.compareDocumentPosition(warning) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(warning.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("«Copia» scrive il comando negli appunti e mostra «Copiato»", async () => {

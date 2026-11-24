@@ -151,6 +151,9 @@
     },
     "workspaces": {
       "empty": "No se encontró ningún espacio de trabajo."
+    },
+    "agentKey": {
+      "pasteInTerminal": "Pégalo en la terminal, antes de iniciar Claude Code, no en el chat: ahí la clave quedaría escrita en la conversación."
     }
   },
   "integrations": {
