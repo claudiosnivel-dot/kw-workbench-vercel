@@ -20,13 +20,13 @@ import {
   StrategyNotFoundError,
 } from "@/lib/modules/strategy/service";
 import { catalogTranslator } from "@/lib/modules/strategy/translator";
-import { hasLocalTips, type StrategyKeywordView, type StrategyPageView } from "@/lib/modules/strategy/types";
+import { hasLocalTips, type StrategyKeywordView, type StrategyPageView, type StrategyView } from "@/lib/modules/strategy/types";
 import { prisma } from "@/lib/prisma";
 
 // Strumenti del piano del server MCP (T-7501, T-7502, D-64): Claude Code costruisce il piano con i dati di Titan SEO ma
-// senza le sue AI (lavoro di piano con origin AGENT), lo legge e lo modifica con le operazioni e la version dell'app,
-// senza poter svuotare, unire, spostare o ritoccare le pagine già iniziate (guardia di plan-guard.ts). Permessi dell'app:
-// strategy.write per avviare e modificare, project.read per leggere.
+// senza le sue AI (lavoro di piano con origin AGENT), lo legge a pagine con il cursore (T-8201, D-70) e lo modifica con
+// le operazioni e la version dell'app, senza poter svuotare, unire, spostare o ritoccare le pagine già iniziate (guardia
+// di plan-guard.ts). Permessi dell'app: strategy.write per avviare e modificare, project.read per leggere.
 
 const idField = (description: string) => z.string().min(1).max(64).describe(description);
 const projectIdField = idField("Project id from list_projects or create_project");
@@ -118,23 +118,86 @@ function planPage(page: StrategyPageView, index: number) {
   };
 }
 
+/** Keyword al massimo in una risposta di get_plan (T-8201, D-70): sotto il limite di output di Claude Code. */
+const PLAN_ANSWER_KEYWORDS = 1000;
+
+/** Cursore di get_plan: piano, version e primo pezzo della risposta successiva, letto con uno schema stretto (CWE-770). */
+const planCursorSchema = z
+  .object({ strategyId: z.string().min(1).max(64), version: z.number().int().min(0), next: z.number().int().min(1) })
+  .strict();
+type PlanCursor = z.infer<typeof planCursorSchema>;
+
+const invalidCursor = () => new AppError(400, "VALIDATION_ERROR", "Cursore di get_plan non valido", { field: "cursor" });
+
+const encodeCursor = (cursor: PlanCursor) => Buffer.from(JSON.stringify(cursor)).toString("base64url");
+
+function decodeCursor(text: string): PlanCursor {
+  try {
+    return planCursorSchema.parse(JSON.parse(Buffer.from(text, "base64url").toString("utf8")));
+  } catch {
+    throw invalidCursor();
+  }
+}
+
+/** Pezzi del piano nell'ordine di lettura: ogni pagina intera, poi le non assegnate a gruppi di PLAN_ANSWER_KEYWORDS. */
+function planPieces(view: StrategyView) {
+  const pages = view.hubs.flatMap((hub) => [hub.pillar, ...hub.spokes]).map(planPage);
+  const unassigned = view.unassigned.map(planKeyword);
+  const groups = Array.from({ length: Math.ceil(unassigned.length / PLAN_ANSWER_KEYWORDS) }, (_, index) =>
+    unassigned.slice(index * PLAN_ANSWER_KEYWORDS, (index + 1) * PLAN_ANSWER_KEYWORDS)
+  );
+  return [
+    ...pages.map((page) => ({ size: page.keywords.length, pages: [page], unassigned: [] })),
+    ...groups.map((group) => ({ size: group.length, pages: [], unassigned: group })),
+  ];
+}
+
+/** Fine della risposta che parte da start: pezzi interi fino a PLAN_ANSWER_KEYWORDS keyword, il primo anche se è più grande. */
+function answerEnd(pieces: { size: number }[], start: number): number {
+  let end = start;
+  let size = 0;
+  while (end < pieces.length && (end === start || size + pieces[end].size <= PLAN_ANSWER_KEYWORDS)) {
+    size += pieces[end].size;
+    end += 1;
+  }
+  return end;
+}
+
 export const getPlanTool = defineTool({
   name: "get_plan",
   description:
-    "Read the current plan of a project: strategyId, version (pass it to edit_plan and update_page), grouping source and notice, the pages in work order (number, kind HUB or SPOKE, hubPageId, H1, H2, content type, status TODO, WRITING or PUBLISHED, published URL, keywords with id, volume, score, role and angle flag; cities for a local page with many places) and the keywords not assigned to any page. STRATEGY_NOT_FOUND when the project has no plan yet: build it with build_plan.",
-  input: z.object({ projectId: projectIdField }).strict(),
-  async run({ projectId }, { user, recordProject }) {
+    "Read the current plan of a project in parts of up to about 1000 keywords: call get_plan again with nextCursor until nextCursor is null. Each answer has strategyId, version (pass it to edit_plan and update_page), grouping source and notice, totalPages and totalUnassigned, then whole pages in work order (number, kind HUB or SPOKE, hubPageId, H1, H2, content type, status TODO, WRITING or PUBLISHED, published URL, keywords with id, volume, score, role and angle flag; cities for a local page with many places) and, after the last page, the keywords not assigned to any page. STRATEGY_CONFLICT with currentVersion means the plan changed while you were reading it: start again without cursor. STRATEGY_NOT_FOUND when the project has no plan yet: build it with build_plan.",
+  input: z
+    .object({
+      projectId: projectIdField,
+      cursor: z.string().min(1).max(200).optional().describe("nextCursor of the previous get_plan answer; omit it to start from the first page"),
+    })
+    .strict(),
+  async run({ projectId, cursor }, { user, recordProject }) {
     const project = await requireProjectAccess(user, projectId, "project.read", {});
     recordProject(project.id);
+    const from = cursor === undefined ? null : decodeCursor(cursor);
     const view = await readStrategy(project.id, await currentPlanId(project.id));
+    // Una lettura non mescola due versioni del piano (CWE-362): con un piano cambiato o rigenerato si ricomincia.
+    if (from && (from.strategyId !== view.id || from.version !== view.version)) {
+      throw new AppError(409, "STRATEGY_CONFLICT", "La strategia è stata modificata nel frattempo", { currentVersion: view.version });
+    }
+    const pieces = planPieces(view);
+    const start = from?.next ?? 0;
+    if (from && start >= pieces.length) throw invalidCursor();
+    const end = answerEnd(pieces, start);
+    const answer = pieces.slice(start, end);
     return {
       strategyId: view.id,
       name: view.name,
       version: view.version,
       groupingSource: view.groupingSource,
       groupingNotice: view.groupingNotice,
-      pages: view.hubs.flatMap((hub) => [hub.pillar, ...hub.spokes]).map(planPage),
-      unassigned: view.unassigned.map(planKeyword),
+      totalPages: pieces.filter((piece) => piece.pages.length > 0).length,
+      totalUnassigned: view.unassigned.length,
+      pages: answer.flatMap((piece) => piece.pages),
+      unassigned: answer.flatMap((piece) => piece.unassigned),
+      nextCursor: end < pieces.length ? encodeCursor({ strategyId: view.id, version: view.version, next: end }) : null,
     };
   },
 });

@@ -31,7 +31,7 @@ export const IMPORT_ARTICLE_FIELDS = {
   metaTitle: ARTICLE_META_FIELDS.metaTitle,
   metaDescription: ARTICLE_META_FIELDS.metaDescription,
   slug: ARTICLE_META_FIELDS.slug,
-  version: z.number().int().min(0).optional(),
+  version: z.number().int().min(0),
 };
 
 export type ImportArticleInput = {
@@ -40,7 +40,8 @@ export type ImportArticleInput = {
   metaTitle: string;
   metaDescription: string;
   slug: string;
-  version?: number;
+  /** Version letta, sempre obbligatoria (T-8202, D-70): 0 quando la pagina non ha ancora un articolo. */
+  version: number;
 };
 
 /** Blocco importato con il testo già ripulito, nella posizione dell'articolo. */
@@ -162,8 +163,9 @@ async function concurrentChange(project: AuthorizedProject, strategyId: string, 
 /**
  * Importa l'articolo di Claude Code nella pagina del piano corrente (T-7601), con il permesso strategy.write già
  * verificato: pagina di un altro progetto 404 STRATEGY_NOT_FOUND, di un piano precedente 409 STRATEGY_READ_ONLY, un
- * lavoro delle AI di Titan SEO sull'articolo 409 JOB_ALREADY_ACTIVE. Senza articolo lo crea con version 1; con un
- * articolo serve la sua version, altrimenti 409 ARTICLE_VERSION_CONFLICT con currentVersion e nulla cambia. In una
+ * lavoro delle AI di Titan SEO sull'articolo 409 JOB_ALREADY_ACTIVE. La version letta serve sempre (T-8202, D-70):
+ * senza articolo vale 0 e lo crea con version 1, con un articolo è la sua; una diversa è 409 ARTICLE_VERSION_CONFLICT
+ * con currentVersion (0 senza articolo) e nulla cambia. In una
  * transazione l'articolo diventa READY con source AGENT, meta, slug, lunghezza, rapporto SEO e version cresciuta di 1,
  * i blocchi si sostituiscono con i controlli del loro testo e la pagina «Da scrivere» passa «In scrittura».
  */
@@ -208,6 +210,7 @@ export async function importAgentArticle(actor: Actor, project: AuthorizedProjec
         await tx.articleSection.deleteMany({ where: { article_id: current.id, article: { project_id: project.id } } });
         articleId = current.id;
       } else {
+        if (input.version !== 0) throw versionConflict(0);
         const created = await tx.article.create({
           data: { ...fields, page_id: input.pageId, project_id: project.id, version: 1 },
           select: { id: true },
