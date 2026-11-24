@@ -131,3 +131,27 @@ Le keyword fuori tema restano compito di Claude Code con `set_keywords` (D-64): 
 - Modulo dalla scelta dell'utente del 2026-11-23 («si scrivi tutto», D-71) dopo la prova con Claude Code in un suo progetto: strumento create_topic, istruzioni sul limite delle ricerche e sulla sostituzione delle keyword, avvertenze nella card.
 - Scelte dell'agente (da confermare): name obbligatorio in create_topic, nessuna impostazione diversa dal progetto, tetto controllato prima della creazione come create_project, queries con asked e skipped in wait_for_job, consiglio di 5 parole di partenza per argomento, avvertenze sotto il comando e non in un dialogo.
 - Ordine: dopo il 73 e il 71; T-8302 dopo T-8301, T-8303 indipendente. Nel DAG viene dopo l'80 e l'82 (numero più alto).
+- Note di costruzione (2026-11-24, scelte dell'agente da confermare):
+  - T-8301: la transazione della rotta POST `/api/projects/[id]/subprojects` è diventata `createSection` in
+    `lib/modules/sections.ts` (limiti `maxSectionsPerProject` e `maxSeedsPerSection`, posizione in fondo, sezione
+    predefinita se manca, `SECTION_NAME_TAKEN`), usata dalla rotta e da `create_topic`: stessi controlli senza codice
+    doppio. `create_topic` registrato dopo `run_search`; nome con gli spazi ai lati tolti (solo spazi →
+    `VALIDATION_ERROR` sul campo name), parole di partenza ripulite come in `create_project`, nessuna impostazione
+    propria (l'argomento segue il progetto); ordine dei controlli: parole di partenza, accesso con `section.write`
+    (progetto di altri `PROJECT_NOT_FOUND`), tetto di spesa, creazione, avvio della ricerca con
+    `startQuickStartExtraction` e origin AGENT (`extraction.run`, email, piano, rate limit e quota diventano il code di
+    `extraction` con `jobId` null, l'argomento resta); risposta con `projectId`, `topicId`, `jobId`, `extraction` e
+    `spend`;
+  - T-8302: `queries: { asked, skipped }` sempre nella risposta di `wait_for_job` di una ricerca (0 e 0 prima che la
+    fase expand le calcoli), nota in inglese solo con `skipped` maggiore di 0; frasi comuni sul limite delle domande e
+    sulla sostituzione nelle descrizioni (il limite in `create_project`, `run_search` e `create_topic`, la sostituzione
+    in `run_search`), regola nuova delle istruzioni con «at most 5 seed keywords» e il conto di 45 domande per parola
+    con il limite di 250, passo 2 del percorso con `create_topic`;
+  - T-8303: le due avvertenze sono paragrafi sotto il comando, prima di «Copiali adesso»; il comando
+    `claude mcp remove titanseo` in `<code>` con la classe monospazio della chiave; es-419 diverso da es-ES solo per
+    «la terminal» (es-ES «el terminal»), la seconda frase viene da es-ES;
+  - test: `tests/integration/mcp-topics.test.ts` (AC-8301-1…3 più progetto di altri e nome vuoto),
+    `tests/integration/mcp-search-limits.test.ts` (AC-8302-1…3 più la risposta prima della fase expand) e il caso nuovo
+    di AC-8303-1 in `tests/component/admin-agent-key-card.test.tsx` (impacted-by T-8303); scritti dopo il codice e
+    visti rossi con il codice tolto (8 casi su 15: AC-8301-3 e gli altri casi già veri oggi restano verdi, come vuole
+    il DoD di T-8301 sul piano), poi verdi; nessuna migrazione.

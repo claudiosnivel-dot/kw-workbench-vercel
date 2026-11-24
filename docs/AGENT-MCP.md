@@ -1,6 +1,6 @@
 # Claude Code collegato a Titan SEO (server MCP)
 
-> D-64 e D-65, moduli 71-76 del blueprint; disegno in `docs/superpowers/specs/2026-11-17-claude-code-mcp-design.md`.
+> D-64, D-65 e D-71, moduli 71-76 e 82-83 del blueprint; disegno in `docs/superpowers/specs/2026-11-17-claude-code-mcp-design.md`.
 > Claude Code, mentre costruisce un sito, usa Titan SEO come fonte dei dati (keyword, volumi, risultati di Google, un
 > piano di partenza) e come posto dove il suo lavoro resta visibile: il piano che decide e gli articoli che scrive nel
 > sito. Il ragionamento SEO è di Claude Code: le AI di Titan SEO non lavorano per lui.
@@ -19,9 +19,13 @@
    ```
 
    L'indirizzo è quello di `APP_PUBLIC_URL` (in produzione quello pubblico dell'app). `claude mcp list` deve mostrare
-   `titanseo` collegato; dentro Claude Code `/mcp` elenca gli strumenti.
+   `titanseo` collegato; dentro Claude Code `/mcp` elenca gli strumenti. **Incollalo nel terminale, prima di avviare
+   Claude Code, non nella chat**: lì la chiave resterebbe scritta nella conversazione (è successo nella prova del
+   2026-11-23). La card lo ricorda sotto il comando.
 4. **Chiave nuova o revoca**: «Crea una chiave nuova» revoca subito quella attiva (va ripetuto il comando con la chiave
-   nuova); «Revoca» la spegne subito. Una sola chiave attiva alla volta.
+   nuova); «Revoca» la spegne subito. Una sola chiave attiva alla volta. **Se Titan SEO era già collegato**, prima
+   togli il collegamento vecchio con `claude mcp remove titanseo`, poi incolla il comando nuovo: con il nome già usato
+   `claude mcp add` non lo sostituisce.
 
 ## Strumenti
 
@@ -32,13 +36,27 @@ istruzioni di lavoro (ordine del percorso, attese, conflitti, tetto di spesa, pa
 |---|---|
 | `list_projects`, `get_project` | progetti dei workspace del root admin con argomenti, parole di partenza, lavori recenti e piano |
 | `create_project`, `run_search` | progetto nuovo con l'avvio rapido, oppure una ricerca nuova di un argomento; rispondono subito con l'id del lavoro |
-| `wait_for_job` | aspetta una ricerca o un lavoro di piano fino a circa 50 s e ne dà stato e avanzamento: si richiama finché non è finito |
+| `create_topic` | un altro argomento del progetto, in fondo all'elenco, con le sue parole di partenza e le impostazioni del progetto, e la sua ricerca; le keyword degli altri argomenti non cambiano |
+| `wait_for_job` | aspetta una ricerca o un lavoro di piano fino a circa 50 s e ne dà stato e avanzamento (per una ricerca anche le domande a Google fatte e quelle tolte dal limite): si richiama finché non è finito |
 | `list_keywords`, `set_keywords` | keyword con volumi, punteggi, intento e tipo; tenere o scartare fino a 1000 keyword per volta |
 | `get_serps` | i primi 10 risultati di Google di fino a 50 keyword, con indirizzo, titolo e descrizione |
 | `build_plan`, `get_plan` | piano costruito senza le AI di Titan SEO (solo i riconoscimenti fissi), poi letto con pagine, keyword e version, a parti di circa 1000 keyword: si richiama con `nextCursor` finché non è null |
 | `edit_plan`, `update_page` | le operazioni del piano dell'app e i campi di una pagina, sempre con la version letta |
 | `get_article` | l'articolo di una pagina com'è in Titan SEO, con le modifiche fatte nell'editor, la version e i controlli salvati |
 | `import_article` | salva l'articolo scritto nel sito come articolo pronto della pagina e risponde con i controlli SEO e di stile |
+
+### Ricerche e argomenti
+
+- Una ricerca fa al massimo `MAX_EXPANSION_QUERIES` domande a Google (250 di default), divise fra le parole di
+  partenza dell'argomento: ogni parola ne usa fino a 45 (la parola, 8 composizioni, 26 lettere e 10 cifre). Con 5
+  parole ci stanno tutte (225); con 10 parole entrano 160 delle 260 domande con le lettere e nessuna con le cifre; con
+  20 parole solo 70 delle 520 con le lettere. `wait_for_job` risponde con `queries.asked` e `queries.skipped` e, se il
+  limite ne ha tolte, con una nota che consiglia `create_topic`.
+- Rifare la ricerca di un argomento (`run_search`, anche con parole di partenza nuove) rifà la ricerca dell'intero
+  argomento e **toglie le keyword che non ritrova**, tenute o scartate (D-19): aggiungere parole allo stesso argomento
+  può far perdere keyword. Per un tema nuovo Claude Code crea un argomento con `create_topic`; le istruzioni di
+  `initialize` consigliano non oltre 5 parole di partenza per argomento.
+- Il piano (`build_plan`, `get_plan`) usa le keyword tenute di tutti gli argomenti del progetto.
 
 ### Articoli di Claude Code
 

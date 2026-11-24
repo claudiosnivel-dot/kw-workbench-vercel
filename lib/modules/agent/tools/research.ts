@@ -21,16 +21,32 @@ import { SectionNotFoundError } from "@/lib/modules/project-access";
 import { NAME_MAX_LENGTH, SEED_MAX_LENGTH } from "@/lib/modules/project-settings";
 import { createQuickStartProject, startQuickStartExtraction } from "@/lib/modules/quick-start";
 import { uniqueSeeds } from "@/lib/modules/quick-start-topics";
+import { createSection } from "@/lib/modules/sections";
 import { prisma } from "@/lib/prisma";
 
 // Strumenti della ricerca del server MCP (T-7301, D-64): Claude Code crea il progetto, lancia la ricerca e la aspetta,
 // con i permessi dell'app (project.create, extraction.run, project.read) e il tetto giornaliero della sua spesa (T-7302)
-// controllato prima di ogni avvio. I lavori che avvia hanno origin AGENT.
+// controllato prima di ogni avvio. I lavori che avvia hanno origin AGENT. Con create_topic (T-8301) crea gli altri
+// argomenti di un progetto, e le descrizioni dicono quanto copre una ricerca (T-8302, D-71).
 
 /** Parole di partenza per chiamata: da 1 a 10 (scelta dell'agente nel modulo 73). */
 const MAX_AGENT_SEEDS = 10;
 
 const idField = (description: string) => z.string().min(1).max(64).describe(description);
+
+/**
+ * Quanto copre una ricerca, nelle descrizioni degli strumenti che la avviano (T-8302): le domande a Google sono limitate
+ * (MAX_EXPANSION_QUERIES) e divise fra le parole di partenza dell'argomento, e rifare la ricerca sostituisce le keyword
+ * dell'argomento (D-19).
+ */
+const SEARCH_COVERAGE =
+  "A research asks Google a limited number of queries, shared among the seed keywords of its topic: the more seed keywords, the fewer queries each.";
+const SEARCH_REPLACES =
+  "Running the research again with new seed keywords redoes the research of the whole topic and removes the keywords it does not find again, kept or discarded.";
+
+/** Nota di wait_for_job quando il limite ha tolto domande alla ricerca (T-8302). */
+const SKIPPED_QUERIES_NOTE =
+  "This research reached its limit of Google queries and skipped some: split the seed keywords by theme into more topics with create_topic (at most 5 seed keywords each) instead of adding them to this topic.";
 
 const seedsField = z
   .array(z.string().max(SEED_MAX_LENGTH))
@@ -55,7 +71,7 @@ async function targetWorkspace(user: AuthUser, workspaceId: string | undefined) 
 export const createProjectTool = defineTool({
   name: "create_project",
   description:
-    "Create a project with its first topic and seed keywords, in the language and country you choose, and start the keyword research of that topic. Answers with projectId, topicId and jobId (null with the code that prevented the start, the project stays created) and today's spending against the daily cap. Wait for the research with wait_for_job.",
+    `Create a project with its first topic and seed keywords, in the language and country you choose, and start the keyword research of that topic. ${SEARCH_COVERAGE} Answers with projectId, topicId and jobId (null with the code that prevented the start, the project stays created) and today's spending against the daily cap. Wait for the research with wait_for_job.`,
   input: z
     .object({
       name: z.string().min(1).max(NAME_MAX_LENGTH).describe("Project name, usually the site or business name"),
@@ -105,7 +121,7 @@ function alreadyActive(jobId: string): AppError {
 export const runSearchTool = defineTool({
   name: "run_search",
   description:
-    "Start the keyword research of a topic again, after adding the new seed keywords you pass (the first topic of the project when topicId is omitted). One research at a time per topic: JOB_ALREADY_ACTIVE gives the jobId of the running one. Answers with jobId and today's spending against the daily cap. Wait for it with wait_for_job.",
+    `Start the keyword research of a topic again, after adding the new seed keywords you pass (the first topic of the project when topicId is omitted). ${SEARCH_COVERAGE} ${SEARCH_REPLACES} For a new theme create a topic with create_topic instead. One research at a time per topic: JOB_ALREADY_ACTIVE gives the jobId of the running one. Answers with jobId and today's spending against the daily cap. Wait for it with wait_for_job.`,
   input: z
     .object({
       projectId: idField("Project id from list_projects or create_project"),
@@ -143,6 +159,30 @@ export const runSearchTool = defineTool({
   },
 });
 
+export const createTopicTool = defineTool({
+  name: "create_topic",
+  description: `Create another topic of a project, after its other topics, with its own seed keywords and the language, country and settings of the project, and start its keyword research; the keywords of the other topics do not change. Use one topic per theme of the site. ${SEARCH_COVERAGE} The plan uses the kept keywords of all the topics. Answers with topicId and jobId (null with the code that prevented the start, the topic stays created) and today's spending against the daily cap. Wait for the research with wait_for_job.`,
+  input: z
+    .object({
+      projectId: idField("Project id from list_projects or create_project"),
+      name: z.string().trim().min(1).max(NAME_MAX_LENGTH).describe("Topic name, not used by another topic of the project, usually the theme of its seed keywords"),
+      seeds: seedsField,
+    })
+    .strict(),
+  async run({ projectId, name, seeds: values }, { user, recordProject }) {
+    const seeds = cleanSeeds(values);
+    const project = await requireProjectAccess(user, projectId, "section.write", { default_subproject_id: true });
+    recordProject(project.id);
+    // Tetto prima della creazione, come create_project (D-69): al tetto l'argomento non nasce.
+    const spend = await assertAgentSpendAllowed();
+
+    const topic = await createSection(project, { name }, seeds);
+    const creation = { projectId: project.id, topicId: topic.id };
+    const { jobId, extraction } = await startQuickStartExtraction(user, creation, { id: project.workspace_id, role: project.role }, "AGENT");
+    return { ...creation, jobId, extraction, spend };
+  },
+});
+
 /** Lavoro inesistente o di un progetto non accessibile: stessa risposta (CWE-639). */
 function jobNotFound(): AppError {
   return new AppError(404, JOB_ERROR_CODES.notFound, "Job non trovato");
@@ -165,7 +205,22 @@ async function searchProgress(job: Job) {
   return { done: job.progress_done, total: job.progress_total, keywordsFound: found, volumesRequested: volumes };
 }
 
-/** Attesa di una ricerca: quantità trovate e chieste e, a lavoro finito, le keyword tenute dell'argomento. */
+/**
+ * Domande a Google della ricerca, dal cursore del lavoro (T-8302): quelle fatte e quelle tolte dal limite
+ * MAX_EXPANSION_QUERIES; 0 e 0 finché la fase expand non le ha calcolate.
+ */
+function searchQueries(job: Job): { asked: number; skipped: number } {
+  const cursor = (job.cursor ?? {}) as { queries?: unknown; skippedQueries?: unknown };
+  return {
+    asked: Array.isArray(cursor.queries) ? cursor.queries.length : 0,
+    skipped: typeof cursor.skippedQueries === "number" ? cursor.skippedQueries : 0,
+  };
+}
+
+/**
+ * Attesa di una ricerca: quantità trovate e chieste, domande a Google fatte e tolte dal limite (con la nota su
+ * create_topic se ne ha tolte) e, a lavoro finito, le keyword tenute dell'argomento.
+ */
 async function waitForSearch(jobId: string, { user, recordProject }: AgentToolContext) {
   const owned = await prisma.job.findFirst({
     where: { id: jobId, project: projectAccessWhere(user.id, "project.read") },
@@ -187,6 +242,7 @@ async function waitForSearch(jobId: string, { user, recordProject }: AgentToolCo
     (current) => !ACTIVE_JOB_STATUSES.includes(current.status)
   );
   const keptKeywords = finished ? await prisma.keywordCandidate.count({ where: { subproject_id: job.subproject_id, ...KEPT_WHERE } }) : undefined;
+  const queries = searchQueries(job);
   return {
     jobId: job.id,
     topicId: job.subproject_id,
@@ -194,6 +250,8 @@ async function waitForSearch(jobId: string, { user, recordProject }: AgentToolCo
     phase: job.phase,
     finished,
     progress: await searchProgress(job),
+    queries,
+    ...(queries.skipped > 0 ? { note: SKIPPED_QUERIES_NOTE } : {}),
     ...(keptKeywords === undefined ? {} : { keptKeywords }),
     ...(job.status === "failed" ? { error: job.error_message } : {}),
     spend: await readAgentSpend(),
@@ -203,10 +261,10 @@ async function waitForSearch(jobId: string, { user, recordProject }: AgentToolCo
 export const waitForJobTool = defineTool({
   name: "wait_for_job",
   description:
-    "Wait for a keyword research (jobId from create_project or run_search) or a plan job (runId from build_plan): answers as soon as it is finished (completed, failed or canceled) or after about 50 seconds with its status, phase and progress. For a research the progress counts keywords found and volumes requested and, when finished, the kept keywords of the topic; for a plan job it counts the keywords with Google results and, when completed, gives the strategyId of the plan. Call it again while finished is false.",
+    "Wait for a keyword research (jobId from create_project, create_topic or run_search) or a plan job (runId from build_plan): answers as soon as it is finished (completed, failed or canceled) or after about 50 seconds with its status, phase and progress. For a research the progress counts keywords found and volumes requested, queries gives the Google queries asked and those skipped by the limit (with a note when some were skipped) and, when finished, the kept keywords of the topic; for a plan job it counts the keywords with Google results and, when completed, gives the strategyId of the plan. Call it again while finished is false.",
   input: z
     .object({
-      jobId: idField("Job id from create_project or run_search").optional(),
+      jobId: idField("Job id from create_project, create_topic or run_search").optional(),
       runId: idField("Plan job id from build_plan").optional(),
     })
     .strict()

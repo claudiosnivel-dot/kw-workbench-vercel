@@ -7,7 +7,7 @@ import { getArticleTool, importArticleTool } from "@/lib/modules/agent/tools/art
 import { listKeywordsTool, setKeywordsTool } from "@/lib/modules/agent/tools/keywords";
 import { buildPlanTool, editPlanTool, getPlanTool, updatePageTool } from "@/lib/modules/agent/tools/plan";
 import { getProjectTool, listProjectsTool } from "@/lib/modules/agent/tools/projects";
-import { createProjectTool, runSearchTool, waitForJobTool } from "@/lib/modules/agent/tools/research";
+import { createProjectTool, createTopicTool, runSearchTool, waitForJobTool } from "@/lib/modules/agent/tools/research";
 import { getSerpsTool } from "@/lib/modules/agent/tools/serps";
 import { catalogTranslator } from "@/lib/modules/strategy/translator";
 import { logger } from "@/lib/observability/logger";
@@ -29,6 +29,7 @@ const TOOLS: readonly AgentTool[] = [
   getProjectTool,
   createProjectTool,
   runSearchTool,
+  createTopicTool,
   waitForJobTool,
   listKeywordsTool,
   setKeywordsTool,

@@ -845,6 +845,8 @@
       "copyKey": "Copy the key",
       "copyCommand": "Copy the command",
       "copied": "Copied",
+      "pasteInTerminal": "Paste it in the terminal, before starting Claude Code, not in the chat: there the key would stay written in the conversation.",
+      "removeOld": "If you had already connected Titan SEO, first remove the old connection with <code>claude mcp remove titanseo</code>.",
       "onlyNow": "Copy them now: the key and the command won't be shown again.",
       "capLabel": "Daily spending cap (dollars)",
       "spentToday": "Spent today by Claude Code jobs: {spent} of {cap}. The day ends at midnight UTC.",

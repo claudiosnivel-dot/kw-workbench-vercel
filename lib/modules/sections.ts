@@ -1,11 +1,18 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { type AuthorizedProject, expectOneRow } from "@/lib/authz/workspace";
+import { assertWithinLimit, loadPlanGuard } from "@/lib/billing/enforce";
 import { AppError } from "@/lib/http/errors";
 import { touchProjectActivity } from "@/lib/modules/project-activity";
-import { SectionNotFoundError } from "@/lib/modules/project-access";
+import { ProjectNotFoundError, SectionNotFoundError } from "@/lib/modules/project-access";
 import { prisma } from "@/lib/prisma";
 
 type ScopedProject = Pick<AuthorizedProject, "id" | "perimeter">;
+
+/** Progetto già autorizzato con section.write in cui nasce una sezione, con la sua sezione predefinita. */
+type SectionParent = Pick<AuthorizedProject, "id" | "workspace_id" | "perimeter"> & { default_subproject_id: string | null };
+
+/** Campi della sezione nuova: nome e impostazioni proprie (quelle assenti seguono il progetto). */
+type SectionFields = Omit<Prisma.SubprojectUncheckedCreateInput, "id" | "project_id" | "position">;
 
 /** Nome di sezione già usato nel progetto (vincolo project_id + name): 409 con codice stabile (T-808). */
 class SectionNameTakenError extends AppError {
@@ -25,6 +32,40 @@ export async function guardSectionName<T>(write: () => Promise<T>): Promise<T> {
     }
     throw error;
   }
+}
+
+/**
+ * Crea la sezione in fondo all'elenco con le sue seed, come «+ Nuovo argomento» (T-808): limiti maxSectionsPerProject e
+ * maxSeedsPerSection del piano (T-1605) sotto il lock del workspace nella transazione della creazione, la prima sezione
+ * del progetto diventa la predefinita, un nome già usato è SECTION_NAME_TAKEN. La usano la rotta POST /subprojects e
+ * create_topic di Claude Code (T-8301).
+ */
+export async function createSection(project: SectionParent, fields: SectionFields, seeds: readonly string[]) {
+  const plan = await loadPlanGuard(project.workspace_id);
+  return guardSectionName(() =>
+    prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await assertWithinLimit(tx, plan, "maxSectionsPerProject", async () => (await tx.subproject.count({ where: { project_id: project.id } })) + 1);
+      await assertWithinLimit(tx, plan, "maxSeedsPerSection", () => seeds.length);
+      const position = await tx.subproject.count({ where: { project_id: project.id } });
+
+      const created = await tx.subproject.create({ data: { ...fields, project_id: project.id, position } });
+
+      if (!project.default_subproject_id) {
+        const { count } = await tx.project.updateMany({
+          where: { id: project.id, ...project.perimeter },
+          data: { default_subproject_id: created.id },
+        });
+        expectOneRow(count, () => new ProjectNotFoundError());
+      }
+
+      if (seeds.length > 0) {
+        await tx.seed.createMany({ data: seeds.map((keyword) => ({ project_id: project.id, subproject_id: created.id, keyword })) });
+      }
+
+      await touchProjectActivity(tx, project);
+      return created;
+    })
+  );
 }
 
 /** Sezioni del progetto nell'ordine di visualizzazione, con la position salvata. */

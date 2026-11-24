@@ -146,6 +146,9 @@ export function AdminAgentKeyCard({
           <div className="space-y-3">
             <CopyField label={t("keyLabel")} copyLabel={t("copyKey")} value={issued.key} />
             <CopyField label={t("commandLabel")} copyLabel={t("copyCommand")} value={issued.command} multiline />
+            {/* Dove incollare il comando (T-8303): la chiave non deve restare scritta in una conversazione (CWE-312). */}
+            <p className="text-sm">{t("pasteInTerminal")}</p>
+            <p className="text-sm">{t.rich("removeOld", { code: (chunks) => <code className="agent-key-value">{chunks}</code> })}</p>
             <p className="text-sm font-medium">{t("onlyNow")}</p>
           </div>
         )}
