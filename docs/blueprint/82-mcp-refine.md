@@ -92,3 +92,26 @@ version; scelta dell'utente: «Sempre la versione», 0 quando la pagina non ha a
 - Modulo dalle risposte dell'utente del 2026-11-22 (D-70) alle domande sulle scelte di 74, 75 e 76: «Pagine subito» e «1000 keyword» per get_plan, «Sempre la versione» per import_article.
 - Scelte dell'agente (da confermare): cursore opaco con la version del piano, non assegnate dopo le pagine nella stessa sequenza, una pagina più grande del limite da sola, VALIDATION_ERROR per un cursore non valido, currentVersion 0 senza articolo.
 - Ordine: dopo il 76; T-8201 e T-8202 indipendenti. Nel DAG viene dopo il 77 e l'80 (numero più alto).
+- Note di costruzione (2026-11-24, scelte dell'agente da confermare):
+  - T-8201: cursore opaco, JSON `{ strategyId, version, next }` in base64url letto con uno schema zod stretto (al
+    massimo 200 caratteri); oltre alla version porta l'id del piano, così anche un piano rigenerato (strategia nuova,
+    che riparte dalla version 0) è `STRATEGY_CONFLICT` con la `currentVersion` del piano nuovo;
+  - pezzi nell'ordine di lettura: ogni pagina intera nell'ordine di lavoro, poi le non assegnate a gruppi fissi di 1000
+    (1-1000, 1001-2000, …); una risposta prende pezzi interi finché il totale resta entro 1000 keyword e sempre il
+    primo (una pagina con più di 1000 keyword esce da sola). Un gruppo di non assegnate sta con l'ultima pagina solo se
+    ci sta tutto: con AC-8201-1 la terza pagina (600) non porta 400 non assegnate, che spezzerebbero i gruppi da 1000;
+  - risposta con `totalPages` e `totalUnassigned`; `number` resta la posizione della pagina nell'intero piano;
+  - cursore non valido (non decodificabile, schema diverso, posizione oltre la fine) → `VALIDATION_ERROR` sul campo
+    `cursor`; la posizione oltre la fine si controlla dopo la version, quindi un piano cambiato dà prima il conflitto;
+  - T-8202: `IMPORT_ARTICLE_FIELDS.version` senza `optional()`, quindi `VALIDATION_ERROR` sul campo version da
+    `defineTool`; senza articolo la version diversa da 0 è `ARTICLE_VERSION_CONFLICT` con `currentVersion` 0 dentro la
+    transazione, prima della creazione; due prime importazioni insieme con la version 0: l'indice unico della pagina fa
+    rispondere alla seconda il conflitto con la version 1 (`concurrentChange` di oggi);
+  - istruzioni di `initialize` (passo 4: get_plan a parti, con nextCursor finché non è null), descrizioni di `get_plan`
+    e `import_article` e `docs/AGENT-MCP.md` aggiornate; nessuna migrazione;
+  - test: `tests/integration/mcp-plan-paging.test.ts` (AC-8201-1…3 più un caso con una pagina da 1200 keyword, le non
+    assegnate con l'ultima pagina e il cursore non valido) e `tests/integration/mcp-articles-version.test.ts`
+    (AC-8202-1), scritti prima del codice e visti rossi (5 casi), poi verdi; `tests/integration/mcp-articles.test.ts`
+    impacted-by T-8202: l'aiuto `importArticle` passa la version 0 se il caso non ne dà una e il caso «senza version» si
+    aspetta `VALIDATION_ERROR` sul campo version e, con la version 0 su un articolo esistente, il conflitto con la
+    version 1. Il DoD di T-7601 era già emendato con il rimando a D-70 (2026-11-22).
