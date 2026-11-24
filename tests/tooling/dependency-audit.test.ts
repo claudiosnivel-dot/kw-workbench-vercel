@@ -226,6 +226,34 @@ describe("dipendenze aggiornate e advisory sotto controllo", () => {
     expect(audit.stdout).not.toContain("GHSA-mfr8-8qww-v76h");
   });
 
+  // covers: AC-8001-1
+  it("next è almeno alla 16.4.6 con eslint-config-next alla stessa versione e @sentry/nextjs ha major 11, fissati in package.json", () => {
+    const ls = run("npm ls next eslint-config-next @sentry/nextjs --json");
+    expect(ls.error).toBeUndefined();
+    expect(ls.status, ls.stderr).toBe(0);
+    const tree = JSON.parse(ls.stdout) as LsNode;
+    const next = tree.dependencies?.next?.version ?? "";
+    const sentry = tree.dependencies?.["@sentry/nextjs"]?.version ?? "";
+    const pkg = readJson<{ dependencies: Record<string, string>; devDependencies: Record<string, string> }>("package.json");
+
+    expect(next).toMatch(/^16\.4\.\d+$/);
+    expect(atLeast(next, "16.4.6")).toBe(true);
+    expect(tree.dependencies?.["eslint-config-next"]?.version).toBe(next);
+    expect(sentry).toMatch(/^11\.\d+\.\d+$/);
+    expect(pkg.dependencies.next).toBe(next);
+    expect(pkg.devDependencies["eslint-config-next"]).toBe(next);
+    expect(pkg.dependencies["@sentry/nextjs"]).toBe(sentry);
+  }, COMMAND_TIMEOUT_MS);
+
+  // covers: AC-8001-2
+  it("npm audit non ha critical né voci per @sentry/nextjs, @sentry/node, @sentry/bundler-plugins, typescript-eslint, @typescript-eslint/* e fast-uri", () => {
+    const report = JSON.parse(audit.stdout) as AuditOutput;
+    const fixed = ["@sentry/nextjs", "@sentry/node", "@sentry/bundler-plugins", "typescript-eslint", "fast-uri"];
+
+    expect(report.metadata.vulnerabilities.critical).toBe(0);
+    expect(Object.keys(report.vulnerabilities).filter((name) => fixed.includes(name) || name.startsWith("@typescript-eslint/"))).toEqual([]);
+  });
+
   // covers: AC-7901-1
   // impacted-by: T-8101 (D-68: GHSA-fc5q-39xc-vjpf ritirato il 2026-11-18, la voce di picomatch è uscita dall'allowlist)
   it("l'avviso ritirato di picomatch non è nel rapporto di npm audit né nell'allowlist", () => {
