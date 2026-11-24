@@ -35,7 +35,7 @@ istruzioni di lavoro (ordine del percorso, attese, conflitti, tetto di spesa, pa
 | `wait_for_job` | aspetta una ricerca o un lavoro di piano fino a circa 50 s e ne dà stato e avanzamento: si richiama finché non è finito |
 | `list_keywords`, `set_keywords` | keyword con volumi, punteggi, intento e tipo; tenere o scartare fino a 1000 keyword per volta |
 | `get_serps` | i primi 10 risultati di Google di fino a 50 keyword, con indirizzo, titolo e descrizione |
-| `build_plan`, `get_plan` | piano costruito senza le AI di Titan SEO (solo i riconoscimenti fissi), poi letto con pagine, keyword e version |
+| `build_plan`, `get_plan` | piano costruito senza le AI di Titan SEO (solo i riconoscimenti fissi), poi letto con pagine, keyword e version, a parti di circa 1000 keyword: si richiama con `nextCursor` finché non è null |
 | `edit_plan`, `update_page` | le operazioni del piano dell'app e i campi di una pagina, sempre con la version letta |
 | `get_article` | l'articolo di una pagina com'è in Titan SEO, con le modifiche fatte nell'editor, la version e i controlli salvati |
 | `import_article` | salva l'articolo scritto nel sito come articolo pronto della pagina e risponde con i controlli SEO e di stile |
@@ -63,10 +63,12 @@ istruzioni di lavoro (ordine del percorso, attese, conflitti, tetto di spesa, pa
   DataForSEO in un tetto giornaliero (giorno UTC), 2 $ di partenza, da 0 a 100 $ nella card. Raggiunto il tetto,
   `AGENT_SPEND_CAP`: Claude Code si ferma e chiede. I tetti di spesa della piattaforma restano.
 - **Piano**: ogni modifica porta la version; se l'utente ha cambiato il piano, `STRATEGY_CONFLICT` con la version
-  corrente. Le pagine che non sono «Da scrivere» sono bloccate (`AGENT_PAGE_LOCKED`): Claude Code ne cambia solo lo
+  corrente. Anche il cursore di `get_plan` porta la version: se il piano cambia durante la lettura, `STRATEGY_CONFLICT`
+  e Claude Code ricomincia senza cursore. Le pagine che non sono «Da scrivere» sono bloccate (`AGENT_PAGE_LOCKED`): Claude Code ne cambia solo lo
   stato e l'indirizzo pubblicato e ne importa l'articolo. Nessuna pagina si cancella dal server MCP.
-- **Articoli**: con un articolo già presente `import_article` vuole la version letta; se l'utente l'ha modificato nel
-  frattempo, `ARTICLE_VERSION_CONFLICT` con la version corrente e l'articolo non cambia; con un lavoro delle AI di
+- **Articoli**: `import_article` vuole sempre la version letta, 0 alla prima importazione (`get_article` senza
+  articolo risponde `ARTICLE_NOT_FOUND`); se l'utente l'ha modificato nel frattempo, `ARTICLE_VERSION_CONFLICT` con la
+  version corrente (0 se l'articolo non c'è ancora) e l'articolo non cambia; con un lavoro delle AI di
   Titan SEO in corso, `JOB_ALREADY_ACTIVE`. Al massimo 200 000 caratteri e 40 blocchi.
 - **Registro**: ogni chiamata scrive ora, strumento, progetto, esito e durata, mai i parametri né i testi. La card
   «Claude Code» mostra le ultime 50 chiamate (con il link al progetto se esiste ancora) e la spesa di oggi con il

@@ -68,8 +68,10 @@ const META = {
   slug: "noleggio-magnetoterapia",
 };
 
+// impacted-by: T-8202 (D-70: la version è sempre obbligatoria, 0 alla prima importazione): senza version nei campi del
+// caso l'importazione passa la version 0.
 const importArticle = (root: Root, page: Page, fields: Record<string, unknown> = {}) =>
-  callTool(root.key, "import_article", { projectId: page.projectId, pageId: page.pageId, markdown: ARTICLE, ...META, ...fields });
+  callTool(root.key, "import_article", { projectId: page.projectId, pageId: page.pageId, markdown: ARTICLE, ...META, version: 0, ...fields });
 
 /** Articolo salvato della pagina con i blocchi in ordine. */
 const savedArticle = (page: Page) =>
@@ -184,13 +186,16 @@ describe("import_article", () => {
     }
   });
 
-  it("con un articolo e senza version è ARTICLE_VERSION_CONFLICT con la version corrente", async () => {
+  // impacted-by: T-8202 (D-70): senza version è VALIDATION_ERROR sul campo version, prima era ARTICLE_VERSION_CONFLICT.
+  it("con un articolo e senza version è VALIDATION_ERROR sul campo version e con la version 0 ARTICLE_VERSION_CONFLICT con la version corrente", async () => {
     const root = await rootAdminWithKey("t7601-noversion");
     const page = await planPage(root);
     await importArticle(root, page);
 
+    const missing = await importArticle(root, page, { version: undefined });
     const again = await importArticle(root, page);
 
+    expect(missing.data).toMatchObject({ code: "VALIDATION_ERROR", field: "version" });
     expect(again.data).toMatchObject({ code: "ARTICLE_VERSION_CONFLICT", currentVersion: 1 });
     expect((await savedArticle(page)).version).toBe(1);
   });

@@ -9,7 +9,7 @@ Workflow, in this order:
 1. Project: find the project with list_projects and read it with get_project; create a new one only when none fits the site.
 2. Research: start the keyword research of a topic with seed keywords taken from the site, then wait for it to finish.
 3. Keywords: read the keywords with their data and keep or discard them.
-4. Plan: build the plan, read it, and decide pages, H1 and H2 yourself.
+4. Plan: build the plan, read all of it (get_plan answers in parts: call it again with nextCursor until nextCursor is null), and decide pages, H1 and H2 yourself.
 5. Edits: change the plan with its operations, always passing the plan version you last read.
 6. Articles: write each article in the site's code, import the same text into Titan SEO and fix in the site the problems its checks report; before changing an article you already imported, read it again because the user may have edited it in Titan SEO.
 
